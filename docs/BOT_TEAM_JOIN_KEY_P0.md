@@ -121,13 +121,13 @@
 
 | ID | 标准 | 勾选 |
 |----|------|------|
-| **J1** | 入场码 ≠ UUID ≠ `ymk_`；Admin 可签发/吊销；兑换得正确 workspace+team | [ ] |
-| **J2** | 空 Bot：贴 `ymk_` + 入场码 → 一次 `join` 完成 pull+合法 enter+handoff；箱内自测有记录 | [x] |
-| **J3** | 活跃席第二路 enter → 409；FE/CLI **无**顶替按钮；新人无空席 → 只加新席 | [ ] |
-| **J4** | 仅停工/离职席可 force/补位；成功留审计 comment | [ ] |
-| **J5** | 重复 join / 重复 pull **幂等**，不清 memory/todos | [ ] |
-| **J6** | 硬规矩：箱 5174/CLI 证据；禁甩用户本机；进度只回总指挥 | [ ] |
-| **J7** | 下发唤醒：指派→Webhook 主路径（巡检补漏）；无变化安静；不误叫旧席 | [ ] |
+| **J1** | 入场码 ≠ UUID ≠ `ymk_`；Admin 可签发/吊销；兑换得正确 workspace+team | [x] 签发+兑换：`0685720` B3 + FE `5b15581` 复制码；吊销：svc+单测有、HTTP/FE 未挂（记债，不挡签发/兑换） |
+| **J2** | 空 Bot：贴 `ymk_` + 入场码 → 一次 `join` 完成 pull+合法 enter+handoff；箱内自测有记录 | [x] `6385eec` · `docs/qa-shots/ymbot-j2-evidence-20261024.txt` |
+| **J3** | 活跃席第二路 enter → 409；FE/CLI **无**顶替按钮；新人无空席 → 只加新席 | [x] J2 禁活跃 force + expand/no-expand；B2 `b2-force-409.json`；FE T3 无 force |
+| **J4** | 仅停工/离职席可 force/补位；成功留审计 comment | [x] J2_optional_stopped_force；审计=`seat.force_bind` activities；Issue 正文 comment → P0.1 补强 |
+| **J5** | 重复 join / 重复 pull **幂等**，不清 memory/todos | [x] J2_idempotent_rejoin（skipped_enter）；T9 pull×2 同 id |
+| **J6** | 硬规矩：箱 5174/CLI 证据；禁甩用户本机；进度只回总指挥 | [x] 证据均在箱 `docs/qa-shots/` + `/workspace/qa-shots/full-0685720/` |
+| **J7** | 下发唤醒：指派→Webhook 主路径（巡检补漏）；无变化安静；不误叫旧席 | [x] G6a/B4 filter_member·seat + B5 baseline；巡检/下发 FE 仍 P0.5 |
 
 ---
 
