@@ -120,8 +120,8 @@ func mcpTools() []map[string]any {
 	issueRef := map[string]any{"type": "string", "description": "YM-n 或 id"}
 	return []map[string]any{
 		{"name": "board_whoami", "description": "可选自检：Bot 身份短文本；主航线仍是 team_pull→seat_enter→handoff_get", "inputSchema": obj(map[string]any{"full": full, "ids": ids})},
-		{"name": "board_issue_list", "description": "Issue 瘦表 YM-n（无 UUID）；leaf_only=可领池", "inputSchema": obj(map[string]any{
-			"status": str, "assignee_id": str, "project_id": str, "q": str, "cycle_id": str, "label_id": str,
+		{"name": "board_issue_list", "description": "Issue 瘦表 YM-n（无 UUID）；leaf_only=可领池；team_id=按队过滤", "inputSchema": obj(map[string]any{
+			"status": str, "assignee_id": str, "project_id": str, "q": str, "cycle_id": str, "label_id": str, "team_id": str,
 			"leaf_only": bol, "full": full, "ids": ids,
 		})},
 		{"name": "board_issue_get", "description": "Issue 瘦读；默认含 version（乐观锁），无 UUID", "inputSchema": obj(map[string]any{"issue_id": issueRef, "full": full, "ids": ids}, "issue_id")},
@@ -267,7 +267,7 @@ func callTool(c *botclient.Client, name string, args map[string]any) (string, er
 		return botclient.FormatWhoAmIText(v), nil
 	case "board_issue_list":
 		qv := url.Values{}
-		for _, k := range []string{"status", "assignee_id", "project_id", "q", "cycle_id", "label_id"} {
+		for _, k := range []string{"status", "assignee_id", "project_id", "q", "cycle_id", "label_id", "team_id"} {
 			if v := strArg(args, k); v != "" {
 				qv.Set(k, v)
 			}

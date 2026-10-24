@@ -98,6 +98,7 @@ func cmdIssue(c *botclient.Client, args []string) error {
 		q := fs.String("q", "", "")
 		cycle := fs.String("cycle", "", "")
 		label := fs.String("label", "", "")
+		team := fs.String("team", "", "团队 UUID（query team_id；后端按队过滤）")
 		leafOnly := fs.Bool("leaf-only", false, "仅叶子（query leaf_only=1）")
 		unassigned := fs.Bool("unassigned", false, "未分配")
 		full, ids, asJSON := viewFlags(fs)
@@ -117,6 +118,7 @@ func cmdIssue(c *botclient.Client, args []string) error {
 		set("q", *q)
 		set("cycle_id", *cycle)
 		set("label_id", *label)
+		set("team_id", *team)
 		if *leafOnly {
 			qv.Set("leaf_only", "1")
 		}

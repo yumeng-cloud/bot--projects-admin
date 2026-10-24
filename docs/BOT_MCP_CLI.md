@@ -70,7 +70,7 @@
 | 能力名 | 通道（MCP tool / CLI） | 对应现有 REST 或缺口 | 输入 / 输出要点 | 优先级 |
 |--------|------------------------|----------------------|-----------------|--------|
 | 鉴权自检 | `board_whoami` / `ymbot whoami` | **已落地** `GET …/bots/me`（JWT 或 `ymk_`）；不必再调 JWT-only `/auth/me` | 出：`workspace_id, member_id, actor_kind, role, display_name` | **P0** |
-| Issue 列表 | `board_issue_list` / `ymbot issue list` | `GET …/issues?…` | 入：`status, assignee_id\|me, project_id, q, cycle_id, label_id, leaf_only?`；出：`issues[]`；`--leaf-only` 拉可领池（依赖后端） | **P0** |
+| Issue 列表 | `board_issue_list` / `ymbot issue list` | `GET …/issues?…` | 入：`status, assignee_id\|me, project_id, q, cycle_id, label_id, team_id?, leaf_only?`；出：`issues[]`；CLI `--team` → query `team_id`（T6-I 后端已滤）；`--leaf-only` 拉可领池 | **P0** |
 | Issue 读取 | `board_issue_get` / `ymbot issue get` | `GET …/issues/{id}` | 入：`issue_id`（或 identifier 解析，P1）；出：完整 issue + labels | **P0** |
 | Issue 创建 | `board_issue_create` / `ymbot issue create` | `POST …/issues` | 入：`project_id, title, **parent_id（必填）**, …`；**禁无父游离**（通道 403 中文）；禁 `done` | **P0** |
 | Issue 更新 | `board_issue_update` / `ymbot issue update` | `PATCH …/issues/{id}` | 入：`issue_id, version`（必填）+ 可变字段；409 → 可读冲突；Bot 禁 `done` | **P0** |
@@ -269,10 +269,10 @@ go run ./cmd/ymbot mcp-serve
 
 | | |
 |--|--|
-| **切队怎么做** | **换入参**，无 `YMBOT_TEAM_ID` sticky。CLI：`team pull --uuid`（队 A 或 B）；`seat enter` / `leave` / `expand --team <uuid>`。MCP：`board_team_pull.team_uuid`；`board_seat_*` / `board_seat_expand` 的 `team_uuid` |
+| **切队怎么做** | **换入参**，无 `YMBOT_TEAM_ID` sticky。CLI：`team pull --uuid`（队 A 或 B）；`seat enter` / `leave` / `expand --team <uuid>`；`issue list --team`。MCP：`board_team_pull.team_uuid`；`board_seat_*` / `board_seat_expand` 的 `team_uuid`；`board_issue_list.team_id` |
 | **环境仍只需** | `YMBOT_API_URL` · `YMBOT_API_KEY` · `YMBOT_WORKSPACE_ID`（同 §11.1/11.3） |
 | **REST 作用域** | `/workspaces/{ws}/teams/{teamID}/roster` · `…/seats` · … — path 上的 `teamID` 即隔离边界 |
-| **本切片不做** | `board_issue_list` 按 team 过滤；FE 切换器（**pins 通道见 §11.5**，已挂载） |
+| **Issue 按队** | CLI `issue list --team <uuid>` / MCP `board_issue_list.team_id` → query `team_id`（REST T6-I 已支持）；FE 切换器仍不做（**pins 通道见 §11.5**） |
 
 ```bash
 # 同 WS 两队（把 A/B 换成真实 team UUID）
