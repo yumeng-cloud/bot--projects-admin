@@ -248,7 +248,7 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
       }
     }
     try {
-      // C2-2：优先 batch-status；404/501 或整请求失败 → 串行 patch 作 fallback
+      // C2-2：优先 batch-status；404/405/501 或整请求失败 → 串行 patch 作 fallback
       try {
         const { results } = await batchUpdateIssueStatus(
           workspaceId,
@@ -280,7 +280,7 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
         }
       } catch (err) {
         const readyMissing =
-          err instanceof ApiError && (err.status === 404 || err.status === 501)
+          err instanceof ApiError && (err.status === 404 || err.status === 405 || err.status === 501)
         if (readyMissing || !(err instanceof ApiError)) {
           await serialFallback()
         } else {

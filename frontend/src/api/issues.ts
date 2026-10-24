@@ -229,7 +229,7 @@ export type BatchUpdateIssueStatusResult = {
  * C2-2：批量改状态。
  * `POST /workspaces/{ws}/issues/batch-status` body `{ ids, status }`；
  * 可选 query `?team_id=`。返回 `{ results:[{id,ok,status?,version?,error?}] }`。
- * 404/501 时抛 ApiError，由调用方串行 fallback。
+ * 404/405/501 时抛 ApiError，由调用方串行 fallback。
  */
 export async function batchUpdateIssueStatus(
   workspaceId: string,
@@ -285,7 +285,7 @@ export async function batchUpdateIssueStatus(
     )
     return { results: data.results || [], mock: false }
   } catch (err) {
-    if (err instanceof ApiError && (err.status === 404 || err.status === 501)) {
+    if (err instanceof ApiError && (err.status === 404 || err.status === 405 || err.status === 501)) {
       throw new ApiError('批量改状态接口尚未就绪', err.code || 'not_found', err.status)
     }
     throw err
