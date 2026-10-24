@@ -107,15 +107,16 @@ POST …/bots  → 201 { member, token }   // 事务：成员 + mint；或 api-k
 
 ## 产品勾选
 
-- [ ] **F2** 成功弹层露钥+复制
-- [ ] **F4** 设置新建 Key 挡层消费 token
-- [ ] **F3** 启动提示词嵌钥
-- [ ] **F5** 入场零二次索钥 + 文案分家
+- [x] **F2** 成功弹层露钥+复制 · React `681de29` · `foolproof-create-bot-key.png`
+- [x] **F4** 设置新建 Key 挡层消费 token · IdentityKeyRevealModal
+- [x] **F3** 启动提示词嵌钥 · `buildFirstRunPrompt`
+- [x] **F5** 入场零二次索钥 + 文案分家 · 席页仍只 ymt_；弹层文案两码分家
 - [ ] **F1** （按需）一键建 Bot API
 - [ ] **F6** 箱证 whoami 串联
 
 ## 进度注记
 
+- 2026-10-24 23:22 · **产品勾 F2–F5** React `681de29`：挡层露 ymk_+复制+启动提示词；席页入场仍只 ymt_。F1 仍后置；**F6 待 QA**。
 - 2026-10-24 23:14 · 并行另开 [`NEXT_WAVE_DEBT_SEAT_VISIBILITY.md`](./NEXT_WAVE_DEBT_SEAT_VISIBILITY.md)：建队 Toast 有 N 空席但页仍「尚未绑定席位」——空席必须可见。
 
 - 2026-10-24 23:13 · 总指挥/Go：api-keys 已回 token；**首刀改 React F2+F4**；Go F1 后置按需。  
@@ -123,4 +124,4 @@ POST …/bots  → 201 { member, token }   // 事务：成员 + mint；或 api-k
 
 ## 关单进度
 
-**进行中** · 等 React 首刀 F2+F4。
+**进行中** · F2–F5 产品勾 `681de29`；F1 后置；**待 F6 QA**。
