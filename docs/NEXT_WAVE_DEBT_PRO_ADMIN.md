@@ -126,7 +126,7 @@
 - [ ] **D4** 成员/用户箱截
 - [x] **E1** 属性轨节奏 · FE `75fb14a` + QA `5fd8775` · 正式关 / `pro-e-drawer-rail.png`
 - [ ] **E2** 看板归档入口
-- [x] **E3** 仅归档视图入口 · FE `41c6e88` / `pro-e-archived-only.png`（等视觉/QA）
+- [x] **E3** 仅归档视图入口 · FE `41c6e88` · 产品勾 / `pro-e-archived-only.png`（等 QA）
 - [ ] **E4** Issue 箱截
 - [x] **F1** 工作区表单文案 · 短说明 +「用于 URL」· `pro-a-settings.png`
 - [x] **F2** 标签/Key 表空态 · 成员分块邀请+表密度见 `pro-f-settings-density.png`（标签/接入同壳）
@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:45 · **产品勾 E3** FE `41c6e88`：三态「隐藏/显示/仅已归档」；only→`archived=only`；箱截 `pro-e-archived-only.png` 过。等 QA。C2–D / E2 / G 仍冻。
 - 2026-10-25 00:45 · **E3 关绿** React `41c6e88`：列表归档滤镜升三态 Select（隐藏已归档 / 显示已归档 / 仅已归档）；only→`archived=only`（FE `archived_only`）；与 C1 include 互斥；深链 banner 不动；箱截 `pro-e-archived-only.png`；`tsc --noEmit` PASS。**C2–D / E2 / G 仍冻**（明示）。
 - 2026-10-25 00:36 · **下一刀·产品拍 仅 E3**：列表「仅已归档」视图/滤镜入口与 C1「显示已归档」对齐（深链归档 banner 已有；本刀补列表入口）。**C2–D / E2 / G 仍冻**（明示）。React 首刀；齐后 QA 抽。
 - 2026-10-25 00:36 · **E1 正式关** FE `75fb14a` + 视觉放行 + QA PASS† `5fd8775` / `PRO_ADMIN-E1-qa-spotcheck-20261025.txt`。C2–D / E2–E3 / G 仍冻。
@@ -174,4 +175,4 @@
 
 ## 关单进度
 
-**B/C1/SEAT_LEAVE/E1/E3 关绿** FE `41c6e88` · **C2–D / E2 / G 仍冻**（明示）；E3 等视觉/QA 正式关。
+**B/C1/SEAT_LEAVE/E1 关** · **E3 产品勾** FE `41c6e88`（等 QA）；**C2–D / E2 / G 仍冻**（明示）。
