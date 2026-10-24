@@ -94,11 +94,18 @@ export function createBotRole(
   })
 }
 
-export function claimBotRole(workspaceId: string, roleId: string, memberId?: string, idempotencyKey?: string) {
+export function claimBotRole(
+  workspaceId: string,
+  roleId: string,
+  memberId?: string,
+  idempotencyKey?: string,
+  opts?: { skipToast?: boolean },
+) {
   return api<{ claim: BotRoleClaim }>(`${ws(workspaceId)}/bot-roles/${roleId}/claim`, {
     method: 'POST',
     body: JSON.stringify(memberId ? { member_id: memberId } : {}),
     idempotencyKey,
+    skipToast: opts?.skipToast,
   })
 }
 

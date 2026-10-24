@@ -32,6 +32,7 @@ import {
 } from '../../../api/bots'
 import { formatShanghai, formatWikiTime } from '../../../utils/time'
 import { openTodos, pickLastFocus, statusCn } from './seatHandoffText'
+import './bots.css'
 
 export default function BotDetailPage() {
   const { wsId = '', memberId = '' } = useParams()
@@ -67,7 +68,7 @@ export default function BotDetailPage() {
 
   if (loading && !handoff) {
     return (
-      <div className="acb-page" style={{ textAlign: 'center', paddingTop: 48 }}>
+      <div className="acb-page acb-bots" style={{ textAlign: 'center', paddingTop: 48 }}>
         <Spin />
       </div>
     )
@@ -78,7 +79,7 @@ export default function BotDetailPage() {
   const openTd = openTodos(handoff?.todos)
 
   return (
-    <div className="acb-page">
+    <div className="acb-page acb-bots">
       <Space style={{ marginBottom: 12 }} wrap>
         <Link to={`/w/${wsId}/settings/bots`}>← 席位</Link>
         <Typography.Title level={4} style={{ margin: 0 }}>
@@ -89,24 +90,6 @@ export default function BotDetailPage() {
       <Typography.Paragraph type="secondary" style={{ marginBottom: 12, fontSize: 13 }}>
         演员级记忆 / Todo；换机请回席位页按「绑席位 → handoff get」续，不要日常依赖下方 JSON 导入导出。
       </Typography.Paragraph>
-
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-        message="换机怎么续（主路径）"
-        description={
-          <ol style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 13 }}>
-            <li>新机打开同一工作区</li>
-            <li>
-              绑定到同一席位（<Typography.Text code>ymbot seat enter</Typography.Text> / 贴 Key）
-            </li>
-            <li>
-              <Typography.Text code>ymbot handoff get</Typography.Text> 拉记忆 / Todo / 开放 Issue
-            </li>
-          </ol>
-        }
-      />
 
       {handoff ? (
         <Card size="small" style={{ marginBottom: 16 }} title="交接摘要（人话）">

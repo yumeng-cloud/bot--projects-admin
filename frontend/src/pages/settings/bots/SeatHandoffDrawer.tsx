@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Button, Drawer, Empty, Space, Spin, Tag, Typography, message } from 'antd'
+import { Alert, Button, Collapse, Drawer, Empty, Space, Spin, Tag, Typography, message } from 'antd'
 import {
   CopyOutlined,
   ReloadOutlined,
@@ -215,21 +215,21 @@ export default function SeatHandoffDrawer({ open, onClose, wsId, role, bots, key
             </>
           )}
 
-          <Alert
-            type="warning"
-            showIcon
-            message="换机怎么续（主路径）"
-            description={
-              <ol style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 13 }}>
-                <li>新机打开同一工作区</li>
-                <li>
-                  绑定到同一席位（<Typography.Text code>ymbot seat enter</Typography.Text> / 贴 Key）
-                </li>
-                <li>
-                  <Typography.Text code>ymbot handoff get</Typography.Text> 拉记忆 / Todo / 开放 Issue
-                </li>
-              </ol>
-            }
+          <Collapse
+            size="small"
+            items={[
+              {
+                key: 'migrate',
+                label: '换机怎么续',
+                children: (
+                  <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
+                    <li>新机打开同一工作区</li>
+                    <li>绑定到同一席位（贴 Key / 本机席位进入）</li>
+                    <li>拉取交接摘要</li>
+                  </ol>
+                ),
+              },
+            ]}
           />
 
           <section>

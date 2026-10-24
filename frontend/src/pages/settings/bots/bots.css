@@ -1,0 +1,103 @@
+/* Bot settings density — Feishu/Notion orderly compact
+ * Class contract:
+ *   .acb-page.acb-bots     — page shell
+ *   .acb-bots-lead         — intro paragraph
+ *   .acb-bots-seat-grid    — seat card grid
+ *   .acb-bots-seat-card    — seat Card
+ * Tokens: --acb-bots-* (reuse --acb-* colors). Rhythm 8px; row ≥36; no dead white.
+ */
+
+.acb-page.acb-bots {
+  --acb-bots-section-gap: 12px;
+  --acb-bots-card-pad: 10px 12px;
+  --acb-bots-grid-gap: 8px;
+  --acb-bots-grid-min: 260px;
+  --acb-bots-row-h: 36px;
+}
+
+.acb-page.acb-bots > .acb-page-bar {
+  margin-bottom: 4px;
+  min-height: 28px;
+}
+
+.acb-bots-lead {
+  margin-bottom: 8px !important;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--acb-text-secondary);
+}
+
+.acb-page.acb-bots .ant-collapse {
+  margin-bottom: var(--acb-bots-section-gap);
+  background: transparent;
+  border-color: var(--acb-border);
+}
+
+.acb-page.acb-bots .ant-collapse > .ant-collapse-item > .ant-collapse-header {
+  padding: 8px 12px !important;
+  font-size: 13px;
+  align-items: center;
+}
+
+.acb-page.acb-bots .ant-collapse-content-box {
+  padding: 8px 12px 10px !important;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.acb-page.acb-bots .ant-alert {
+  margin-bottom: var(--acb-bots-section-gap);
+}
+
+.acb-bots-seat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--acb-bots-grid-min), 1fr));
+  gap: var(--acb-bots-grid-gap);
+  margin-bottom: var(--acb-bots-section-gap);
+}
+
+.acb-bots-seat-card.ant-card {
+  border-color: var(--acb-border);
+}
+
+.acb-bots-seat-card .ant-card-body {
+  padding: var(--acb-bots-card-pad) !important;
+}
+
+.acb-bots-seat-card .acb-bots-seat-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--acb-text);
+  line-height: 1.35;
+}
+
+.acb-bots-seat-card .acb-bots-seat-actor {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  min-height: 1.4em;
+}
+
+.acb-bots-seat-card .acb-bots-seat-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--acb-text-tertiary);
+  line-height: 1.35;
+}
+
+.acb-bots-seat-card .acb-bots-seat-actions {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--acb-bots-row-h);
+}
+
+.acb-page.acb-bots .ant-table-tbody > tr > td {
+  height: var(--acb-bots-row-h);
+}
+
+.acb-page.acb-bots .acb-empty-panel {
+  min-height: 120px;
+}
