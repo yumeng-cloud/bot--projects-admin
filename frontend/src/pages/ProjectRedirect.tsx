@@ -1,19 +1,32 @@
 import { useEffect, useState } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
-import { Spin, Result, Button } from 'antd'
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
+import { Button, Empty, Spin, Typography } from 'antd'
+import { PlusOutlined } from '@ant-design/icons'
 import { listProjects } from '../api/projects'
 import { MOCK_PROJECT, preferMock } from '../api/mockData'
+import CreateProjectModal from '../components/common/CreateProjectModal'
 
-/** /w/:wsId/board → 第一个项目的 board */
+/** /w/:wsId/board → 第一个项目的 board；无项目时平静空态 + 本页创建 */
 export default function ProjectRedirect({ tab }: { tab: 'board' | 'issues' | 'cycles' | 'timeline' }) {
   const { wsId = '' } = useParams()
+  const [searchParams] = useSearchParams()
+  const forceEmpty = searchParams.get('qaEmpty') === '1'
   const [projectId, setProjectId] = useState<string | null>(null)
-  const [err, setErr] = useState<string | null>(null)
+  const [empty, setEmpty] = useState(false)
+  const [loadErr, setLoadErr] = useState<string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
+    setEmpty(false)
+    setLoadErr(null)
+    setProjectId(null)
     ;(async () => {
       try {
+        if (forceEmpty) {
+          if (!cancelled) setEmpty(true)
+          return
+        }
         if (preferMock()) {
           if (!cancelled) setProjectId(MOCK_PROJECT)
           return
@@ -22,39 +35,78 @@ export default function ProjectRedirect({ tab }: { tab: 'board' | 'issues' | 'cy
         const first = res.projects?.[0]
         if (!cancelled) {
           if (first) setProjectId(first.id)
-          else setErr('暂无项目，请先创建项目')
+          else setEmpty(true)
         }
       } catch (e: unknown) {
         if (!cancelled) {
-          setErr(e instanceof Error ? e.message : '加载项目失败')
+          setLoadErr(e instanceof Error ? e.message : '加载项目失败')
         }
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [wsId])
+  }, [wsId, forceEmpty])
 
-  if (err) {
-    return (
-      <Result
-        status="warning"
-        title="无法进入项目视图"
-        subTitle={err}
-        extra={
-          <Button type="primary" href={`/w/${wsId}/settings`}>
-            去设置
-          </Button>
-        }
-      />
-    )
+  if (projectId) {
+    return <Navigate to={`/w/${wsId}/projects/${projectId}/${tab}`} replace />
   }
-  if (!projectId) {
+
+  if (loadErr) {
     return (
-      <div style={{ padding: 48, textAlign: 'center' }}>
-        <Spin />
+      <div className="acb-empty-panel" style={{ padding: '48px 16px', textAlign: 'center' }}>
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={loadErr}>
+          <Button onClick={() => window.location.reload()}>重试</Button>
+        </Empty>
       </div>
     )
   }
-  return <Navigate to={`/w/${wsId}/projects/${projectId}/${tab}`} replace />
+
+  if (empty) {
+    return (
+      <div className="acb-empty-panel" style={{ padding: '48px 16px', textAlign: 'center' }}>
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={
+            <span>
+              <Typography.Text strong style={{ display: 'block', fontSize: 15, marginBottom: 4 }}>
+                还没有项目
+              </Typography.Text>
+              <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                创建一个项目后即可打开看板、列表与周期
+              </Typography.Text>
+            </span>
+          }
+        >
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+            创建项目
+          </Button>
+          <div style={{ marginTop: 12 }}>
+            <Link to={`/w/${wsId}/settings`} style={{ fontSize: 12 }}>
+              去设置
+            </Link>
+          </div>
+        </Empty>
+        <CreateProjectModal
+          open={modalOpen}
+          workspaceId={wsId}
+          onClose={() => setModalOpen(false)}
+          onCreated={(p) => {
+            try {
+              localStorage.setItem('ai-collab-board:projectId', p.id)
+            } catch {
+              /* ignore */
+            }
+            setProjectId(p.id)
+          }}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ padding: 48, textAlign: 'center' }}>
+      <Spin />
+    </div>
+  )
 }

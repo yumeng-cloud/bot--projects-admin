@@ -30,7 +30,7 @@ export function useWorkspaceProject(workspaceId: string | undefined) {
         if (!list.length) {
           if (!cancelled) {
             setProjectId(null)
-            setError('暂无项目')
+            setError('还没有项目')
           }
           return
         }

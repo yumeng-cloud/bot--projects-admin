@@ -20,6 +20,8 @@ export type UseCurrentTeamResult = {
   /** Persist + update; call before clearing issue pools on switch. */
   setTeamId: (id: string | null) => void
   loading: boolean
+  /** 重新拉团队列表（建队后刷新） */
+  reload: () => Promise<void>
 }
 
 const CurrentTeamContext = createContext<UseCurrentTeamResult | null>(null)
@@ -50,6 +52,23 @@ export function CurrentTeamProvider({
     [workspaceId],
   )
 
+  const reload = useCallback(async () => {
+    setLoading(true)
+    const saved = readStoredTeamId(workspaceId)
+    try {
+      const { teams: list } = await listTeams(workspaceId)
+      const teamList = list || []
+      setTeams(teamList)
+      const next = resolveTeamId(teamList, saved)
+      setTeamIdState(next)
+      if (next) writeStoredTeamId(workspaceId, next)
+    } catch {
+      setTeams([])
+    } finally {
+      setLoading(false)
+    }
+  }, [workspaceId])
+
   useEffect(() => {
     let cancelled = false
     setLoading(true)
@@ -79,8 +98,8 @@ export function CurrentTeamProvider({
   }, [workspaceId])
 
   const value = useMemo(
-    () => ({ teams, teamId, setTeamId, loading }),
-    [teams, teamId, setTeamId, loading],
+    () => ({ teams, teamId, setTeamId, loading, reload }),
+    [teams, teamId, setTeamId, loading, reload],
   )
 
   return (

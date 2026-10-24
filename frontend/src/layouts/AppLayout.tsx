@@ -26,7 +26,7 @@ const { Header, Sider, Content } = Layout
 
 function AppHeaderTeam() {
   const { wsId } = useParams()
-  const { teams, teamId, setTeamId, loading } = useCurrentTeam(wsId || '')
+  const { teams, teamId, setTeamId, loading, reload } = useCurrentTeam(wsId || '')
   return (
     <span className="acb-header-team">
       <TeamPoolSelect
@@ -34,6 +34,10 @@ function AppHeaderTeam() {
         teamId={teamId}
         onChange={(id) => setTeamId(id)}
         disabled={loading || !wsId}
+        workspaceId={wsId}
+        onTeamCreated={() => {
+          void reload()
+        }}
       />
     </span>
   )
