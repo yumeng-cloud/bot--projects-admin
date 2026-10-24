@@ -116,6 +116,8 @@ POST …/bots  → 201 { member, token }   // 事务：成员 + mint；或 api-k
 
 ## 进度注记
 
+- 2026-10-24 23:14 · 并行另开 [`NEXT_WAVE_DEBT_SEAT_VISIBILITY.md`](./NEXT_WAVE_DEBT_SEAT_VISIBILITY.md)：建队 Toast 有 N 空席但页仍「尚未绑定席位」——空席必须可见。
+
 - 2026-10-24 23:13 · 总指挥/Go：api-keys 已回 token；**首刀改 React F2+F4**；Go F1 后置按需。  
 - 2026-10-24 23:11 · 初稿。两码不合并；首跑可嵌 ymk_。
 
