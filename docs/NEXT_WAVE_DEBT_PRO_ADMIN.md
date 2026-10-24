@@ -97,7 +97,7 @@
 
 | 角色 | 职责 |
 | --- | --- |
-| **视觉总监** | **首刀**：设置+超管台有序密度基线（分区/节奏/禁区），教审图；抽 A/F/E |
+| **视觉总监** | **首刀已落**：[`PRO_ADMIN_VISUAL_BASELINE.md`](./PRO_ADMIN_VISUAL_BASELINE.md)；教审图；抽 A/F/E |
 | **UI 视觉·审图** | 按 playbook 自审箱截，交总监复核 |
 | **React 前端** | A–F 主落地 + 箱截 |
 | **Issue 域后端** | C2 批量若缺 API |
@@ -139,7 +139,8 @@
 ## 进度注记
 
 - 2026-10-24 21:45 · 债文定稿；WHEEL 已关，本波接上。首刀见派工「视觉总监」。
+- 2026-10-24 21:50 · 视觉总监落盘有序密度基线 [`PRO_ADMIN_VISUAL_BASELINE.md`](./PRO_ADMIN_VISUAL_BASELINE.md)；**放行 React 开 A（IA壳）+ F（设置密度）**。
 
 ## 关单进度
 
-**进行中** · 债已落；待视觉基线 → React A/F 起。
+**进行中** · 视觉基线已落 · **React 可开 A/F**。
