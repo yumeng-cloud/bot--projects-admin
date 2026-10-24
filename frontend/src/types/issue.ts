@@ -59,7 +59,11 @@ export interface Issue {
   priority: IssuePriority
   estimate: number | null
   assignee_id: string | null
+  /** 嵌套负责人；与 assignee_id 并存，可空 */
+  assignee?: MemberRef | null
   reporter_id: string | null
+  /** 嵌套报告人；与 reporter_id 并存，可空 */
+  reporter?: MemberRef | null
   cycle_id: string | null
   parent_id: string | null
   board_order: number

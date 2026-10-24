@@ -229,9 +229,16 @@ export async function listProjectMembers(
 }
 
 
+/** N4：POST …/issues/{id}/notify 同步扇出结果 */
+export type IssueNotifyResult = {
+  delivered: number
+  failed: number
+  event: string
+}
+
 /** N4：同步扇出 issue.assigned；失败由调用方 Toast，不回滚建单 */
 export function notifyIssue(workspaceId: string, issueId: string) {
-  return api<{ delivered: number; failed: number; event: string }>(
+  return api<IssueNotifyResult>(
     `/workspaces/${workspaceId}/issues/${issueId}/notify`,
     { method: 'POST', body: JSON.stringify({}), skipToast: true },
   )

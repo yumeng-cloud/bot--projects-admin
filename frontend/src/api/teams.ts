@@ -40,6 +40,8 @@ export type TeamSeat = {
   claim?: TeamSeatClaim | null
 }
 
+export type InviteStatus = 'active' | 'revoked' | 'expired' | 'exhausted'
+
 export type TeamInvite = {
   id: string
   team_id: string
@@ -55,8 +57,8 @@ export type TeamInvite = {
   use_count?: number
   expires_at?: string | null
   revoked_at?: string | null
-  /** active | revoked | expired | exhausted */
-  status?: string
+  /** 派生态，不落库 */
+  status?: InviteStatus | string
   created_at?: string
 }
 
