@@ -1,0 +1,93 @@
+=== SEAT_V2_GUIDE V2G-4 · QA spotcheck（产品正式开验细则并入 Accept）===
+time_AsiaShanghai: 2026-10-25 02:31 Asia/Shanghai (box)
+result: Overall=PASS†
+evidence_file: docs/qa-shots/SEAT_V2_GUIDE-V2G4-qa-spotcheck-20261025.txt
+debt: docs/NEXT_WAVE_DEBT_SEAT_V2_GUIDE.md
+HEAD_at_run: 318e70a (318e70add02fa5ee76752238dde6fbadad8f6754)
+  ancestors: 6cd3fd3 (FE V2G-1～3) YES
+feat_fe: 6cd3fd3825c3bba36b6342a9fad476d8376a6848 feat(fe): Soft† V2G 通码踩停工席人话引导（禁静默补）
+docs_open_qa: 318e70add02fa5ee76752238dde6fbadad8f6754 docs(ux): 勾 Soft† V2G-1～V2G-3；开 QA V2G-4
+API: http://127.0.0.1:8080 healthz ok
+  binary: /tmp/ai-board-server mtime 2026-10-25 02:19 Asia/Shanghai (invite_join.go == f7048a4; 本刀未改 Go)
+FE: source Soft† (6cd3fd3) + 箱截 seat-v2-guide.png
+actor: admin@yumeng.tech / Admin123! (JWT) + redeem no-Bearer newcomers
+WS: ba1481c49148aba9553ba3811406b69f
+TEAM: 632a53d15ff684abfddea46ac1ada0ef (V2G-Accept-023043 · template_key=default · 5 seats)
+Frozen (not verified): PRO_ADMIN C2–D / E2 / G（本波已关；本刀不重开）
+
+########## Method ##########
+1. git fetch/status; confirm 6cd3fd3 ancestor of HEAD=318e70a
+2. git show 6cd3fd3 — only FE + debt + seat-v2-guide.png（无 .go）
+3. Read debt Accept 细则 + JoinTeamWizard / teams.ts 源码
+4. Read(PNG) docs/qa-shots/seat-v2-guide.png 对照文案常量
+5. Soft† live API matrix /tmp/v2g_soft_matrix.py → /tmp/v2g_matrix.json
+6. grep BE resolveBootstrapSeat / skipBind；git diff f7048a4..HEAD invite_join.go = empty
+7. go test botmem V2/refill/active paths；FE humanize regex 套件
+
+########## Product Accept checklist（并入）##########
+[1] PASS† — 通码 redeem 未绑 + 有 stopped|left → Alert「普通入场码不能自动顶停工席…补位入场码」
+    Soft† live:
+      INVITE allow_expand_seat=false（无 seat_slug）→ ymt_…
+      REDEEM_NO_BEARER → HTTP 201 seat_id=null member=d99e1648… token_issued=true
+      roster 全 stopped bound=None；silent_bind=false
+    FE 源码:
+      applyUnboundRefillGuide: !res.seat_id && rosterHasRefillableSeat → setRefillGuide(true) + step=roster
+      Alert message=SEAT_REFILL_GUIDE_TITLE「普通入场码不能自动顶停工席」
+      description=SEAT_REFILL_GUIDE_DESC「请向管理员要该席的补位入场码（班底页 · 停工席 · 复制补位码）；持补位码入场即占该席」
+    箱截: seat-v2-guide.png 选席步顶部 warning Alert 同文（见 [3]）
+
+[2] PASS† — 409 显式绑席 → 人话（非技术原文）
+    BE 仍存 Conflict「补位须走显式绑席，redeem 不自动补位」(invite_join.go:470,511 pickAndBindEmptySeat)
+    FE: isRefillNeedsExplicitBind / humanizeRefillBindError → Toast warning 人话 TITLE。DESC
+      wired in onRedeem catch + onPickSeat catch（JoinTeamWizard）
+    humanize_suite (regex mirror): 
+      409「补位须走显式绑席…」→ 人话 PASS
+      409「该席位占用中，禁止顶替」→ passthru（不误伤）PASS
+    Soft† live note: 主路径通码踩停工席现为 201+seat_id=null（skipBind），非整段 409；
+      本刀「若回 409 则改写」防御已接线。active 占用仍 409「该席位占用中，禁止顶替」PASS（人话、非技术句）
+
+[3] PASS† — 箱截对照 docs/qa-shots/seat-v2-guide.png
+    size=67484 B · mtime 2026-10-25 02:25 Asia/Shanghai · in feat 6cd3fd3
+    Read(PNG): 加入班底抽屉 · ②选席；黄 Alert 标题/描述与常量逐字一致；
+      席卡 Tag：占用中 / 可补位(橙) / 空席(绿)；backdrop 注「通码 redeem 未绑席，且有停工席 → Alert 人话引导（禁静默补）」
+    注: 箱截为 HTML 种子帧（/tmp/v2g-shot/seat-v2-guide.html）非 live Vite；文案与源码常量一致 → Soft† 接受（同 B3/R4 源码+箱截惯例）
+
+[4] PASS — **确认未静默补**：BE skipBind 未改（本刀不应改 Go）
+    git show 6cd3fd3 / 318e70a：无任何 .go
+    git diff f7048a4..HEAD -- backend/internal/services/botmem/invite_join.go → 0 bytes
+    resolveBootstrapSeat 仍：
+      - 未锚定通码 + stopped|left → skipBind=true（禁静默补）
+      - 锚定 seat_slug|seat id + stopped|left|open → skipBind=false（SEAT_REFILL_BIND 保留）
+      - active+bound → 409「该席位占用中，禁止顶替」
+    Soft† live [1] 复现：通码 201 未绑、stopped 全未 bound
+    go test ./internal/services/botmem/ -run 'TestRedeemJoinV2NoAutoFillLeftStopped|TestRedeemJoinAnchoredRefillBindStopped|TestRedeemJoinActiveNoReplace' → ok
+
+########## Soft† live API (summary) ##########
+fixtures: /tmp/v2g_matrix.json · /tmp/v2g_soft_matrix.py (box; not committed)
+V2G1_unbound_no_silent: PASS (201 seat_id=null; stopped_bound=[])
+active_409: PASS (409「该席位占用中，禁止顶替」)
+V2G2_live_409_explicit_bind: N/A-primary-path-is-skipBind-201（改写仍源码 PASS†）
+
+########## FAIL redlines hit? ##########
+NONE
+- Alert 人话缺失 / 技术原文露脸: NO
+- 通码静默补 stopped|left: NO
+- 本刀改 Go / skipBind: NO
+- 箱截文案与常量不一致: NO
+
+########## SUMMARY ##########
+  [1] Alert 通码未绑+停工席: PASS†
+  [2] 409 显式绑席人话改写: PASS†
+  [3] 箱截 seat-v2-guide.png: PASS†
+  [4] BE skipBind 未改 / 未静默补: PASS
+  unit_tests: PASS
+OVERALL: PASS†
+
+defects_to_open: none
+  (可选债非挡: Soft† live 难打到 pickAndBindEmptySeat 的「补位须走显式绑席」409——主路径已是 skipBind 201+Alert；改写保留防御)
+
+SKIP: PRO_ADMIN 重开 / V6 多签 / 解冻静默补
+
+Verdict for 产品+React+总指挥
+-----------------------------
+SEAT_V2_GUIDE V2G-4 PASS† @6cd3fd3+318e70a — 通码未绑踩停工席 Alert 人话；409 显式绑席 FE 改写；箱截对照绿；BE skipBind/invite_join 本刀未动且 Soft† 未静默补。可产品 V2G-5 关单。
