@@ -208,6 +208,7 @@ P1（search / cycle CLI / role / todo）按规格不阻塞 P0；Cycle **产品�
 | 日期 | 说明 |
 |------|------|
 | 2026-10-24 | 初版验收；同步标注 `BOT_MCP_CLI.md` §3「P0 已落地」；明确不列 GitHub Projects 时间线缺口 |
+| 2026-10-24 | 产品体验：§C F1–F10 联调关单（QA Overall PASS · attach-c-close-3a3e294 + I3 箱截） |
 | 2026-10-24 | 产品体验：React 路径对齐，勾齐 §C F1–F10 |
 | 2026-10-24 | 产品体验：勾 §C 后端项 F1/F4–F8/F10（API）+ F9 UI；F3/FE 联调待齐 |
 | 2026-10-24 | 产品体验：复验勾掉 B1/C6（React 已修 max-width 520 + 窄屏 min(100vw,560)）；附件 P0 继续盯 |

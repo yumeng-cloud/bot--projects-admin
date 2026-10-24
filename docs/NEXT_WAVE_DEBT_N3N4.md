@@ -46,4 +46,4 @@
 | **N3 / J4 P0.1** | [x] **关** | `3c698b5`：stop→`force` bind → `GET …/activities` `action=seat.force_bind` 人话 comment；开放 Issue `GET …/comments` 同人话（Go 箱证 + 用户放行推 main） |
 | **N4** | [x] **关** | `c947a76` + `b0e4dc0` · `docs/qa-shots/N4-dispatch-push.png`（立即推送已勾 + 说明） |
 
-**清债**：J4 P0.1 + J7 立即推送 + 巡检 P0.5 + **I3 箱截**（`c749195`/`I3-*.png`）已清。仍欠：§C F1–F10 QA 硬刷关单。
+**清债**：J4/J7/巡检/I3/**§C F1–F10** 已清。下一包：[`NEXT_WAVE_DEBT_T2.md`](./NEXT_WAVE_DEBT_T2.md)。

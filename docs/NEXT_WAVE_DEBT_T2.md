@@ -1,0 +1,37 @@
+# 下一小包 · T2 换机完整箱验
+
+> 2026-10-24 18:00 Asia/Shanghai · 产品体验  
+> 前置已关：I3/§C · N3/N4 · 巡检 P0.5 · 空海密度 · FE T3 冲突专面  
+> **本包只箱验剧本，不扩模板 T6/T7**
+
+## 为什么是这一刀
+
+| 已关 | 仍真缺口 |
+| --- | --- |
+| T3 FE 专面（`T3-conflict.png`） | **T2**：机 B 绑同一席后，**仅** `handoff get`（无 import）续机 A 的 focus / Todo / 开放 Issue |
+| H1–H3 同 Key 换会话续命 | 缺「换 Key/换机绑同席」端到端箱证写入 `BOT_TEAM_SEAT` T2 |
+| T11 API 迁绑单活 | 产品勾仍欠 T2 一天剧本 |
+
+## 最小范围
+
+| ID | 标准 | 谁 |
+| --- | --- | --- |
+| **V1** | 机 A（Key₁）进席 → 写 `last_focus` + 至少 1 条开放 Issue（assignee=me）+ 可选 todo | **Bot 记忆** / **QA** |
+| **V2** | 机 A leave 或停会话；机 B（Key₂）**绑同一席**（migrate/enter 合法路径，非 force 顶活跃） | 同上 |
+| **V3** | 机 B **仅** `ymbot handoff get`（禁 import）可见 focus + 开放 Issue；证据 txt | 同上 |
+| **V4** | 产品勾 `BOT_TEAM_SEAT` **T2**；截/日志落 `docs/qa-shots/T2-handoff-migrate-*.txt`（可选 FE 截） | **产品体验** |
+
+## 明确不做
+
+- T6 团队共享 pins / T7 模板创建向导（另开）  
+- 重写 handoff / 改续命权威  
+- 活跃席 force 顶替（仍禁）
+
+## 成功
+
+- `BOT_TEAM_SEAT_P0` T2 `[x]` + 本文件下方产品勾  
+- 证据可复跑
+
+## 产品勾选
+
+- [ ] V1–V3 交件 · 产品勾 T2 · 关本包

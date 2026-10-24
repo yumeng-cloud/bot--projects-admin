@@ -1,7 +1,7 @@
 # 附件 I3 · 箱 5174 产品关单清单
 
 > 2026-10-24 17:46 Asia/Shanghai · 产品体验  
-> 依据：`ACCEPTANCE_UX_BOT.md` §C F1–F10 代码已齐；`PRODUCT_SUITE_P0` **I3** 产品箱截已关（§C 全表仍等 QA）  
+> 依据：`ACCEPTANCE_UX_BOT.md` §C；**I3 箱截 + §C F1–F10 均已产品勾关**  
 > **本单只箱截关单，禁止重写上传业务**  
 > **React 入口**：本文件 A1–A5（`docs/qa-shots/I3-*.png`）· 5174 热更自截  
 > QA 备测全表见 `ATTACHMENT_C_CLOSE_CHECKLIST.md`（F1–F10）；产品关 I3 以本五张为准
@@ -34,7 +34,7 @@
 - [x] A1–A5 箱截齐 · 产品勾 · 关 I3（2026-10-24 17:58 Asia/Shanghai）
   - React `c749195`（A4 热修 `a41e976`）· `docs/qa-shots/I3-*.png`
   - 目视：A1 图+列表；A2 pdf 蓝链；A3 lightbox；A4 评论挂图；A5「不支持的文件类型」Toast、列表不脏
-  - §C F1–F10 全表仍由 QA 按 `ATTACHMENT_C_CLOSE_CHECKLIST` 硬刷，不挡本 I3 产品勾
+  - §C F1–F10 已 Overall PASS（`ATTACHMENT_C_CLOSE_CHECKLIST` · attach-c-close-3a3e294）
 
 
 ## QA 复验 · 2026-10-24 17:58 Asia/Shanghai

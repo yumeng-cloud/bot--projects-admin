@@ -152,7 +152,7 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 |----|------|------|
 | **T1** | 设置中存在 **席位** 叙事（角色名 + 绑定态），不再只有裸 Key 列表 | [x] `73456bc` · `docs/qa-shots/seat-t1-roster.png` |
 | **T2** | 机 B：**绑定同一席位** 后，仅 `handoff get`（无 import 文件）能续机 A 的 focus / Todo / 开放 Issue | [ ] |
-| **T3** | 迁绑 **单活**：第二机绑定有冲突提示；确认后旧绑失效或只读 | [ ] |
+| **T3** | 迁绑 **单活**：第二机绑定有冲突提示；确认后旧绑失效或只读 | [x] FE 专面 `T3-conflict.png`（禁顶替+换空席/申请新席/返回；无 force）· 见 `BOT_FE_ONBOARD_F1_T3_P0` |
 | **T4** | 席位抽屉可见交接摘要（人话版 handoff）；「交接卡」不泄露完整 Key | [x] `seat-t4-handoff.png` · 复制交接卡明示无完整 Key |
 | **T5** | 换机引导文案：主路径 = 绑席位 → get；export/import 标为可选备份/救场 | [x] 顶栏「换机怎么续」+ 详情页「可选备份/救场」· `seat-t5-migrate-guide.png` |
 | **T6** | （P0.5）团队切换后 Issue 池与席位组隔离；共享 pins 与席位私有 memory 不串 | [ ] 契约见 [`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) |
@@ -170,9 +170,9 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 **关单条件（API/通道 P0）**：**T9 + T10 + T8**（建议连带 T2/T3/T11）全勾即可先关后端通道单。  
 **关单条件（含 FE）**：另加 **T1、T4、T5**。T6/T7 另开子单；§3 挂载点已写清。
 
-> **2026-10-24 FE 席位 P0（T1/T4/T5）已关**；整单仍欠 T3（单活冲突 UI）。
+> **2026-10-24 FE 席位 P0（T1/T3/T4/T5）已关**；整单仍欠 **T2** 换机完整箱验。
 
-> **2026-10-24 通道 P0 已关**：T8–T11。**FE T1/T4/T5 已勾**（`73456bc`）。残余：T3 单活冲突专面；T2 完整换机箱验。④ force comment → **N3 已清**。
+> **2026-10-24 通道 P0 已关**：T8–T11。**FE T1/T3/T4/T5 已勾**。残余：**T2** 完整换机箱验。force comment → **N3 已清**。
 
 ---
 
@@ -185,8 +185,8 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 - [x] Go teams API 合入 main `0968a9a`  
 - [x] **通道 P0 关单**：T8–T11 已勾（证据 `/tmp/ymbot_t9_t10_evidence.txt` · 2026-10-24）  
 - [x] FE 席位 UI **T1/T4/T5**（`73456bc`）  
-- [ ] **T3** 单活冲突专面（React 已声明后置）  
-- [ ] T2 换机一天完整箱验（可随 T3）  
+- [x] **T3** 单活冲突专面（FE 已关 · `T3-conflict.png`）  
+- [ ] **T2** 换机一天完整箱验 → 见 [`NEXT_WAVE_DEBT_T2.md`](./NEXT_WAVE_DEBT_T2.md)  
 - [ ] T6/T7 另开（最小说明已落 [`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md)）  
 
 **已定稿可开发。** 实现中勿刷屏用户；进度回总指挥 / 产品体验即可。  
