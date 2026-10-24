@@ -131,7 +131,8 @@ func (s *Service) bumpInviteUse(inviteID string) error {
 }
 
 // RedeemInviteAndJoin HUMAN_ONBOARD：无 Bearer bootstrap / ymk_ 幂等 / 人类只定位。
-// V1：同码无钥第二次拒造人；V2：不自动补 left/stopped；V6：一席一码+事务选席。
+// V1：同码无钥第二次拒造人；V2：未锚定通码不静默补 left/stopped；
+// SEAT_REFILL_BIND：码已锚定 seat_slug/seat 且目标 stopped|left|open → 直接绑；V6：一席一码+事务选席。
 func (s *Service) RedeemInviteAndJoin(in RedeemJoinInput) (*models.TeamInviteRedeemResult, error) {
 	row, err := s.loadInviteByCode(in.Code)
 	if err != nil {
@@ -255,7 +256,7 @@ func (s *Service) redeemBootstrap(row *inviteRow, out *models.TeamInviteRedeemRe
 		return nil, err
 	}
 
-	// 预检席位：active 占用 → 409；left/stopped → V2 不绑；open 空席 → 绑
+	// 预检席位：active 占用 → 409；锚定码 stopped|left|open → 绑；未锚定 left/stopped → V2 不绑
 	seatID, roleSlug, skipBind, perr := s.resolveBootstrapSeat(tx, row, in)
 	if perr != nil {
 		return nil, perr
@@ -307,8 +308,12 @@ func (s *Service) redeemBootstrap(row *inviteRow, out *models.TeamInviteRedeemRe
 	return out, nil
 }
 
-// resolveBootstrapSeat 选席：仅 open 空席可绑；active 占用 → 409；left/stopped → V2 跳过绑（skipBind）。
+// resolveBootstrapSeat 选席：
+// - 码锚定 seat_slug / seat id 且目标 stopped|left|open → 可绑（SEAT_REFILL_BIND，非 skipBind）
+// - 未锚定通码：仅 open 空席可绑；left/stopped → V2 skipBind（禁静默补）
+// - active 占用 → 409 禁顶替
 func (s *Service) resolveBootstrapSeat(tx *sql.Tx, row *inviteRow, in RedeemJoinInput) (seatID, roleSlug string, skipBind bool, err error) {
+	anchored := strings.TrimSpace(row.SeatSlug) != "" || strings.TrimSpace(in.SeatID) != ""
 	wantSlug := strings.TrimSpace(strings.ToLower(in.Role))
 	if wantSlug == "" {
 		wantSlug = strings.TrimSpace(strings.ToLower(row.SeatSlug))
@@ -333,7 +338,10 @@ func (s *Service) resolveBootstrapSeat(tx *sql.Tx, row *inviteRow, in RedeemJoin
 			return "", "", false, apperr.Conflict("该席位占用中，禁止顶替")
 		}
 		if st == models.SeatStatusStopped || st == models.SeatStatusLeft {
-			// V2：不自动补位
+			// 显式 seat id 锚定 → 直接绑；否则 V2 不静默补
+			if anchored {
+				return sid, slug, false, nil
+			}
 			return sid, slug, true, nil
 		}
 		if bound.Valid && bound.String != "" {
@@ -366,7 +374,30 @@ func (s *Service) resolveBootstrapSeat(tx *sql.Tx, row *inviteRow, in RedeemJoin
 		return "", "", false, err
 	}
 
-	// 若码指定 slug：先看该席状态
+	// 锚定 seat_slug：只盯该席（stopped|left|open 可绑；active 409）
+	anchorSlug := strings.TrimSpace(strings.ToLower(row.SeatSlug))
+	if anchorSlug != "" {
+		for _, c := range all {
+			if !strings.EqualFold(c.slug, anchorSlug) {
+				continue
+			}
+			bound := c.bound.Valid && c.bound.String != ""
+			if c.status == models.SeatStatusActive && bound {
+				return "", "", false, apperr.Conflict("该席位占用中，禁止顶替")
+			}
+			if c.status == models.SeatStatusStopped || c.status == models.SeatStatusLeft ||
+				(!bound && c.status == models.SeatStatusOpen) {
+				return c.id, c.slug, false, nil
+			}
+			if bound {
+				return "", "", false, apperr.Conflict("该席位已绑定其他成员")
+			}
+			// 其它态：仍允许造人发钥，不绑
+			return c.id, c.slug, true, nil
+		}
+	}
+
+	// 未锚定：若码/入参带 slug 提示，先看该席（active 409；stopped|left → V2 skip）
 	if wantSlug != "" {
 		for _, c := range all {
 			if strings.EqualFold(c.slug, wantSlug) {
@@ -375,7 +406,7 @@ func (s *Service) resolveBootstrapSeat(tx *sql.Tx, row *inviteRow, in RedeemJoin
 					return "", "", false, apperr.Conflict("该席位占用中，禁止顶替")
 				}
 				if c.status == models.SeatStatusStopped || c.status == models.SeatStatusLeft {
-					return c.id, c.slug, true, nil // V2
+					return c.id, c.slug, true, nil // V2 通码不静默补
 				}
 				if !bound && c.status == models.SeatStatusOpen {
 					return c.id, c.slug, false, nil
@@ -407,7 +438,7 @@ func (s *Service) resolveBootstrapSeat(tx *sql.Tx, row *inviteRow, in RedeemJoin
 		}
 	}
 
-	// 无可绑空席：仍允许造人发钥（不绑）；left/stopped 不静默补
+	// 无可绑空席：仍允许造人发钥（不绑）；未锚定 left/stopped 不静默补
 	return "", wantSlug, true, nil
 }
 
@@ -422,6 +453,7 @@ func (s *Service) pickAndBindEmptySeat(row *inviteRow, memberID string, in Redee
 			return &se, nil
 		}
 	}
+	anchored := strings.TrimSpace(row.SeatSlug) != "" || strings.TrimSpace(in.SeatID) != ""
 	wantSlug := strings.TrimSpace(strings.ToLower(in.Role))
 	if wantSlug == "" {
 		wantSlug = strings.TrimSpace(strings.ToLower(row.SeatSlug))
@@ -434,12 +466,37 @@ func (s *Service) pickAndBindEmptySeat(row *inviteRow, memberID string, in Redee
 			if se.ID == sid {
 				st := normalizeSeatStatus(se.Status)
 				if st == models.SeatStatusStopped || st == models.SeatStatusLeft {
-					return nil, apperr.Conflict("补位须走显式绑席，redeem 不自动补位")
+					if !anchored {
+						return nil, apperr.Conflict("补位须走显式绑席，redeem 不自动补位")
+					}
+					// 锚定 seat → 直接绑停工/离职席
 				}
 				return s.BindSeat(row.WorkspaceID, row.TeamID, se.ID, memberID, force)
 			}
 		}
 		return nil, apperr.NotFound("席位不存在")
+	}
+	// 锚定 seat_slug：直绑该席（stopped|left|open）；active 仍 409
+	anchorSlug := strings.TrimSpace(strings.ToLower(row.SeatSlug))
+	if anchorSlug != "" {
+		for i := range roster {
+			se := &roster[i]
+			if !strings.EqualFold(se.RoleSlug, anchorSlug) {
+				continue
+			}
+			st := normalizeSeatStatus(se.Status)
+			bound := se.BoundMemberID != nil && *se.BoundMemberID != ""
+			if st == models.SeatStatusActive && bound {
+				return nil, apperr.Conflict("该席位占用中，禁止顶替")
+			}
+			if st == models.SeatStatusStopped || st == models.SeatStatusLeft ||
+				(!bound && st == models.SeatStatusOpen) {
+				return s.BindSeat(row.WorkspaceID, row.TeamID, se.ID, memberID, force)
+			}
+			if bound {
+				return nil, apperr.Conflict("该席位已绑定其他成员")
+			}
+		}
 	}
 	var openEmpty *models.TeamSeat
 	for i := range roster {
