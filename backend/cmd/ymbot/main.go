@@ -34,21 +34,25 @@ func printHelp() {
 主航线（唯一）: team pull → seat enter → handoff get → 干活
   术语: 模板角色 slug = 席位（seat / role_slug）
   MCP:  board_team_pull → board_seat_enter → board_handoff_get
+  空手上场: team join --code <ymt_…>（= redeem→pull→enter→handoff；封装非第二航线）
+  MCP 封装: board_team_join
   说明书: bot-team-template/playbook/看板席位迁绑.md · templates/ymbot/
-  契约:   docs/BOT_TEAM_SEAT_P0.md
+  契约:   docs/BOT_TEAM_SEAT_P0.md · docs/BOT_TEAM_JOIN_KEY_P0.md
 whoami 可前置自检；migrate enter = seat enter（别名，非第二条主航线）。
 进度写 memory/todo/comment（服务端真相源）。export/import 仅换机备份/救场。
 
 环境:
   YMBOT_API_URL           默认 http://127.0.0.1:8080
   YMBOT_API_KEY           必填，Bearer ymk_…
-  YMBOT_WORKSPACE_ID      必填
+  YMBOT_WORKSPACE_ID      必填（team join 可由入场码 redeem 写入）
   YMBOT_MEMBER_ID         可选（缺省用 Key 绑定 / bots/me）
   YMBOT_IDEMPOTENCY_KEY   可选；写操作未传 --idempotency-key 时使用
   YMBOT_AUTOSAVE          可选=1；claim/comment/memory set 成功后 stderr 提醒「已写服务端」（非 daemon）
 
 命令（主航线优先）:
   team pull --uuid <team_uuid>              拉班底（幂等 ensure roster；不清 memory）
+  team join --code <ymt_…> [--role] [--new-seat] [--force]
+                                            空手上场封装；活跃席禁顶替；--force 仅停工/离职脏绑
   seat enter --role <slug> [--team] [--force]
                                             进席（slug=席位；有 --team 走 bind；409 禁瞎抢）
   handoff get [--full|--id|--json]          续命权威：服务端摘要，无文件

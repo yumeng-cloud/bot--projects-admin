@@ -13,7 +13,12 @@ import (
 
 func runCLI(args []string) error {
 	c := botclient.New(botclient.LoadConfig())
-	if err := c.Require(); err != nil {
+	// team join：workspace 由入场码 redeem 写入，仅需 API Key
+	if args[0] == "team" && len(args) > 1 && args[1] == "join" {
+		if err := c.RequireAPIKey(); err != nil {
+			return err
+		}
+	} else if err := c.Require(); err != nil {
 		return err
 	}
 	switch args[0] {
@@ -564,7 +569,7 @@ func cmdHandoff(c *botclient.Client, args []string) error {
 
 func cmdTeam(c *botclient.Client, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("用法: ymbot team pull --uuid <team_uuid> [--full|--id|--json]\n主航线①：按团队 UUID 拉班底（slug=席位；幂等 ensure；不清 memory）\n见 bot-team-template/playbook/看板席位迁绑.md")
+		return fmt.Errorf("用法: ymbot team pull|join …\njoin = 空手上场（redeem→pull→enter→handoff get）；主航线仍可写 pull→enter→handoff\n见 bot-team-template/playbook/看板席位迁绑.md")
 	}
 	switch args[0] {
 	case "pull":
@@ -594,9 +599,44 @@ func cmdTeam(c *botclient.Client, args []string) error {
 		}
 		printView(opts, botclient.FormatTeamRosterText(items), items)
 		return nil
+	case "join":
+		return cmdTeamJoin(c, args[1:])
 	default:
-		return fmt.Errorf("未知 team 子命令: %s（pull）", args[0])
+		return fmt.Errorf("未知 team 子命令: %s（pull|join）", args[0])
 	}
+}
+
+func cmdTeamJoin(c *botclient.Client, args []string) error {
+	fs := newFS("team join")
+	code := fs.String("code", "", "团队入场码 ymt_…")
+	role := fs.String("role", "", "可选目标席位 slug；活跃占用 409 禁顶替")
+	newSeat := fs.String("new-seat", "", "无空席且允许扩编时的新席 slug（默认 role_hint 或 seat-N）")
+	force := fs.Bool("force", false, "仅 stopped|left 清脏绑；活跃席即使传也不顶替")
+	idKey := fs.String("idempotency-key", "", "")
+	full, ids, asJSON := viewFlags(fs)
+	if err := fs.Parse(reorderFlags(args)); err != nil {
+		return err
+	}
+	if strings.TrimSpace(*code) == "" {
+		return fmt.Errorf("用法: ymbot team join --code <ymt_…> [--role <slug>] [--new-seat <slug>] [--force]\n空手上场：redeem→team pull→seat enter→handoff get；身份靠 YMBOT_API_KEY；活跃席禁 force")
+	}
+	applyIDKey(c, *idKey)
+	v, err := c.TeamJoin(botclient.TeamJoinOpts{
+		Code:    *code,
+		Role:    *role,
+		NewSeat: *newSeat,
+		Force:   *force,
+	})
+	if err != nil {
+		return err
+	}
+	opts := optsFrom(*full, *ids, *asJSON)
+	if opts.Full || opts.JSON {
+		printView(opts, botclient.MarshalView(v), v)
+		return nil
+	}
+	printView(opts, botclient.FormatTeamJoinText(v), v)
+	return nil
 }
 
 func cmdMigrate(c *botclient.Client, args []string) error {

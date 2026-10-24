@@ -151,6 +151,9 @@ func mcpTools() []map[string]any {
 		{"name": "board_team_pull", "description": "主航线①：按团队 UUID 拉班底（slug=席位；幂等 ensure；不清 memory）", "inputSchema": obj(map[string]any{
 			"team_uuid": str, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "team_uuid")},
+		{"name": "board_team_join", "description": "空手上场封装：redeem(ymt_)→team pull→seat enter→handoff get；活跃席禁顶替；身份靠 API Key", "inputSchema": obj(map[string]any{
+			"code": str, "role": str, "new_seat": str, "force": bol, "idempotency_key": idKey, "full": full, "ids": ids,
+		}, "code")},
 		{"name": "board_seat_enter", "description": "主航线②：进席（role slug=席位；有 team_uuid 走 bind；409 禁瞎抢）", "inputSchema": obj(map[string]any{
 			"role": str, "team_uuid": str, "force": bol, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "role")},
@@ -197,7 +200,11 @@ func viewDetailFromArgs(a map[string]any) botclient.ViewOpts {
 }
 
 func callTool(c *botclient.Client, name string, args map[string]any) (string, error) {
-	if err := c.Require(); err != nil {
+	if name == "board_team_join" {
+		if err := c.RequireAPIKey(); err != nil {
+			return "", err
+		}
+	} else if err := c.Require(); err != nil {
 		return "", err
 	}
 	if k := strArg(args, "idempotency_key"); k != "" {
@@ -460,6 +467,24 @@ func callTool(c *botclient.Client, name string, args map[string]any) (string, er
 			return "", err
 		}
 		return botclient.FormatTeamRosterText(items), nil
+	case "board_team_join":
+		code := strArg(args, "code")
+		if code == "" {
+			return "", fmt.Errorf("需要 code（ymt_… 团队入场码）")
+		}
+		v, err := c.TeamJoin(botclient.TeamJoinOpts{
+			Code:    code,
+			Role:    strArg(args, "role"),
+			NewSeat: strArg(args, "new_seat"),
+			Force:   boolArg(args, "force"),
+		})
+		if err != nil {
+			return "", err
+		}
+		if opts.Full {
+			return botclient.MarshalView(v), nil
+		}
+		return botclient.FormatTeamJoinText(v), nil
 	case "board_seat_enter":
 		team := strArg(args, "team_uuid")
 		if team == "" {

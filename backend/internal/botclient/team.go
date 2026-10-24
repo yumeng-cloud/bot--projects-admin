@@ -745,3 +745,407 @@ func (c *Client) ResolveTeamExpandIssueRef(ref string) (string, error) {
 func (c *Client) TeamPull(teamID string) (json.RawMessage, error) {
 	return c.TeamRosterEnsure(teamID, nil)
 }
+
+// ---- team join（空手上场封装：redeem → pull → enter → handoff get）----
+
+// TeamInviteRedeemResult G3 兑换结果；404 时通道提示等服务端。
+type TeamInviteRedeemResult struct {
+	WorkspaceID     string
+	TeamID          string
+	AllowExpandSeat bool
+	RoleHint        string
+	TemplateKey     string
+	Raw             json.RawMessage
+}
+
+// TeamJoinOpts 通道 join 选项。
+type TeamJoinOpts struct {
+	Code    string // ymt_…
+	Role    string // 可选目标 slug
+	NewSeat string // 扩编时新席 slug（优先于 role_hint / seat-N）
+	Force   bool   // 仅 stopped|left 且非活跃时可清脏绑；活跃绝不 force
+}
+
+// TeamSeatCreateOpts G2 加新席。
+type TeamSeatCreateOpts struct {
+	RoleSlug    string
+	DisplayName string
+	PlaybookRef string
+}
+
+// errWaitG2G3 把 404 收成等人话。
+func errWaitG2G3(ae *APIError, which string) error {
+	msg := strings.TrimSpace(ae.Message)
+	switch which {
+	case "redeem":
+		if msg == "" || strings.EqualFold(msg, "not found") || strings.Contains(msg, "404") {
+			msg = "入场码兑换未就绪，等服务端 G3（POST /api/v1/team-invites/redeem）"
+		} else if !strings.Contains(msg, "G3") && !strings.Contains(msg, "等服务端") {
+			msg = msg + "；等服务端 G3（team-invites/redeem）"
+		}
+	case "create_seat":
+		if msg == "" || strings.EqualFold(msg, "not found") || strings.Contains(msg, "404") {
+			msg = "加新席未就绪，等服务端 G2（POST …/teams/{id}/seats）"
+		} else if !strings.Contains(msg, "G2") && !strings.Contains(msg, "等服务端") {
+			msg = msg + "；等服务端 G2（POST …/seats）"
+		}
+	default:
+		if msg == "" {
+			msg = "相关 API 未就绪，等服务端 G2/G3"
+		}
+	}
+	return &APIError{Status: 404, Code: ae.Code, Message: msg}
+}
+
+// TeamInviteRedeem POST /api/v1/team-invites/redeem {code}（Bot Key 鉴权；不在 workspace 路径下）。
+// 成功后写入 c.Cfg.WorkspaceID（空手上场定位工作区）。
+func (c *Client) TeamInviteRedeem(code string) (*TeamInviteRedeemResult, error) {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return nil, fmt.Errorf("需要 --code <ymt_…> 团队入场码")
+	}
+	raw, err := c.Do(http.MethodPost, "/api/v1/team-invites/redeem", nil, map[string]any{"code": code}, true)
+	if err != nil {
+		if ae, ok := err.(*APIError); ok && ae.Status == 404 {
+			return nil, errWaitG2G3(ae, "redeem")
+		}
+		return nil, err
+	}
+	var top map[string]any
+	if err := json.Unmarshal(raw, &top); err != nil {
+		return nil, err
+	}
+	out := &TeamInviteRedeemResult{
+		WorkspaceID: strField(top, "workspace_id"),
+		TeamID:      strField(top, "team_id"),
+		RoleHint:    strField(top, "role_hint", "role_slug", "slug"),
+		TemplateKey: strField(top, "template_key", "template_ref"),
+		Raw:         raw,
+	}
+	if v, ok := top["allow_expand_seat"].(bool); ok {
+		out.AllowExpandSeat = v
+	}
+	if out.WorkspaceID == "" || out.TeamID == "" {
+		return nil, &APIError{Status: 502, Code: "bad_gateway", Message: "兑换结果缺少 workspace_id 或 team_id"}
+	}
+	c.Cfg.WorkspaceID = out.WorkspaceID
+	return out, nil
+}
+
+// TeamSeatCreate POST …/teams/{teamID}/seats（G2；幂等按 slug）。
+func (c *Client) TeamSeatCreate(teamID string, opts TeamSeatCreateOpts) (json.RawMessage, error) {
+	teamID = strings.TrimSpace(teamID)
+	slug := strings.TrimSpace(opts.RoleSlug)
+	if teamID == "" || slug == "" {
+		return nil, fmt.Errorf("需要 team uuid 与 role_slug")
+	}
+	body := map[string]any{
+		"role_slug": slug,
+		"slug":      slug, // 兼容契约 slug|role_slug
+	}
+	if n := strings.TrimSpace(opts.DisplayName); n != "" {
+		body["display_name"] = n
+		body["name"] = n
+	}
+	if p := strings.TrimSpace(opts.PlaybookRef); p != "" {
+		body["playbook_ref"] = p
+	}
+	raw, err := c.Do(http.MethodPost, c.ws("/teams/"+teamID+"/seats"), nil, body, true)
+	if err != nil {
+		if ae, ok := err.(*APIError); ok && ae.Status == 404 {
+			return nil, errWaitG2G3(ae, "create_seat")
+		}
+		return nil, err
+	}
+	return raw, nil
+}
+
+// ClassifySeatOccupancy 选席推断：empty|self|active；若 JSON 带 status=stopped|left 则返回该字面量。
+// 未落库前勿写死 open|active 枚举——有 bound/claim 即活跃，无则空。
+func ClassifySeatOccupancy(seat map[string]any, myMemberID string) string {
+	if seat == nil {
+		return "empty"
+	}
+	st := strings.ToLower(strings.TrimSpace(strField(seat, "status")))
+	if st == "stopped" || st == "left" {
+		return st
+	}
+	myMemberID = strings.TrimSpace(myMemberID)
+	if claim, ok := seat["claim"].(map[string]any); ok && claim != nil {
+		mid := strField(claim, "member_id")
+		if mid != "" && strField(claim, "released_at") == "" {
+			if myMemberID != "" && mid == myMemberID {
+				return "self"
+			}
+			return "active"
+		}
+	}
+	bound := strField(seat, "bound_member_id", "member_id")
+	if bound != "" {
+		if myMemberID != "" && bound == myMemberID {
+			return "self"
+		}
+		return "active"
+	}
+	return "empty"
+}
+
+// SeatIsActiveOccupancy 活跃占用（有人 claim/bound 且非 self、非 stopped|left）。
+func SeatIsActiveOccupancy(kind string) bool {
+	return kind == "active"
+}
+
+func nextAutoSeatSlug(seats []map[string]any) string {
+	used := map[string]bool{}
+	maxN := 0
+	for _, s := range seats {
+		slug := strField(s, "role_slug", "slug")
+		used[slug] = true
+		if strings.HasPrefix(slug, "seat-") {
+			var n int
+			if _, err := fmt.Sscanf(slug, "seat-%d", &n); err == nil && n > maxN {
+				maxN = n
+			}
+		}
+	}
+	for i := maxN + 1; i < maxN+1000; i++ {
+		cand := fmt.Sprintf("seat-%d", i)
+		if !used[cand] {
+			return cand
+		}
+	}
+	return fmt.Sprintf("seat-%d", len(seats)+1)
+}
+
+func listRosterSeats(rosterRaw json.RawMessage) ([]map[string]any, error) {
+	seats, _, err := asObjectListPrefer(rosterRaw, "roster", "seats")
+	return seats, err
+}
+
+func findEmptySeat(seats []map[string]any, myMemberID string) map[string]any {
+	for _, s := range seats {
+		if ClassifySeatOccupancy(s, myMemberID) == "empty" {
+			return s
+		}
+	}
+	return nil
+}
+
+// pickJoinSeat 按 --role / 空席 / 扩编规则选席；forceActive 禁止。
+// 返回 seat map（可无 id）、slug、是否已绑本 member（跳过 enter）、是否需 CreateSeat。
+func pickJoinSeat(seats []map[string]any, myMemberID string, opts TeamJoinOpts, allowExpand bool, roleHint string) (seat map[string]any, slug string, alreadySelf bool, needCreate bool, err error) {
+	role := strings.TrimSpace(opts.Role)
+	if role != "" {
+		var found map[string]any
+		for _, s := range seats {
+			if strField(s, "role_slug", "slug") == role {
+				found = s
+				break
+			}
+		}
+		if found == nil {
+			if allowExpand {
+				return nil, role, false, true, nil
+			}
+			return nil, "", false, false, &APIError{
+				Status:  404,
+				Code:    "not_found",
+				Message: fmt.Sprintf("班底无席位 slug=%s，且入场码未允许加新席", role),
+			}
+		}
+		kind := ClassifySeatOccupancy(found, myMemberID)
+		switch kind {
+		case "self":
+			return found, role, true, false, nil
+		case "empty":
+			return found, role, false, false, nil
+		case "stopped", "left":
+			// 可进；活跃顶替禁止——stopped|left 非活跃
+			return found, role, false, false, nil
+		case "active":
+			holder := strField(found, "bound_display_name")
+			msg := fmt.Sprintf("席位 %s 占用中，禁止顶替", role)
+			if holder != "" {
+				msg = fmt.Sprintf("席位 %s 占用中（%s），禁止顶替；请对方 seat leave 或等停工后再进", role, holder)
+			} else {
+				msg = msg + "；请对方 seat leave 或等停工后再进"
+			}
+			return nil, "", false, false, &APIError{Status: 409, Code: "conflict", Message: msg}
+		default:
+			return found, role, false, false, nil
+		}
+	}
+
+	// 无 --role：优先空席
+	if empty := findEmptySeat(seats, myMemberID); empty != nil {
+		return empty, strField(empty, "role_slug", "slug"), false, false, nil
+	}
+	// 已绑本 member 任一席 → 幂等跳过
+	for _, s := range seats {
+		if ClassifySeatOccupancy(s, myMemberID) == "self" {
+			return s, strField(s, "role_slug", "slug"), true, false, nil
+		}
+	}
+	if !allowExpand {
+		return nil, "", false, false, &APIError{
+			Status:  409,
+			Code:    "conflict",
+			Message: "无空席且入场码未允许加新席（allow_expand_seat=false）；请总指挥扩编或指定 --role 停工席",
+		}
+	}
+	slug = strings.TrimSpace(opts.NewSeat)
+	if slug == "" {
+		slug = strings.TrimSpace(roleHint)
+	}
+	if slug == "" {
+		slug = nextAutoSeatSlug(seats)
+	}
+	return nil, slug, false, true, nil
+}
+
+// TeamJoin 空手上场：redeem →（写 workspace）→ team pull → 选席/加席 → seat enter（禁活跃 force）→ handoff get。
+func (c *Client) TeamJoin(opts TeamJoinOpts) (map[string]any, error) {
+	redeem, err := c.TeamInviteRedeem(opts.Code)
+	if err != nil {
+		return nil, err
+	}
+	teamID := redeem.TeamID
+
+	rosterRaw, err := c.TeamPull(teamID)
+	if err != nil {
+		return nil, err
+	}
+	seats, err := listRosterSeats(rosterRaw)
+	if err != nil {
+		return nil, err
+	}
+
+	myMemberID := strings.TrimSpace(c.Cfg.MemberID)
+	if myMemberID == "" {
+		if mid, err := c.ResolveMember(); err == nil {
+			myMemberID = mid
+			c.Cfg.MemberID = mid
+		}
+	}
+
+	seat, slug, alreadySelf, needCreate, err := pickJoinSeat(seats, myMemberID, opts, redeem.AllowExpandSeat, redeem.RoleHint)
+	if err != nil {
+		return nil, err
+	}
+
+	created := false
+	if needCreate {
+		if _, err := c.TeamSeatCreate(teamID, TeamSeatCreateOpts{RoleSlug: slug}); err != nil {
+			return nil, err
+		}
+		created = true
+		rosterRaw, err = c.TeamPull(teamID)
+		if err != nil {
+			return nil, err
+		}
+		seats, err = listRosterSeats(rosterRaw)
+		if err != nil {
+			return nil, err
+		}
+		seat, err = SeatBySlug(rosterRaw, slug)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	out := map[string]any{
+		"step":              "redeem→team pull→seat enter→handoff get",
+		"team_id":           teamID,
+		"workspace_id":      redeem.WorkspaceID,
+		"role":              slug,
+		"allow_expand_seat": redeem.AllowExpandSeat,
+		"seat_created":      created,
+		"skipped_enter":     alreadySelf,
+	}
+	if redeem.RoleHint != "" {
+		out["role_hint"] = redeem.RoleHint
+	}
+	if redeem.TemplateKey != "" {
+		out["template_key"] = redeem.TemplateKey
+	}
+
+	enterForce := false
+	if !alreadySelf {
+		kind := ClassifySeatOccupancy(seat, myMemberID)
+		if SeatIsActiveOccupancy(kind) {
+			// 双保险：选席已拒，enter 前再拒且绝不 force
+			return nil, &APIError{
+				Status:  409,
+				Code:    "conflict",
+				Message: fmt.Sprintf("席位 %s 占用中，禁止顶替（join 不对活跃席传 force）", slug),
+			}
+		}
+		// --force 仅 stopped|left；活跃路径上面已 return
+		if opts.Force && (kind == "stopped" || kind == "left") {
+			enterForce = true
+		}
+		// join 默认不 force；empty/self 不需要
+		enterView, err := c.SeatEnter(slug, SeatEnterOpts{TeamID: teamID, Force: enterForce})
+		if err != nil {
+			return nil, err
+		}
+		out["enter"] = enterView
+		if hand, ok := enterView["handoff"]; ok {
+			out["handoff"] = hand
+		}
+	} else {
+		handRaw, err := c.HandoffGet()
+		if err != nil {
+			return nil, err
+		}
+		hand, err := c.ProjectHandoff(handRaw, ViewOpts{})
+		if err != nil {
+			return nil, err
+		}
+		out["handoff"] = hand
+		out["note"] = "已绑本席，跳过 enter，直接 handoff get"
+	}
+
+	// 权威续命再拉一次（与封装契约一致；幂等）
+	if _, has := out["handoff"]; !has || alreadySelf {
+		// already handled
+	} else {
+		handRaw, err := c.HandoffGet()
+		if err == nil {
+			if hand, err2 := c.ProjectHandoff(handRaw, ViewOpts{}); err2 == nil {
+				out["handoff"] = hand
+			}
+		}
+	}
+	out["force_used"] = enterForce
+	return out, nil
+}
+
+// FormatTeamJoinText 瘦文本（无默认 UUID）。
+func FormatTeamJoinText(v map[string]any) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "join role=%s  %s\n", dash(strField(v, "role")), dash(strField(v, "step")))
+	if v["seat_created"] == true {
+		b.WriteString("seat_created=true\n")
+	}
+	if v["skipped_enter"] == true {
+		b.WriteString("skipped_enter=true（已绑本席）\n")
+	}
+	if n := strField(v, "note"); n != "" {
+		fmt.Fprintf(&b, "%s\n", n)
+	}
+	if enter, ok := v["enter"].(map[string]any); ok {
+		fmt.Fprintf(&b, "%s", FormatSeatEnterText(enter))
+	} else if hand, ok := v["handoff"]; ok {
+		fmt.Fprintf(&b, "handoff %s", FormatHandoffText(hand))
+	}
+	return b.String()
+}
+
+// RequireAPIKey 仅校验身份钥匙（join 的 workspace 由 redeem 写入）。
+func (c *Client) RequireAPIKey() error {
+	if c.Cfg.APIKey == "" {
+		return fmt.Errorf("缺少 YMBOT_API_KEY（仅接受 ymk_… API Key，不主推密码登录）")
+	}
+	return nil
+}
