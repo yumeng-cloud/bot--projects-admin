@@ -815,14 +815,19 @@ func errWaitG2G3(ae *APIError, which string) error {
 	return &APIError{Status: 404, Code: ae.Code, Message: msg}
 }
 
-// TeamInviteRedeem POST /api/v1/team-invites/redeem {code}（Bot Key 鉴权；不在 workspace 路径下）。
-// 成功后写入 c.Cfg.WorkspaceID（空手上场定位工作区）。
-func (c *Client) TeamInviteRedeem(code string) (*TeamInviteRedeemResult, error) {
+// TeamInviteRedeem POST /api/v1/team-invites/redeem {code,role?}。
+// 无 Bearer → 服务端 bootstrap 发 ymk_；有钥续队不重发。成功后写 WorkspaceID；
+// 若响应含 token 则写入 c.Cfg.APIKey（空手得钥），含 member_id 则写入 MemberID。
+func (c *Client) TeamInviteRedeem(code string, role string) (*TeamInviteRedeemResult, error) {
 	code = strings.TrimSpace(code)
 	if code == "" {
 		return nil, fmt.Errorf("需要 --code <ymt_…> 团队入场码")
 	}
-	raw, err := c.Do(http.MethodPost, "/api/v1/team-invites/redeem", nil, map[string]any{"code": code}, true)
+	body := map[string]any{"code": code}
+	if r := strings.TrimSpace(role); r != "" {
+		body["role"] = r
+	}
+	raw, err := c.Do(http.MethodPost, "/api/v1/team-invites/redeem", nil, body, true)
 	if err != nil {
 		if ae, ok := err.(*APIError); ok && ae.Status == 404 {
 			return nil, errWaitG2G3(ae, "redeem")
@@ -856,6 +861,12 @@ func (c *Client) TeamInviteRedeem(code string) (*TeamInviteRedeemResult, error) 
 		return nil, &APIError{Status: 502, Code: "bad_gateway", Message: "兑换结果缺少 workspace_id 或 team_id"}
 	}
 	c.Cfg.WorkspaceID = out.WorkspaceID
+	if tok := strings.TrimSpace(out.Token); tok != "" {
+		c.Cfg.APIKey = tok
+	}
+	if mid := strings.TrimSpace(out.MemberID); mid != "" {
+		c.Cfg.MemberID = mid
+	}
 	return out, nil
 }
 
@@ -1032,7 +1043,7 @@ func pickJoinSeat(seats []map[string]any, myMemberID string, opts TeamJoinOpts, 
 
 // TeamJoin 空手上场：redeem →（写 workspace）→ team pull → 选席/加席 → seat enter（禁活跃 force）→ handoff get。
 func (c *Client) TeamJoin(opts TeamJoinOpts) (map[string]any, error) {
-	redeem, err := c.TeamInviteRedeem(opts.Code)
+	redeem, err := c.TeamInviteRedeem(opts.Code, opts.Role)
 	if err != nil {
 		return nil, err
 	}
@@ -1048,6 +1059,10 @@ func (c *Client) TeamJoin(opts TeamJoinOpts) (map[string]any, error) {
 	}
 
 	myMemberID := strings.TrimSpace(c.Cfg.MemberID)
+	if myMemberID == "" && strings.TrimSpace(redeem.MemberID) != "" {
+		myMemberID = strings.TrimSpace(redeem.MemberID)
+		c.Cfg.MemberID = myMemberID
+	}
 	if myMemberID == "" {
 		if mid, err := c.ResolveMember(); err == nil {
 			myMemberID = mid
@@ -1088,6 +1103,15 @@ func (c *Client) TeamJoin(opts TeamJoinOpts) (map[string]any, error) {
 		"allow_expand_seat": redeem.AllowExpandSeat,
 		"seat_created":      created,
 		"skipped_enter":     alreadySelf,
+	}
+	if mid := strings.TrimSpace(redeem.MemberID); mid != "" {
+		out["member_id"] = mid
+	}
+	if redeem.TokenIssued || strings.TrimSpace(redeem.Token) != "" {
+		out["token_issued"] = true
+		if tok := strings.TrimSpace(redeem.Token); tok != "" {
+			out["token"] = tok
+		}
 	}
 	if redeem.RoleHint != "" {
 		out["role_hint"] = redeem.RoleHint
@@ -1152,6 +1176,13 @@ func (c *Client) TeamJoin(opts TeamJoinOpts) (map[string]any, error) {
 func FormatTeamJoinText(v map[string]any) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "join role=%s  %s\n", dash(strField(v, "role")), dash(strField(v, "step")))
+	if mid := strField(v, "member_id"); mid != "" {
+		fmt.Fprintf(&b, "member_id=%s\n", mid)
+	}
+	if tok := strField(v, "token"); tok != "" {
+		fmt.Fprintf(&b, "token=%s\n", tok)
+		b.WriteString("token_issued=true（仅此一次，私存；禁止贴进聊天）\n")
+	}
 	if v["seat_created"] == true {
 		b.WriteString("seat_created=true\n")
 	}

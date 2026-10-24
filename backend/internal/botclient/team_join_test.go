@@ -307,7 +307,7 @@ func TestTeamInviteRedeem404Human(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"code":"not_found","message":"not found"}`))
 	})
-	_, err := c.TeamInviteRedeem("ymt_missing")
+	_, err := c.TeamInviteRedeem("ymt_missing", "")
 	if err == nil {
 		t.Fatal("expected 404")
 	}

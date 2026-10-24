@@ -150,13 +150,14 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [x] **E4** FE 提示词对齐+重截 · React `b76bfc0` · `one-tap-copy-prompt.png`
 - [x] **E5** 无 CLI→装→join 箱证 · QA **PASS† local** `e1b3f26`/`ONE_TAP_E5-qa-retest-20261024.txt`；**prod BLOCKED**（须 API≥`4cdaa04` 重部署后 spotcheck `https://bot.api.sn.cn/install.sh`）
 - [x] **C1** 打开引导 · React FE `/join` 登录预填 JoinWizard · `9779f23`
-- [ ] **C2** 提示词航线 join
+- [x] **C2** 提示词航线 join · 箱证 `ONE_TAP-C2-team-join-20261024.txt` PASS（通道空手 join 得钥）
 - [ ] **C3** 打开即用箱证
 - [x] **D1** 文档主路径改口 · `518a4b6` BOT.md 主路径=席页复制入场链接/提示词；env/mcp 降附录非推荐；README 轻对齐
 - [ ] **D2** 产品关单
 
 ## 进度注记
 
+- 2026-10-24 23:58 · **C2 PASS** 记忆/通道：提示词一行 `team join` + 空手自动得钥箱证；CLI/MCP 允许无事先 ymk_（redeem 发钥写入 Client）。未新增 env/mcp 长教程。
 - 2026-10-25 00:12 · **产品勾 D1** `518a4b6`（对照 H4/ONE_TAP：席页一键主路径；env/mcp 附录非推荐）。D2 等 C1–C3。
 - 2026-10-24 23:56 · **D1 已交** 种子 `518a4b6`：BOT.md / README 主路径=席页「复制入场链接或提示词」；附录 env/mcp 标非推荐；对齐 HUMAN H4（入队自动 ymk_、入场包只 ymt_）。待 D2 产品关单。C1–C3 未动。
 

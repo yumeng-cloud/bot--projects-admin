@@ -34,7 +34,7 @@ func printHelp() {
 主航线（唯一）: team pull → seat enter → handoff get → 干活
   术语: 模板角色 slug = 席位（seat / role_slug）
   MCP:  board_team_pull → board_seat_enter → board_handoff_get
-  空手上场: team join --code <ymt_…>（= redeem→pull→enter→handoff；封装非第二航线）
+  空手上场: team join --code <ymt_…>（= redeem→pull→enter→handoff；无钥自动发 ymk_）
   MCP 封装: board_team_join · board_team_templates · board_team_create_from_template
   作业手册入口: 席位 playbook_ref（唯一；空/非法一行中文，不回落硬编码）
   迁绑说明: bot-team-template/playbook/看板席位迁绑.md · templates/ymbot/
@@ -44,7 +44,7 @@ whoami 可前置自检；migrate enter = seat enter（别名，非第二条主�
 
 环境:
   YMBOT_API_URL           默认 http://127.0.0.1:8080
-  YMBOT_API_KEY           必填，Bearer ymk_…
+  YMBOT_API_KEY           通常必填 Bearer ymk_…；team join 空手可省略（成功响应自动发钥）
   YMBOT_WORKSPACE_ID      必填（team join 可由入场码 redeem 写入）
   YMBOT_MEMBER_ID         可选（缺省用 Key 绑定 / bots/me）
   YMBOT_IDEMPOTENCY_KEY   可选；写操作未传 --idempotency-key 时使用

@@ -178,7 +178,9 @@ func (c *Client) Do(method, path string, query url.Values, body any, idempotent 
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+c.Cfg.APIKey)
+	if k := strings.TrimSpace(c.Cfg.APIKey); k != "" {
+		req.Header.Set("Authorization", "Bearer "+k)
+	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}

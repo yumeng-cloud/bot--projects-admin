@@ -1,0 +1,88 @@
+=== ONE_TAP C2 · 提示词内一行 team join + 自动身份得钥 ===
+time_AsiaShanghai: 2026-10-24 23:58:36 Asia/Shanghai
+base_HEAD_at_start: 064c7fd (debt 下一 P0)
+HEAD: b5dd2e6 (b5dd2e609c38942fa41050d6a84a31e3727a5eb8)  # commit of this evidence lands after
+feat_go_auto_id: c4ae0a5 (redeem 无 Bearer → mint ymk_ + 绑 empty/open)
+feat_prompt_2state: BuildBotPrompt / buildBotJoinPrompt 身份两态（空手自动得钥 / 已有钥 Bearer）
+channel_patch: ymbot team join 允许空手（无事先 YMBOT_API_KEY）；redeem 得钥后写入 Client；stdout 露 token 一次
+API: http://127.0.0.1:8080 (/healthz ok；server /tmp/ai-board-server @ ~23:47 incl. c4ae0a5)
+CLI: /tmp/ymbot-c2 rebuilt from channel patch this run
+
+########## 1) 提示词生成物抽验（源）##########
+Go joinlink.BuildBotPrompt + FE oneTapJoin.buildBotJoinPrompt：
+- 含一行可执行：ymbot team join --code ymt_… [--role …]
+- 空手叙事：无本机 ymk_ 也可直接 join；成功响应自动发一把身份钥匙
+- 已有钥：带 Bearer / YMBOT_API_KEY；不重发
+- 禁区：禁止教改 mcp.json / 禁止把导出 YMBOT_* 清单当入场步骤（非新增长教程）
+CLI 摘一行（golden）：
+  ymbot team join --code ymt_… --role qa
+go test ./internal/joinlink/ -run C2Prompt → PASS（本轮临时测后已删）
+
+########## 2) 箱验 LIVE · 空手一行 join（硬门槛）##########
+SETUP:
+  POST …/teams/from-template default → TEAM=f86ce5db…e784
+  invite seat_slug=qa max_uses=3 → ymt_6c90…8deb
+  事先：unset YMBOT_API_KEY YMBOT_WORKSPACE_ID YMBOT_MEMBER_ID
+  YMBOT_API_URL=http://127.0.0.1:8080
+
+CMD（=提示词内 CLI 一行）:
+  ymbot team join --code ymt_6c90…8deb --role qa
+
+STDOUT (redact):
+join role=qa  redeem→team pull→seat enter→handoff get
+member_id=9ddcdd884f1dc5f443936b07591695a4
+token=ymk_bbda…d4dd
+token_issued=true（仅此一次，私存；禁止贴进聊天）
+skipped_enter=true（已绑本席）
+已绑本席，跳过 enter，直接 handoff get
+handoff role=QA  memories=0  todos=0  open_issues=0
+member=qa
+focus=空
+手册 playbook_ref=bot-team-template@main:playbook/班底与补位.md
+
+CHECKS:
+  exit_0 PASS
+  token_ymk_issued PASS（token=ymk_bbda…d4dd；token_issued=true）
+  member_id PASS（9ddcdd884f1dc5f443936b07591695a4）
+  seat_bound_by_redeem PASS（skipped_enter=true 已绑本席）
+  no_prior_ymk PASS
+
+########## 3) whoami / 席 occupied ##########
+CMD: YMBOT_API_KEY=ymk_bbda…d4dd YMBOT_WORKSPACE_ID=c4f62cf6… ymbot whoami
+STDOUT: bot  qa
+ROSTER qa: status=active bound_member_id=9ddcdd88… name=qa
+CHECKS: whoami_bot_qa PASS；seat_occupied PASS
+
+########## 4) 可选抽 · 持刚得 ymk_ 再 join（B/AUTH）##########
+CMD: 同码同 role + Bearer ymk_bbda…d4dd
+STDOUT (redact):
+join role=qa  redeem→team pull→seat enter→handoff get
+member_id=9ddcdd884f1dc5f443936b07591695a4
+skipped_enter=true（已绑本席）
+已绑本席，跳过 enter，直接 handoff get
+handoff role=QA  memories=0  todos=0  open_issues=0
+member=qa
+focus=空
+手册 playbook_ref=bot-team-template@main:playbook/班底与补位.md
+CHECKS:
+  exit_0 PASS
+  no_retoken PASS（无 token= / token_issued=true）
+  same_member PASS（member_id 不变）
+  no_second_member PASS（roster 仍 1 个 qa bound）
+
+########## 5) 未新增必填 env/mcp 长教程 ##########
+- 本包仅通道最小补：join 空手可跑 + help 一行说明自动得钥
+- 未回写根 README；未把 YMBOT_* / mcp.json 教程升为主路径
+- 提示词禁区句保留（禁止教改 mcp.json / 禁止清单当步骤）
+
+########## SUMMARY ##########
+  prompt_one_line_join: PASS
+  prompt_empty_hand_auto_key: PASS
+  live_empty_hand_team_join: PASS
+  whoami_seat_occupied: PASS
+  rejoin_no_retoken: PASS
+  no_long_env_mcp_tutorial: PASS
+OVERALL: PASS
+
+evidence: docs/qa-shots/ONE_TAP-C2-team-join-20261024.txt
+NOTE: C2 通道缺口（旧 CLI 逼先贴 ymk_）已最小补齐，与提示词「空手可 join」对齐。

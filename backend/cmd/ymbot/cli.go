@@ -13,11 +13,9 @@ import (
 
 func runCLI(args []string) error {
 	c := botclient.New(botclient.LoadConfig())
-	// team join：workspace 由入场码 redeem 写入，仅需 API Key
+	// team join：workspace 由 redeem 写入；空手可无 YMBOT_API_KEY（成功响应自动发 ymk_）
 	if args[0] == "team" && len(args) > 1 && args[1] == "join" {
-		if err := c.RequireAPIKey(); err != nil {
-			return err
-		}
+		// no RequireAPIKey — HUMAN_ONBOARD bootstrap
 	} else if err := c.Require(); err != nil {
 		return err
 	}
@@ -645,7 +643,7 @@ func cmdTeamJoin(c *botclient.Client, args []string) error {
 		return err
 	}
 	if strings.TrimSpace(*code) == "" {
-		return fmt.Errorf("用法: ymbot team join --code <ymt_…> [--role <slug>] [--new-seat <slug>] [--force]\n空手上场：redeem→team pull→seat enter→handoff get；身份靠 YMBOT_API_KEY；活跃席禁 force")
+		return fmt.Errorf("用法: ymbot team join --code <ymt_…> [--role <slug>] [--new-seat <slug>] [--force]\n空手上场：redeem→team pull→seat enter→handoff get；无钥自动发 ymk_，有钥续队不重发；活跃席禁 force")
 	}
 	applyIDKey(c, *idKey)
 	v, err := c.TeamJoin(botclient.TeamJoinOpts{
