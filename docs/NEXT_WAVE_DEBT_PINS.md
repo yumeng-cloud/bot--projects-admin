@@ -42,8 +42,17 @@
 
 - REST 契约：[`API.md`](./API.md)「Team pins」
 - 通道：[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.5 `board_pin_*`
-- **契约已齐、实现待 SHA**；本文 P1–P5 待实现落地后再勾。
+- 实现：Go `6915db4` · FE `4459d01` · 箱证 `1a38ce4`
+
+## 产品勾选
+
+- [x] **P1–P3** 箱验 PASS · 2026-10-24 19:00 Asia/Shanghai
+  - 证据 [`qa-shots/pins-team-isolate-20261024.txt`](./qa-shots/pins-team-isolate-20261024.txt) · `1a38ce4` + API `6915db4`
+  - unit `TestPinsTeamIsolate` / `TestPinsDoNotClobberBotMemories` 产品抽跑 ok
+  - 双队 GET 不串；跨队 PUT/DELETE → 404；同名 key 与 bot_memories 分表不串
+- [ ] **P4** QA 苛刻复测（记忆已交证据；等 QA）
+- [ ] **P5** FE 最小记忆墙（`4459d01` 已推；等 API 绿后箱截再勾）
 
 ## 关单
 
-产品勾本文 + `BOT_TEAM_SEAT_P0` T6 注「pins PASS」或整勾 T6（若 Issue 池仍欠则脚注）。
+半单：P1–P3 已勾。整单待 P4+P5。`BOT_TEAM_SEAT_P0` T6 注「pins API 隔离 PASS；Issue 池仍余」。
