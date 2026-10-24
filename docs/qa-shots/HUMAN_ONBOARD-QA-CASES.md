@@ -1,6 +1,7 @@
 # HUMAN_ONBOARD · QA 用例补严（Q1–Q10）
 
-> 2026-10-24 23:42 Asia/Shanghai · QA  
+> 2026-10-24 23:42 Asia/Shanghai · QA（复验更新见下）  
+> **复验：** 2026-10-24 23:52 Asia/Shanghai · QA · Overall **PASS†** · HEAD 含 `c4ae0a5`+`662346d` · 证 `HUMAN_ONBOARD-Q1-Q3-Q12-qa-retest-20261024.txt`  
 > **权威骨架：** [`docs/NEXT_WAVE_DEBT_HUMAN_ONBOARD.md`](../NEXT_WAVE_DEBT_HUMAN_ONBOARD.md) @`6eaa4ff` **§6**（Q1–Q10 为规范 ID，勿另起平行编号）。  
 > **产品 H3：** QA §6 补严文件名 = **本路径** `docs/qa-shots/HUMAN_ONBOARD-QA-CASES.md`。  
 > **人用硬钉：** Admin 只发 `ymt_` 入场包；Agent 入队/入席自动身份（当次一把 `ymk_`）；活跃禁顶替；新人空席/新席；停工才补位；**否决全班吐 ymk_**。
@@ -40,7 +41,7 @@
 | **PASS 准则** | ① 响应/stdout 含恰好 1 个可解析 `ymk_[A-Za-z0-9]{8,}` ② roster 该 slug `status=active` 且 `bound_member_id` 非空 ③ whoami（用当次钥）`actor_kind=bot` 且 member 与绑席一致 ④ Admin 入场包路径仍无该钥 |
 | **FAIL 信号** | 要先有 ymk_ 才能 redeem；成功但无 token；造人未绑席；绑到非目标席；返回 N×token；挤 active |
 | **关联证/债** | 目标：HUMAN_ONBOARD §3.2 · BATCH_CREW B1 改向 `1f96809`；现网对照：J2 `ymbot-j2-evidence-20261024.txt`（**仍须预置 ymk_**，≠自动身份）· ONE_TAP E5 `ONE_TAP_E5-qa-retest-20261024.txt`（install→whoami→join，预置钥） |
-| **状态** | **BLOCKED**（目标态「无身份 join 自动 mint」未实装；开干门禁 H0+H1） |
+| **状态** | **PASS**（live redeem 无 Bearer → 一把 ymk_；证 `HUMAN_ONBOARD-Q1-Q3-Q12-qa-retest-20261024.txt` @c4ae0a5+662346d） |
 
 ## Q2 续队不重发钥
 
@@ -52,7 +53,7 @@
 | **PASS 准则** | ① 第二次响应体/stdout **不**出现新明文 ymk_ ② member_id 与第一次相同 ③ handoff 含 Q1 后写入的 focus/Issue 标记 ④ roster 不出现双绑同 slug |
 | **FAIL 信号** | 每次 join 刷一把新钥；清 memory；换 member_id；把别人从席上挤走 |
 | **关联证/债** | J2 幂等 rejoin（`BOT_TEAM_JOIN_KEY_P0` J5）· T2 `T2-qa-retest-20261024.txt`（同 member 换钥 migrate，非「重发」）· BATCH_CREW 幂等条款 |
-| **状态** | **GAP**（现网有「已持钥 rejoin 幂等」局部证；**自动身份后「不重发」**待 B1 绿后重验）→ 自动身份落地前可先验「已持 ymk_ rejoin 无新 token」子条 |
+| **状态** | **PASS**（同 ymk_ 再 redeem 无新 token + memory Intact；同证 Q1 文件） |
 
 ## Q3 活跃禁顶替
 
@@ -64,7 +65,7 @@
 | **PASS 准则** | ① HTTP 409（或 CLI 非 0 且文案含占用/冲突）② roster 该席 `bound_*` 仍为 BotA ③ 带 force 对 active 仍拒（force 仅 stopped\|left）④ FE 409 专面无顶替 CTA |
 | **FAIL 信号** | 200 且 holder 变 BotB；force 顶 active 成功且无审计；UI 提供确认顶替 |
 | **关联证/债** | JOIN_KEY J3 · API.md seat.force_bind 收窄 · ONE_TAP E5 soft†「席位占用 409」· `T3-conflict.png` · WHEEL/T2 leave→empty 后方可进 |
-| **状态** | **COVERED†**（活跃 409 / 禁 force 活跃：J2/J3/E5 占用路径；完整「无身份 join 撞 active」随 Q1 目标态补一刀） |
+| **状态** | **PASS**（live：无身份撞 active→409；Bot force→409；holder 不变；同证 Q1 文件。Admin 代绑 403 仍拒） |
 
 ## Q4 新人新席
 
@@ -148,7 +149,7 @@
 | **PASS 准则** | ① `/join` body 与 ONE_TAP 入场提示词：`ymk_[A-Za-z0-9]{8,}` = 0 ② AUTO_CREW 包同 Q6 ③ FOOLPROOF 启动提示词 **允许**嵌当次 ymk_（私贴）且含勿转发警告 ④ UI 不把入场码叫成「API Key」主名 |
 | **FAIL 信号** | 公开 join/入场包嵌钥；创建成功无露钥却把钥写进可转发链接；ymk/ymt 混称导致贴错 |
 | **关联证/债** | ONE_TAP A4 `ONE_TAP_A4-qa-retest-20261024.txt` · E4/E5 · FOOLPROOF F5/F6 `a5299f5` · `FOOLPROOF-F6-qa-retest-20261024.txt` · AUTO_CREW C7 · HUMAN_ONBOARD §1 |
-| **状态** | **COVERED†**（公开禁钥 + 单把私贴嵌钥已分家；「自动身份只在私密成功响应」随 Q1 BLOCKED） |
+| **状态** | **COVERED†**（公开禁钥 + 单把私贴；自动身份私密响应随 Q1 PASS；入场包 API 再抽 PASS† 同证） |
 
 ---
 
@@ -163,7 +164,7 @@
 | **PASS 准则** | ① member 计数不 +1（同 fingerprint/claim 键）② 若回 token 则仍属 M1 ③ 席绑定仍 M1 ④ 无静默双 Bot |
 | **FAIL 信号** | 每次 join 新造 Bot；双 ymk_ 双 member；席上串人 |
 | **关联证/债** | HUMAN_ONBOARD 可投表 V1 · 自动身份首刀 · Bot 记忆单活 claim |
-| **状态** | **GAP**（随 Q1 自动身份实装后苛刻验；合入前不挡文档） |
+| **状态** | **PASS**（同码无 Bearer 二次→409「请粘贴已发的身份钥匙续队」；同证） |
 
 ---
 
@@ -177,7 +178,7 @@
 | **PASS 准则** | ① revoke ymt_ → status=revoked；再 join 非 2xx/人话失败 ② revoke 幂等 200 ③ revoke ymk_ → whoami/API 401 或人话无效钥 ④ UI Popconfirm 吊销路径可用 |
 | **FAIL 信号** | 吊销后码/钥仍可用；吊销半截；无错误提示 |
 | **关联证/债** | N1 `ec1742d` · FE 吊销 Popconfirm · API.md api-keys revoke · 附录吊销行 |
-| **状态** | **COVERED†**（ymt_ N1）；ymk_ 吊销箱证可再抽 → 记 ymk_ 子条 **GAP** 不挡本条主 PASS† |
+| **状态** | **PASS**（ymt_ revoke→403 再兑；ymk_ `POST /api/v1/api-keys/{id}/revoke`→whoami 401；同证。注：ws 嵌套 revoke 路径 404） |
 
 ---
 
@@ -199,9 +200,9 @@
 
 | ID | 场景锚 | 状态 | 主证据 / 债 |
 | --- | --- | --- | --- |
-| Q1 | S1 | **BLOCKED** | 自动身份未实装；对照 J2/E5（预置钥） |
-| Q2 | S2 | **GAP** | 幂等局部有；「不重发」待自动身份后重验 |
-| Q3 | S8 | **COVERED†** | J3 / E5 409 / force 收窄 |
+| Q1 | S1 | **PASS** | live 无 Bearer redeem→ymk_；`HUMAN_ONBOARD-Q1-Q3-Q12-qa-retest-20261024.txt` |
+| Q2 | S2 | **PASS** | 同钥再 redeem 无新 token + memory；同证 |
+| Q3 | S8 | **PASS** | live 占用 409 + force 拒；同证 |
 | Q4 | S7 | **GAP** | 缺满员 expand 独立箱证 |
 | Q5 | S3 | **COVERED†** | J4 / N3 force 审计 |
 | Q6 | S6 | **COVERED†** | AUTO_CREW C7 `37b2228` |
@@ -209,19 +210,19 @@
 | Q8 | S4 | **COVERED†** | J7 / N2 / N4 / PATROL |
 | Q9 | S5 | **COVERED†** | T2 / WHEEL C3 / BOT 续命 |
 | Q10 | S1×横切 | **COVERED†** | ONE_TAP A4/E5 + F6 + C7；自动身份段随 Q1 |
-| Q11 | V1 | **GAP** | 拒造第二人；随自动身份苛刻验 |
-| Q12 | F | **COVERED†** | 吊销 ymt_ N1；ymk_ 子条 GAP |
+| Q11 | V1 | **PASS** | 二次无 Bearer→409 人话；同证 |
+| Q12 | F | **PASS** | ymt_+ymk_ 吊销 live；同证 |
 | Q13 | K·J | **GAP** | 救场双机；Q9 局部可挂 |
 
-**计数：** COVERED† **7** · GAP **5**（Q2/Q4/Q7/Q11/Q13）· BLOCKED **1**（Q1）  
-（Q2 在「仅已持钥 rejoin」子条可先升 COVERED†；表内保守记 GAP 直至自动身份闭环。Q11–Q13 票过 `b6614ff` 后补入。）
+**计数：** PASS **5**（Q1/Q2/Q3/Q11/Q12）· COVERED† **5**（Q5/Q6/Q8/Q9/Q10）· GAP **3**（Q4/Q7/Q13）· BLOCKED **0**  
+（箱证 `docs/qa-shots/HUMAN_ONBOARD-Q1-Q3-Q12-qa-retest-20261024.txt`；Overall PASS†：FE Modal 点操/V6 签发侧 soft。）
 
 ## 附录 · 吊销 / 双钥（非 §6 主列，供债验收引用）
 
 | 主题 | 期望摘要 | 证据 |
 | --- | --- | --- |
 | 吊销 ymt_ | Admin revoke → status=revoked；再 redeem/join 人话失败；幂等 200 | N1 `ec1742d` · `N1-revoke-list.png` |
-| 吊销 ymk_ | revoke api-key 后 whoami/业务 API 失败（401/人话无效钥） | API.md api-keys revoke；**独立箱证 GAP** |
+| 吊销 ymk_ | revoke api-key 后 whoami/业务 API 失败（401/人话无效钥） | **PASS** 同证；路径=`POST /api/v1/api-keys/{id}/revoke` |
 | 双钥心智 | ymk_=身份 Bearer；ymt_=入队；crew pack 只有 ymt_；F6 挡层才嵌 ymk_ | FOOLPROOF 表 · Q6/Q7/Q10 |
 
 ## 产品吸收（H3）

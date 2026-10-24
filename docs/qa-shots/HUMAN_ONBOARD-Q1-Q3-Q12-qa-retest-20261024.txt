@@ -1,0 +1,114 @@
+=== HUMAN_ONBOARD Q1/Q2/Q3/Q11/Q12 + FE V3/V4 QA retest ===
+time_AsiaShanghai: 2026-10-24 23:52:12 Asia/Shanghai
+HEAD: 50a9182 (50a918298754f5f53ba245ea659e1641f2679f90)
+feat_go: c4ae0a5 feat(go): HUMAN_ONBOARD redeem 自动身份 + V1/V2/V6 单测
+feat_fe: 662346d feat(fe): HUMAN_ONBOARD V3/V4 — RedeemInvite token 字段 + Join 只贴 ymt_
+API: http://127.0.0.1:8080/api/v1
+FE_preview: http://127.0.0.1:5174 (vite build @662346d rebuilt this run)
+server: /tmp/ai-board-server rebuilt from HEAD incl. c4ae0a5; restarted before API matrix
+
+########## Go unit tests ##########
+go test ./internal/handlers/ -run Redeem -count=1 → ok
+  PASS TestHTTPRedeemBootstrapNoBearer (no Bearer → ymk_; rejoin no retoken; V1 409 人话)
+go test ./internal/services/botmem/ -count=1 → ok
+  PASS TestRedeemJoinBootstrapEmptySeat
+  PASS TestRedeemJoinIdempotentNoRetoken
+  PASS TestRedeemJoinV1SecondProvisionConflict
+  PASS TestRedeemJoinActiveNoReplace
+  PASS TestRedeemJoinV2NoAutoFillLeftStopped
+NOTE: unit tests ≠ substitute for live Q1
+
+########## Q1 新入队自动身份（LIVE · hard gate）##########
+SETUP: POST …/teams/from-template default → TEAM=72a1cfa814b0d44a14a9158f5b50e5a3
+  invite seat_slug=frontend → ymt_…2a93
+REDEEM_NO_BEARER POST /api/v1/team-invites/redeem {code,role} → HTTP 201
+  body: token=ymk_…a08c token_issued=true member_id=aa1a042ab4ee2cbd1cdef0b0697c6067
+        seat_id=830d88178539f290d754eea174c21b99 role_slug=frontend
+ROSTER: frontend status=active bound_member_id=aa1a042… bound_display_name=frontend
+WHOAMI GET …/bots/me Bearer ymk_ → HTTP 200 actor_kind=bot member_id=aa1a042… (same)
+CHECKS: http_201 PASS; exactly_1_ymk PASS; token_issued PASS; member_id PASS;
+        seat_active_bound PASS; whoami_same_bot PASS
+Q1=PASS
+
+########## Q2 续队不重发钥（LIVE）##########
+MEMORY_WRITE POST …/bots/{mid}/memories {key_name:frontend:last_focus,value_text:Q2-focus-*} → 201
+REDEEM_WITH_YMK same ymt_ + Bearer ymk_ → HTTP 200
+  body: NO token field; token_issued absent/false; member_id same aa1a042…
+MEMORIES_LIST marker_present=True
+CHECKS: no_new_ymk PASS; same_member PASS; memory_intact PASS
+Q2=PASS
+
+########## Q11/V1 同码无 Bearer 第二次（LIVE）##########
+REDEEM_2ND_NO_BEARER → HTTP 409
+  {"code":"conflict","message":"请粘贴已发的身份钥匙续队"}
+holder_unchanged PASS
+Q11=PASS
+
+########## Q3 活跃禁顶替（LIVE）##########
+CREATE_INVITE_SAME_SEAT → 201 (note V6:签发仍可第二把 ymt_ 同 slug)
+REDEEM_OCCUPIED → HTTP 409 {"message":"该席位占用中，禁止顶替"}
+BotB (pm bootstrap) FORCE_BIND frontend → HTTP 409 禁止顶替
+ADMIN_JWT FORCE_BIND other member → HTTP 403 需要管理员权限才能代绑其他成员
+  （仍拒顶替；holder 未变；非 200 顶替）
+holder_after=aa1a042… unchanged
+CHECKS: redeem_409 PASS; force_bot_409 PASS; refuse_admin PASS; holder PASS
+Q3=PASS
+NOTE_SOFT: Admin JWT 代绑路径回 403 非 409 文案，但不挡「活跃禁顶替」硬门槛
+
+########## Q12 吊销 ymt_/ymk_（LIVE）##########
+REVOKE_YMT POST …/teams/{t}/invites/{id}/revoke → 200；idempotent 200
+REDEEM_REVOKED → HTTP 403 {"message":"入场码已吊销"}
+REVOKE_YMK 正确路径（chi router）：
+  POST /api/v1/api-keys/{keyID}/revoke → 200「API Key 已吊销」；idempotent 200
+  DELETE /api/v1/api-keys/{keyID} → 200
+WHOAMI_AFTER → HTTP 401 {"message":"API Key 已吊销"}
+WRONG_PATH trap: DELETE|POST /api/v1/workspaces/{ws}/api-keys/{id}(/revoke) → 404
+  （list/create 在 ws 下；revoke 在 /api/v1/api-keys/{id} — 记 FE/文档对齐债，不挡本条）
+Q12=PASS
+
+########## soft Q6/Q10 入场包/join 禁嵌 ymk_ ##########
+API pack: 5 empty seats → 5×ymt_ markdown; ymk_count=0
+JOIN_PAGE GET /join?code=ymt_dummy&role=frontend → 200; ymk_plaintext_hits=0
+FE autoCrewPack.ts: comment 禁嵌 ymk_；builds from invite.code only
+Q6/Q10_soft=PASS† (API+join+源码；CrewPackReveal Modal 点击未本轮点操)
+
+########## soft V2 / V6 ##########
+V2 unit PASS TestRedeemJoinV2NoAutoFillLeftStopped
+V2 live: STOP wiki → redeem new ymt_ → HTTP 201 minted orphan member+ymk_ but
+  wiki_after status=stopped bound=None（席未自动补上）→ seat非自动填 PASS；
+  soft†：停工席 redeem 仍造人发钥（未绑席）— 交 Go/产品是否应收紧
+V6: 同 active slug 仍可签发第二 ymt_（CREATE 201）；redeem 正确 409。
+  若 V6=「一席一码签发」则签发侧 GAP；兑换门禁已绿
+
+########## FE V3/V4/V5 @662346d（soft†）##########
+源码 JoinTeamWizard.tsx:
+  1) 主路径只贴 ymt_（placeholder ymt_…；validate 强制 YMT_RE）；ymk_ 折叠「可选：已有身份钥匙（续队）」
+  2) token_issued && token ymk_ → setRevealToken → IdentityKeyRevealModal；toast「入场成功，已自动获得身份钥匙（仅此一次）」
+  3) 两态 toast/文案：首兑 reveal vs 「续队成功（未重发身份钥匙）」；
+     joinlink BuildBotPrompt / oneTapJoin buildBotJoinPrompt「身份两态」空手自动得钥 / 已有钥 Bearer 不重发
+  4) V5：源码+dist 无「未绑 Key」主 toast；仍「入场包 / 自动获得身份」口径
+     （BotsRoster「尚未绑定席位」/「未绑席」=席态，≠「未绑 Key」）
+dist grep @ rebuilt preview: 命中上述文案；dist_no_未绑_Key
+RedeemInviteResult FE 类型含 token/token_issued（teams.ts）
+FE_V3_V4_V5=PASS† (string+dist+源码；未做全路径 UI 点兑截图 — soft 不挡 Q1)
+
+########## SUMMARY ##########
+  Q1: PASS          (hard gate)
+  Q2: PASS
+  Q11/V1: PASS
+  Q3: PASS
+  Q12: PASS
+  Q6/Q10_soft: PASS†
+  FE_V3_V4_V5: PASS†
+  V2_soft: PASS† (席未补；造人旁路记债)
+  V6_issue: GAP† (签发仍可同席第二码；redeem 门禁绿)
+OVERALL: PASS†
+
+defects_to_open:
+- Go/产品: V6 若要求「一席一未吊销码」签发侧应收紧（现仅 redeem 拒顶替）
+- Go/产品: V2 停工/left 席 redeem bootstrap 仍 201 造人发钥但不绑席 — 是否应 409 人话「补位须显式绑席」到底（unit 已禁 auto-fill）
+- React/文档: api-keys revoke 活路径为 /api/v1/api-keys/{id}/revoke；ws 嵌套路径 404（list 仍在 ws 下）
+- React soft: Join/CrewPack 全路径点击截图可补（本轮 PASS† 不挡）
+
+WS=c4f62cf69839da35cec104514ed214fc
+evidence: docs/qa-shots/HUMAN_ONBOARD-Q1-Q3-Q12-qa-retest-20261024.txt
