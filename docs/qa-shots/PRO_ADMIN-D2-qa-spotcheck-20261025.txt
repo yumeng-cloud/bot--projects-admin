@@ -1,0 +1,69 @@
+PRO_ADMIN D2-4 QA spotcheck · 2026-10-25 01:58 Asia/Shanghai
+Overall: PASS†
+Feature SHA: 38e0b4cad5655b397a90719b08f511109fc7d217 (ancestor of HEAD 399b7d8 / local main)
+Debt: docs/NEXT_WAVE_DEBT_PRO_ADMIN_D2.md (parent docs/NEXT_WAVE_DEBT_PRO_ADMIN.md)
+Shot: docs/qa-shots/pro-d-users.png (78701 B @38e0b4c)
+Scope: D2 only. D3–D4 / E2 / G FROZEN — not verified.
+Accept补强（并入本验，不重开范围）: 芯片跳转须 `/w/{id}/board`；空搜须含「留空显示全部」；箱截对照 pro-d-users.png。
+
+Method
+- git log; confirm 38e0b4c ancestor of HEAD; git show 38e0b4c --stat
+- Inspect frontend/src/pages/admin/PlatformAdminPage.tsx: onUserWsChipClick / myWsIds / Tag chip / 空搜文案 / userSearchTimer 300ms
+- Grep nav(`/w/…`) · clipboard · message.success/warning · 「留空显示全部」
+- Read docs/qa-shots/pro-d-users.png as image
+- Soft† live FE Vite skipped (箱截+源码 suffice; seed qa-d2-seed.html verified)
+
+Accept checklist
+1. 有成员权时芯片跳转目标 `/w/{id}/board`（源码 navigate path） …… PASS
+   - onUserWsChipClick: if (myWsIds.has(w.id)) nav(`/w/${w.id}/board`); return
+   - myWsIds ← listMyWorkspaces() ids（本人成员权）
+   - 无 Link 误 path；与工作区表列 Link to={`/w/${row.id}/board`} 一致
+   - 补强核对：字面模板 `/w/${w.id}/board`，非 /settings|/home|/w/{id} 裸根
+
+2. 无成员权：复制名 + Toast …… PASS
+   - else: navigator.clipboard.writeText(name) → message.success(`已复制工作区名称「${name}」`)
+   - clipboard fail → message.warning(`无权限进入「${name}」，请手动复制名称`)
+   - Tag Tooltip: canEnter ?「点击进入该工作区」:「无成员权：点击复制名称」
+   - Tag color: canEnter ? processing : default；cursor pointer
+
+3. 空搜人话须含「留空显示全部」语义（产品原文） …… PASS
+   - 空关键词 Paragraph: 「输入邮箱或名称筛选用户；留空显示全部」— 含产品原文「…；留空显示全部」
+   - 有关键词: 「正在筛选「{q}」」
+   - placeholder/aria-label: 「输入邮箱或名称筛选用户」
+   - Empty 无匹配: 「无匹配用户，试试其他邮箱或名称」；无用户: 「还没有用户 · 输入邮箱或名称筛选用户」
+   - 禁空白死胡同 / 技术口吻 — 源码中文人话
+
+4. 用户表搜索防抖保留 …… PASS
+   - userQuery → userSearchTimer 300ms → setUserQueryDebounced
+   - onSearch bypasses debounce (setUserQuery + setUserQueryDebounced)
+   - loadUsers(userQueryDebounced) → listAdminUsers({q}) when trim
+
+5. 箱截 docs/qa-shots/pro-d-users.png …… PASS
+   - Exists 78701 B @38e0b4c；中文主 UI
+   - 用户 tab 激活「用户 (6)」；搜框空 + 灰字「输入邮箱或名称筛选用户；留空显示全部」可见
+   - 所属工作区列：蓝芯片（有成员权色 processing：育蒙科技/QA Invite WS/…）+ 灰芯片（QA代开 default）+「—」空属
+   - 平台超管 是/否 + 授予/撤消；禁挤叠/死白/英文露脸
+   - Seed: frontend/public/qa-d2-seed.html → /admin?tab=users
+
+6. 不破坏 A2 超管台壳 / C4 工作区筛 …… PASS
+   - Page bar 平台管理 / 全站工作区与用户 / 返回工作区 / 新建工作区 intact
+   - Tabs 工作区|用户；工作区侧 C4 名称搜+状态筛源码仍在
+   - Shot: A2 chrome + 用户表可见
+
+FAIL redlines hit? NONE
+- Chip jump path ≠ `/w/{id}/board` — NO（exact nav template）
+- No-member path missing copy+Toast — NO
+- Empty search missing「留空显示全部」 — NO（exact product phrase）
+- Debounce regress — NO
+- Shot missing/English/crush / 空搜文案不可见 — NO
+- A2/C4 break — NO
+
+Soft† notes
+- Live FE Vite skipped (standing Soft† optional; source+shot suffice — same as D1/C4)
+- Seed helper frontend/public/qa-d2-seed.html → /admin?tab=users
+- D3–D4 / E2 / G not opened
+
+Defects: (none blocking)
+
+Verdict: PASS† @38e0b4c
+One-line → 产品+React+总指挥: D2-4 PASS†；有成员权芯片 nav(`/w/{id}/board`) 源码核对过；无成员权复制名+Toast；空搜原文「…；留空显示全部」；防抖300ms保留；箱截 pro-d-users.png 中文芯片+空搜文案可见；A2/C4 未破；Soft† 活 FE 略；D3–D4/E2/G 未验。
