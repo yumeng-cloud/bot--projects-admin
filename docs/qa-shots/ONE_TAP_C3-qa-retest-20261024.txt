@@ -1,0 +1,93 @@
+=== ONE_TAP C3 · 打开即用 · QA 箱验（含 C1）===
+time_AsiaShanghai: 2026-10-25 00:01:11 CST
+authority: docs/NEXT_WAVE_DEBT_ONE_TAP_JOIN.md 包 C @064c7fd
+checklist_prep: docs/qa-shots/ONE_TAP_C3-checklist-prep-20261024.md @ca3aa17
+C1_feat: 9779f23 feat(fe): ONE_TAP C1 同源 /join 登录预填 JoinWizard
+C2_cite: docs/qa-shots/ONE_TAP-C2-team-join-20261024.txt @ab8b416 (already PASS; not re-run)
+HEAD_at_verify: 8656359061e30d38c097e79e327fd1f2f87083cb (8656359 docs(ux): 产品勾 ONE_TAP C1 9779f23 + C2 ab8b416)
+merge_base_9779f23_ancestor: yes
+API: http://127.0.0.1:8080 (/healthz 200; ai-board-server pid live; redeem ≥c4ae0a5)
+FE: http://127.0.0.1:5174 vite preview; rebuilt this run → dist assets/index-3iy9N5iE.js（含 C1 文案；旧 dist 23:51 早于 9779f23 已替换）
+Admin: admin@yumeng.tech
+hang_Q1: HUMAN_ONBOARD-Q1-Q3-Q12-qa-retest-20261024.txt / 29743c3 redeem 无 Bearer→ymk_
+prod_E5: BLOCKED（DNS bot.api.sn.cn）— 不挡本条
+
+########## SETUP ##########
+WS: c4f62cf69839da35cec104514ed214fc (育蒙科技)
+TEAM: fa492820ee55e89501bab299c7343d60 (from-template default QA-ONE-TAP-C3-*)
+role/seat_slug: frontend (open→active after redeem)
+invite: POST …/teams/{team}/invites {seat_slug:frontend, role_hint:frontend, max_uses:5} → 201
+code_redacted: ymt_7d14…3ac9 (len=52; invite_id=8cbfef8f494a14c45b529fd2b98974db)
+canonical: https://bot.api.sn.cn/join?code=ymt_…&role=frontend
+local_API: http://127.0.0.1:8080/join?code=…&role=frontend
+local_FE:  http://127.0.0.1:5174/join?code=…&role=frontend
+
+########## C3-1 签发链接 ##########
+HTTP 201; URL 含 code=ymt_ + role=frontend; 无嵌 ymk_
+→ PASS
+
+########## C3-2 / C1 logged-out：短引导不消耗码 ##########
+API GET /join?code=&role= ×3 → HTTP 200 text/html
+  title 一键入场; 入场码/角色可见; install.sh curl|bash; 文案「本页不会消耗入场码」
+  ymk_plaintext_hits=0
+FE GET /join?code=&role= ×3 → HTTP 200 SPA shell
+FE dist (index-3iy9N5iE.js): 「本页不消耗入场码」+「登录后打开向导」+「正在打开入场向导」
+use_count before opens=0; after N=3 opens=0 (A4 口径) → unchanged
+→ PASS
+evidence_html: docs/qa-shots/ONE_TAP_C3-api-join-page-20261024.html (code redacted)
+
+########## C3-3 / C1 logged-in：预填 JoinWizard ##########
+源码+dist（硬门槛允许 string+route+one live）:
+  JoinPage.tsx: authed → listMyWorkspaces → nav /w/{ws}/settings/bots?join=1&code=&role=&seat=
+  BotsRosterPage.tsx: parseJoinSearchParams → setJoinPrefill → JoinTeamWizard initialCode/Role/Seat; 清 query
+  JoinTeamWizard.tsx: open 时 setYmt(initialCode); redeem body 带 prefRole/prefSeat
+  IdentityKeyRevealModal + token_issued→setRevealToken 仍在（V3/V4 未回归）
+dist 命中: 正在打开入场向导 / initialCode / IdentityKeyReveal / 本页不消耗入场码
+live: admin JWT list workspaces 200; 预填目标路径可构造
+未做全路径 UI 点兑截图（用户睡中；brief 允许 string+route+API）
+→ PASS†
+
+########## C3-4 join PASS（挂 Q1）##########
+POST /api/v1/team-invites/redeem {code, role:frontend} **无 Bearer** → HTTP 201
+  token=ymk_3c97…d86f token_issued=true
+  member_id=ac041f1195f683e4ef4f59004760b847
+  seat_id=27ff525c18015ab7dcfe821d31225263 role_slug=frontend
+ROSTER frontend: status=active bound_member_id=ac041f11… bound_display_name=frontend
+WHOAMI GET /api/v1/bots/me Bearer ymk_ → 200 actor_kind=bot member_id=同
+use_count after redeem=1 (仅 redeem 递增；opens 未动)
+→ PASS
+
+########## C3-5 同钥再 join（挂 Q2）##########
+POST redeem 同 ymt_ + Bearer ymk_ → HTTP 200; 无新 token; same member_id
+→ PASS
+
+########## C3-6 soft 公开包/提示词 0×ymk_ ##########
+API /join HTML ymk_hits=0（含兑换后仍 0）
+FE dist ymk_ literal keys=0
+buildBotJoinPrompt 无 ymk 参数；公开提示词只含 ymt_
+auto-crew-pack HTTP 端点本轮 404（不挡；入场链/提示词/join 页已 0×ymk_）
+FOOLPROOF 成功页私露钥除外（本刀未测创建成功页）
+→ PASS†
+
+########## V3 token→IdentityKeyReveal 未回归 ##########
+JoinTeamWizard: token_issued && ymk_ → setRevealToken → IdentityKeyRevealModal 仍在源码+dist
+→ PASS
+
+########## SUMMARY ##########
+  C3-1: PASS
+  C3-2 / C1 logged-out: PASS
+  C3-3 / C1 logged-in prefill: PASS†
+  C3-4 join (Q1): PASS
+  C3-5 rejoin (Q2): PASS
+  C3-6 soft 0×ymk_: PASS†
+  V3 IdentityKeyReveal: PASS
+  C2 (cite only): PASS @ab8b416
+OVERALL: PASS†
+
+defects: none blocking
+notes:
+- prod install.sh / E5 DNS still BLOCKED — not failed here
+- C1 UI click-path screenshot optional follow-up (PASS† 不挡关)
+- FE preview 须用含 9779f23 的 dist（本轮已 rebuild）
+
+evidence: docs/qa-shots/ONE_TAP_C3-qa-retest-20261024.txt

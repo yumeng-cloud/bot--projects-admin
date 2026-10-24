@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>一键入场 · AI 协作看板</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;max-width:44rem;margin:2rem auto;padding:0 1rem;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.35rem;margin-bottom:.25rem} .sub{color:#666;margin-top:0}
+table{border-collapse:collapse;width:100%;margin:1rem 0}
+th,td{text-align:left;padding:.4rem .5rem;border-bottom:1px solid #eee;vertical-align:top}
+th{width:7rem;color:#555;font-weight:600}
+pre,textarea{width:100%;box-sizing:border-box;background:#f6f8fa;border:1px solid #d0d7de;border-radius:8px;padding:.75rem;font-size:.85rem;overflow:auto}
+textarea{min-height:14rem;resize:vertical}
+.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0}
+button{cursor:pointer;background:#1677ff;color:#fff;border:0;border-radius:6px;padding:.45rem .9rem;font-size:.9rem}
+button.secondary{background:#fff;color:#1677ff;border:1px solid #1677ff}
+.note{background:#f0f5ff;border:1px solid #adc6ff;padding:.75rem 1rem;border-radius:8px;font-size:.9rem}
+.ok{color:#389e0d;font-size:.85rem;margin-left:.5rem}
+</style>
+</head>
+<body>
+<h1>一键入场</h1>
+<p class="sub">先装 <code>ymbot</code>（若无）→ 再贴提示词或 CLI 入队。本页<strong>不会</strong>消耗入场码（兑换仍由 <code>team join</code> / redeem 完成）。</p>
+<table>
+<tr><th>API 根</th><td><code>https://bot.api.sn.cn</code></td></tr>
+<tr><th>入场码</th><td><code>ymt_7d14…3ac9</code></td></tr>
+<tr><th>角色</th><td>frontend</td></tr>
+
+</table>
+<div class="note">打开看板 → 设置 → Bot 席 →「加入团队」，粘贴入场码完成（人类路径；Bot 请用下方提示词或 CLI）。</div>
+<h2>① 一键安装 ymbot（若本机还没有）</h2>
+<p class="sub">禁止假设已装 CLI。主路径 curl|bash；备路径见提示词内 <code>go install …</code>。</p>
+<pre id="install">curl -fsSL https://bot.api.sn.cn/install.sh | bash</pre>
+<div class="actions">
+<button type="button" onclick="copyText('install',this)">复制安装命令</button>
+</div>
+<h2>② CLI 入队（装好后再跑）</h2>
+<pre id="cli">ymbot team join --code ymt_7d14…3ac9 --role frontend</pre>
+<div class="actions">
+<button type="button" onclick="copyText('cli',this)">复制 CLI</button>
+</div>
+<h2>Bot 提示词</h2>
+<textarea id="prompt" readonly>curl -fsSL https://bot.api.sn.cn/install.sh | bash
+
+你是育蒙协作看板（AI Collab Board）的入场 Bot。对方**未必已装** `ymbot`：先安装再入队。不要让用户改 mcp.json，也不要教一长串 YMBOT_* 环境变量。
+
+## 0. 一键安装（强制·若本机还没有 ymbot）
+主路径（复制执行）：
+```
+curl -fsSL https://bot.api.sn.cn/install.sh | bash
+```
+备路径（已装 Go 时）：
+```
+go install github.com/yumeng-tech/ai-collab-board/backend/cmd/ymbot@latest
+```
+装完自检：`ymbot -h`（或 `ymbot version`）。若 `~/.local/bin` 不在 PATH，按安装脚本提示 export。
+
+## 连接
+- API 根：`https://bot.api.sn.cn`（whoami / join / handoff 都打这个根；可用环境变量 `YMBOT_API_URL=https://bot.api.sn.cn`，勿把 Key 清单当主教程）
+- 入场码：`ymt_7d14…3ac9`
+- 目标角色（席位 slug）：`frontend`
+- 身份：使用本机已有 Bot Key（ymk_…）或 Vault；**禁止**把 ymk_ 贴进聊天或写入可转发链接。
+
+## 主航线（必须按序）
+0. 安装（若无）：上面 curl|bash 或 go install
+1. 确认身份：`board_whoami` / `ymbot whoami`
+2. 入队：`ymbot team join --code ymt_7d14…3ac9 --role frontend`（等价 MCP `board_team_join`；底层仍是既有 redeem → pull → enter，**不要**另造 claim）
+3. 接班：`handoff get` / `ymbot handoff get`；任务与真相源在服务端。
+
+## 禁区
+- 禁止假设本机已装 ymbot 而跳过第 0 步
+- 禁止教改 mcp.json / Cursor MCP 配置当主路径
+- 禁止把「导出 YMBOT_API_URL / YMBOT_API_KEY 清单」当入场步骤
+- 禁止在回复里回显完整 ymk_
+
+CLI 一行（已带码；须先完成安装）：
+```
+ymbot team join --code ymt_7d14…3ac9 --role frontend
+```
+</textarea>
+<div class="actions">
+<button type="button" onclick="copyText('prompt',this)">复制提示词</button>
+<button type="button" class="secondary" onclick="copyText('cli',this)">复制 CLI</button>
+</div>
+<p class="sub">安全：链接含入场码明文，勿发公开群；勿把 <code>ymk_</code> 写入可转发内容。禁区：不要教改 mcp.json / 长串 YMBOT_*。</p>
+<script>
+function copyText(id, btn){
+  var el = document.getElementById(id);
+  var t = el.value !== undefined ? el.value : el.textContent;
+  navigator.clipboard.writeText(t).then(function(){
+    var s = document.createElement('span'); s.className='ok'; s.textContent='已复制';
+    btn.after(s); setTimeout(function(){ s.remove(); }, 1600);
+  });
+}
+</script>
+</body>
+</html>

@@ -151,11 +151,13 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [x] **E5** 无 CLI→装→join 箱证 · QA **PASS† local** `e1b3f26`/`ONE_TAP_E5-qa-retest-20261024.txt`；**prod BLOCKED**（须 API≥`4cdaa04` 重部署后 spotcheck `https://bot.api.sn.cn/install.sh`）
 - [x] **C1** 打开引导 · React FE `/join` 登录预填 JoinWizard · `9779f23`
 - [x] **C2** 提示词航线 join · `ab8b416` + 证 `ONE_TAP-C2-team-join-20261024.txt` PASS
-- [ ] **C3** 打开即用箱证
+- [x] **C3** 打开即用箱证 · QA PASS† `ONE_TAP_C3-qa-retest-20261024.txt`（C1@9779f23；C3-4 挂 Q1）
 - [x] **D1** 文档主路径改口 · `518a4b6` BOT.md 主路径=席页复制入场链接/提示词；env/mcp 降附录非推荐；README 轻对齐
 - [ ] **D2** 产品关单
 
 ## 进度注记
+
+- 2026-10-25 00:01 · **C3 PASS†** QA：链接→API/FE 短引导不耗码；登录预填 JoinWizard（string+route+dist）；redeem 无 Bearer→ymk_+席 active+whoami；V3 露钥未回归。E5 prod 仍 BLOCKED 不挡。
 
 - 2026-10-25 00:15 · **产品勾 C1** `9779f23`（登录 `/join`→预填 JoinWizard；未登录短引导不耗码；Go `/join` 未动）。
 - 2026-10-25 00:15 · **产品勾 C2** `ab8b416`（空手 `team join` 自动得钥；续队不重发；箱证 PASS；无长 env/mcp）。

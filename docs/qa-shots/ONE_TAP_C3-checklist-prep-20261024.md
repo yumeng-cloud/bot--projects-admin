@@ -44,7 +44,10 @@
 
 ## 状态
 
+> 2026-10-25 ~00:01 Asia/Shanghai · QA 活点 **PASS†** · 证据 `ONE_TAP_C3-qa-retest-20261024.txt` · C1=`9779f23` · HEAD 见该文件。
+
+
 | ID | 状态 |
 | --- | --- |
-| C3 checklist | **PREP**（本文件） |
-| C3 活点 | **WAITING** React C1 |
+| C3 checklist | **DONE** → `ONE_TAP_C3-qa-retest-20261024.txt` |
+| C3 活点 | **PASS†**（C1@9779f23 含；见 retest） |
