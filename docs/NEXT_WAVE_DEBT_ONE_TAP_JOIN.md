@@ -146,7 +146,7 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [x] **E2** `GET /install.sh` · Go `4cdaa04`
 - [x] **E3** `/join` 页露安装 · Go `4cdaa04`
 - [x] **E4** FE 提示词对齐+重截 · React `b76bfc0` · `one-tap-copy-prompt.png`
-- [ ] **E5** 无 CLI→装→join 箱证 · QA
+- [ ] **E5** 无 CLI→装→join 箱证 · QA（**后置不挡** 复制即装产品关）
 - [ ] **C1** 打开引导
 - [ ] **C2** 提示词航线 join
 - [ ] **C3** 打开即用箱证
@@ -154,6 +154,8 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [ ] **D2** 产品关单
 
 ## 进度注记
+
+- 2026-10-24 22:36 · **复制即装产品关（E1–E4）** 总指挥令：FE `b76bfc0` + Go `4cdaa04` 已交付；**E5 后置不挡关**（对齐深 C3 后置口径）。
 
 - 2026-10-24 22:35 · **产品勾 E4** React `b76bfc0`：提示词置顶 curl|bash + go install 备；箱截可见安装段。E1–E4 齐；**待 E5 QA**（无 CLI→装→join）。
 
@@ -174,4 +176,4 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 关单进度
 
-**进行中** · E1–E4 产品勾（Go `4cdaa04` / FE `b76bfc0`）；**待 E5 QA**；C/D 仍开。
+**进行中** · **E 复制即装产品关（E1–E4）** Go `4cdaa04` / FE `b76bfc0` / 债本提交；E5 后置；C/D 仍开。
