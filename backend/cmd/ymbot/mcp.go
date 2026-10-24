@@ -166,6 +166,18 @@ func mcpTools() []map[string]any {
 		{"name": "board_patrol", "description": "辅路径巡检：当前席 open+assignee=me；quiet_if_unchanged 无变化则空内容 exit 等价安静", "inputSchema": obj(map[string]any{
 			"quiet_if_unchanged": bol, "state_file": str, "full": full, "ids": ids,
 		})},
+		{"name": "board_pin_list", "description": "队共享记忆墙列表（非私有 memory）", "inputSchema": obj(map[string]any{
+			"team_uuid": str, "full": full, "ids": ids,
+		}, "team_uuid")},
+		{"name": "board_pin_get", "description": "读一条队 pin；无则 404", "inputSchema": obj(map[string]any{
+			"team_uuid": str, "key": str, "full": full, "ids": ids,
+		}, "team_uuid", "key")},
+		{"name": "board_pin_set", "description": "Upsert 队 pin（共享墙；非 handoff）", "inputSchema": obj(map[string]any{
+			"team_uuid": str, "key": str, "value": str, "idempotency_key": idKey, "full": full, "ids": ids,
+		}, "team_uuid", "key")},
+		{"name": "board_pin_delete", "description": "删一条队 pin", "inputSchema": obj(map[string]any{
+			"team_uuid": str, "key": str, "full": full, "ids": ids,
+		}, "team_uuid", "key")},
 	}
 }
 
@@ -570,6 +582,49 @@ func callTool(c *botclient.Client, name string, args map[string]any) (string, er
 			return "", nil
 		}
 		return res.Text, nil
+	case "board_pin_list", "board_pin_get", "board_pin_set", "board_pin_delete":
+		uuid := strArg(args, "team_uuid")
+		if uuid == "" {
+			uuid = strArg(args, "uuid")
+		}
+		if uuid == "" {
+			return "", fmt.Errorf("需要 team_uuid")
+		}
+		key := strArg(args, "key")
+		var raw json.RawMessage
+		var err error
+		switch name {
+		case "board_pin_list":
+			raw, err = c.PinList(uuid)
+		case "board_pin_get":
+			if key == "" {
+				return "", fmt.Errorf("需要 key")
+			}
+			raw, err = c.PinGet(uuid, key)
+		case "board_pin_set":
+			if key == "" {
+				return "", fmt.Errorf("需要 key")
+			}
+			raw, err = c.PinSet(uuid, key, strArg(args, "value"))
+		case "board_pin_delete":
+			if key == "" {
+				return "", fmt.Errorf("需要 key")
+			}
+			raw, err = c.PinDelete(uuid, key)
+		}
+		if err != nil {
+			return "", err
+		}
+		if opts.Full {
+			var v any
+			_ = json.Unmarshal(raw, &v)
+			return botclient.MarshalView(v), nil
+		}
+		items, err := botclient.ProjectPins(raw, opts)
+		if err != nil {
+			return "", err
+		}
+		return botclient.FormatPinListText(items), nil
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}

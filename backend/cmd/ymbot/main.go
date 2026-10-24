@@ -74,6 +74,11 @@ whoami 可前置自检；migrate enter = seat enter（别名，非第二条主�
   comment create --issue YM-12 -m|--body TEXT [--idempotency-key] [--autosave]
   memory list [--q] [--mode keyword|semantic|hybrid] [--limit N] [--full|--id|--json]
   memory set --key K --value V [--tags] [--idempotency-key] [--autosave]
+  pin list --team <uuid> [--full|--id|--json]
+                                            队共享记忆墙列表（非私有 memory）
+  pin get --team <uuid> --key K [--full|--id|--json]
+  pin set --team <uuid> --key K --value V [--idempotency-key]
+  pin delete --team <uuid> --key K
   handoff export [--out file.json] […]      换机备份可选；日常续工不需要
   handoff import --file file.json|- […]     救场/迁入可选；非日常续工
   mcp-serve            stdio MCP（full/ids 同 --full/--id）

@@ -42,7 +42,7 @@
 
 - REST 契约：[`API.md`](./API.md)「Team pins」
 - 通道：[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.5 `board_pin_*`
-- 实现：Go `6915db4` · FE `4459d01` · 箱证 `1a38ce4`
+- 实现：Go `6915db4` · FE `4459d01` · 箱证 `1a38ce4` · 通道 CLI/MCP `board_pin_*`（本包补挂）
 
 ## 产品勾选
 

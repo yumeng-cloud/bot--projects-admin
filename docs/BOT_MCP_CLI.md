@@ -272,7 +272,7 @@ go run ./cmd/ymbot mcp-serve
 | **切队怎么做** | **换入参**，无 `YMBOT_TEAM_ID` sticky。CLI：`team pull --uuid`（队 A 或 B）；`seat enter` / `leave` / `expand --team <uuid>`。MCP：`board_team_pull.team_uuid`；`board_seat_*` / `board_seat_expand` 的 `team_uuid` |
 | **环境仍只需** | `YMBOT_API_URL` · `YMBOT_API_KEY` · `YMBOT_WORKSPACE_ID`（同 §11.1/11.3） |
 | **REST 作用域** | `/workspaces/{ws}/teams/{teamID}/roster` · `…/seats` · … — path 上的 `teamID` 即隔离边界 |
-| **本切片不做** | pins tool（**pins 契约见 §11.5**，实现待 SHA）；`board_issue_list` 按 team 过滤；FE 切换器 |
+| **本切片不做** | `board_issue_list` 按 team 过滤；FE 切换器（**pins 通道见 §11.5**，已挂载） |
 
 ```bash
 # 同 WS 两队（把 A/B 换成真实 team UUID）
@@ -287,7 +287,7 @@ MCP 等价：Inspector 对 `board_team_pull` 各传一次不同 `team_uuid`（�
 ### 11.5 Team pins（`board_pin_*` · 契约）
 
 > 对接 T6 余债 **共享记忆墙**。权威开工单：[`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md)。REST 契约：[`API.md`](./API.md)「Team pins」。  
-> **状态：契约已齐、实现待 SHA**——下文 tool / CLI 名与入参对齐债务单；**未**宣称已挂载；**勿勾** P1–P5，等实现 commit SHA 后再箱验。
+> **状态：通道已挂载**（botclient + `ymbot pin` + MCP `board_pin_*`；REST 见 `6915db4`）。箱验 P1–P3 证据：[`qa-shots/pins-team-isolate-20261024.txt`](./qa-shots/pins-team-isolate-20261024.txt)。日常续命仍 `handoff get`，**不**用 pin 替代。
 
 | | |
 |--|--|
@@ -306,12 +306,11 @@ MCP 等价：Inspector 对 `board_team_pull` 各传一次不同 `team_uuid`（�
 可选同期（非债务硬门槛）：`board_pin_delete` / `ymbot pin delete` → `DELETE …/pins/{key}`。
 
 ```bash
-# 契约示意（实现落地后才可跑；占位勿当已通）
-# ymbot pin set --team "$TEAM_A" --key decision --value "采用方案 B"
-# ymbot pin list --team "$TEAM_A"
-# ymbot pin list --team "$TEAM_B"   # 不应出现队 A 的 decision
-# ymbot pin get  --team "$TEAM_B" --key decision   # 期望 404
+ymbot pin set --team "$TEAM_A" --key decision --value "采用方案 B"
+ymbot pin list --team "$TEAM_A"
+ymbot pin list --team "$TEAM_B"   # 不应出现队 A 的 decision
+ymbot pin get  --team "$TEAM_B" --key decision   # 期望 404
 ```
 
-MCP：Inspector 在实现挂载后应 `tools/list` 含 `board_pin_list` / `board_pin_get` / `board_pin_set`；冒烟对两队各 `list`/`set` 验隔离。  
-**自检一句（落地后）**：队 A set → 队 A get 见、队 B list/get 无/404 → 可对 [`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md) 勾 P1–P2；**本文档本身不勾验收**。
+MCP：`tools/list` 含 `board_pin_list` / `board_pin_get` / `board_pin_set`（及可选 `board_pin_delete`）。  
+**自检一句**：队 A set → 队 A get 见、队 B list/get 无/404（REST 箱验已 PASS；通道冒烟 list/get/set 不 501）。

@@ -40,6 +40,8 @@ func runCLI(args []string) error {
 		return cmdMigrate(c, args[1:])
 	case "patrol":
 		return cmdPatrol(c, args[1:])
+	case "pin":
+		return cmdPin(c, args[1:])
 	default:
 		return fmt.Errorf("未知命令: %s（ymbot --help）", args[0])
 	}
@@ -787,4 +789,120 @@ func cmdPatrol(c *botclient.Client, args []string) error {
 	}
 	printView(opts.View, res.Text, res.Items)
 	return nil
+}
+
+func cmdPin(c *botclient.Client, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("用法: ymbot pin list|get|set|delete …\n队共享记忆墙（非私有 memory；切队换 --team）")
+	}
+	switch args[0] {
+	case "list":
+		fs := newFS("pin list")
+		team := fs.String("team", "", "team uuid")
+		full, ids, asJSON := viewFlags(fs)
+		if err := fs.Parse(reorderFlags(args[1:])); err != nil {
+			return err
+		}
+		if *team == "" {
+			return fmt.Errorf("需要 --team <uuid>")
+		}
+		opts := optsFrom(*full, *ids, *asJSON)
+		raw, err := c.PinList(*team)
+		if err != nil {
+			return err
+		}
+		if opts.Full {
+			printRawFull(raw)
+			return nil
+		}
+		items, err := botclient.ProjectPins(raw, opts)
+		if err != nil {
+			return err
+		}
+		printView(opts, botclient.FormatPinListText(items), items)
+		return nil
+	case "get":
+		fs := newFS("pin get")
+		team := fs.String("team", "", "team uuid")
+		key := fs.String("key", "", "")
+		full, ids, asJSON := viewFlags(fs)
+		if err := fs.Parse(reorderFlags(args[1:])); err != nil {
+			return err
+		}
+		if *team == "" || *key == "" {
+			return fmt.Errorf("需要 --team <uuid> 与 --key")
+		}
+		opts := optsFrom(*full, *ids, *asJSON)
+		raw, err := c.PinGet(*team, *key)
+		if err != nil {
+			return err
+		}
+		if opts.Full {
+			printRawFull(raw)
+			return nil
+		}
+		items, err := botclient.ProjectPins(raw, opts)
+		if err != nil {
+			return err
+		}
+		printView(opts, botclient.FormatPinListText(items), items)
+		return nil
+	case "set":
+		fs := newFS("pin set")
+		team := fs.String("team", "", "team uuid")
+		key := fs.String("key", "", "")
+		value := fs.String("value", "", "")
+		idKey := fs.String("idempotency-key", "", "")
+		full, ids, asJSON := viewFlags(fs)
+		if err := fs.Parse(reorderFlags(args[1:])); err != nil {
+			return err
+		}
+		if *team == "" || *key == "" {
+			return fmt.Errorf("需要 --team <uuid> 与 --key（--value 可空串）")
+		}
+		applyIDKey(c, *idKey)
+		raw, err := c.PinSet(*team, *key, *value)
+		if err != nil {
+			return err
+		}
+		opts := optsFrom(*full, *ids, *asJSON)
+		if opts.Full {
+			printRawFull(raw)
+			return nil
+		}
+		items, err := botclient.ProjectPins(raw, opts)
+		if err != nil {
+			return err
+		}
+		printView(opts, botclient.FormatPinListText(items), items)
+		return nil
+	case "delete":
+		fs := newFS("pin delete")
+		team := fs.String("team", "", "team uuid")
+		key := fs.String("key", "", "")
+		full, ids, asJSON := viewFlags(fs)
+		if err := fs.Parse(reorderFlags(args[1:])); err != nil {
+			return err
+		}
+		if *team == "" || *key == "" {
+			return fmt.Errorf("需要 --team <uuid> 与 --key")
+		}
+		opts := optsFrom(*full, *ids, *asJSON)
+		raw, err := c.PinDelete(*team, *key)
+		if err != nil {
+			return err
+		}
+		if opts.Full {
+			printRawFull(raw)
+			return nil
+		}
+		items, err := botclient.ProjectPins(raw, opts)
+		if err != nil {
+			return err
+		}
+		printView(opts, botclient.FormatPinListText(items), items)
+		return nil
+	default:
+		return fmt.Errorf("未知 pin 子命令: %s", args[0])
+	}
 }
