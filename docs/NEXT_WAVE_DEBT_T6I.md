@@ -58,8 +58,12 @@
   - QA 证据 [`qa-shots/T6I-issue-pool-20261024.txt`](./qa-shots/T6I-issue-pool-20261024.txt) · HEAD 含 `75aadce`
   - 双队 create/list/search 不串；错队 GET/PATCH → 404；缺/错 team_id → 4xx 中文；NULL 仅 `?unassigned=1`
   - 产品抽跑 `go test … -run 'I1|I2|LegacyNull|TeamPool'` ok
-- [ ] **I4** FE 换池箱截（代码 `f3860c5`；正式勾待 5174 截图）
+- [x] **I4** FE 换池箱截 PASS · 2026-10-24 19:13 Asia/Shanghai
+  - FE `f3860c5` · 箱截 `2064d89`
+  - [`t6i-list-teamA.png`](./qa-shots/t6i-list-teamA.png) / [`t6i-list-teamB-empty.png`](./qa-shots/t6i-list-teamB-empty.png)
+  - [`t6i-board-teamA.png`](./qa-shots/t6i-board-teamA.png) / [`t6i-board-teamB-empty.png`](./qa-shots/t6i-board-teamB-empty.png)
+  - 产品目视：A 见 YM-19/YM-22（含 UI create）；切 T6-TeamB 列表/看板空态无残留；未分队入口本包不做
 
 ## 关单进度
 
-半单：I1–I3 已勾。整单待 I4 FE 箱截。T7 仍不开。
+**整单关**：I1–I4 全勾 · 2026-10-24 19:13 Asia/Shanghai。T6 P0.5（roster+pins+Issue 池）收口。**T7 仍另开。**
