@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Drawer, Form, Space, Tag, message, Typography } from 'antd'
-import { patchIssue, listProjectMembers, listProjectLabels, listIssues } from '../../api/issues'
+import { Button, Drawer, Form, Space, Tag, message, Typography } from 'antd'
+import { patchIssue, listProjectMembers, listProjectLabels, listIssues, unarchiveIssues } from '../../api/issues'
 import type { IssuePatch } from '../../api/issues'
 import { listCycles } from '../../api/cycles'
 import { listComments, createComment, deleteComment } from '../../api/comments'
@@ -24,6 +24,7 @@ import type {
   RelationType,
 } from '../../types/issue'
 import { PRIORITY_LABELS, STATUS_LABELS, isIssueArchived, memberLabel } from '../../types/issue'
+import { ApiError } from '../../api/client'
 import { IssueDetailMain } from './IssueDetailMain'
 import { IssuePropertyRail } from './IssuePropertyRail'
 import { dayjs, TZ } from '../../utils/time'
@@ -169,6 +170,10 @@ function activitySentence(action: string, payload: string | null | undefined): s
       return '移除了标签'
     case 'issue.cycle_completed_moved':
       return 'Cycle 完成后移动'
+    case 'issue.archived':
+      return '归档了 Issue'
+    case 'issue.unarchived':
+      return '取消归档了 Issue'
     default:
       return '更新了 Issue'
   }
@@ -209,6 +214,7 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, teamId, onClo
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [quickSaving, setQuickSaving] = useState(false)
+  const [unarchiving, setUnarchiving] = useState(false)
   const [members, setMembers] = useState<MemberRef[]>([])
   const [labels, setLabels] = useState<Label[]>([])
   const [cycles, setCycles] = useState<Cycle[]>([])
@@ -493,6 +499,30 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, teamId, onClo
     }
   }
 
+  const handleUnarchive = async () => {
+    if (!issue || unarchiving) return
+    const prev = issue
+    const optimistic: Issue = { ...issue, archived_at: null }
+    setUnarchiving(true)
+    onSaved(optimistic)
+    try {
+      await unarchiveIssues(workspaceId, [issue.id])
+      message.success('已取消归档')
+      void loadSide(issue.id)
+    } catch (err) {
+      onSaved(prev)
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : '解档失败'
+      message.error(msg || '解档失败')
+    } finally {
+      setUnarchiving(false)
+    }
+  }
+
   return (
     <Drawer
       title={
@@ -526,8 +556,11 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, teamId, onClo
       {issue && (
         <div className="acb-issue-shell">
           {isIssueArchived(issue) ? (
-            <div className="acb-issue-archived-banner" role="status">
-              此 Issue 已归档，默认列表与看板不可见。解档功能后置，本包仅只读提示。
+            <div className="acb-issue-archived-banner" role="status" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <span>此 Issue 已归档，默认列表与看板不可见。</span>
+              <Button size="small" type="primary" ghost loading={unarchiving} onClick={() => void handleUnarchive()}>
+                取消归档
+              </Button>
             </div>
           ) : null}
           <div className="acb-issue-layout">
@@ -579,6 +612,8 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, teamId, onClo
             otherIssueLabel={otherIssueLabel}
             otherIssueId={otherIssueId}
             archivedAt={issue.archived_at}
+            unarchiving={unarchiving}
+            onUnarchive={() => void handleUnarchive()}
           />
           </div>
         </div>

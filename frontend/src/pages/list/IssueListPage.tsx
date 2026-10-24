@@ -393,7 +393,18 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
         teamId={teamId}
         onClose={() => setOpen(false)}
         onSaved={(saved) => {
-          setIssues((prev) => prev.map((i) => (i.id === saved.id ? saved : i)))
+          const archived =
+            saved.archived_at != null && String(saved.archived_at).trim() !== ''
+          if (archived) {
+            setIssues((prev) => prev.filter((i) => i.id !== saved.id))
+            setCurrent(saved)
+            return
+          }
+          setIssues((prev) => {
+            const idx = prev.findIndex((i) => i.id === saved.id)
+            if (idx < 0) return [saved, ...prev]
+            return prev.map((i) => (i.id === saved.id ? saved : i))
+          })
           setCurrent(saved)
         }}
       />

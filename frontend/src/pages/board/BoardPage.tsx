@@ -274,7 +274,12 @@ export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
             setCurrent(saved)
             return
           }
-          setIssues((prev) => prev.map((i) => (i.id === saved.id ? saved : i)))
+          // B2：解档后回默认看板（若先前被剔出则 upsert）
+          setIssues((prev) => {
+            const idx = prev.findIndex((i) => i.id === saved.id)
+            if (idx < 0) return [saved, ...prev]
+            return prev.map((i) => (i.id === saved.id ? saved : i))
+          })
           setCurrent(saved)
         }}
       />

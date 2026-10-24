@@ -329,6 +329,57 @@ export async function archiveIssues(
   }
 }
 
+export type UnarchiveIssuesResult = {
+  ids: string[]
+  mock: boolean
+}
+
+/**
+ * WHEEL B2：批量取消归档。
+ * `POST /workspaces/{ws}/issues/unarchive` body `{ ids }`；幂等（已非归档亦 ok）。
+ */
+export async function unarchiveIssues(
+  workspaceId: string,
+  ids: string[],
+): Promise<UnarchiveIssuesResult> {
+  const unique = [...new Set(ids.filter(Boolean))]
+  if (unique.length === 0) return { ids: [], mock: preferMock() }
+
+  if (preferMock()) {
+    const now = new Date().toISOString()
+    const done: string[] = []
+    for (const id of unique) {
+      const idx = mockIssues.findIndex((i) => i.id === id)
+      if (idx < 0) continue
+      const cur = mockIssues[idx]
+      if (isIssueArchived(cur)) {
+        mockIssues[idx] = {
+          ...cur,
+          archived_at: null,
+          updated_at: now,
+          version: cur.version + 1,
+        }
+      }
+      done.push(id)
+    }
+    return { ids: done, mock: true }
+  }
+
+  try {
+    await api<unknown>(`/workspaces/${workspaceId}/issues/unarchive`, {
+      method: 'POST',
+      body: JSON.stringify({ ids: unique }),
+      skipToast: true,
+    })
+    return { ids: unique, mock: false }
+  } catch (err) {
+    if (err instanceof ApiError && (err.status === 404 || err.status === 501)) {
+      throw new ApiError('解档接口尚未就绪', err.code || 'not_found', err.status)
+    }
+    throw err
+  }
+}
+
 /** N4：POST …/issues/{id}/notify 同步扇出结果 */
 export type IssueNotifyResult = {
   delivered: number

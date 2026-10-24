@@ -1,4 +1,4 @@
-import { DatePicker, Form, InputNumber, Select, Typography } from 'antd'
+import { Button, DatePicker, Form, InputNumber, Select, Typography } from 'antd'
 import type { FormInstance } from 'antd/es/form'
 import type {
   Cycle,
@@ -49,6 +49,9 @@ type Props = {
   otherIssueId: (rel: IssueRelation) => string
   /** C4：已归档只读态 */
   archivedAt?: string | null
+  /** WHEEL B2：取消归档 */
+  unarchiving?: boolean
+  onUnarchive?: () => void
 }
 
 const statusOptions = ISSUE_STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] }))
@@ -85,6 +88,8 @@ export function IssuePropertyRail({
   otherIssueLabel,
   otherIssueId,
   archivedAt,
+  unarchiving,
+  onUnarchive,
 }: Props) {
   const archived =
     archivedAt != null && String(archivedAt).trim() !== ''
@@ -93,9 +98,22 @@ export function IssuePropertyRail({
       <Form form={form} size="small" requiredMark={false} colon={false} component="div">
         {archived ? (
           <IssuePropertyRow label="归档">
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              已归档（只读）
-            </Typography.Text>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                已归档
+              </Typography.Text>
+              {onUnarchive ? (
+                <Button
+                  size="small"
+                  type="link"
+                  style={{ padding: 0, height: 'auto' }}
+                  loading={unarchiving}
+                  onClick={() => onUnarchive()}
+                >
+                  取消归档
+                </Button>
+              ) : null}
+            </div>
           </IssuePropertyRow>
         ) : null}
         <IssuePropertyRow label="状态">
