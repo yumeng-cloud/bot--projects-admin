@@ -79,8 +79,18 @@ export interface Issue {
   /** S6：直接子节点数 */
   child_count?: number
   labels?: Label[]
+  /** ISO8601；非空=已归档；与 status 正交 */
+  archived_at?: string | null
   created_at: string
   updated_at: string
+}
+
+/** 已归档判定：archived_at 非空 */
+export function isIssueArchived(
+  i: Pick<Issue, 'archived_at'> | null | undefined,
+): boolean {
+  if (!i?.archived_at) return false
+  return String(i.archived_at).trim() !== ''
 }
 
 export const ISSUE_STATUSES: IssueStatus[] = [

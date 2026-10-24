@@ -1078,3 +1078,28 @@ button.acb-issue-attachment-name-btn:hover {
   color: var(--acb-text-secondary) !important;
   background: color-mix(in srgb, var(--acb-text) 4%, transparent) !important;
 }
+
+/* C4：已归档只读提示 */
+.acb-issue-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.acb-issue-archived-banner {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--acb-text-secondary);
+  background: color-mix(in srgb, var(--acb-warning, #f5a524) 12%, var(--acb-bg-container));
+  border-bottom: 1px solid var(--acb-border-secondary);
+}
+.acb-issue-archived-tag.ant-tag {
+  margin-inline-end: 0;
+  font-size: 11px;
+  line-height: 18px;
+  border-radius: 4px;
+}

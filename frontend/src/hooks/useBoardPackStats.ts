@@ -7,6 +7,7 @@ import {
   type PackCollaborator,
 } from '../components/board/BoardPackStrip'
 import type { Cycle, Issue, MemberRef } from '../types/issue'
+import { isIssueArchived } from '../types/issue'
 import { dayjs, TZ } from '../utils/time'
 
 export type UseBoardPackStatsArgs = {
@@ -81,7 +82,8 @@ export function useBoardPackStats({
         listProjectMembers(workspaceId).catch(() => ({ members: [] as MemberRef[] })),
         listCycles(workspaceId, projectId).catch(() => ({ cycles: [] as Cycle[] })),
       ])
-      setIssues(list)
+      // C2/C3：默认 list 不传 include_archived；若偶发带回归档则本地剔掉，避免虚增统计
+      setIssues(list.filter((i) => !isIssueArchived(i)))
       setMembers(mem.members || [])
       const active =
         (cyclesRes.cycles || []).find((c) => c.status === 'active') || null
@@ -128,12 +130,14 @@ export function useBoardPackStats({
   }, [reload])
 
   const { done, total, blockerCount, collaborators } = useMemo(() => {
-    const countable = issues.filter((i) => i.status !== 'canceled')
+    // C3：Pack 统计排除已归档（与 BE 一致；不本地虚增）
+    const visible = issues.filter((i) => !isIssueArchived(i))
+    const countable = visible.filter((i) => i.status !== 'canceled')
     const doneCount = countable.filter((i) => i.status === 'done').length
     const totalCount = countable.length
     const today = todayYmd()
     const overdueIds = new Set<string>()
-    for (const i of issues) {
+    for (const i of visible) {
       if (isTerminal(i.status)) continue
       const due = i.due_at
       if (!due) continue
@@ -142,7 +146,7 @@ export function useBoardPackStats({
     }
     const blockerSet = new Set<string>([...blockedIds, ...overdueIds])
     const collabs = collaboratorsFromIssues(
-      issues.map((i) => i.assignee_id),
+      visible.map((i) => i.assignee_id),
       members,
     )
     return {

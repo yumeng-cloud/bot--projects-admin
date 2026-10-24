@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Spin, Typography, Button, Input, Space, Empty, message } from 'antd'
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
-import { createIssue } from '../../api/issues'
+import { archiveIssues, createIssue } from '../../api/issues'
+import { ApiError } from '../../api/client'
 import {
   BoardPackStrip,
   ColumnTemplatePicker,
@@ -48,6 +49,7 @@ export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
   const [creating, setCreating] = useState(false)
   const [colPrefs, setColPrefs] = useState<BoardColumnLayout>(() => defaultPrefs())
   const [colsLoading, setColsLoading] = useState(true)
+  const [archiving, setArchiving] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -104,6 +106,39 @@ export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
     }
     setColPrefs(next)
   }
+
+
+  /** C1/C2：POST archive；乐观去卡，失败回滚 + 中文 Toast */
+  const handleArchiveIssues = useCallback(
+    async (ids: string[]) => {
+      if (!ids.length || archiving) return
+      const prev = issues
+      const idSet = new Set(ids)
+      setArchiving(true)
+      setIssues((list) => list.filter((i) => !idSet.has(i.id)))
+      if (current && idSet.has(current.id)) {
+        setOpen(false)
+        setCurrent(null)
+      }
+      try {
+        await archiveIssues(workspaceId, ids)
+        message.success(ids.length === 1 ? '已归档' : `已归档 ${ids.length} 条`)
+      } catch (err) {
+        setIssues(prev)
+        const msg =
+          err instanceof ApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : '归档失败'
+        message.error(msg || '归档接口尚未就绪')
+        throw err
+      } finally {
+        setArchiving(false)
+      }
+    },
+    [archiving, issues, current, setIssues, workspaceId],
+  )
 
   const goCycles = () => {
     navigate(`/w/${workspaceId}/projects/${projectId}/cycles`)
@@ -220,6 +255,8 @@ export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
             setCurrent(issue)
             setOpen(true)
           }}
+          onArchiveIssues={handleArchiveIssues}
+          archiving={archiving}
         />
       )}
       <IssueDrawer
@@ -230,6 +267,13 @@ export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
         teamId={teamId}
         onClose={() => setOpen(false)}
         onSaved={(saved) => {
+          const archived =
+            saved.archived_at != null && String(saved.archived_at).trim() !== ''
+          if (archived) {
+            setIssues((prev) => prev.filter((i) => i.id !== saved.id))
+            setCurrent(saved)
+            return
+          }
           setIssues((prev) => prev.map((i) => (i.id === saved.id ? saved : i)))
           setCurrent(saved)
         }}

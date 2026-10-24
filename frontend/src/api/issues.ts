@@ -1,6 +1,7 @@
-import { api } from './client'
+import { api, ApiError } from './client'
 import { mockIssues, mockLabels, mockMembers, preferMock } from './mockData'
 import type { Issue, IssueStatus, Label, MemberRef } from '../types/issue'
+import { isIssueArchived } from '../types/issue'
 
 export type IssueListQuery = {
   status?: IssueStatus | IssueStatus[]
@@ -16,6 +17,16 @@ export type IssueListQuery = {
   blocked?: boolean | '1' | 1
   /** due_at < today（日历日 Asia/Shanghai） */
   overdue?: boolean | '1' | 1
+  /**
+   * 含已归档（默认不传；BE 默认剔归档）。
+   * 看板/列表主路径勿传。
+   */
+  include_archived?: boolean | '1' | 1
+  /**
+   * 仅已归档。债文参数 `archived=only`（与 include_archived 互斥时 only 优先）。
+   * 归档专面为软债；本包类型预留，主路径不传。
+   */
+  archived_only?: boolean | '1' | 1
 }
 
 export type IssuePatch = Partial<
@@ -87,6 +98,18 @@ function filterMock(list: Issue[], q: IssueListQuery): Issue[] {
       if (i.status === 'done' || i.status === 'canceled') return false
     }
     // blocked: mock 无 relation 图，忽略（真 API 负责）
+    const archived = !!(i.archived_at && String(i.archived_at).trim())
+    const onlyArchived =
+      q.archived_only === true || q.archived_only === '1' || q.archived_only === 1
+    const includeArchived =
+      q.include_archived === true ||
+      q.include_archived === '1' ||
+      q.include_archived === 1
+    if (onlyArchived) {
+      if (!archived) return false
+    } else if (!includeArchived && archived) {
+      return false
+    }
     return true
   })
 }
@@ -105,6 +128,16 @@ function qs(query: IssueListQuery): string {
   if (query.leaf_only === true || query.leaf_only === '1' || query.leaf_only === 1) p.set('leaf_only', '1')
   if (query.blocked === true || query.blocked === '1' || query.blocked === 1) p.set('blocked', '1')
   if (query.overdue === true || query.overdue === '1' || query.overdue === 1) p.set('overdue', '1')
+  // archived_only 优先 → archived=only；否则 include_archived=1；默认不传
+  if (query.archived_only === true || query.archived_only === '1' || query.archived_only === 1) {
+    p.set('archived', 'only')
+  } else if (
+    query.include_archived === true ||
+    query.include_archived === '1' ||
+    query.include_archived === 1
+  ) {
+    p.set('include_archived', '1')
+  }
   const s = p.toString()
   return s ? `?${s}` : ''
 }
@@ -235,6 +268,66 @@ export async function listProjectMembers(
   return { members: data.members || [], mock: false }
 }
 
+
+
+export type ArchiveIssuesResult = {
+  /** 成功归档的 id（BE 未回明细时用请求 ids） */
+  ids: string[]
+  mock: boolean
+}
+
+/**
+ * C1：批量归档完成态 Issue。
+ * `POST /workspaces/{ws}/issues/archive` body `{ ids }`；仅 status=done（非 done 勿送或交 BE 拒）。
+ * API 未就绪（404/501）时抛中文错，由调用方 Toast + 回滚乐观更新。
+ */
+export async function archiveIssues(
+  workspaceId: string,
+  ids: string[],
+): Promise<ArchiveIssuesResult> {
+  const unique = [...new Set(ids.filter(Boolean))]
+  if (unique.length === 0) return { ids: [], mock: preferMock() }
+
+  if (preferMock()) {
+    const now = new Date().toISOString()
+    const archived: string[] = []
+    for (const id of unique) {
+      const idx = mockIssues.findIndex((i) => i.id === id)
+      if (idx < 0) continue
+      const cur = mockIssues[idx]
+      if (cur.status !== 'done') {
+        throw Object.assign(new Error('仅已完成的 Issue 可归档'), {
+          code: 'invalid_status',
+          status: 400,
+        })
+      }
+      if (!isIssueArchived(cur)) {
+        mockIssues[idx] = {
+          ...cur,
+          archived_at: now,
+          updated_at: now,
+          version: cur.version + 1,
+        }
+      }
+      archived.push(id)
+    }
+    return { ids: archived, mock: true }
+  }
+
+  try {
+    await api<unknown>(`/workspaces/${workspaceId}/issues/archive`, {
+      method: 'POST',
+      body: JSON.stringify({ ids: unique }),
+      skipToast: true,
+    })
+    return { ids: unique, mock: false }
+  } catch (err) {
+    if (err instanceof ApiError && (err.status === 404 || err.status === 501)) {
+      throw new ApiError('归档接口尚未就绪', err.code || 'not_found', err.status)
+    }
+    throw err
+  }
+}
 
 /** N4：POST …/issues/{id}/notify 同步扇出结果 */
 export type IssueNotifyResult = {

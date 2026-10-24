@@ -31,6 +31,7 @@ import {
   ISSUE_STATUSES,
   PRIORITY_LABELS,
   STATUS_LABELS,
+  isIssueArchived,
   memberLabel,
 } from '../../types/issue'
 import {
@@ -100,7 +101,8 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
         blocked: blocked || undefined,
         team_id: teamId || undefined,
       })
-      setIssues(list)
+      // C2：默认不传 include_archived；防御性剔归档，避免主列表虚显
+      setIssues(list.filter((i) => !isIssueArchived(i)))
     } catch {
       setIssues([])
       // 4xx toast from client; empty pool, no white screen

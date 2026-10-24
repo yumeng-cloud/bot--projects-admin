@@ -1,4 +1,4 @@
-import { DatePicker, Form, InputNumber, Select } from 'antd'
+import { DatePicker, Form, InputNumber, Select, Typography } from 'antd'
 import type { FormInstance } from 'antd/es/form'
 import type {
   Cycle,
@@ -47,6 +47,8 @@ type Props = {
   onRemoveRelation: (rel: IssueRelation) => void
   otherIssueLabel: (rel: IssueRelation) => string
   otherIssueId: (rel: IssueRelation) => string
+  /** C4：已归档只读态 */
+  archivedAt?: string | null
 }
 
 const statusOptions = ISSUE_STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] }))
@@ -82,10 +84,20 @@ export function IssuePropertyRail({
   onRemoveRelation,
   otherIssueLabel,
   otherIssueId,
+  archivedAt,
 }: Props) {
+  const archived =
+    archivedAt != null && String(archivedAt).trim() !== ''
   return (
     <aside className="acb-props-rail acb-property-rail">
       <Form form={form} size="small" requiredMark={false} colon={false} component="div">
+        {archived ? (
+          <IssuePropertyRow label="归档">
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              已归档（只读）
+            </Typography.Text>
+          </IssuePropertyRow>
+        ) : null}
         <IssuePropertyRow label="状态">
           <Form.Item name="status" noStyle>
             <Select

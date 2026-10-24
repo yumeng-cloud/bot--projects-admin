@@ -674,3 +674,37 @@ html[data-theme='dark'] .acb-col {
   line-height: 1.2;
   margin-top: 0 !important;
 }
+
+/* C1：完成列归档条 + 多选 */
+.acb-col-archive-bar {
+  flex-shrink: 0;
+  padding: 0 4px 6px;
+  margin-top: -2px;
+}
+.acb-col-archive-btn.ant-btn-link {
+  padding: 0 4px;
+  height: 22px;
+  font-size: 11px;
+  color: var(--acb-text-secondary);
+}
+.acb-col-archive-btn.ant-btn-link:not(:disabled):hover {
+  color: var(--acb-primary);
+}
+.acb-card-check {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.acb-card-check input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--acb-primary);
+  cursor: pointer;
+}
+.acb-card.is-checked {
+  outline: 1px solid color-mix(in srgb, var(--acb-primary) 45%, var(--acb-border));
+  background: color-mix(in srgb, var(--acb-primary) 6%, var(--acb-bg-container));
+}

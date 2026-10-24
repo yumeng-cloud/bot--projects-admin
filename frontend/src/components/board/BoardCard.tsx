@@ -32,6 +32,10 @@ type ViewProps = {
   innerRef?: (node: HTMLElement | null) => void
   attributes?: DraggableAttributes
   listeners?: SyntheticListenerMap
+  /** 完成列多选：显示勾选 */
+  selectable?: boolean
+  checked?: boolean
+  onToggleSelect?: (issue: Issue, next: boolean) => void
 }
 
 /** Pure card face — shared by sortable row and DragOverlay */
@@ -46,12 +50,16 @@ export function BoardCardView({
   innerRef,
   attributes,
   listeners,
+  selectable,
+  checked,
+  onToggleSelect,
 }: ViewProps) {
   const cls = [
     'acb-card',
     selected ? 'is-selected' : '',
     dragging ? 'is-dragging' : '',
     overlay ? 'is-overlay' : '',
+    selectable && checked ? 'is-checked' : '',
   ]
     .filter(Boolean)
     .join(' ')
@@ -72,6 +80,21 @@ export function BoardCardView({
     >
       <span className={`acb-prio-bar ${PRIO_CLASS[prio]}`} title={PRIORITY_LABELS[prio]} />
       <div className="acb-card-top">
+        {selectable ? (
+          <label
+            className="acb-card-check"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              checked={!!checked}
+              aria-label={`选择 ${issue.identifier}`}
+              onChange={(e) => onToggleSelect?.(issue, e.target.checked)}
+            />
+          </label>
+        ) : null}
         <div className="acb-card-id">{issue.identifier}</div>
         {name ? (
           <span className="acb-avatar" title={name}>
@@ -120,9 +143,20 @@ type Props = {
   assigneeName?: string | null
   selected?: boolean
   onOpen: (issue: Issue) => void
+  selectable?: boolean
+  checked?: boolean
+  onToggleSelect?: (issue: Issue, next: boolean) => void
 }
 
-export function BoardCard({ issue, assigneeName, selected, onOpen }: Props) {
+export function BoardCard({
+  issue,
+  assigneeName,
+  selected,
+  onOpen,
+  selectable,
+  checked,
+  onToggleSelect,
+}: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: issue.id,
     data: { status: issue.status },
@@ -145,6 +179,9 @@ export function BoardCard({ issue, assigneeName, selected, onOpen }: Props) {
       innerRef={setNodeRef}
       attributes={attributes}
       listeners={listeners}
+      selectable={selectable}
+      checked={checked}
+      onToggleSelect={onToggleSelect}
     />
   )
 }

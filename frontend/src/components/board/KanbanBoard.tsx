@@ -11,8 +11,8 @@ import {
   type DragStartEvent,
   type DropAnimation,
 } from '@dnd-kit/core'
-import { useEffect, useMemo, useState } from 'react'
-import { message } from 'antd'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Modal, message } from 'antd'
 import { patchIssue, listProjectMembers } from '../../api/issues'
 import type { Issue, IssueStatus } from '../../types/issue'
 import { memberLabel } from '../../types/issue'
@@ -41,6 +41,12 @@ type Props = {
   onOpen: (issue: Issue) => void
   /** Ordered visible columns from prefs; defaults to BOARD_COLUMNS */
   columns?: BoardColumnDef[]
+  /**
+   * C1：归档一批 done Issue（调用方发 POST …/archive，成功后本地去卡）。
+   * 返回 Promise；失败应抛错以便本组件回滚勾选态。
+   */
+  onArchiveIssues?: (ids: string[]) => Promise<void>
+  archiving?: boolean
 }
 
 function statusFromOver(overId: string | number, issues: Issue[]): IssueStatus | null {
@@ -57,10 +63,13 @@ export function KanbanBoard({
   onChange,
   onOpen,
   columns,
+  onArchiveIssues,
+  archiving,
 }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
   const [assigneeNames, setAssigneeNames] = useState<Record<string, string>>({})
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
   const visibleCols = useMemo(() => {
@@ -101,6 +110,71 @@ export function KanbanBoard({
   }, [issues, statusOrder])
 
   const active = issues.find((i) => i.id === activeId) || null
+
+  // 卡片被移除（归档）后清掉失效勾选
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev
+      let changed = false
+      const next = new Set<string>()
+      const idSet = new Set(issues.map((i) => i.id))
+      for (const id of prev) {
+        if (idSet.has(id)) next.add(id)
+        else changed = true
+      }
+      return changed ? next : prev
+    })
+  }, [issues])
+
+  const onToggleSelect = useCallback((issue: Issue, next: boolean) => {
+    if (issue.status !== 'done') return
+    setSelectedIds((prev) => {
+      const n = new Set(prev)
+      if (next) n.add(issue.id)
+      else n.delete(issue.id)
+      return n
+    })
+  }, [])
+
+  const archiveIds = useCallback(
+    async (ids: string[]) => {
+      const doneIds = ids.filter((id) => {
+        const iss = issues.find((i) => i.id === id)
+        return iss?.status === 'done'
+      })
+      if (doneIds.length === 0) {
+        message.warning('请选择已完成的 Issue')
+        return
+      }
+      if (!onArchiveIssues) {
+        message.error('归档接口尚未就绪')
+        return
+      }
+      await onArchiveIssues(doneIds)
+      setSelectedIds((prev) => {
+        const n = new Set(prev)
+        for (const id of doneIds) n.delete(id)
+        return n
+      })
+    },
+    [issues, onArchiveIssues],
+  )
+
+  const onArchiveSelected = useCallback(() => {
+    void archiveIds([...selectedIds])
+  }, [archiveIds, selectedIds])
+
+  const onArchiveColumn = useCallback(() => {
+    const colIds = (byStatus['done'] || []).map((i) => i.id)
+    if (colIds.length === 0) return
+    Modal.confirm({
+      title: '归档本列已完成',
+      content: `确认将完成列中的 ${colIds.length} 条 Issue 归档？归档后默认列表与看板不再显示。`,
+      okText: '归档',
+      cancelText: '取消',
+      onOk: () => archiveIds(colIds),
+    })
+  }, [archiveIds, byStatus])
 
   const onDragStart = (e: DragStartEvent) => {
     setActiveId(String(e.active.id))
@@ -212,6 +286,11 @@ export function KanbanBoard({
             onOpen={onOpen}
             dragOverId={overId}
             draggingStatus={active?.status ?? null}
+            selectedIds={selectedIds}
+            onToggleSelect={onToggleSelect}
+            onArchiveSelected={onArchiveSelected}
+            onArchiveColumn={onArchiveColumn}
+            archiving={archiving}
           />
         ))}
       </div>

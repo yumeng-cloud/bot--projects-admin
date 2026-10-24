@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import { Button, Space } from 'antd'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { Issue, IssueStatus } from '../../types/issue'
@@ -18,6 +19,14 @@ type Props = {
   dragOverId?: string | null
   /** Status of the card being dragged — used to show insertion line only across columns */
   draggingStatus?: IssueStatus | null
+  /** C1：完成列多选 id 集合 */
+  selectedIds?: Set<string>
+  onToggleSelect?: (issue: Issue, next: boolean) => void
+  /** 归档当前勾选（仅 done） */
+  onArchiveSelected?: () => void
+  /** 归档本列全部已完成 */
+  onArchiveColumn?: () => void
+  archiving?: boolean
 }
 
 export function BoardColumn({
@@ -29,11 +38,20 @@ export function BoardColumn({
   onOpen,
   dragOverId,
   draggingStatus,
+  selectedIds,
+  onToggleSelect,
+  onArchiveSelected,
+  onArchiveColumn,
+  archiving,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `col-${status}`, data: { status } })
   const crossColumn =
     draggingStatus != null && draggingStatus !== status && dragOverId != null
   const title = (label && label.trim()) || STATUS_LABELS[status]
+  const isDoneCol = status === 'done'
+  const selectedCount = isDoneCol
+    ? issues.filter((i) => selectedIds?.has(i.id)).length
+    : 0
 
   return (
     <div ref={setNodeRef} className={`acb-col${isOver ? ' is-over' : ''}`}>
@@ -42,6 +60,31 @@ export function BoardColumn({
         <span className="acb-col-name">{title}</span>
         <span className="acb-col-count">{issues.length}</span>
       </div>
+      {isDoneCol && issues.length > 0 ? (
+        <div className="acb-col-archive-bar">
+          <Space size={4} wrap>
+            <Button
+              type="link"
+              size="small"
+              className="acb-col-archive-btn"
+              disabled={selectedCount === 0 || archiving}
+              loading={archiving && selectedCount > 0}
+              onClick={() => onArchiveSelected?.()}
+            >
+              归档{selectedCount > 0 ? `（${selectedCount}）` : ''}
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              className="acb-col-archive-btn"
+              disabled={archiving || issues.length === 0}
+              onClick={() => onArchiveColumn?.()}
+            >
+              归档本列已完成
+            </Button>
+          </Space>
+        </div>
+      ) : null}
       <div className="acb-col-body">
         <SortableContext items={issues.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           <div className="acb-col-cards">
@@ -57,6 +100,9 @@ export function BoardColumn({
                     issue.assignee_id ? assigneeNames?.[issue.assignee_id] ?? null : null
                   }
                   onOpen={onOpen}
+                  selectable={isDoneCol}
+                  checked={isDoneCol ? !!selectedIds?.has(issue.id) : false}
+                  onToggleSelect={onToggleSelect}
                 />
               </Fragment>
             ))}

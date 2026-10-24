@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Drawer, Form, Space, message, Typography } from 'antd'
+import { Drawer, Form, Space, Tag, message, Typography } from 'antd'
 import { patchIssue, listProjectMembers, listProjectLabels, listIssues } from '../../api/issues'
 import type { IssuePatch } from '../../api/issues'
 import { listCycles } from '../../api/cycles'
@@ -23,7 +23,7 @@ import type {
   Comment,
   RelationType,
 } from '../../types/issue'
-import { PRIORITY_LABELS, STATUS_LABELS, memberLabel } from '../../types/issue'
+import { PRIORITY_LABELS, STATUS_LABELS, isIssueArchived, memberLabel } from '../../types/issue'
 import { IssueDetailMain } from './IssueDetailMain'
 import { IssuePropertyRail } from './IssuePropertyRail'
 import { dayjs, TZ } from '../../utils/time'
@@ -496,8 +496,13 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, teamId, onClo
   return (
     <Drawer
       title={
-        <Space size={8} align="center">
+        <Space size={8} align="center" wrap>
           <span className="acb-issue-header-id">{issue ? issue.identifier : 'Issue'}</span>
+          {issue && isIssueArchived(issue) ? (
+            <Tag className="acb-issue-archived-tag" color="default">
+              已归档
+            </Tag>
+          ) : null}
           {issue && (
             <Typography.Text type="secondary" style={{ fontSize: 11, fontWeight: 400 }}>
               v{issue.version}
@@ -519,7 +524,13 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, teamId, onClo
       }}
     >
       {issue && (
-        <div className="acb-issue-layout">
+        <div className="acb-issue-shell">
+          {isIssueArchived(issue) ? (
+            <div className="acb-issue-archived-banner" role="status">
+              此 Issue 已归档，默认列表与看板不可见。解档功能后置，本包仅只读提示。
+            </div>
+          ) : null}
+          <div className="acb-issue-layout">
           <IssueDetailMain
             workspaceId={workspaceId}
             issueId={issue.id}
@@ -567,7 +578,9 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, teamId, onClo
             onRemoveRelation={(rel) => void removeRelation(rel)}
             otherIssueLabel={otherIssueLabel}
             otherIssueId={otherIssueId}
+            archivedAt={issue.archived_at}
           />
+          </div>
         </div>
       )}
     </Drawer>
