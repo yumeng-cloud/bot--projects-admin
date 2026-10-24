@@ -53,7 +53,13 @@
 
 ## 产品勾选
 
-- [x] **I1** API/单测 · `fc8a446` + List 排除 NULL **`75aadce`**
-- [x] **I2** API 错队 404 / 双队 list 不串（单测随上）；箱验证据仍等 QA/I3
-- [ ] **I3** 证据 `docs/qa-shots/T6I-issue-pool-YYYYMMDD.txt` · 产品勾
-- [ ] **I4** FE（可后于 API；有 `f3860c5` 换池，正式勾待箱截）
+- [x] **I1–I3** API/箱验 PASS · 2026-10-24 19:12 Asia/Shanghai
+  - Go `fc8a446` / List NULL 策略 `75aadce`
+  - QA 证据 [`qa-shots/T6I-issue-pool-20261024.txt`](./qa-shots/T6I-issue-pool-20261024.txt) · HEAD 含 `75aadce`
+  - 双队 create/list/search 不串；错队 GET/PATCH → 404；缺/错 team_id → 4xx 中文；NULL 仅 `?unassigned=1`
+  - 产品抽跑 `go test … -run 'I1|I2|LegacyNull|TeamPool'` ok
+- [ ] **I4** FE 换池箱截（代码 `f3860c5`；正式勾待 5174 截图）
+
+## 关单进度
+
+半单：I1–I3 已勾。整单待 I4 FE 箱截。T7 仍不开。

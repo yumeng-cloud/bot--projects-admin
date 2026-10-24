@@ -155,7 +155,7 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 | **T3** | 迁绑 **单活**：第二机绑定有冲突提示；确认后旧绑失效或只读 | [x] FE 专面 `T3-conflict.png`（禁顶替+换空席/申请新席/返回；无 force）· 见 `BOT_FE_ONBOARD_F1_T3_P0` |
 | **T4** | 席位抽屉可见交接摘要（人话版 handoff）；「交接卡」不泄露完整 Key | [x] `seat-t4-handoff.png` · 复制交接卡明示无完整 Key |
 | **T5** | 换机引导文案：主路径 = 绑席位 → get；export/import 标为可选备份/救场 | [x] 顶栏「换机怎么续」+ 详情页「可选备份/救场」· `seat-t5-migrate-guide.png` |
-| **T6** | （P0.5）团队切换后 Issue 池与席位组隔离；共享 pins 与席位私有 memory 不串 | [x] **roster + pins PASS**（`NEXT_WAVE_DEBT_PINS` 整关）；**Issue 池按队仍余** → [`NEXT_WAVE_DEBT_T6I.md`](./NEXT_WAVE_DEBT_T6I.md) |
+| **T6** | （P0.5）团队切换后 Issue 池与席位组隔离；共享 pins 与席位私有 memory 不串 | [x] **roster + pins PASS**；**Issue 池 API I1–I3 PASS**（`75aadce` + [`T6I-issue-pool-20261024.txt`](./qa-shots/T6I-issue-pool-20261024.txt)）；**I4 FE 箱截仍余** → [`NEXT_WAVE_DEBT_T6I.md`](./NEXT_WAVE_DEBT_T6I.md) |
 | **T7** | （P1）从模板创建团队：空席位形状与 playbook_ref 挂上；升版 diff 可选更新、默认不覆盖 memory | [ ] 契约见 [`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) |
 | **T8** | 硬规矩：关键路径箱内自测 / CLI 记录；禁半成品甩用户本机当小白鼠；**禁 fan-out 吵用户** | [x] 2026-10-24 CLI `/tmp/ymbot_t9_t10_evidence.txt` |
 | **T9** | **团队 UUID 拉班底**：给定 `team_id`（UUID）ensure/pull roster → 完整角色席位（slug/名/claim 态）；重复调用**幂等**、不双建 role、**不清空** memory/todos | [x] pull×2 五席同 id；`t9_probe` 保留 · HEAD `0968a9a` |
