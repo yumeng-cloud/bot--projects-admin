@@ -1,0 +1,38 @@
+=== NEXT_WAVE_DEBT_PINS · P1–P3 箱验 ===
+time_AsiaShanghai: 2026-10-24 18:58 Asia/Shanghai
+result: P1=PASS P2=PASS P3=PASS
+evidence_file: docs/qa-shots/pins-team-isolate-20261024.txt
+HEAD_at_run: 6915db4 (feat(backend): team_pins 记忆墙 REST + 双队隔离测)
+binary: /tmp/ai-board-server rebuilt from HEAD 6915db4；:8080 已对齐
+YMBOT_API_URL: http://127.0.0.1:8080
+WS: ba1481c49148aba9553ba3811406b69f
+TEAMA: b5633fd496dc36e9ed70b7a788d55fd9  name=T6R-TeamA
+TEAMB: 4e7fa6762a4d44340c885359a951e92a  name=T6R-TeamB
+KEYA: Grok Bot (ymk_ from /tmp/ymbot_t2_key1.txt) member=094acad4a3f0aaef2ee6370e790912b4
+KEYB: BotB J2 (ymk_ from /tmp/ymbot_j2_botb_api_key.txt) member=e317fc48c926870ab009ff4aa8287eb0
+前置: KEYA seat enter --role frontend --team TEAMA --force；KEYB 同 slug --team TEAMB
+
+## 断言
+- P1: 队 A PUT pin key=decision value=adopt-B → 队 A GET list 见；队 B GET list 无该 key（pins=[]）
+- P2: 队 B 对队 A 的 key PUT/DELETE → 404 code=not_found「团队不存在或无权访问」；队 A list 仍 adopt-B
+- P3: 同名 key decision 写入 bot_memories value=private-memory-value；team_pins 仍 adopt-B；memory list 仍 private-memory-value（分表不串）
+
+## 原始摘要（Key 勿进 git）
+P1 PUT A → HTTP 200 {"pin":{"key":"decision","value":"adopt-B","team_id":"b5633fd4…"}}
+P1 GET A → HTTP 200 pins=[{decision:adopt-B}]
+P1 GET B → HTTP 200 pins=[]
+P2 KEYB PUT TEAMA/decision → HTTP 404 not_found
+P2 KEYB DELETE TEAMA/decision → HTTP 404 not_found
+P2 GET A → HTTP 200 仍 adopt-B
+P3 POST memories key_name=decision → HTTP 201 private-memory-value
+P3 GET pins A → HTTP 200 仍 adopt-B
+P3 GET memories?q=decision → HTTP 200 private-memory-value
+
+## 单测
+go test ./internal/services/botmem/ -run Pin → ok（TestPinsTeamIsolate + TestPinsDoNotClobberBotMemories）
+
+## 通道
+board_pin_* MCP/CLI：本包可选，未挡关单（后补）。
+
+## 关单口径
+可对 docs/NEXT_WAVE_DEBT_PINS.md 勾 P1–P3；P4=本文；P5 FE 另开。
