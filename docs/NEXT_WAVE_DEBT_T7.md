@@ -1,32 +1,46 @@
-# NEXT_WAVE · T7 最小 · 从模板创建团队
+# 下一小包 · T7-R · 从模板创建团队（最小）
 
-> 2026-10-24 · 总指挥自定（T6 P0.5 已关；用户禁闲等）  
-> **本包：空席形状 + playbook_ref。不含静默覆盖 memory、不含自动镜像本机 Agent。**
+> 2026-10-24 19:14 Asia/Shanghai · 产品体验 · T6 全文关后下一刀  
+> **本包：选模板 → 空席 + playbook_ref。升版 diff（T7-4/5）后置。**
 
-## 目标
+## 裁定
 
-选班底手册 → 一键生成 `team` + N 空席（slug/显示名/`playbook_ref`），尚未绑 Key；同模板开第二队形状一致、记忆不串。
+| 候选 | 结论 |
+| --- | --- |
+| **T7 最小（创建）** | **开本刀**（T7-1/2/3/6/7） |
+| T7 升版 dry-run/apply | **后置**（T7-4/5） |
+| 其它 UX 债 | 本波先收 T7-R |
 
-## 做 / 不做
+对齐 [`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) T7-1～7；权威勾选仍可回写该表。
+
+## 一句话
+
+选一份 bot-team-template → 本 WS 新建 `team` + N **空席**（slug/显示名/`playbook_ref`，**未**绑 Key）；同模板开第二队形状同、记忆/pins **不串**（依赖已绿 T6）。
+
+## 含 / 不含
 
 | 做 | 不做 |
-|----|------|
-| API：创建团队时可带 `template_ref` / `playbook_ref`；`roster/ensure` 按模板席位表幂等建空席 | 静默覆盖 bot_memories |
-| 内置或配置一份最小模板 JSON（席位表）于仓内 | 模板写回用户 git |
-| FE：「从模板创建」最小向导：预览席位 → 创建 → 发入场码入口 | 升版 diff UI 全文（可只做 dry-run API stub） |
-| 验收：空席形状与手册一致；memory 键不串队 | 自动把本机 Agent 镜像成席 |
+| --- | --- |
+| 模板清单可读（内置或配置）+ `POST` 创建挂 `playbook_ref` | 升版 dry-run diff / apply（T7-4/5） |
+| `roster/ensure` 幂等补空席形状 | 自动绑 Key；镜像本机 Agent |
+| 可选 FE「从模板创建」最小预览表 → 创建 | 漂亮多步向导大改 |
+| 箱证：双队形状同、memory/pins 不串 | 模板写回用户 git；静默覆盖 memory |
 
-## 验收
+## 验收（R1–R5）
 
-| ID | 标准 | 主跑 |
-|----|------|------|
-| **T7-A** | POST 带模板 → roster 席位数/slug 对齐；再 ensure 幂等 | Go + 记忆 |
-| **T7-B** | 同模板第二队 → 席位形状同、pin/memory 不串 | 记忆/QA |
-| **T7-C** | FE 向导可创建并进设置席位页 | React |
-| **T7-D** | 证据 `docs/qa-shots/T7-template-create-*.txt` | QA |
+| ID | 标准 | 谁 |
+| --- | --- | --- |
+| **R1** | 选模板 → 新 team + 空席数/slug 与手册一致；无自动 Key | **Go** + 记忆 |
+| **R2** | 每席含 `playbook_ref`；非法/未知模板 → 4xx 中文 | Go |
+| **R3** | 同模板开队 B：形状同；私有 memory / pins 不串 A | 记忆/QA 箱验 |
+| **R4** | 证据 `docs/qa-shots/T7R-template-create-YYYYMMDD.txt` | → **产品**勾 |
+| **R5** | FE 最小预览+创建（可并行；无则 API 关半单） | **React** |
 
-## 主辅
+## 派工
 
-Go/记忆主 · React 辅 · 种子文档 · QA · 产品勾
+**Go** 主 · **Bot 记忆** 箱验 · **种子** 手册索引 · **React** R5 并行 · **QA** 苛刻 · **产品**勾
 
-权威契约见 [`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) T7-1～T7-7。
+## 产品勾选
+
+- [ ] R1–R4 API/箱验 · 产品勾
+- [ ] R5 FE（可后）
