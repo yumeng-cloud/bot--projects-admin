@@ -1,0 +1,61 @@
+SEAT_REFILL R4 QA spotcheck
+===========================
+When: 2026-10-25 00:53 Asia/Shanghai
+Repo: /workspace/ai-collab-board · origin/main
+Feature SHA: d7e03969696953a387f4f7e33567654616a0a80c
+  feat(fe): SEAT_REFILL R1–R3 可补位入场码 + 箱截
+Debt: docs/NEXT_WAVE_DEBT_SEAT_REFILL.md
+Frozen (not verified): PRO_ADMIN C2–D / E2 / G
+Overall: PASS
+
+Method
+------
+1. git fetch && checkout main && pull --ff-only (up to date; tip was b4dc879 docs note)
+2. Confirmed d7e0396 is ancestor of main; git show --stat (BotsRosterPage + SeatHandoffDrawer + seat-refill-*.png)
+3. Source inspect: frontend/src/pages/settings/bots/{BotsRosterPage,SeatHandoffDrawer}.tsx
+4. Read both PNGs as images (box Read)
+5. Soft† live API :8080 (admin@yumeng.tech) — create+redeem refill invite
+
+Accept checklist
+----------------
+[1] PASS — stopped|left (可补位) card: primary「复制补位入场码」+ 既有「指派 Bot」;
+    short copy「新人持码入场；活跃席仍禁顶替。补位 ≠ 扩编新席。」
+    Evidence: seat-refill-before.png (前端卡); BotsRosterPage left branch ~L1140–1250;
+    SeatHandoffDrawer left Alert + button ~L208–224.
+
+[2] PASS — Copy split: refill path says「补位」, explicitly「非扩编新席」/「补位 ≠ 扩编」;
+    Tooltip「禁嵌 ymk_」; createTeamInvite({ allow_expand_seat: false, seat_slug, role_hint }).
+    No primary expand / ymk_ language on refill entry.
+    Evidence: onCopyRefillInvite @ BotsRosterPage ~L769–822; after Toast in seat-refill-after.png.
+
+[3] PASS — Occupied/active still shows 停工 + 离职解绑 (SEAT_LEAVE); refill UI only under `left`.
+    Evidence: before+after 后端「占用中」卡; busy branch unchanged; left vs !busy&&!left Select gate.
+
+[4] PASS — Refill ≠ expand: UI copy + allow_expand_seat=false; refill not framed as 新开席扩编.
+
+[5] PASS — Shots read as images:
+    docs/qa-shots/seat-refill-before.png — 可补位卡 + 占用中停工/离职; footer SEAT_REFILL R3 · before · 箱 · 2026-10-25 Asia/Shanghai
+    docs/qa-shots/seat-refill-after.png  — same cards + Toast「已复制补位入场码（末四 ·a3f2 · 席 前端）。新人持码入场；非扩编新席。勿发公开群」; footer after
+    Chinese primary throughout (not English-only).
+
+[6] Soft† PASS (API :8080 live; Vite skipped — 箱截+源码 suffice, Soft† still exercised):
+    POST /api/v1/auth/login admin@yumeng.tech OK
+    POST .../teams/{accel}/invites {allow_expand_seat:false, seat_slug:n3-readable-1792835492 (status=stopped)}
+      → code=ymt_be3edfb1… (len 52), allow_expand_seat=false, status=active
+    POST /api/v1/team-invites/redeem {code} → 201 usable; allow_expand_seat=false; seat_slug bound;
+      (bootstrap also returned ymk_ identity — separate track, not mixed into refill copy)
+    Note: Soft† redeem consumed that invite (side-effect on stopped seat n3-readable-*);
+      FE path under test unchanged.
+
+FAIL redlines hit? NONE
+- refill entry present on refillable seats
+- no expand/ymk_ as primary on refill
+- occupied keep stop/leave
+- shots present, correct state, Chinese primary
+- Soft† code ymt_ and redeemable
+
+Defects: none
+
+Verdict for 产品+React+总指挥
+-----------------------------
+SEAT_REFILL R4 PASS @d7e0396 — 可补位复制补位入场码(ymt_/非扩编)与占用停工离职不打架；箱截+Soft†绿；可产品 R5 关单。
