@@ -142,9 +142,9 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [x] **B3** role 带入
 - [x] **B4** 主 CTA 切换
 - [x] **B5** 箱截
-- [x] **E1** BuildBotPrompt 第 0 步安装 · Go
-- [x] **E2** `GET /install.sh` · Go
-- [x] **E3** `/join` 页露安装 · Go
+- [x] **E1** BuildBotPrompt 第 0 步安装 · Go `4cdaa04`
+- [x] **E2** `GET /install.sh` · Go `4cdaa04`
+- [x] **E3** `/join` 页露安装 · Go `4cdaa04`
 - [ ] **E4** FE 提示词对齐+重截 · React
 - [ ] **E5** 无 CLI→装→join 箱证 · QA
 - [ ] **C1** 打开引导
@@ -154,6 +154,8 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [ ] **D2** 产品关单
 
 ## 进度注记
+
+- 2026-10-24 22:33 · **产品核 E1–E3 PASS** Go `4cdaa04`：`BuildBotPrompt` 置顶 curl|bash + go install 备；`GET /install.sh`；`/join` 醒目安装。生产须重部署 API 后 `https://bot.api.sn.cn/install.sh` 才活。**待 E4 FE** 对齐重截。
 
 - 2026-10-24 22:30 · **用户怒·复制即装**：提示词/链接生成物禁假设已装 ymbot；开 **E1–E5**（curl\|bash 主 + go install 备 + API 根 + join）。首刀 **Go E1–E3 + React E4** 并行。
 
@@ -170,4 +172,4 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 关单进度
 
-**进行中** · 包 A+B 已勾；**E 复制即装 P0 热修**（禁假设已装 ymbot）；C/D 仍开。
+**进行中** · E1–E3 产品核 PASS（`4cdaa04`）；**待 E4 FE** + E5 QA；C/D 仍开。
