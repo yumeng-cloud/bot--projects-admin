@@ -1,0 +1,69 @@
+=== P0 r2 · SEAT_VISIBILITY 复测（对账 FAIL 6f47344 / fix 0c712cf）===
+time_AsiaShanghai: 2026-10-24 23:22 Asia/Shanghai (box)
+result: Overall=PASS
+evidence_file: docs/qa-shots/P0_TEAM_SEATS-qa-retest-20261024-r2.txt
+companion_V5: docs/qa-shots/SEAT_VISIBILITY-V5-qa-retest-20261024.txt
+HEAD_at_run: 681de2905475b8d8f1567eb708ccb1359f6e8332
+  (681de29 fix(fe): FOOLPROOF F2–F5… · contains ancestor 0c712cf)
+fix_SHA_verified: 0c712cf9d21254c95b8d860f196c3d6faf2dbc49  (ancestor of HEAD = YES)
+prior_FAIL: docs/qa-shots/P0_TEAM_SEATS-qa-retest-20261024.txt @ 6f47344
+  root1: hasAnyBinding → 空席误空态「尚未绑定席位」(toast N / page 0)
+  root2: onClaim 不 refresh teamSeats → Toast 后卡仍「等待绑定」
+API: http://127.0.0.1:8080 healthz ok · /tmp/ai-board-server
+FE: http://127.0.0.1:5174 (vite preview) · computerUse 本执行器不可用 → 独立硬证=API 包 + FE seatOcc/hasAnyBinding/applyOptimisticBind 仿真；箱截 glance React 0c712cf 附带 shots
+actor: admin@yumeng.tech (JWT) + Bot Grok Bearer ymk_ self-bind
+WS: ba1481c49148aba9553ba3811406b69f
+
+## Fixtures
+N: 5  (template_key=default · 默认班底 · TEMPLATE_COUNT=1)
+team_id: 624ddd0a2c38c11d8f430f8620c4fbdd
+team_name: V5-Seats-232115
+create: POST …/teams {name, template_key:default} → HTTP 201 roster_len=5 all status=open
+seat_ids (create):
+  backend abf1bce1…  frontend 34845003…  pm 48d23788…  qa f16a01f5…  wiki 76003b39…
+Bind: wiki ← Grok Bot (094acad4…) via Bearer ymk_ POST …/seats/{id}/bind {} → HTTP 200 status=active bound_display_name=Grok Bot
+Also: claimBotRole frontend ← BotB J2 → roster frontend active（FE 指派回落路径）
+
+## Steps vs prior FAIL
+
+### A HEAD contains 0c712cf — PASS
+git merge-base --is-ancestor 0c712cf HEAD → YES
+
+### B FE/API up — PASS
+:8080 healthz 200 · :5174 200 · dist 含「演员」/「尚未绑定席位」字符串（空态文案仍在，仅当 roster 空触发）
+
+### C Create N empty + auto-switch — PASS
+API N=5 · FE onTeamCreatedFromTemplate: setTeamSeats(roster)+setTeamId(team.id)（0c712cf）
+
+### D 席位页 N 空席可见 — PASS（根因1 已修）
+hasAnyBinding @0c712cf: teamSeats.length>0 → true（禁误空态）
+仿真: empty_state_shown=False · page cards=5 · 全部「空闲/等待绑定」
+toast vs page: **5 vs 5**（对比 FAIL 5 vs 0）
+glance React shot: docs/qa-shots/seat-visibility-after-create.png（5 坑 + Toast「5 空席」· 非「尚未绑定席位」）
+
+### E Bind → 卡立刻翻 — PASS（根因2 已修）
+API bind 200 → wiki active / Grok Bot
+FE: applyOptimisticBind + refreshTeamRoster(getRoster/setTeamSeats)
+仿真同帧卡: 「占用中」+「演员 · Grok Bot」（禁「等待绑定」）
+glance React shot: docs/qa-shots/seat-visibility-after-bind.png（知识库 占用中 · 演员·Grok Bot + Toast）
+
+## Summary table
+| Step | Prior FAIL | r2 |
+| --- | --- | --- |
+| Create N empty | PASS API | PASS |
+| Auto-switch | YES code | PASS (seed roster+setTeamId) |
+| Seats page N | FAIL 5vs0 | PASS 5vs5 |
+| Bind API | PASS | PASS |
+| Card flip after bind | FAIL stale | PASS 占用中+演员名 |
+| Overall | FAIL | **PASS** |
+
+## Defects
+(none for P0 roots)
+
+## Screenshots
+- docs/qa-shots/seat-visibility-after-create.png (React 0c712cf · glanced)
+- docs/qa-shots/seat-visibility-after-bind.png (React 0c712cf · glanced)
+- Independent: /tmp/v5_create.json · /tmp/v5_bind.json · /tmp/v5_ymk.txt（箱内不入库）
+
+## Pushed?
+见本轮 git push origin/main

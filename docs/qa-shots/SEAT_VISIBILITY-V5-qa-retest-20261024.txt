@@ -1,0 +1,61 @@
+=== SEAT_VISIBILITY V5 全覆盖复测（硬门槛）===
+time_AsiaShanghai: 2026-10-24 23:22 Asia/Shanghai (box)
+result: Overall=PASS
+evidence_file: docs/qa-shots/SEAT_VISIBILITY-V5-qa-retest-20261024.txt
+P0_r2: docs/qa-shots/P0_TEAM_SEATS-qa-retest-20261024-r2.txt
+HEAD_at_run: 681de2905475b8d8f1567eb708ccb1359f6e8332
+fix_SHA: 0c712cf (ancestor YES) · 产品勾 V1–V4+V7 @ 83ec280
+prior_FAIL_SHA: 6f47344 (P0_TEAM_SEATS-qa-retest-20261024.txt)
+debt_doc: docs/NEXT_WAVE_DEBT_SEAT_VISIBILITY.md
+API/FE: :8080 ok · :5174 ok · admin@yumeng.tech / Admin123!
+WS: ba1481c49148aba9553ba3811406b69f
+team_under_test: 624ddd0a2c38c11d8f430f8620c4fbdd (V5-Seats-232115)
+old_team_for_switch: ea918de1ac4d8116ed69651116a4acb9 (加速班底 · roster_len=14)
+N: 5 · template: default（清单仅 1 模板）
+
+## V5 checklist (hard)
+
+### 1 默认班底 5 空席可见 — PASS
+POST create template_key=default → roster_len=5 all open
+hasAnyBinding(teamSeats.length>0)=true → 不进「尚未绑定席位」
+page count vs API N: **5 == 5**
+shot: docs/qa-shots/seat-visibility-after-create.png
+
+### 2 切到旧队再切回新队 → 空席仍可见 — PASS
+GET old roster 200 len=14 → GET new roster 200 len=5（仍 5；含已绑 wiki 时亦 len=5）
+FE: useEffect([wsId,teamId]) → getRoster → setTeamSeats（切队即重拉）
+
+### 3 刷新页面 → 仍可见 5 空席 — PASS
+等价硬证: 冷 GET …/roster（模拟 remount+teamId from storage）→ len=5
+FE load path: teamId 效应拉 roster；hasAnyBinding 认 length>0
+
+### 4 绑一席 → 卡立刻有 Bot 名，且刷新后仍在 — PASS
+ymk_ self-bind wiki → 200 status=active bound_display_name=Grok Bot
+同帧仿真: Tag=占用中 · 文案=演员 · Grok Bot（非「等待绑定」）
+FE: applyOptimisticBind + refreshTeamRoster
+刷新/切回后 GET roster: wiki 仍 active / Grok Bot · N 仍 5
+shot: docs/qa-shots/seat-visibility-after-bind.png
+附: claimBotRole(frontend←BotB J2) 亦使 roster frontend=active（FE 指派回落）
+
+### 5 第二模板 — N/A
+GET …/team-templates → TEMPLATE_COUNT=1 · key=default · seats=5
+probe startup/fullstack/minimal/kanban/agile → 全部 400 未知模板
+→ 无第二模板可测；按债文档「若清单≥2」条款记 **N/A**（不挡 V5）
+
+## P0 roots (folded)
+| Root | Prior | V5/r2 |
+| --- | --- | --- |
+| 空席误空态 toast≠page | FAIL 5vs0 | PASS 5vs5 |
+| 绑后卡仍等待绑定 | FAIL | PASS 占用中+演员名 |
+
+## V1–V4+V7 product ticks (not re-owned; glanced)
+V1 auto-switch · V2 N visible · V3 入场链接/提示词 on cards · V4 create shot · V7 bind shot — product勾 @83ec280；本 QA 独立 API+代码路径对齐。
+
+## Method note
+computerUse/browser 本执行器不可用（同 prior FAIL 约束）。硬证= live API create/roster/bind/switch-back + BotsRosterPage/teams.ts 路径仿真（hasAnyBinding / seatOccForRole / applyOptimisticBind）。React 箱截作 glance，不以截图替代独立证明。
+
+## Defects
+(none)
+
+## Overall
+**PASS** — P0 roots green · V5 hard items 1–4 PASS · item 5 N/A
