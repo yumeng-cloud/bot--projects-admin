@@ -17,18 +17,19 @@
 
 | # | 步骤 | PASS |
 |---|------|------|
-| B1-a | 新建空 WS（零项目）→ 打开 `/w/{ws}/board` | |
-| B1-b | 主文案含「暂无项目」；**无** seed/技术口吻；标题不挡主 CTA | |
-| B1-c | **主按钮=「创建项目」**：本页打开表单/弹层（非跳转设置） | |
-| B1-d | 「去设置」若有 → **仅文字链/次要**，非 `type=primary` | |
-| B1-e | 填 name + key_prefix → `POST /workspaces/{id}/projects` 201 → **直进** `/w/{ws}/projects/{id}/board` | |
-| B1-f | 同构：`/issues` `/cycles` `/timeline` 空态一致（主 CTA 同规） | |
-| B1-g | 已有项目时仍自动 Navigate 到首项目对应 tab（回归） | |
+| B1-a | 新建空 WS（零项目）→ 打开 `/w/{ws}/board` | PASS† code/API; claimed shot blank — see retest |
+| B1-b | 主文案含「暂无项目」；**无** seed/技术口吻；标题不挡主 CTA | PASS (UI「还没有项目」) |
+| B1-c | **主按钮=「创建项目」**：本页打开表单/弹层（非跳转设置） | PASS (code+modal shot) |
+| B1-d | 「去设置」若有 → **仅文字链/次要**，非 `type=primary` | PASS |
+| B1-e | 填 name + key_prefix → `POST /workspaces/{id}/projects` 201 → **直进** `/w/{ws}/projects/{id}/board` | PASS (API 201 + Navigate code) |
+| B1-f | 同构：`/issues` `/cycles` `/timeline` 空态一致（主 CTA 同规） | PASS (shared ProjectRedirect) |
+| B1-g | 已有项目时仍自动 Navigate 到首项目对应 tab（回归） | PASS (code) |
 
 ## 证据
-- 主：`docs/qa-shots/PRO_ADMIN-B1-qa-retest-YYYYMMDD.txt`
-- 箱截：`pro-b-empty-no-project.png`（对齐债 B4；本项可先单张）
-- 可选 curl：建项目前后 `GET …/projects` 条数 0→1
+- 主：`docs/qa-shots/PRO_ADMIN-B1-qa-retest-20261024.txt` · **Overall FAIL**（claimed `pro-b-empty-no-project.png` 纯白无效；功能项多 PASS）
+- 箱截：`pro-b-empty-no-project.png` ← **空白 FAIL**；佐证用 `pro-b-empty-create-modal.png`
+- curl：空 WS projects=[]；POST project 201 → 0→1 OK
+- 2026-10-24 22:13 Asia/Shanghai · HEAD `72e0447`
 
 ## 关报
 短报产品+总指挥：Overall · B1 表 · 证据 · HEAD。测绿 push origin/main（站立令）。产品勾 B1 后可并 G1 抽。

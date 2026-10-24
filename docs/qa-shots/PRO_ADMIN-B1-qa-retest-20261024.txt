@@ -1,0 +1,53 @@
+PRO_ADMIN · B1 P0 无项目空态 · QA harsh retest
+date: 2026-10-24 22:13 Asia/Shanghai (CST, UTC+8)
+actor: admin@yumeng.tech (seed)
+HEAD: 72e0447e08d44af7a02990dd3869c4ece17fbe60 (origin/main; 72e0447 IS ancestor)
+authority: docs/NEXT_WAVE_DEBT_PRO_ADMIN.md B1 · docs/qa-shots/PRO_ADMIN_B1_HARSH_CHECKLIST.md
+FE :5174 · API :8080 /tmp/ai-board-server healthz OK
+method: code review ProjectRedirect.tsx + CreateProjectModal.tsx; API create empty WS + POST project;
+        Read of committed PNGs (no box computerUse this run — FE live click PENDING parent)
+Overall: FAIL
+
+## Why FAIL (not fake green)
+Claimed primary evidence docs/qa-shots/pro-b-empty-no-project.png is solid white 1440×900
+(RGB all 255; 1 color). Does NOT show 「还没有项目」/「创建项目」/「去设置」.
+Sibling empty-p0-no-project.png also non-informative (near-blank pale).
+Modal corroboration exists (pro-b-empty-create-modal.png / empty-p0-create-project.png + OCR txt)
+but checklist primary shot path is invalid → cannot green-close B1 evidence package.
+
+## B1-a..g
+
+| # | Result | Evidence |
+|---|--------|----------|
+| B1-a | PASS† | API POST /workspaces → WS fe298ea2… (qa-b1-ui-*) projects=[]; also 9ce151f3… p0-empty-b1 projects=[]. Code empty→Empty panel. †Live /board open not driven this run (no computerUse). |
+| B1-b | PASS | Copy「还没有项目」+ sub「创建一个项目后即可打开看板、列表与周期」; no seed/tech jargon. Note: debt/checklist wording「暂无项目」vs UI「还没有项目」(intent OK). Modal OCR txt confirms. |
+| B1-c | PASS | Primary Button type=primary「创建项目」onClick→setModalOpen; CreateProjectModal on-page. Corroborated by pro-b-empty-create-modal.png + empty-p0-create-project.txt OCR. |
+| B1-d | PASS | 「去设置」is <Link> fontSize 12 only — NOT type=primary Button. Old Result+primary 去设置 removed in 72e0447. |
+| B1-e | PASS | Modal createProject POST /workspaces/{id}/projects; onCreated→setProjectId→<Navigate to=/w/{ws}/projects/{id}/{tab}>. API on WS 7dcdb1e4…: POST →201 project 207e4b41…; GET projects 0→1. |
+| B1-f | PASS | App.tsx board/list/cycles/timeline all <ProjectRedirect tab=…>; list→issues tab. Same empty CTA. |
+| B1-g | PASS | if first project → Navigate. yumeng seed has 1 project b1e996fb…「示例项目」→ expect /w/ba1481c4…/projects/b1e996fb…/board (code path; live Navigate not re-clicked). |
+
+## GAP baseline (pre-fix, for record)
+GAP-1/2/3 addressed in 72e0447 code (Result「无法进入项目视图」+ primary 去设置 removed).
+
+## Shots
+- CLAIMED pro-b-empty-no-project.png → FAIL match (blank white)
+- empty-p0-no-project.png → FAIL (near-blank)
+- CORROBORATE pro-b-empty-create-modal.png / empty-p0-create-project.png → modal+background empty copy OK
+- OCR: docs/qa-shots/empty-p0-create-project.txt / pro-b-empty-create-modal.txt
+
+## API fixtures this run
+- empty UI WS: fe298ea2b3c901ba1f48c64dc6a1c33a slug=qa-b1-ui-1792851137 (still 0 projects)
+- create-path WS: 7dcdb1e47cd67debc4c5b34f10eb3948 → project 207e4b41d1fff2bc4cc8978b82470099
+
+## Defects for React 前端
+1. Re-capture docs/qa-shots/pro-b-empty-no-project.png on a true zero-project WS board
+   (e.g. /w/fe298ea2b3c901ba1f48c64dc6a1c33a/board or ?qaEmpty=1) showing:
+   「还没有项目」+ primary「创建项目」+ secondary text「去设置」— WITHOUT modal open.
+2. Fix/replace empty-p0-no-project.png similarly (currently near-blank).
+3. Optional: align debt copy「暂无项目」vs UI「还没有项目」with product (non-blocking).
+
+## FE live PENDING
+Box executor has no computerUse; did not drive Vite UI. Parent may re-shot via computerUse
+using WS fe298ea2… or qaEmpty=1. Functional code+API+modal OCR already strong.
+
