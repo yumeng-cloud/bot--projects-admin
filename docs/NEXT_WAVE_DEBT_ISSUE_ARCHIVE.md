@@ -79,14 +79,14 @@
 
 ## 产品勾选
 
-- [ ] **A1** 迁移 + 字段
-- [ ] **A2** 默认过滤 + include / only
-- [ ] **A3** batch archive（仅 done）
-- [ ] **A4** GET 单条可读
-- [ ] **A5** Bot/MCP 同源默认剔
-- [ ] **A6** 单测绿
-- [ ] **B1** Pack/列计数剔归档
-- [ ] **B2** Cycle 聚合剔归档
+- [x] **A1** 迁移 + 字段 · `dc529f9`（012 + idx）
+- [x] **A2** 默认过滤 + include / only · list/search `dc529f9`
+- [ ] **A3** batch archive（仅 done）· handler/svc `dc529f9` 齐；**路由未挂** `POST /issues/archive`（等 Go）
+- [x] **A4** GET 单条可读 · model+scan 含 `archived_at`
+- [x] **A5** Bot/MCP 同源默认剔 · `91d2526`
+- [x] **A6** 单测绿 · `go test ./internal/services/issueboard/` ok
+- [x] **B1** Pack/列计数剔归档 · list 默认剔 + FE `useBoardPackStats` 防御
+- [x] **B2** Cycle 聚合剔归档 · `estimate_sum` WHERE archived_at IS NULL
 - [ ] **B3** 计数箱验
 - [ ] **C1** 完成列多选归档
 - [ ] **C2** 默认不拉归档
@@ -99,4 +99,4 @@
 
 ## 关单进度
 
-**定稿已落** · D1 文档已勾（`85c6fb7`）。待 Issue 域 A/B · React C · QA D2。测绿直推。
+**进行中** · D1 勾；A1/A2/A4/A5/A6/B1/B2 勾（`dc529f9`/`91d2526`）。**A3 差路由挂载**。React `ab7f72b` C1–C4 码已入，待 C5 箱截 + A3 通后再勾。
