@@ -1,7 +1,7 @@
 # Bot Team Template · 换机 / 角色迁移 / 多团队（脑暴 P0）
 
 > 2026-10-24 · Asia/Shanghai · Bot 记忆角色 → 总指挥  
-> 对接：本看板 `/workspace/ai-collab-board` + 拟写入 bot-team-template  
+> 对接：本看板 + **bot-team-template（= 看板 Agent 班底作业手册，非另一套系统；ymbot = 手册里的手）**  
 > 对齐：[`BOT_HANDOFF_CONTINUITY_P0.md`](./BOT_HANDOFF_CONTINUITY_P0.md) · [`BOT_HANDOFF_MIRROR_P0.md`](./BOT_HANDOFF_MIRROR_P0.md)
 
 ---
