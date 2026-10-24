@@ -163,6 +163,9 @@ func mcpTools() []map[string]any {
 		{"name": "board_seat_expand", "description": "扩工补位（挂主航线后）：未领叶子→空闲已绑席；禁改 in-progress", "inputSchema": obj(map[string]any{
 			"team_uuid": str, "project_id": str, "limit": map[string]any{"type": "number"}, "dry_run": bol, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "team_uuid")},
+		{"name": "board_patrol", "description": "辅路径巡检：当前席 open+assignee=me；quiet_if_unchanged 无变化则空内容 exit 等价安静", "inputSchema": obj(map[string]any{
+			"quiet_if_unchanged": bol, "state_file": str, "full": full, "ids": ids,
+		})},
 	}
 }
 
@@ -554,6 +557,19 @@ func callTool(c *botclient.Client, name string, args map[string]any) (string, er
 			return "", err
 		}
 		return botclient.FormatTeamExpandText(v), nil
+	case "board_patrol":
+		res, err := c.Patrol(botclient.PatrolOpts{
+			Quiet:     boolArg(args, "quiet_if_unchanged"),
+			StateFile: strArg(args, "state_file"),
+			View:      opts,
+		})
+		if err != nil {
+			return "", err
+		}
+		if res.Suppressed {
+			return "", nil
+		}
+		return res.Text, nil
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}

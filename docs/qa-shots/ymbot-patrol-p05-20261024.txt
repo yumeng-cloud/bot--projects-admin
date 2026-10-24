@@ -1,0 +1,54 @@
+=== ymbot patrol P0.5 evidence ===
+time_AsiaShanghai: 2026-10-24 17:51:38 CST
+HEAD: f33dd2011242cb65038f288d8094147cb10c7e0a
+WS: ba1481c49148aba9553ba3811406b69f
+MEMBER: e317fc48c926870ab009ff4aa8287eb0 (BotB J2)
+YMBOT: /tmp/ymbot (10763474 2026-10-24 17:51:10.155378006 +0800)
+API_BASE: http://127.0.0.1:8080/api/v1
+
+===== prep: whoami =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot whoami
+bot  BotB J2
+exit=0
+
+===== prep: create leaf assigned to me =====
+project=b1e996fb8ba9c350e249f7a862425a67 parent=YM-1
++ ymbot issue create --project … --title … --parent YM-1 --assignee me --status todo
+YM-16  patrol-p05-assign-1792835498
+status=todo  priority=none  assignee=BotB J2
+version=1
+updated_at=2026-10-24T09:51:38Z
+created_ident=YM-16
+version=1
+YM-16  patrol-p05-assign-1792835498
+status=todo  priority=none  assignee=BotB J2
+version=2
+updated_at=2026-10-24T09:51:38Z
+
+===== P3-1: patrol (expect output) =====
++ env … /tmp/ymbot patrol --quiet-if-unchanged --state-file /tmp/ymbot-patrol-p05-state
+YM-14	N4-c947a76-skip-1792835310545	todo	none	BotB J2	2026-10-24T09:48:30Z
+YM-16	patrol-p05-assign-1792835498	todo	none	BotB J2	2026-10-24T09:51:38Z
+exit=0
+stdout_bytes=148
+state=# ymbot patrol fingerprint b08f5e5b79ba982a99a3c436d061aaac8d07c1422b5fe62ff18801b90af69e17 
+
+===== P3-2: patrol again (expect quiet) =====
++ env … /tmp/ymbot patrol --quiet-if-unchanged --state-file /tmp/ymbot-patrol-p05-state
+stdout=<<>>
+exit=0
+stdout_bytes=0
+
+===== also: ymbot issue patrol (alias) =====
+YM-14	N4-c947a76-skip-1792835310545	todo	none	BotB J2	2026-10-24T09:48:30Z
+YM-16	patrol-p05-assign-1792835498	todo	none	BotB J2	2026-10-24T09:51:38Z
+exit=0
+
+===== MCP tool listed =====
+board_patrol
+board_patrol_listed=0
+
+===== unit: go test botclient =====
+ok  	github.com/yumeng-tech/ai-collab-board/backend/internal/botclient	0.011s
+
+PASS criteria: P3-1 stdout>0 exit0; P3-2 stdout==0 exit0

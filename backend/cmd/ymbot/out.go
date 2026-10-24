@@ -99,7 +99,7 @@ func flagTakesValue(name string) bool {
 		name = name[1:]
 	}
 	switch name {
-	case "full", "id", "json", "leaf-only", "unassigned", "autosave", "dry-run", "h", "help":
+	case "full", "id", "json", "leaf-only", "unassigned", "autosave", "dry-run", "quiet-if-unchanged", "force", "h", "help":
 		return false
 	default:
 		return true

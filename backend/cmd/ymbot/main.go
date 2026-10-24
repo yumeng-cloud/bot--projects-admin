@@ -48,6 +48,7 @@ whoami 可前置自检；migrate enter = seat enter（别名，非第二条主�
   YMBOT_MEMBER_ID         可选（缺省用 Key 绑定 / bots/me）
   YMBOT_IDEMPOTENCY_KEY   可选；写操作未传 --idempotency-key 时使用
   YMBOT_AUTOSAVE          可选=1；claim/comment/memory set 成功后 stderr 提醒「已写服务端」（非 daemon）
+  YMBOT_PATROL_STATE_FILE 可选；patrol --quiet-if-unchanged 的 fingerprint 路径
 
 命令（主航线优先）:
   team pull --uuid <team_uuid>              拉班底（幂等 ensure roster；不清 memory）
@@ -62,6 +63,8 @@ whoami 可前置自检；migrate enter = seat enter（别名，非第二条主�
   seat leave --role <slug> [--team]         离席：有 --team 走 unbind，否则 release
   seat expand --team <uuid> [--project] [--limit N] [--dry-run]
                                             扩工补位：未领叶子→空闲已绑席；禁改 in-progress
+  patrol [--quiet-if-unchanged] [--state-file PATH] [--full|--id|--json]
+                                            辅路径：open+assignee=me；quiet 无变化则无刷屏
   issue list [--status] [--assignee me|id] [--project] [--q] [--cycle] [--label] [--leaf-only] [--full|--id|--json]
   issue get <YM-12|id> [--full|--id|--json]
   issue create --project ID --title T --parent YM-n|ID […]

@@ -38,6 +38,8 @@ func runCLI(args []string) error {
 		return cmdSeat(c, args[1:])
 	case "migrate":
 		return cmdMigrate(c, args[1:])
+	case "patrol":
+		return cmdPatrol(c, args[1:])
 	default:
 		return fmt.Errorf("未知命令: %s（ymbot --help）", args[0])
 	}
@@ -302,8 +304,10 @@ func cmdIssue(c *botclient.Client, args []string) error {
 			remindAutosave()
 		}
 		return printIssueResult(c, raw, optsDetail(*full, *ids, *asJSON))
+	case "patrol":
+		return cmdPatrol(c, args[1:])
 	default:
-		return fmt.Errorf("未知 issue 子命令: %s（list|get|create|update|claim）", args[0])
+		return fmt.Errorf("未知 issue 子命令: %s（list|get|create|update|claim|patrol）", args[0])
 	}
 }
 
@@ -758,5 +762,29 @@ func cmdSeatExpand(c *botclient.Client, args []string) error {
 		return err
 	}
 	printView(opts, botclient.FormatTeamExpandText(v), v)
+	return nil
+}
+
+func cmdPatrol(c *botclient.Client, args []string) error {
+	fs := newFS("patrol")
+	quiet := fs.Bool("quiet-if-unchanged", false, "无变化则无 stdout、exit 0（STATE_FILE fingerprint）")
+	state := fs.String("state-file", "", "fingerprint 路径（默认 YMBOT_PATROL_STATE_FILE 或 ~/.ymbot/patrol-state）")
+	full, ids, asJSON := viewFlags(fs)
+	if err := fs.Parse(reorderFlags(args)); err != nil {
+		return err
+	}
+	opts := botclient.PatrolOpts{
+		Quiet:     *quiet,
+		StateFile: *state,
+		View:      optsFrom(*full, *ids, *asJSON),
+	}
+	res, err := c.Patrol(opts)
+	if err != nil {
+		return err
+	}
+	if res.Suppressed {
+		return nil
+	}
+	printView(opts.View, res.Text, res.Items)
 	return nil
 }

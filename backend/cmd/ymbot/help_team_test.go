@@ -35,6 +35,7 @@ func TestHelpListsTeamSeatCommands(t *testing.T) {
 		"= seat enter（别名）",
 		"seat leave --role",
 		"seat expand --team",
+		"patrol [--quiet-if-unchanged]",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("help missing %q\n%s", want, out)

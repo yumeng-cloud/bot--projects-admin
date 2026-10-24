@@ -115,7 +115,7 @@
 | **辅：轻量巡检** | 席位例程定时（如 5–15min）拉「指派给我且未读/todo」；**无变化安静** | Webhook 不可达、休眠机补漏；**禁止**当抢席/误叫旧 UUID |
 | **禁** | 总指挥对活跃席乱 `SendToAgent` 猜角色名；对已 leave 旧 Bot 再叫醒 | 只打名册 **active** 席位绑定 |
 
-产品面：席位条「下发」+ 可选「立即推送」已交（`ec1742d`/`c947a76`）；**巡检例程**仍 P0.5。验收见 **J7**。
+产品面：席位条「下发」+ 可选「立即推送」已交（`ec1742d`/`c947a76`）；**巡检例程 P0.5** 见 `BOT_PATROL_P05` + `ymbot-patrol-p05-20261024.txt`。验收见 **J7**。
 
 ## 5. 验收条（勾选）
 
@@ -127,7 +127,7 @@
 | **J4** | 仅停工/离职席可 force/补位；成功留审计 comment | [x] **P0.1 已清** `3c698b5`：force→`seat.force_bind` 人话 + 开放 Issue comment（Go 箱证） |
 | **J5** | 重复 join / 重复 pull **幂等**，不清 memory/todos | [x] J2_idempotent_rejoin（skipped_enter）；T9 pull×2 同 id |
 | **J6** | 硬规矩：箱 5174/CLI 证据；禁甩用户本机；进度只回总指挥 | [x] 证据均在箱 `docs/qa-shots/` + `/workspace/qa-shots/full-0685720/` |
-| **J7** | 下发唤醒：指派→Webhook 主路径（巡检补漏）；无变化安静；不误叫旧席 | [x] Webhook+下发 FE+**立即推送** `c947a76`/`N4-dispatch-push.png`；**巡检例程仍 P0.5** |
+| **J7** | 下发唤醒：指派→Webhook 主路径（巡检补漏）；无变化安静；不误叫旧席 | [x] Webhook+下发 FE+**立即推送** `c947a76`/`N4-dispatch-push.png`；**巡检 P0.5** `1562389` `docs/qa-shots/ymbot-patrol-p05-20261024.txt` · `docs/BOT_PATROL_P05.md` |
 
 ---
 
