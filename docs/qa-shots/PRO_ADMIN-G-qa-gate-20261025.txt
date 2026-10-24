@@ -1,0 +1,146 @@
+PRO_ADMIN G1+G2 QA acceptance gate · 2026-10-25 02:16 Asia/Shanghai
+Overall: G1 PASS† · G2 PASS† · Combined PASS†
+Parent close: 0dee4c3 (D3 Soft†+D4 closed; G opened)
+Last Soft† spotcheck: f5b2780 (D3-4)
+Debt: docs/NEXT_WAVE_DEBT_PRO_ADMIN_G.md
+Scope: G1+G2 ONLY. G3 = 产品. No new features. Harsh independent (not rubber-stamp).
+
+Method
+- Read docs/NEXT_WAVE_DEBT_PRO_ADMIN_G.md baseline list
+- Batch Read(PNG) required closed-surface shots (挤叠 / 死白 / 露技术文案)
+- stat non-zero size for all G2 baseline files
+- Inventory PRO_ADMIN-*-qa-spotcheck*.txt (+ B1 retest) → map A–F/C/D/E
+- Skim prior PASS† Soft† notes (D3 FE滤; live Vite skips) — do not re-FAIL accepted Soft†
+
+════════════════════════════════════
+G1 — 苛刻抽本波关闭面
+════════════════════════════════════
+Redlines: 挤叠 / 死白 / 露技术文案 (admin|member|is_bot|slug|UUID as primary UI)
+Any hit = FAIL for that surface.
+
+Per-shot visual notes (short)
+
+pro-a-settings.png ………… PASS†
+  设置·工作区 Tab；名称+「URL 标识」字段+「用于 URL」人话；中文；无挤叠/死白；slug 为管理员可编辑字段非露 UUID。
+
+pro-a-platform.png ………… PASS†
+  平台管理·工作区表；名称/URL标识/成员/创建/启用停用；中文壳；URL 标识列为产品列非裸 UUID；无挤叠/死白。
+
+pro-b-empty-no-project.png … PASS†
+  「还没有项目」+创建项目/去设置；中文人话空态；无技术口吻；无挤叠/死白。
+
+pro-b-empty-no-members.png … PASS†
+  成员(0) 空态「还没有成员」+邀请区；角色下拉「成员」中文；ymw_ 前缀为人话引导（非 is_bot/UUID 露脸）；无挤叠/死白。
+
+pro-b-empty-no-issue.png …… PASS†
+  看板空态「还没有 Issue」+标题快建；中文；无技术文案；无挤叠/死白。
+
+pro-b-empty-no-issue-list.png PASS† (optional)
+  列表空态同人话；滤镜条完整；无挤叠/死白/技术露脸。
+
+pro-c-archived-toggle.png … PASS†
+  「显示已归档」开；行内「已归档」灰标；标识 YM-N；无 UUID/is_bot；无挤叠/死白。
+
+pro-c-bulk.png …………… PASS†
+  已选 N 条条+批量改状态/归档；中文；标识 YM-N；无挤叠/死白。
+
+pro-c-columns.png ………… PASS†
+  「显示列」Popover 默认子集+恢复默认；中文；无挤叠/死白。
+
+pro-c-admin-ws.png ………… PASS†
+  超管 WS 搜「QA」+启用筛；表中文；URL 标识产品列；无裸 UUID 主 UI；无挤叠/死白。
+
+pro-d-members.png ………… PASS†
+  成员表中文角色芯片（管理员/成员/机器人）+邀请分块；无 admin/member/is_bot 英文主键；无挤叠/死白。
+
+pro-d-users.png …………… PASS†
+  用户台 WS 筛 Select「育蒙科技」+status 清空；芯片可点（D2）；超管多芯片换行密度=产品态非文字重叠；无 UUID/is_bot；无死白。不重开 D3 Soft†。
+
+pro-e-drawer-rail.png ……… PASS†
+  归档轨「已归档|取消归档」单行同节奏；中文 banner；水印自述为 E1 已接受种子注（非生产露技术）；无挤叠/死白。
+
+pro-e-archived-only.png …… PASS†
+  滤「仅已归档」+行内已归档标；中文；无技术露脸；无挤叠/死白。
+
+pro-e2-board-archive.png …… PASS†
+  已完成列「归档本列」轻链+有卡；非完成列无入口；中文；无挤叠/死白。
+
+pro-f-settings-density.png … PASS†
+  设置成员密度：邀请/已签发/成员表分层；角色中文芯片；Bot「机器人」；无挤叠/死白/技术露脸。
+
+G1 FAIL surfaces: NONE
+G1 Verdict: PASS†
+
+════════════════════════════════════
+G2 — 证据齐
+════════════════════════════════════
+
+1) Baseline shots under「已有箱截（G2 基线）」— all present, non-zero
+
+| File | Present | Size (B) |
+| --- | --- | --- |
+| pro-a-platform.png | Y | 47185 |
+| pro-a-settings.png | Y | 41464 |
+| pro-b-empty-create-modal.png | Y | 41460 |
+| pro-b-empty-no-issue-list.png | Y | 42854 |
+| pro-b-empty-no-issue.png | Y | 35445 |
+| pro-b-empty-no-members.png | Y | 78920 |
+| pro-b-empty-no-project.png | Y | 32310 |
+| pro-c-admin-ws.png | Y | 56086 |
+| pro-c-archived-toggle.png | Y | 89433 |
+| pro-c-bulk.png | Y | 75499 |
+| pro-c-columns.png | Y | 78134 |
+| pro-d-members.png | Y | 87891 |
+| pro-d-users.png | Y | 53037 |
+| pro-e-archived-only.png | Y | 64936 |
+| pro-e-drawer-rail.png | Y | 47564 |
+| pro-e2-board-archive.png | Y | 63385 |
+| pro-f-settings-density.png | Y | 91625 |
+
+Missing baseline: NONE (17/17)
+
+2) Spotcheck / evidence map (closed packages A–F / C / D / E)
+
+| Package | Evidence | G2 note |
+| --- | --- | --- |
+| A (settings/platform IA) | pro-a-settings.png + pro-a-platform.png | shot-only + product-closed → OK |
+| B1 | PRO_ADMIN-B1-qa-retest-20261024.txt + pro-b-empty-no-project.png | OK |
+| B2/B3 | PRO_ADMIN-B2-B3-qa-spotcheck-20261025.txt + empty shots | OK |
+| C1 | PRO_ADMIN-C1-qa-spotcheck-20261025.txt + pro-c-archived-toggle.png | OK |
+| C2 | PRO_ADMIN-C2-qa-spotcheck-20261025.txt + pro-c-bulk.png | OK |
+| C3 | PRO_ADMIN-C3-qa-spotcheck-20261025.txt + pro-c-columns.png | OK |
+| C4+C5 | PRO_ADMIN-C4-qa-spotcheck-20261025.txt + pro-c-admin-ws.png (C5 并入 C4) | OK |
+| D1 | PRO_ADMIN-D1-qa-spotcheck-20261025.txt + pro-d-members.png | OK |
+| D2 | PRO_ADMIN-D2-qa-spotcheck-20261025.txt + pro-d-users.png | OK |
+| D3 | PRO_ADMIN-D3-qa-spotcheck-20261025.txt + pro-d-users.png | OK Soft† FE滤 |
+| D4 | pro-d-members.png + pro-d-users.png | shot-only 箱截包 · product 并关 @0dee4c3 → OK |
+| E1 | PRO_ADMIN-E1-qa-spotcheck-20261025.txt + pro-e-drawer-rail.png | OK |
+| E2 | PRO_ADMIN-E2-qa-spotcheck-20261025.txt + pro-e2-board-archive.png | OK |
+| E3 | PRO_ADMIN-E3-qa-spotcheck-20261025.txt + pro-e-archived-only.png | OK |
+| F1 | pro-a-settings.png / pro-f-settings-density.png | shot-only + product-closed → OK |
+
+Critical spotcheck missing for closed knife that had QA: NONE
+(A/F/D4/C5 are shot-or-fold packages by design.)
+
+G2 Verdict: PASS†
+
+════════════════════════════════════
+Soft† carried (do not re-FAIL)
+════════════════════════════════════
+- D3 FE滤非BE：API GET /admin/users 无 workspace_id；FE 按 row.workspaces[].id 客户端滤 — 总指挥接受；不挡 PASS†（f5b2780 / D3 spotcheck）。
+- Live FE Vite skips：B2/B3、C1–C4、D1–D3、E1–E3 等多包 standing Soft†（箱截+源码 suffice）— Soft† live FE skip OK for re-live of closed knives。
+- C2 Soft†：FE 仍串行 patchIssue；live binary batch-status 405 另票 — 不挡本门。
+- E1 箱截水印自述（单行·13px·中文·非 Form）— 先前 E1 PASS 已记为种子注，非露技术 FAIL。
+
+════════════════════════════════════
+Defects (blocking only)
+════════════════════════════════════
+(none)
+
+════════════════════════════════════
+Verdict
+════════════════════════════════════
+G1 PASS† · G2 PASS† · Combined PASS†
+G3 left to 产品体验 (not this knife).
+
+One-line → 产品+总指挥+React: PRO_ADMIN G1+G2 PASS†；17/17 基线箱截齐+苛刻抽关面无挤叠/死白/技术露脸；spotcheck 映射 A–F/C/D/E 齐（A/F/D4 截包 OK）；Soft† 携 D3 FE滤与 live Vite 略；G3 交产品关本波。
