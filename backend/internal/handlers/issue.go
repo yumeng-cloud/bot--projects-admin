@@ -163,6 +163,9 @@ func (h *IssueHandler) Patch(w http.ResponseWriter, r *http.Request) {
 			decodePtr("due_at", &in.DueAt)
 		}
 	}
+	if v, ok := raw["force_assignee"]; ok {
+		_ = json.Unmarshal(v, &in.ForceAssignee)
+	}
 	if v, ok := raw["label_ids"]; ok {
 		var ids []string
 		if err := json.Unmarshal(v, &ids); err == nil {

@@ -113,13 +113,14 @@ func (h *BotsHandler) ClaimRole(w http.ResponseWriter, r *http.Request) {
 	}
 	var req struct {
 		MemberID string `json:"member_id"`
+		Force    bool   `json:"force"`
 	}
 	_ = middleware.DecodeJSON(r, &req)
 	memberID := req.MemberID
 	if memberID == "" {
 		memberID = actorMember
 	}
-	claim, err := h.Svc.Claim(ws, r.PathValue("roleID"), memberID)
+	claim, err := h.Svc.Claim(ws, r.PathValue("roleID"), memberID, req.Force)
 	if err != nil {
 		middleware.HandleError(w, err)
 		return

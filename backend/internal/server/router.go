@@ -154,6 +154,7 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 	handlers.MountWiki(root, sqlDB, authAny)
 	handlers.MountTime(root, sqlDB, authAny)
 	handlers.MountBots(root, sqlDB, authAny)
+	handlers.MountTeams(root, sqlDB, authAny)
 	root.Handle("/", r)
 	return root
 }

@@ -86,3 +86,18 @@ func MountBotsChi(r chi.Router, db *sql.DB) {
 	m.Get("/bots/{memberID}/handoff", h.Handoff)
 	m.Post("/bots/{memberID}/handoff", h.ImportHandoff)
 }
+
+// MountTeamsChi 挂载 Teams（路径相对 workspace）。
+func MountTeamsChi(r chi.Router, db *sql.DB) {
+	h := NewTeamHandler(db)
+	m := asChi(r)
+	m.Post("/teams", h.CreateTeam)
+	m.Get("/teams", h.ListTeams)
+	m.Get("/teams/{teamID}", h.GetTeam)
+	m.Get("/teams/{teamID}/roster", h.GetRoster)
+	m.Post("/teams/{teamID}/roster/ensure", h.EnsureRoster)
+	m.Post("/teams/{teamID}/seats/{seatID}/bind", h.BindSeat)
+	m.Post("/teams/{teamID}/seats/{seatID}/unbind", h.UnbindSeat)
+	m.Post("/teams/{teamID}/seats/expand", h.ExpandSeats)
+	m.Post("/teams/{teamID}/expand", h.ExpandSeats)
+}

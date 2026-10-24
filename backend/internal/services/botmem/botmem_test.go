@@ -46,10 +46,10 @@ func TestClaimConflict(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.Claim(ws, role.ID, m1); err != nil {
+	if _, err := svc.Claim(ws, role.ID, m1, false); err != nil {
 		t.Fatal(err)
 	}
-	_, err = svc.Claim(ws, role.ID, m2)
+	_, err = svc.Claim(ws, role.ID, m2, false)
 	if err == nil {
 		t.Fatal("expected conflict")
 	}
@@ -58,13 +58,13 @@ func TestClaimConflict(t *testing.T) {
 		t.Fatalf("want conflict, got %#v", err)
 	}
 	// same member re-claim ok
-	if _, err := svc.Claim(ws, role.ID, m1); err != nil {
+	if _, err := svc.Claim(ws, role.ID, m1, false); err != nil {
 		t.Fatal(err)
 	}
 	if err := svc.Release(ws, role.ID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.Claim(ws, role.ID, m2); err != nil {
+	if _, err := svc.Claim(ws, role.ID, m2, false); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -97,7 +97,7 @@ func TestHandoffAssemble(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.Claim(ws, role.ID, m1); err != nil {
+	if _, err := svc.Claim(ws, role.ID, m1, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := svc.UpsertMemory(ws, m1, botmem.UpsertMemoryInput{KeyName: "note", ValueText: "hello"}); err != nil {
@@ -152,7 +152,7 @@ func TestImportHandoff(t *testing.T) {
 		t.Fatal(err)
 	}
 	// m2 already claims → import claim for m1 should warn
-	if _, err := svc.Claim(ws, role.ID, m2); err != nil {
+	if _, err := svc.Claim(ws, role.ID, m2, false); err != nil {
 		t.Fatal(err)
 	}
 

@@ -3,6 +3,7 @@ package botmem
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
@@ -176,16 +177,18 @@ func (s *Service) activeClaim(roleID string) (*models.BotRoleClaim, error) {
 	return &c, nil
 }
 
-// Claim 认领角色。schema UNIQUE(role_id) 仅允许一行：已释放则 UPDATE 重认领。
-func (s *Service) Claim(workspaceID, roleID, memberID string) (*models.BotRoleClaim, error) {
+// Claim 认领角色。force=true 时允许接管他人 active claim。
+// schema UNIQUE(role_id) 仅允许一行：已释放则 UPDATE 重认领。
+func (s *Service) Claim(workspaceID, roleID, memberID string, force bool) (*models.BotRoleClaim, error) {
 	if memberID == "" {
 		return nil, apperr.BadRequest("member_id 不能为空")
 	}
-	if _, err := s.GetRole(workspaceID, roleID); err != nil {
+	role, err := s.GetRole(workspaceID, roleID)
+	if err != nil {
 		return nil, err
 	}
 	var mid string
-	err := s.DB.QueryRow(`SELECT id FROM members WHERE id = ? AND workspace_id = ?`, memberID, workspaceID).Scan(&mid)
+	err = s.DB.QueryRow(`SELECT id FROM members WHERE id = ? AND workspace_id = ?`, memberID, workspaceID).Scan(&mid)
 	if err == sql.ErrNoRows {
 		return nil, apperr.NotFound("成员不存在")
 	}
@@ -193,19 +196,27 @@ func (s *Service) Claim(workspaceID, roleID, memberID string) (*models.BotRoleCl
 		return nil, err
 	}
 
+	tookOver := false
 	if active, err := s.activeClaim(roleID); err != nil {
 		return nil, err
 	} else if active != nil {
 		if active.MemberID == memberID {
 			return active, nil
 		}
-		return nil, apperr.Conflict("该角色已被其他成员认领")
+		if !force {
+			return nil, apperr.Conflict("该角色已被其他成员认领")
+		}
+		if err := s.Release(workspaceID, roleID); err != nil {
+			return nil, err
+		}
+		tookOver = true
 	}
 
 	now := nowUTC()
 	// 已有历史行（已释放）→ 重认领；无行 → 插入
 	var existingID string
 	err = s.DB.QueryRow(`SELECT id FROM bot_role_claims WHERE role_id = ?`, roleID).Scan(&existingID)
+	var claim *models.BotRoleClaim
 	if err == nil {
 		_, err = s.DB.Exec(`UPDATE bot_role_claims SET member_id = ?, claimed_at = ?, released_at = NULL, workspace_id = ? WHERE id = ?`,
 			memberID, now, workspaceID, existingID)
@@ -216,26 +227,35 @@ func (s *Service) Claim(workspaceID, roleID, memberID string) (*models.BotRoleCl
 		if err != nil {
 			return nil, err
 		}
-		return &c, nil
-	}
-	if err != sql.ErrNoRows {
+		claim = &c
+	} else if err != sql.ErrNoRows {
 		return nil, err
+	} else {
+		id := idgen.New()
+		_, err = s.DB.Exec(`INSERT INTO bot_role_claims (id, workspace_id, role_id, member_id, claimed_at, released_at)
+			VALUES (?,?,?,?,?,NULL)`, id, workspaceID, roleID, memberID, now)
+		if err != nil {
+			if db.IsUniqueViolation(err) {
+				return nil, apperr.Conflict("该角色已被其他成员认领")
+			}
+			return nil, err
+		}
+		c, err := scanClaim(s.DB.QueryRow(`SELECT `+claimCols+` FROM bot_role_claims WHERE id = ?`, id))
+		if err != nil {
+			return nil, err
+		}
+		claim = &c
 	}
 
-	id := idgen.New()
-	_, err = s.DB.Exec(`INSERT INTO bot_role_claims (id, workspace_id, role_id, member_id, claimed_at, released_at)
-		VALUES (?,?,?,?,?,NULL)`, id, workspaceID, roleID, memberID, now)
-	if err != nil {
-		if db.IsUniqueViolation(err) {
-			return nil, apperr.Conflict("该角色已被其他成员认领")
-		}
-		return nil, err
+	if tookOver {
+		rid := role.ID
+		_, _ = s.UpsertMemory(workspaceID, memberID, UpsertMemoryInput{
+			KeyName:   "seat_takeover:" + role.Slug,
+			ValueText: fmt.Sprintf("角色「%s」已从其他成员接管", role.Name),
+			RoleID:    &rid,
+		})
 	}
-	c, err := scanClaim(s.DB.QueryRow(`SELECT `+claimCols+` FROM bot_role_claims WHERE id = ?`, id))
-	if err != nil {
-		return nil, err
-	}
-	return &c, nil
+	return claim, nil
 }
 
 func (s *Service) Release(workspaceID, roleID string) error {
@@ -855,7 +875,7 @@ func (s *Service) ImportHandoff(workspaceID, memberID string, in ImportHandoffIn
 		}
 	}
 	if claimRoleID != "" {
-		if _, err := s.Claim(workspaceID, claimRoleID, memberID); err != nil {
+		if _, err := s.Claim(workspaceID, claimRoleID, memberID, false); err != nil {
 			if ae, ok := err.(*apperr.AppError); ok && ae.Code == "conflict" {
 				res.Warnings = append(res.Warnings, "claim conflict: "+ae.Message)
 			} else {

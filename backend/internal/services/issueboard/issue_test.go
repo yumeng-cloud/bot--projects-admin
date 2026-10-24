@@ -462,7 +462,6 @@ func TestCommentConcurrentEdit(t *testing.T) {
 	}
 }
 
-
 func TestIssueDatesCreateAndPatch(t *testing.T) {
 	svc, ws, pid := setup(t)
 	start := "2026-10-01"
@@ -773,5 +772,40 @@ func TestBlockedAndOverdueFilters(t *testing.T) {
 		if iss.Title == "future" {
 			t.Fatal("future due should not be overdue")
 		}
+	}
+}
+
+func TestForceAssigneeGate(t *testing.T) {
+	svc, ws, pid := setup(t)
+	m1 := insertMember(t, svc, ws)
+	m2 := insertMember(t, svc, ws)
+	leaf, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "L", ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := svc.UpdateIssue(ws, leaf.ID, issueboard.UpdateIssueInput{
+		Version: leaf.Version, AssigneeID: &m1, ActorKind: "bot",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = svc.UpdateIssue(ws, leaf.ID, issueboard.UpdateIssueInput{
+		Version: got.Version, AssigneeID: &m2, ActorKind: "bot",
+	})
+	ae, ok := err.(*apperr.AppError)
+	if !ok || ae.StatusCode != 409 {
+		t.Fatalf("want 409 steal, got %v", err)
+	}
+	if !strings.Contains(ae.Message, "禁止抢占") {
+		t.Fatalf("message: %q", ae.Message)
+	}
+	got2, err := svc.UpdateIssue(ws, leaf.ID, issueboard.UpdateIssueInput{
+		Version: got.Version, AssigneeID: &m2, ActorKind: "bot", ForceAssignee: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got2.AssigneeID == nil || *got2.AssigneeID != m2 {
+		t.Fatalf("force assignee: %+v", got2.AssigneeID)
 	}
 }

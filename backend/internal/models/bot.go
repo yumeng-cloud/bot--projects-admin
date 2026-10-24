@@ -17,12 +17,12 @@ type BotRole struct {
 
 // BotRoleClaim 角色认领（同一 role 同时仅一个 active：released_at IS NULL）。
 type BotRoleClaim struct {
-	ID         string  `json:"id"`
-	WorkspaceID string `json:"workspace_id"`
-	RoleID     string  `json:"role_id"`
-	MemberID   string  `json:"member_id"`
-	ClaimedAt  string  `json:"claimed_at"`
-	ReleasedAt *string `json:"released_at"`
+	ID          string  `json:"id"`
+	WorkspaceID string  `json:"workspace_id"`
+	RoleID      string  `json:"role_id"`
+	MemberID    string  `json:"member_id"`
+	ClaimedAt   string  `json:"claimed_at"`
+	ReleasedAt  *string `json:"released_at"`
 }
 
 // BotMemory 按 member+key 持久记忆（upsert）。
@@ -63,13 +63,13 @@ type BotRosterItem struct {
 
 // BotHandoff 只读续工包（由 todos + memories + 指派 issue 组装，无独立表）。
 type BotHandoff struct {
-	WorkspaceID  string         `json:"workspace_id"`
-	MemberID     string         `json:"member_id"`
-	GeneratedAt  string         `json:"generated_at"`
-	ClaimedRole  *BotRole       `json:"claimed_role"`
-	Memories     []BotMemory    `json:"memories"`
-	Todos        []BotTodo      `json:"todos"`
-	Issues       []HandoffIssue `json:"issues"`
+	WorkspaceID string         `json:"workspace_id"`
+	MemberID    string         `json:"member_id"`
+	GeneratedAt string         `json:"generated_at"`
+	ClaimedRole *BotRole       `json:"claimed_role"`
+	Memories    []BotMemory    `json:"memories"`
+	Todos       []BotTodo      `json:"todos"`
+	Issues      []HandoffIssue `json:"issues"`
 }
 
 // HandoffIssue 续工包中的 issue 摘要。
@@ -82,4 +82,39 @@ type HandoffIssue struct {
 	ProjectID  string  `json:"project_id"`
 	CycleID    *string `json:"cycle_id"`
 	UpdatedAt  string  `json:"updated_at"`
+}
+
+// Team 协作班底（UUID 引导，工作区内可多团队）。
+type Team struct {
+	ID          string  `json:"id"`
+	WorkspaceID string  `json:"workspace_id"`
+	Name        string  `json:"name"`
+	Slug        *string `json:"slug,omitempty"`
+	TemplateKey string  `json:"template_key"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+}
+
+// TeamSeatClaim 席位上的 active bot_role_claim 摘要。
+type TeamSeatClaim struct {
+	MemberID  string `json:"member_id"`
+	ClaimedAt string `json:"claimed_at"`
+}
+
+// TeamSeat 班底席位；MemberID 为 BoundMemberID 的 JSON 别名。
+type TeamSeat struct {
+	ID               string         `json:"id"`
+	TeamID           string         `json:"team_id"`
+	WorkspaceID      string         `json:"workspace_id"`
+	RoleSlug         string         `json:"role_slug"`
+	DisplayName      string         `json:"display_name"`
+	PlaybookRef      *string        `json:"playbook_ref,omitempty"`
+	BotRoleID        *string        `json:"bot_role_id,omitempty"`
+	BoundMemberID    *string        `json:"bound_member_id,omitempty"`
+	MemberID         *string        `json:"member_id,omitempty"` // alias of bound_member_id
+	BoundAt          *string        `json:"bound_at,omitempty"`
+	BoundDisplayName *string        `json:"bound_display_name,omitempty"`
+	CreatedAt        string         `json:"created_at"`
+	UpdatedAt        string         `json:"updated_at"`
+	Claim            *TeamSeatClaim `json:"claim,omitempty"`
 }

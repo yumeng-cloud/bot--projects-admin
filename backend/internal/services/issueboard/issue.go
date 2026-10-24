@@ -434,6 +434,7 @@ type UpdateIssueInput struct {
 	LabelIDs      *[]string
 	ActorID       string
 	ActorKind     string
+	ForceAssignee bool
 }
 
 func (s *Service) UpdateIssue(workspaceID, issueID string, in UpdateIssueInput) (*models.Issue, error) {
@@ -449,9 +450,14 @@ func (s *Service) UpdateIssue(workspaceID, issueID string, in UpdateIssueInput) 
 	}
 
 	// Claim gate: assigning (non-empty assignee) only allowed on leaf issues.
+	// ForceAssignee=false 时禁止抢占已有异人负责人。
 	if in.AssigneeID != nil && strings.TrimSpace(*in.AssigneeID) != "" {
 		if !cur.IsLeaf {
 			return nil, apperr.Conflict("仅叶子任务可领取")
+		}
+		if cur.AssigneeID != nil && strings.TrimSpace(*cur.AssigneeID) != "" &&
+			*cur.AssigneeID != strings.TrimSpace(*in.AssigneeID) && !in.ForceAssignee {
+			return nil, apperr.Conflict("该 Issue 已被其他成员领取，禁止抢占")
 		}
 	}
 
