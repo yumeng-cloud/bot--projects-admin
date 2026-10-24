@@ -50,7 +50,7 @@ JSON 字段：`snake_case`；时间：UTC ISO8601
 | GET/POST | `/workspaces/{ws}/labels` | 标签 |
 | PATCH/DELETE | `/workspaces/{ws}/labels/{labelID}` | |
 
-### Workspace invites（人类邀请链 · `ymw_` · 已落地）
+### Workspace invites（人类邀请链 · `ymw_` · 已落地 `05a1d35`）
 
 > **勿与**队席入场码 `ymt_`（`POST …/teams/{id}/invites` · `/team-invites/redeem`）混淆。本段 = **工作区人类成员**邀请链接。
 
@@ -71,7 +71,7 @@ JSON 字段：`snake_case`；时间：UTC ISO8601
 | 非 WS Admin 签发/列表/吊销 | **403** |
 | 非成员访问他 WS | **404**（不泄露） |
 
-### Platform admin（全站超管 · 已落地）
+### Platform admin（全站超管 · 已落地 `05a1d35`）
 
 > Bootstrap：环境变量 `PLATFORM_ADMIN_EMAILS`（逗号分隔；见 [`.env.example`](../.env.example)）。冷启将匹配邮箱用户授 `users.is_platform_admin`；亦可 seed 升旗。非超管打 `/admin/*` → **403** 中文。
 
