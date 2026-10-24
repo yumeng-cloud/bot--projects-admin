@@ -1,0 +1,60 @@
+T6-I Issue pool team isolation — harsh QA (live HTTP + unit)
+Time: 2026-10-24 19:11:54 CST (Asia/Shanghai)
+HEAD: 9f49a34b3b188733630eca94bd1fab9f05f861c2
+Ancestor 75aadce: yes (merge-base --is-ancestor ok)
+API: http://127.0.0.1:8080 healthz ok; binary /tmp/ai-board-server
+WS: ba1481c49148aba9553ba3811406b69f
+Auth: Admin JWT (admin@yumeng.tech) — Admin can list both teams
+Project: b1e996fb8ba9c350e249f7a862425a67 (示例项目)
+
+Teams (fresh CreateTeam):
+  A: id=5d8ef454173593668df6ae5069f59ca6 name=QA-T6I-A-20261024191041
+  B: id=adc73ca407dce6c5177fc18c9929edc7 name=QA-T6I-B-20261024191041
+
+Issues:
+  A: id=d79e21d0ede3b1dc0be5cddc0b25cd96 title=qa-t6i-A-20261024191041 (also A2 714d998bedff… via ?team_id=)
+  B: id=f540cbc57bc0a1009334b3d2bad41c8b title=qa-t6i-B-20261024191041
+
+========== I1 (Create+List isolation) ==========
+Result: PASS
+POST /issues body {title,project_id,team_id=A} → 201 team_id=A
+POST /issues body {title,project_id,team_id=B} → 201 team_id=B
+GET /issues?team_id=A → HTTP 200 count=2 has_A=True has_B=False
+GET /issues?team_id=B → HTTP 200 count=1 has_A=False has_B=True
+GET /search?q=qa-t6i&team_id=A → has_A=True has_B=False
+GET /search?q=qa-t6i&team_id=B → has_A=False has_B=True
+Note: DisallowUnknownFields rejects body field "type" → 400 请求体无效 (not a T6-I defect).
+
+========== I2 (wrong-team 404 + create 4xx Chinese) ==========
+Result: PASS
+GET /issues/{A}?team_id=B → HTTP 404 {"code":"not_found","message":"Issue 不存在"}
+GET /issues/{B}?team_id=A → HTTP 404 {"code":"not_found","message":"Issue 不存在"}
+GET /issues/{A}?team_id=A → HTTP 200
+PATCH /issues/{A}?team_id=B {version,title} → HTTP 404 {"code":"not_found","message":"Issue 不存在"}
+POST /issues without team_id → HTTP 400 {"code":"bad_request","message":"创建 Issue 必须指定 team_id（当前团队）"}
+POST /issues team_id=deadbeef… → HTTP 400 {"code":"bad_request","message":"team_id 无效或不属于当前工作区"}
+
+========== I3 (evidence=this file) ==========
+Result: PASS (this file)
+
+========== NULL / unassigned strategy ==========
+Strategy (API.md / contract): old rows team_id IS NULL = 未分队;
+  default GET ?team_id=X excludes NULL; only ?unassigned=1 shows them.
+Live: GET ?unassigned=1 → HTTP 200 count=18 all team_id=null (sample 3b2a4ee954ef…)
+  GET ?team_id=A excludes sample NULL (in_listA=False)
+  teamed A/B issues NOT in unassigned list
+No SQL forge needed — seed/legacy NULL rows present.
+
+========== Unit ==========
+cd backend && env -u DATABASE_URL go test ./internal/services/issueboard/ -count=1 -run 'I1|I2|LegacyNull|TeamPool'
+ok  	github.com/yumeng-tech/ai-collab-board/backend/internal/services/issueboard	0.290s
+PASS names: TestI1TeamPoolIsolation, TestI2CrossTeamHiddenAndWrongTeam404,
+  TestLegacyNullTeamIDExcludedFromTeamLists, TestTeamPool_ListHidesOtherTeam,
+  TestTeamPool_DefaultListHidesNULL, TestTeamPool_UnassignedFilterOnlyNULL,
+  TestTeamPool_CreateRequiresTeamID, TestTeamPool_GetPatchWrongTeam404
+
+========== Overall ==========
+Overall: PASS
+I1: PASS · I2: PASS · I3: PASS (evidence)
+I4 FE: not in this API harsh pass (checklist: parallel)
+Defect: none
