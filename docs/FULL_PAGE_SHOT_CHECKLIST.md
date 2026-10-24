@@ -57,10 +57,10 @@
 | S3 | **PASS** | `/workspace/qa-shots/S3-list.png` |
 | S4 | **PASS** | `/workspace/qa-shots/S4-cycles.png` |
 | S5 | **PASS** | `/workspace/qa-shots/S5-timeline.png` |
-| S6 | **PENDING** | 等 WIKI_UX_P1 |
-| S7 | **FAIL 债**（原 PASS 作废） | `/workspace/qa-shots/S7-time.png`（Issue 列显示 raw id，布局正常） |
-| S8 | **FAIL 债**（原 PASS 作废） | `/workspace/qa-shots/S8-settings.png` |
-| S9 | **FAIL 债**（原 PASS 作废） | `/workspace/qa-shots/S9-bots.png` |
+| S6 | **PASS**（苛刻 · WIKI_UX_P1） | `/workspace/qa-shots/S6-wiki.png` + `S6-wiki-edit.png` |
+| S7 | **PASS**（a84e0ac · YM-n+人名） | `docs/qa-shots/fail-fix-20261024/03-time.png` |
+| S8 | **PASS**（a84e0ac · 角色中文） | `docs/qa-shots/fail-fix-20261024/05-settings.png` |
+| S9 | **PASS**（a84e0ac · 认领「名」） | `docs/qa-shots/fail-fix-20261024/06-bots.png` |
 
 **汇总（已作废宽松判）**：S1–S5 曾 PASS；**S7–S9 按苛刻标准改记 FAIL 债**；S6 Wiki pending。Cycles/工作区同批苛刻 FAIL，复测前不喊用户。
 
@@ -86,3 +86,24 @@
 | 工作区 | — | 同批 FAIL（裸 hash/漂浮空底） | 记债 |
 
 FE 修完后：按本苛刻条复测 S7–S9（及工作区/Cycles），截图进 `/workspace/qa-shots/`，不过关不喊用户。
+
+## Wiki S6 苛刻跑（2026-10-24 13:09 Asia/Shanghai）
+
+入口：`5174` 硬刷 · `dea0f77` WIKI_UX_P1  
+**S6 Wiki：PASS**（P1-1…P1-7 全过；无达 FAIL 条缺陷）  
+截图：`/workspace/qa-shots/S6-wiki.png`、`S6-wiki-edit.png`  
+Nits（不挡）：树搜索蓝方钮；树宽贴 240 下限；编辑插图小图标簇。
+
+## 苛刻 FAIL 五项关单（2026-10-24 13:10 Asia/Shanghai · `a84e0ac`）
+
+箱 `5174` 自截：`docs/qa-shots/fail-fix-20261024/`
+
+| # | 项 | 判定 |
+|---|----|------|
+| 1 | Wiki 默认开首篇 | PASS — 进 Wiki 即开「QA page」，无「还没有打开页面」 |
+| 2 | 工时 YM-n + 人名 | PASS — Issue=`YM-12 …`，成员=`管理员` |
+| 3 | 工作区真导航 | PASS — 表行 看板/列表/Cycles/Wiki/设置，无漂浮小卡 |
+| 4 | Cycles 密度+⋯ | PASS — 双栏 panel；Issue 操作仅 ⋯ |
+| 5 | 设置/Bot 中文 | PASS — 管理员/机器人；认领「后端」等；无 slug |
+
+看板/列表/排期/抽屉未动。
