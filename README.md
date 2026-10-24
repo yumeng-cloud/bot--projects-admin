@@ -95,7 +95,7 @@ make dev                 # API :8080 + Vite UI :5173
 | 密码 | `Admin123!` |
 | 工作空间 | 育蒙科技（slug: `yumeng`） |
 
-生产：`AUTO_SEED=0`（勿开 `SEED_SAMPLE_DATA`）、设 `PLATFORM_ADMIN_EMAILS`、换强密码、切 Postgres（见 [`.env.example`](./.env.example)）。
+⚠️ **告警**：生产永不默认灌演示数据。务必 `AUTO_SEED=0` 且勿开 `SEED_SAMPLE_DATA`；另设 `PLATFORM_ADMIN_EMAILS`、换强密码、切 Postgres（见 [`.env.example`](./.env.example)）。
 
 ### 数据库
 

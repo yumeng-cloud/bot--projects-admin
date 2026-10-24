@@ -16,7 +16,7 @@ install:
 	cd frontend && pnpm install
 
 seed:
-	cd backend && go run ./cmd/seed
+	cd backend && SEED_SAMPLE_DATA=1 go run ./cmd/seed
 
 test:
 	cd backend && go test ./... -count=1

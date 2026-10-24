@@ -32,6 +32,7 @@ func prefsRouter(t *testing.T) (http.Handler, string, string, string) {
 		SeedAdminEmail: "admin@yumeng.tech",
 		SeedAdminPass:  "Admin123!",
 		SeedWSName:     "育蒙科技",
+		SeedSampleData: true,
 		LoginRateLimit: 100,
 	}
 	if err := seed.Run(sqlDB, cfg); err != nil {

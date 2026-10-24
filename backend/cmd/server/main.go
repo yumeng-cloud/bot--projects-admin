@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/config"
@@ -23,7 +24,9 @@ func main() {
 	}
 	defer sqlDB.Close()
 
-	if os.Getenv("AUTO_SEED") != "0" {
+	// AUTO_SEED default off; set 1/true for structural seed (admin/ws/bot roles).
+	// Demo project/issues/labels also need SEED_SAMPLE_DATA=1 (see seed.Run).
+	if autoSeedEnabled(os.Getenv("AUTO_SEED")) {
 		if err := seed.Run(sqlDB, cfg); err != nil {
 			log.Printf("seed warning: %v", err)
 		}
@@ -39,4 +42,9 @@ func main() {
 	if err := srv.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func autoSeedEnabled(v string) bool {
+	v = strings.TrimSpace(v)
+	return v == "1" || strings.EqualFold(v, "true") || strings.EqualFold(v, "yes")
 }

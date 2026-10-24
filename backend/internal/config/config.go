@@ -22,6 +22,8 @@ type Config struct {
 	SeedAdminEmail  string
 	SeedAdminPass   string
 	SeedWSName      string
+	// SeedSampleData gates demo project/labels/issues (SEED_SAMPLE_DATA=1|true). Default off.
+	SeedSampleData bool
 	AttachmentsDir        string
 	PlatformAdminEmails []string
 	// PublicAPIBase is the externally reachable API root for join links/prompts (ONE_TAP_JOIN).
@@ -55,6 +57,7 @@ func Load() Config {
 		SeedAdminEmail:  getenv("SEED_ADMIN_EMAIL", "admin@yumeng.tech"),
 		SeedAdminPass:   getenv("SEED_ADMIN_PASSWORD", "Admin123!"),
 		SeedWSName:      getenv("SEED_WORKSPACE_NAME", "育蒙科技"),
+		SeedSampleData:  envTruthy(os.Getenv("SEED_SAMPLE_DATA")),
 		AttachmentsDir:        getenv("ATTACHMENTS_DIR", "./data/attachments"),
 		PlatformAdminEmails: parseCSVEmails(getenv("PLATFORM_ADMIN_EMAILS", "")),
 		PublicAPIBase:       strings.TrimRight(getenv("PUBLIC_API_BASE", "https://bot.api.sn.cn"), "/"),
@@ -78,4 +81,10 @@ func getenv(k, d string) string {
 		return v
 	}
 	return d
+}
+
+// envTruthy is true for 1 / true / yes (case-insensitive).
+func envTruthy(v string) bool {
+	v = strings.TrimSpace(v)
+	return v == "1" || strings.EqualFold(v, "true") || strings.EqualFold(v, "yes")
 }

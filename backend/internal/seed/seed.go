@@ -12,7 +12,12 @@ import (
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/pkg/idgen"
 )
 
-// Run is idempotent: creates admin user, workspace, admin member, Grok Bot, sample project.
+const metaSampleDataSeeded = "sample_data_seeded"
+
+// Run is idempotent: creates admin user, workspace, admin member, Grok Bot, bot roles.
+// Demo project / labels / sample issues run only when cfg.SeedSampleData is true
+// (env SEED_SAMPLE_DATA=1|true), and sample issues are gated by seed_meta so clearing
+// issues never triggers a re-seed.
 func Run(db *sql.DB, cfg config.Config) error {
 	email := strings.ToLower(strings.TrimSpace(cfg.SeedAdminEmail))
 	pass := cfg.SeedAdminPass
@@ -79,8 +84,23 @@ func Run(db *sql.DB, cfg config.Config) error {
 		log.Printf("seed: created Grok Bot member")
 	}
 
+	if err := SeedBotRoles(db, wsID); err != nil {
+		return fmt.Errorf("seed bot roles: %w", err)
+	}
+
+	if cfg.SeedSampleData {
+		if err := seedSampleData(db, wsID, memID); err != nil {
+			return err
+		}
+	}
+
+	log.Printf("seed: ok workspace_id=%s admin=%s sample_data=%v", wsID, email, cfg.SeedSampleData)
+	return nil
+}
+
+func seedSampleData(db *sql.DB, wsID, memID string) error {
 	var projID string
-	err = db.QueryRow(`SELECT id FROM projects WHERE workspace_id=? AND key_prefix=?`, wsID, "YM").Scan(&projID)
+	err := db.QueryRow(`SELECT id FROM projects WHERE workspace_id=? AND key_prefix=?`, wsID, "YM").Scan(&projID)
 	if err == sql.ErrNoRows {
 		projID = idgen.New()
 		now := nowUTC()
@@ -106,19 +126,45 @@ func Run(db *sql.DB, cfg config.Config) error {
 		log.Printf("seed: created sample labels")
 	}
 
-	if err := SeedBotRoles(db, wsID); err != nil {
-		return fmt.Errorf("seed bot roles: %w", err)
+	seeded, err := hasSeedMeta(db, metaSampleDataSeeded)
+	if err != nil {
+		return fmt.Errorf("seed meta read: %w", err)
+	}
+	if seeded {
+		log.Printf("seed: sample data already marked seeded; skip issues re-seed")
+		return nil
 	}
 
 	if err := SeedSampleIssues(db, wsID, projID, memID); err != nil {
 		return fmt.Errorf("seed sample issues: %w", err)
 	}
-
-	log.Printf("seed: ok workspace_id=%s admin=%s", wsID, email)
+	if err := setSeedMeta(db, metaSampleDataSeeded, "1"); err != nil {
+		return fmt.Errorf("seed meta write: %w", err)
+	}
 	return nil
 }
 
-// SeedBotRoles 幂等写入默认协作角色。
+func hasSeedMeta(db *sql.DB, key string) (bool, error) {
+	var v string
+	err := db.QueryRow(`SELECT value FROM seed_meta WHERE key = ?`, key).Scan(&v)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return v == "1" || strings.EqualFold(v, "true"), nil
+}
+
+func setSeedMeta(db *sql.DB, key, value string) error {
+	now := nowUTC()
+	_, err := db.Exec(`INSERT INTO seed_meta (key, value, updated_at) VALUES (?,?,?)
+		ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+		key, value, now)
+	return err
+}
+
+// SeedBotRoles 幂等写入默认协作角色（结构种子，不受 SEED_SAMPLE_DATA 控制）。
 func SeedBotRoles(db *sql.DB, workspaceID string) error {
 	defaults := []struct {
 		name, slug, resp string
@@ -147,14 +193,10 @@ func SeedBotRoles(db *sql.DB, workspaceID string) error {
 	return nil
 }
 
-
-// SeedSampleIssues 幂等：项目下无 Issue 时写入跨列演示数据（优先级/标签/负责人）。
+// SeedSampleIssues writes cross-column demo issues when called.
+// Callers must gate with SEED_SAMPLE_DATA and seed_meta; this no longer re-seeds
+// merely because issue count is zero.
 func SeedSampleIssues(db *sql.DB, workspaceID, projectID, assigneeID string) error {
-	var n int
-	_ = db.QueryRow(`SELECT COUNT(1) FROM issues WHERE project_id = ?`, projectID).Scan(&n)
-	if n > 0 {
-		return nil
-	}
 	now := nowUTC()
 	type row struct {
 		num                 int

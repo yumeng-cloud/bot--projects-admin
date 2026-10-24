@@ -111,7 +111,7 @@ Tech lead 已落地 **共享地基**。各 Bot 按下方所有权并行开发，
 - Password: `Admin123!`
 - Workspace slug: `yumeng`
 
-服务启动默认 `AUTO_SEED=1`（设 `AUTO_SEED=0` 可关）。
+服务启动默认 **不** AUTO_SEED（设 `AUTO_SEED=1` 才跑结构种子）。演示项目/Issue/标签另需 `SEED_SAMPLE_DATA=1`；生产保持两者关闭。
 
 ## UI bar
 对标 Linear：克制、紧凑、细边框；由「UI 视觉」主导主题，React/看板配合。

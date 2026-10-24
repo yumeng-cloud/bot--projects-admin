@@ -464,3 +464,10 @@ CREATE INDEX IF NOT EXISTS idx_platform_audit_created ON platform_audit_logs(cre
 -- ISSUE_ARCHIVE: issues.archived_at for old DBs
 ALTER TABLE issues ADD COLUMN archived_at TEXT;
 CREATE INDEX IF NOT EXISTS idx_issues_ws_archived ON issues(workspace_id, archived_at);
+
+-- SEED_SAMPLE_DATA anti-reentry marker (demo content seeded once)
+CREATE TABLE IF NOT EXISTS seed_meta (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (to_char(now() AT TIME ZONE 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+);

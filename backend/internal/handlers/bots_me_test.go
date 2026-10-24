@@ -34,6 +34,7 @@ func botsMeMux(t *testing.T) *http.ServeMux {
 		SeedAdminEmail:  "admin@yumeng.tech",
 		SeedAdminPass:   "Admin123!",
 		SeedWSName:      "育蒙科技",
+		SeedSampleData: true,
 		LoginRateLimit:  100,
 		LoginRateWindow: time.Minute,
 	}
