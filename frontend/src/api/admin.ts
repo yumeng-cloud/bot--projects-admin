@@ -12,12 +12,20 @@ export type AdminWorkspace = {
   owner_email?: string
 }
 
+export type AdminUserWorkspace = {
+  id: string
+  name: string
+  slug: string
+}
+
 export type AdminUser = {
   id: string
   email: string
   name: string
   is_platform_admin?: boolean
   created_at?: string
+  /** D2：所属工作区（members）；无成员时为空数组 */
+  workspaces?: AdminUserWorkspace[]
 }
 
 export function listAdminWorkspaces() {
@@ -46,8 +54,11 @@ export function createAdminWorkspace(body: {
   })
 }
 
-export function listAdminUsers() {
-  return api<{ users: AdminUser[] }>('/admin/users', { skipToast: true })
+/** D1：可选 q 按邮箱/名过滤 → GET /admin/users?q= */
+export function listAdminUsers(opts?: { q?: string }) {
+  const q = opts?.q?.trim()
+  const path = q ? `/admin/users?q=${encodeURIComponent(q)}` : '/admin/users'
+  return api<{ users: AdminUser[] }>(path, { skipToast: true })
 }
 
 export function patchAdminUser(id: string, body: { is_platform_admin: boolean }) {

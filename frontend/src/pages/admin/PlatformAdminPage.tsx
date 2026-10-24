@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import {
   Alert,
@@ -9,6 +9,7 @@ import {
   Switch,
   Table,
   Tabs,
+  Tag,
   Typography,
   message,
   Empty,
@@ -43,6 +44,9 @@ export default function PlatformAdminPage() {
   const [userLoading, setUserLoading] = useState(false)
   const [createForm] = Form.useForm<{ name: string; slug?: string; owner_email: string }>()
   const [creating, setCreating] = useState(false)
+  const [userQuery, setUserQuery] = useState('')
+  const [userQueryDebounced, setUserQueryDebounced] = useState('')
+  const userSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -80,11 +84,11 @@ export default function PlatformAdminPage() {
     }
   }
 
-  const loadUsers = async () => {
+  const loadUsers = async (q?: string) => {
     setUserLoading(true)
     setUserErr(null)
     try {
-      const data = await listAdminUsers()
+      const data = await listAdminUsers(q?.trim() ? { q: q.trim() } : undefined)
       setUsers(data.users || [])
     } catch (e) {
       setUsers([])
@@ -104,10 +108,24 @@ export default function PlatformAdminPage() {
   }
 
   useEffect(() => {
+    if (userSearchTimer.current) clearTimeout(userSearchTimer.current)
+    userSearchTimer.current = setTimeout(() => {
+      setUserQueryDebounced(userQuery)
+    }, 300)
+    return () => {
+      if (userSearchTimer.current) clearTimeout(userSearchTimer.current)
+    }
+  }, [userQuery])
+
+  useEffect(() => {
     if (!user?.is_platform_admin) return
     void loadWorkspaces()
-    void loadUsers()
   }, [user?.is_platform_admin])
+
+  useEffect(() => {
+    if (!user?.is_platform_admin) return
+    void loadUsers(userQueryDebounced)
+  }, [user?.is_platform_admin, userQueryDebounced])
 
   if (boot) {
     return (
@@ -155,7 +173,7 @@ export default function PlatformAdminPage() {
     try {
       await patchAdminUser(row.id, { is_platform_admin: next })
       message.success(next ? '已授予平台超管' : '已撤消平台超管')
-      await loadUsers()
+      await loadUsers(userQueryDebounced)
     } catch (e) {
       message.error(e instanceof ApiError || e instanceof Error ? e.message : '操作失败')
     }
@@ -292,6 +310,17 @@ export default function PlatformAdminPage() {
               label: '用户',
               children: (
                 <>
+                  <Input.Search
+                    allowClear
+                    placeholder="搜索邮箱或名称"
+                    value={userQuery}
+                    onChange={(e) => setUserQuery(e.target.value)}
+                    onSearch={(v) => {
+                      setUserQuery(v)
+                      setUserQueryDebounced(v)
+                    }}
+                    style={{ maxWidth: 320, marginBottom: 12 }}
+                  />
                   {userErr ? (
                     <Alert
                       type="warning"
@@ -299,7 +328,7 @@ export default function PlatformAdminPage() {
                       style={{ marginBottom: 12 }}
                       message={userErr}
                       action={
-                        <Button size="small" onClick={() => void loadUsers()}>
+                        <Button size="small" onClick={() => void loadUsers(userQueryDebounced)}>
                           重试
                         </Button>
                       }
@@ -316,6 +345,24 @@ export default function PlatformAdminPage() {
                         columns={[
                           { title: '名称', dataIndex: 'name' },
                           { title: '邮箱', dataIndex: 'email', ellipsis: true },
+                          {
+                            title: '所属工作区',
+                            key: 'workspaces',
+                            ellipsis: true,
+                            render: (_, row) => {
+                              const list = row.workspaces || []
+                              if (!list.length) return '—'
+                              return (
+                                <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
+                                  {list.map((w) => (
+                                    <Tag key={w.id} style={{ margin: 0 }}>
+                                      {w.name || w.slug || w.id}
+                                    </Tag>
+                                  ))}
+                                </span>
+                              )
+                            },
+                          },
                           {
                             title: '注册',
                             dataIndex: 'created_at',
@@ -337,7 +384,7 @@ export default function PlatformAdminPage() {
                         ]}
                       />
                     ) : (
-                      empty(userErr || '暂无用户')
+                      empty(userErr || (userQueryDebounced.trim() ? '无匹配用户' : '暂无用户'))
                     )}
                   </Spin>
                 </>
