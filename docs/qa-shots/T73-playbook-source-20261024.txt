@@ -1,0 +1,112 @@
+=== T7-3 playbook_ref 执行源箱证 ===
+time_AsiaShanghai: 2026-10-24 19:52 Asia/Shanghai
+result: E1=PASS E2=PASS E3=PASS box=PASS
+evidence_file: docs/qa-shots/T73-playbook-source-20261024.txt
+HEAD_at_run: 81bfa1b (81bfa1b7914a70201f415efc60bae508504cfb40)
+Go_API_SHA: d9e5a3c (roster/bind/handoff 出口 playbook_ref；空/非法 400 中文)
+binary: /tmp/ai-board-server @ 81bfa1b；:8080 DB_DRIVER=postgres
+YMBOT_API_URL: http://127.0.0.1:8080
+WS: ba1481c49148aba9553ba3811406b69f
+KEYA: Grok Bot (ymk_ from /tmp/ymbot_t2_key1.txt)
+TEAM: 88048144b15e34dab8ac2fa1aec208d0  from-template HTTP=201
+
+## 断言
+- E1: GET roster / seat enter 人话可见该席 playbook_ref（无第二套「流程说明」）
+- (a) 同席两次 enter → 同一 playbook_ref
+- (b) ensure/SQL 改 ref 后 GET roster + enter 出口跟着变（不用 team pull，避免模板回写）
+- E3: 非法/空 ensure → 400 中文；DB 空 → roster 一行警示 + enter 400；不回落硬编码
+- E2: CLI 人话含手册路径；无「流程说明」字段
+
+## E1 roster
+=== GET roster ===
+seats=5
+backend	后端	empty	bot-team-template@main:playbook/班底与补位.md
+frontend	前端	empty	bot-team-template@main:roles/前端研发/
+pm	产品经理	empty	bot-team-template@main:playbook/班底与补位.md
+qa	QA	empty	bot-team-template@main:playbook/班底与补位.md
+wiki	知识库	empty	bot-team-template@main:playbook/班底与补位.md
+E1_ROSTER=PASS E2_no_流程说明=PASS
+
+## E1/E2 seat enter + (a) 两次同 ref
+=== enter1 backend ===
+enter role=backend  whoami→handoff get→seat bind
+whoami bot  Grok Bot
+handoff role=SRE  memories=0  todos=0  open_issues=2
+member=BotB J2
+手册 playbook_ref=docs/sre.md
+  YM-16  patrol-p05-assign-1792835498  todo
+  YM-14  N4-c947a76-skip-1792835310545  todo
+bind ok=true  at=2026-10-24T11:52:13Z  holder=Grok Bot
+claim ok=true  at=-  via=bind
+手册 playbook_ref=bot-team-template@main:playbook/班底与补位.md
+memory_key=backend:last_focus（席位隔离）
+REF1=bot-team-template@main:playbook/班底与补位.md E1_ENTER=PASS
+=== enter2 backend ===
+enter role=backend  whoami→handoff get→seat bind
+whoami bot  Grok Bot
+handoff role=SRE  memories=0  todos=0  open_issues=2
+member=BotB J2
+手册 playbook_ref=docs/sre.md
+  YM-16  patrol-p05-assign-1792835498  todo
+  YM-14  N4-c947a76-skip-1792835310545  todo
+bind ok=true  at=2026-10-24T11:52:13Z  holder=Grok Bot
+claim ok=true  at=-  via=bind
+手册 playbook_ref=bot-team-template@main:playbook/班底与补位.md
+memory_key=backend:last_focus（席位隔离）
+REF2=bot-team-template@main:playbook/班底与补位.md
+ASSERT_a_same_ref=PASS
+=== handoff get ===
+role=SRE  memories=0  todos=0  open_issues=2
+member=BotB J2
+手册 playbook_ref=docs/sre.md
+  YM-16  patrol-p05-assign-1792835498  todo
+  YM-14  N4-c947a76-skip-1792835310545  todo
+E1_HO=PASS
+
+## (b) 改 API ref → 出口跟着变
+ensure backend → bot-team-template@main:playbook/T73-changed-ref.md HTTP=200
+=== GET roster after change ===
+seats=5
+backend	后端	claimed	Grok Bot	bot-team-template@main:playbook/T73-changed-ref.md
+frontend	前端	empty	bot-team-template@main:roles/前端研发/
+pm	产品经理	empty	bot-team-template@main:playbook/班底与补位.md
+qa	QA	empty	bot-team-template@main:playbook/班底与补位.md
+wiki	知识库	empty	bot-team-template@main:playbook/班底与补位.md
+=== enter3 after change ===
+enter role=backend  whoami→handoff get→seat bind
+whoami bot  Grok Bot
+handoff role=SRE  memories=0  todos=0  open_issues=2
+member=BotB J2
+手册 playbook_ref=docs/sre.md
+  YM-16  patrol-p05-assign-1792835498  todo
+  YM-14  N4-c947a76-skip-1792835310545  todo
+bind ok=true  at=2026-10-24T11:52:13Z  holder=Grok Bot
+claim ok=true  at=-  via=bind
+手册 playbook_ref=bot-team-template@main:playbook/T73-changed-ref.md
+memory_key=backend:last_focus（席位隔离）
+REF3=bot-team-template@main:playbook/T73-changed-ref.md
+ASSERT_b_roster=PASS ASSERT_b_enter=PASS ASSERT_b_changed=PASS
+
+## E3 非法/空
+illegal ensure HTTP=400 msg={"code":"bad_request","message":"playbook_ref 无法解析 path"} 
+empty ensure HTTP=400 msg={"code":"bad_request","message":"playbook_ref 不能为空"} 
+=== GET roster after DB empty pm ===
+seats=5
+backend	后端	claimed	Grok Bot	bot-team-template@main:playbook/T73-changed-ref.md
+frontend	前端	empty	bot-team-template@main:roles/前端研发/
+pm	产品经理	empty	警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）
+qa	QA	empty	bot-team-template@main:playbook/班底与补位.md
+wiki	知识库	empty	bot-team-template@main:playbook/班底与补位.md
+=== enter qa empty ref ===
+playbook_ref 不能为空（HTTP 400）
+
+## 单测
+go test ./internal/botclient/ ./cmd/ymbot/ ./internal/services/botmem/ -count=1 → ok（含 playbook_t73 / playbook_test）
+
+## 汇总
+E1_ROSTER=PASS E1_ENTER=PASS E1_HO=PASS
+E2_no_流程说明=PASS/PASS
+ASSERT_a=PASS ASSERT_b_roster=PASS ASSERT_b_enter=PASS ASSERT_b_changed=PASS
+E3_ill=PASS/PASS/nofb=PASS E3_emp=PASS/PASS/nofb=PASS
+E3_ch_warn=PASS E3_enter_empty=PASS nofb=PASS
+result_final: box=PASS

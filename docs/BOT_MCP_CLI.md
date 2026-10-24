@@ -343,3 +343,24 @@ ymbot team create --template ghost-nope --name x   # stderr: 未知模板：ghos
 MCP：`tools/list` 含 `board_team_templates` / `board_team_create_from_template`。  
 **自检一句**：list 见 `default` → create 得 5 空席 → 未知 key 400 中文。
 
+### 11.7 执行源 = 席位 `playbook_ref`（T7-3）
+
+> 权威开工单：[`NEXT_WAVE_DEBT_T73.md`](./NEXT_WAVE_DEBT_T73.md)。升版 T7-4/5 **仍后置**。  
+> **唯一作业手册入口** = 席位字段 `playbook_ref`（`repo@ref:path`）。通道 **禁止** 再塞并行「流程.md / 口令剧本 / 流程说明」字段抢权威。
+
+| | |
+|--|--|
+| **roster / team pull** | 瘦输出每席含 `playbook_ref`（路径可截断）；空 → 一行中文警示，**不**默默换成 `playbook/<slug>.md` |
+| **seat enter** | 人话含 `手册 playbook_ref=…`；无 `--team` 时警示无席位上下文 |
+| **handoff get** | 若成员已绑席，回包/人话含该席 `playbook_ref`（Go 最小契约）；空/非法 → 警示不回落 |
+| **非法 / 空** | ensure/create 非法 → **400** 中文（Go）；通道展示空/非法 → **一行中文**，绝不硬编码别的 playbook |
+| **箱证** | [`qa-shots/T73-playbook-source-20261024.txt`](./qa-shots/T73-playbook-source-20261024.txt) |
+
+```bash
+ymbot team pull --uuid "$TEAM"          # 各席可见 playbook_ref
+ymbot seat enter --role frontend --team "$TEAM"
+# 人话应含：手册 playbook_ref=bot-team-template@main:roles/…
+ymbot handoff get                       # 绑席后可见同一 playbook_ref
+```
+
+MCP：`board_team_pull` / `board_seat_enter` / `board_handoff_get` 瘦人话同形（`playbook_ref`；无「流程说明」第二字段）。
