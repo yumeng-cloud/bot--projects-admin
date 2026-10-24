@@ -112,8 +112,8 @@
 - [x] **A3** 侧栏层级 · 同 `pro-a-settings.png`（设置高亮·平台管理底入口）
 - [x] **A4** 壳箱截 · `9f6ced2`；视觉终审放行（基线 `d0216ff`）
 - [x] **B1** 无项目引导 · **P0 关绿** · FE `72e0447` + 底图 `640fd6e` · QA `631af4a` / `PRO_ADMIN-B1-qa-retest-20261024.txt` Overall PASS（B1-a～g）
-- [x] **B2** 无成员引导 · `95974f1` / `pro-b-empty-no-members.png`
-- [x] **B3** 无 Issue 引导 · `95974f1` / `pro-b-empty-no-issue.png` + `pro-b-empty-no-issue-list.png`
+- [x] **B2** 无成员引导 · `95974f1` / `pro-b-empty-no-members.png` · QA PASS `76824d1`
+- [x] **B3** 无 Issue 引导 · `95974f1` · QA PASS `76824d1`
 - [x] **B4** 空态箱截 · `95974f1`（无成员/无 Issue；无项目复用 B1 `pro-b-empty-no-project.png`）
 - [ ] **C1** 归档显隐
 - [ ] **C2** 多选批量
@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:40 · **QA 抽验 PASS** `76824d1` / `PRO_ADMIN-B2-B3-qa-spotcheck-20261025.txt`（B2/B3 三条苛刻全过）。**B2/B3/B4 关绿维持**。
 - 2026-10-25 00:35 · **产品勾 B2/B3/B4** `95974f1`：目视箱截过（成员空态邀请/`ymw_` 与 Bot 分家；看板/列表无 Issue 短引导+新建，非半屏死白）。等 QA 抽验。
 - 2026-10-25 00:15 · **B2/B3/B4 关绿** React `95974f1`：成员 Tab 空态邀请/`ymw_`（与 Bot 席隔离）；列表/看板无 Issue 短引导+新建；箱截 `pro-b-empty-no-members.png` / `pro-b-empty-no-issue.png` / `pro-b-empty-no-issue-list.png`。整包 C–E/G 仍冻。
 - 2026-10-25 00:25 · **开刀仅 B2/B3（+B4 箱截）**：ONE_TAP 已关；总指挥令只开人用空态。B2=成员 Tab 无成员→邀请/`ymw_`（与 Bot 席文案隔离）；B3=列表/看板无 Issue→短引导+新建（不半屏死白）。整包 C–E/G **不并行**。测绿 push；交勾带 SHA+截。
@@ -158,4 +159,4 @@
 
 ## 关单进度
 
-**B2/B3/B4 产品勾** `95974f1` · 等 QA 抽验；整包其余（C–E/G）仍冻结。
+**B2/B3/B4 关绿** FE `95974f1` + QA `76824d1`；整包其余（C–E/G）仍冻结。
