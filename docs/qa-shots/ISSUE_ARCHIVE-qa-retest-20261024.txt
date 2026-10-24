@@ -1,0 +1,86 @@
+ISSUE_ARCHIVE independent harsh retest · 2026-10-24 21:01 Asia/Shanghai (CST, UTC+8)
+QA eyes: independent (do not trust product 勾)
+API: rebuilt /tmp/ai-board-server from current main; restarted :8080
+  healthz OK; migration 012 already applied (archived_at + idx_issues_ws_archived)
+  DB: postgres://…@127.0.0.1:5432/ai_collab (from .env)
+  actor: admin@yumeng.tech / Admin123!
+  WS ba1481c49148aba9553ba3811406b69f · project b1e996fb8ba9c350e249f7a862425a67 · team ea918de1…(加速班底)
+
+SHAs
+  HEAD at retest: 4bcb5af docs(product): ISSUE_ARCHIVE 勾 A3（路由 4f80f74）
+  Issue dc529f9 feat(issues): ISSUE_ARCHIVE — archived_at, list filters, POST /issues/archive
+  Go    4f80f74 feat(server): mount POST /issues/archive → issueH.Archive
+  Bot   91d2526 fix(ymbot): issue list 默认剔归档（MCP/CLI 防御过滤）
+  FE    ab7f72b feat(fe): Issue 完成列批量归档（C1–C4）
+  go test ./internal/services/issueboard/ -run IssueArchive → ok
+
+Overall: PASS (redlines Q1–Q4 + Q5/Q6；Q7 FE箱截 pending 不挡)
+
+================================================================================
+Q1 · POST …/issues/archive
+================================================================================
+Q1 PASS — 仅 done；非 done 中文 4xx；幂等；批结果
+  单非done(todo) → HTTP 409 {"code":"conflict","message":"仅完成(done)状态的 Issue 可归档"}
+  archive done1 → 200 {"results":[{"id":"2484ed6e…","ok":true,"archived_at":"2026-10-24T13:01:11Z"}]}
+  再 archive 同 id → 200 ok + 同 archived_at（幂等）
+  批 [done2, todo] → 200 results: done2 ok+at；todo ok=false error="仅完成(done)状态的 Issue 可归档"
+  activity: GET …/issues/{done1}/activities 含 issue.archived
+  fixture cycle QA-IA-210111 = 2239a768…；done1=2484ed6e… done2=99e6fd36… todo=ac9fbcea… active=190feaa3…
+
+================================================================================
+Q2 · 默认 list / board / search / relations 不见归档
+================================================================================
+Q2 PASS — 默认不见已归档 Issue
+  GET …/issues?project_id&team_id → 无 done1/done2
+  board 同源 listIssues（无独立 /board）→ 同上
+  GET …/search?q=QA-IA-done1-210111 → issues=[]（归档不可搜）
+  NOTE: ListRelations 仍返回指向已归档的边×1（边未删）；Issue 卡/列表已不见。
+        按契约「不见已归档 Issue」判 PASS；边清理若要做属软债，非本刀红线假绿。
+
+================================================================================
+Q3 · include_archived=1 / archived=only
+================================================================================
+Q3 PASS
+  include_archived=1 → 含 done1 且 archived_at 非空
+  archived=only → n=2 仅 done1/done2；无 todo/active；条条有 archived_at
+  search?include_archived=1 可命中 done1；search?archived=only 仅归档
+
+================================================================================
+Q4 · Pack / 列计数 / done/total / cycle 排除归档
+================================================================================
+Q4 PASS — 归档后计数下降且默认列表无该单
+  cycle estimate_sum: 归档前 14 → 归档后 6（剔 done1 est5 + done2 est3；留 active4+todo2）
+  cycle list default: 无 done1/done2，保留 active
+  pack/列 done/total（按默认 list 聚合）: 2/4 → 0/2
+  vs include_archived 同 cycle: 2/4（证明默认剔归档，非数据消失）
+  FE useBoardPackStats 另有 isIssueArchived 本地防御（code ab7f72b；本刀以 BE 为准）
+
+================================================================================
+Q5 · GET 单条已归档
+================================================================================
+Q5 PASS — HTTP 200 status=done archived_at=2026-10-24T13:01:11.693144517Z（正交，未改 status）
+
+================================================================================
+Q6 · Bot / MCP / CLI 默认剔归档（91d2526）
+================================================================================
+Q6 PASS
+  Bot API Key(ymk_… t2_key1) GET …/issues 默认无 done1/done2；include_archived=1 可拉
+  ymbot CLI（/tmp/ymbot 现编）:
+    issue list --project --team → 无 QA-IA-done*
+    --include-archived → 含 YM-25/YM-26 QA-IA-done1/2
+    --archived-only → 仅 YM-25/YM-26
+  mcp.go / cli.go 均 DropArchivedFromIssueListJSON 防御；go test ./internal/botclient/ -run DropArchived|ProjectIssuesDrops → ok
+
+================================================================================
+Q7 · FE 箱截
+================================================================================
+Q7 PASS（记 pending，不挡）— docs/qa-shots/issue-archive-*.png 尚无
+  FE C1–C4 码 @ab7f72b 在仓；箱截并行未入库 → 产品 D3/C5 另勾
+
+================================================================================
+Defects
+================================================================================
+无阻塞缺陷。
+软注：ListRelations 不剔指向已归档的边（Issue 默认列表已不见）——非 Q1–Q4 假绿；若产品要「关系面板也不露归档 id」另开软债。
+
+关报：Overall PASS · Q1–Q4 PASS · 证据本文件 · HEAD 见上（push 后含本 docs commit）。

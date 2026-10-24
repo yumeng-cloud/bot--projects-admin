@@ -87,16 +87,16 @@
 - [x] **A6** 单测绿 · `go test ./internal/services/issueboard/` ok
 - [x] **B1** Pack/列计数剔归档 · list 默认剔 + FE `useBoardPackStats` 防御
 - [x] **B2** Cycle 聚合剔归档 · `estimate_sum` WHERE archived_at IS NULL
-- [ ] **B3** 计数箱验
+- [x] **B3** 计数箱验 · QA D2 `ISSUE_ARCHIVE-qa-retest-20261024.txt`（estimate_sum 14→6；done/total 2/4→0/2）
 - [ ] **C1** 完成列多选归档
 - [ ] **C2** 默认不拉归档
 - [ ] **C3** FE 统计一致
 - [ ] **C4** 深链已归档态
 - [ ] **C5** 箱截入库
 - [x] **D1** API/BOT 一句 · `45d6fb1`/`85c6fb7`（实现待 SHA）
-- [ ] **D2** QA 苛刻 PASS
+- [x] **D2** QA 苛刻 PASS · `ISSUE_ARCHIVE-qa-retest-20261024.txt` Overall PASS
 - [ ] **D3** 产品关单
 
 ## 关单进度
 
-**进行中** · **A1–A6·B1–B2·D1 全勾**（`dc529f9`/`4f80f74`/`91d2526`）。余 React C5 箱截 + QA D2 + 产品 D3。FE 码 `ab7f72b`。
+**进行中** · **A1–A6·B1–B3·D1–D2 全勾**（`dc529f9`/`4f80f74`/`91d2526` + QA retest）。余 React C5 箱截 + 产品 D3（FE 码 `ab7f72b`；箱截并行）。
