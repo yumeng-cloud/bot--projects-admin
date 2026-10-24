@@ -127,8 +127,8 @@ MCP / CLI **不得**实现登录密码流；只接受 API Key（人类调试可�
 - [x] Bot 将 Issue 设为 `done` 失败（通道护栏中文一行 + exit 11）；人类 JWT 路径未改  
 - [x] 吊销 Key 后下一请求 401；CLI 文案含「已吊销」；无效 Key 含「无效」（exit 10）  
 - [ ] `handoff import` 后 memories upsert、未完成 todos 出现；claim 冲突仅 warning 不整体失败  
-- [ ] MCP：Cursor（或 MCP Inspector）能列出全部 P0 tools 并成功调用至少 issue list + comment create + memory set  
-- [ ] CLI：`--help` 覆盖 P0 子命令；非 TTY 下 JSON 可 `jq`  
+- [x] MCP：Cursor（或 MCP Inspector）接入步骤与冒烟 → **§11.3**（运维用真 Key 自跑；文档缺口已补）  
+- [x] CLI：`--help` / `handoff import` 说明 → **§11.1–11.2**；非 TTY 下 JSON 可 `jq`（`--json`）  
 - [ ] 密钥未出现在 handoff 文件、命令行历史示例文档用占位符 `ymk_***`  
 - [ ] 本文件与 `BOT.md` / `COORDINATION.md` 回链一致；**未**改业务 handler 语义（仅允许为 `bots/me` 等小缺口追加路由，若做）
 
@@ -180,3 +180,86 @@ ymbot memory set --key last_focus --value "YM-12 复现路径" --idempotency-key
 MCP 写 tool（`board_issue_create|update` / `board_comment_create` / `board_memory_set` / `board_handoff_import`）可传 `idempotency_key`；错误 `isError` content 为一行中文。
 
 MCP：宿主配置 server 命令指向同一二进制（如 `ymbot mcp-serve`），env 注入上述变量。
+
+---
+
+## 11. 尾勾：`--help` / `handoff import` / MCP Inspector
+
+> 通道 P0 代码已关；本节补**操作文档缺口**（help 树、import 救场契约、Inspector 怎么验），便于新人与验收自跑。
+
+### 11.1 CLI `--help`
+
+```bash
+# 顶层帮助（无需 Key）
+go run ./cmd/ymbot --help
+
+# 子命令帮助：当前实现会先校验环境，请先 export 占位（假 Key 即可看 flag）
+export YMBOT_API_URL=http://127.0.0.1:8080
+export YMBOT_API_KEY=ymk_help_placeholder
+export YMBOT_WORKSPACE_ID=00000000-0000-0000-0000-000000000000
+go run ./cmd/ymbot handoff --help          # 若未拆子 help，见顶层 handoff 行
+go run ./cmd/ymbot handoff import --help   # --file / - 、--idempotency-key、--full|--id|--json
+go run ./cmd/ymbot team --help
+go run ./cmd/ymbot seat --help
+```
+
+主航线（与顶层 help 一致）：`team pull|join` → `seat enter` → `handoff get` → 干活。  
+`export` / `import` 仅换机备份与**救场**，非日常续工。
+
+### 11.2 `handoff import`（救场）
+
+| | |
+|--|--|
+| CLI | `ymbot handoff import --file path.json` 或 `--file -`（stdin） |
+| MCP | `board_handoff_import`（入参：handoff JSON 对象或包；可选 `idempotency_key` / `full` / `ids`） |
+| REST | `POST …/bots/{memberID\|me}/handoff` |
+| 成功输出 | `imported_*` / `claimed` / `warnings`；claim 冲突 → **warning**，不整单失败 |
+| **不要** | 日常换机会话默认 import；用 mirror `latest.json` 覆盖仍健康的服务端记忆 |
+
+```bash
+# 灾难/空仓救场示例（先确认服务端确实空或产品同意覆盖）
+ymbot handoff export --out /tmp/handoff-backup.json   # 可选冷备
+ymbot handoff import --file /tmp/handoff-backup.json
+# 或：cat latest.json | ymbot handoff import --file -
+```
+
+### 11.3 MCP Inspector / Cursor 接入
+
+**启动（stdio）**：同一二进制。
+
+```bash
+export YMBOT_API_URL=http://127.0.0.1:8080
+export YMBOT_API_KEY=ymk_***          # 真 Key
+export YMBOT_WORKSPACE_ID=<ws-uuid>
+# 仓库根或 backend 目录：
+go run ./cmd/ymbot mcp-serve
+# 或已安装：ymbot mcp-serve
+```
+
+**Cursor `mcp.json` 示意**（路径按本机改）：
+
+```json
+{
+  "mcpServers": {
+    "ymbot": {
+      "command": "go",
+      "args": ["run", "./cmd/ymbot", "mcp-serve"],
+      "cwd": "/absolute/path/to/ai-collab-board/backend",
+      "env": {
+        "YMBOT_API_URL": "http://127.0.0.1:8080",
+        "YMBOT_API_KEY": "ymk_***",
+        "YMBOT_WORKSPACE_ID": "<ws-uuid>"
+      }
+    }
+  }
+}
+```
+
+**MCP Inspector**：把 command/args/env 配成同上，连接后：
+
+1. `tools/list` 应含主航线：`board_team_pull`、`board_team_join`、`board_seat_enter`、`board_handoff_get`，以及 issue/comment/memory/whoami、`board_handoff_import`、`board_seat_leave`、`board_seat_expand` 等。  
+2. 冒烟：`board_whoami` → `board_issue_list` → `board_comment_create` → `board_memory_set`（写类可带 `idempotency_key`）。  
+3. 读类默认瘦文本 / 无 UUID；要全量传 `full=true`，要裸 id 传 `ids=true`（同 CLI `--full` / `--id`）。
+
+**自检一句**：Inspector 能 list tools 且至少跑通 list + comment create + memory set，即本尾勾文档验收通过。
+

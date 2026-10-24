@@ -155,8 +155,8 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 | **T3** | 迁绑 **单活**：第二机绑定有冲突提示；确认后旧绑失效或只读 | [ ] |
 | **T4** | 席位抽屉可见交接摘要（人话版 handoff）；「交接卡」不泄露完整 Key | [x] `seat-t4-handoff.png` · 复制交接卡明示无完整 Key |
 | **T5** | 换机引导文案：主路径 = 绑席位 → get；export/import 标为可选备份/救场 | [x] 顶栏「换机怎么续」+ 详情页「可选备份/救场」· `seat-t5-migrate-guide.png` |
-| **T6** | （P0.5）团队切换后 Issue 池与席位组隔离；共享 pins 与席位私有 memory 不串 | [ ] |
-| **T7** | （P1）从模板创建团队：空席位形状与 playbook_ref 挂上；升版 diff 可选更新、默认不覆盖 memory | [ ] |
+| **T6** | （P0.5）团队切换后 Issue 池与席位组隔离；共享 pins 与席位私有 memory 不串 | [ ] 契约见 [`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) |
+| **T7** | （P1）从模板创建团队：空席位形状与 playbook_ref 挂上；升版 diff 可选更新、默认不覆盖 memory | [ ] 契约见 [`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) |
 | **T8** | 硬规矩：关键路径箱内自测 / CLI 记录；禁半成品甩用户本机当小白鼠；**禁 fan-out 吵用户** | [x] 2026-10-24 CLI `/tmp/ymbot_t9_t10_evidence.txt` |
 | **T9** | **团队 UUID 拉班底**：给定 `team_id`（UUID）ensure/pull roster → 完整角色席位（slug/名/claim 态）；重复调用**幂等**、不双建 role、**不清空** memory/todos | [x] pull×2 五席同 id；`t9_probe` 保留 · HEAD `0968a9a` |
 | **T10** | **补位 / 扩工不抢 claim、不抢 in-progress**：① 空席/新席可 claim；② 活跃席已有 `released_at IS NULL` → 默认 **409**，禁止顶替（含 force）；③ 他人 assignee 且进行中 → 不得自动改派；④ **仅停工/离职席**可用 `--force` 接管并留 comment/审计；⑤ 兼岗记忆按 member/seat 隔离；新人只加新席 | [x] 二绑/migrate→409；expand 不偷 YM-1/8/10/15；force 仅停/离职席；④ comment 留痕标 P0.1 补强 |
@@ -187,7 +187,7 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 - [x] FE 席位 UI **T1/T4/T5**（`73456bc`）  
 - [ ] **T3** 单活冲突专面（React 已声明后置）  
 - [ ] T2 换机一天完整箱验（可随 T3）  
-- [ ] T6/T7 另开  
+- [ ] T6/T7 另开（最小说明已落 [`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md)）  
 
 **已定稿可开发。** 实现中勿刷屏用户；进度回总指挥 / 产品体验即可。  
 **口径**：模板仓 = 班底作业手册；`ymbot` = 手册里的手（与模板 README 同步）。

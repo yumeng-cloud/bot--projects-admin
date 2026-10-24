@@ -118,7 +118,8 @@ Tech lead 已落地 **共享地基**。各 Bot 按下方所有权并行开发，
 
 ## 相关规格
 
-- Bot 工作流 MCP/CLI 最小能力：[`docs/BOT_MCP_CLI.md`](./docs/BOT_MCP_CLI.md)（产品体验；落地见文内拆分）
+- Bot 工作流 MCP/CLI 最小能力：[`docs/BOT_MCP_CLI.md`](./docs/BOT_MCP_CLI.md)（产品体验；落地见文内拆分；**§11** help/import/Inspector）
+- 班底 T6/T7 最小说明：[`docs/BOT_TEAM_TEMPLATE_T6_T7.md`](./docs/BOT_TEAM_TEMPLATE_T6_T7.md)
 - 向量嵌入 / pgvector：[`docs/embed.md`](./docs/embed.md)
 
 - 全局排期 Timeline P0（**已裁定**，可开工）：[`docs/SCHEDULING_BOARD_P0.md`](./docs/SCHEDULING_BOARD_P0.md)
