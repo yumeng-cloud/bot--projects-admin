@@ -34,10 +34,11 @@ type loginReq struct {
 }
 
 type userDTO struct {
-	ID        string `json:"id"`
-	Email     string `json:"email"`
-	Name      string `json:"name"`
-	CreatedAt string `json:"created_at"`
+	ID               string `json:"id"`
+	Email            string `json:"email"`
+	Name             string `json:"name"`
+	IsPlatformAdmin  bool   `json:"is_platform_admin"`
+	CreatedAt        string `json:"created_at"`
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +85,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	setSessionCookie(w, token, h.Cfg)
 	middleware.JSON(w, http.StatusCreated, map[string]any{
 		"token": token,
-		"user":  userDTO{ID: id, Email: req.Email, Name: req.Name, CreatedAt: now},
+		"user":  userDTO{ID: id, Email: req.Email, Name: req.Name, IsPlatformAdmin: false, CreatedAt: now},
 	})
 }
 
@@ -102,8 +103,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var id, hash, name, created string
-	err := h.DB.QueryRow(`SELECT id, password_hash, name, created_at FROM users WHERE email = ?`, req.Email).
-		Scan(&id, &hash, &name, &created)
+	var isAdmin int
+	err := h.DB.QueryRow(`SELECT id, password_hash, name, created_at, COALESCE(is_platform_admin,0) FROM users WHERE email = ?`, req.Email).
+		Scan(&id, &hash, &name, &created, &isAdmin)
 	if err == sql.ErrNoRows {
 		middleware.HandleError(w, apperr.Unauthorized("邮箱或密码错误"))
 		return
@@ -125,7 +127,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	setSessionCookie(w, token, h.Cfg)
 	middleware.JSON(w, http.StatusOK, map[string]any{
 		"token": token,
-		"user":  userDTO{ID: id, Email: req.Email, Name: name, CreatedAt: created},
+		"user":  userDTO{ID: id, Email: req.Email, Name: name, IsPlatformAdmin: isAdmin == 1, CreatedAt: created},
 	})
 }
 
@@ -144,7 +146,9 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r.Context())
 	var email, name, created string
-	err := h.DB.QueryRow(`SELECT email, name, created_at FROM users WHERE id = ?`, uid).Scan(&email, &name, &created)
+	var isAdmin int
+	err := h.DB.QueryRow(`SELECT email, name, created_at, COALESCE(is_platform_admin,0) FROM users WHERE id = ?`, uid).
+		Scan(&email, &name, &created, &isAdmin)
 	if err == sql.ErrNoRows {
 		middleware.HandleError(w, apperr.Unauthorized("用户不存在"))
 		return
@@ -154,7 +158,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	middleware.JSON(w, http.StatusOK, map[string]any{
-		"user": userDTO{ID: uid, Email: email, Name: name, CreatedAt: created},
+		"user": userDTO{ID: uid, Email: email, Name: name, IsPlatformAdmin: isAdmin == 1, CreatedAt: created},
 	})
 }
 

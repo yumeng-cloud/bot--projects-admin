@@ -11,6 +11,7 @@ import (
 // RequireWorkspaceMember resolves workspace from chi/std path param "workspaceID"
 // or header X-Workspace-Id, verifies membership, injects MemberID/WorkspaceID/MemberRole.
 // Bots already have WorkspaceID from API key; still verifies path matches.
+// Disabled workspaces (disabled_at set) → 403「工作区已停用」for all members/bots.
 func RequireWorkspaceMember(db *sql.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -20,6 +21,15 @@ func RequireWorkspaceMember(db *sql.DB) func(http.Handler) http.Handler {
 			}
 			if wsID == "" {
 				writeErr(w, apperr.BadRequest("缺少工作空间 ID"))
+				return
+			}
+
+			if err := EnsureWorkspaceActive(db, wsID); err != nil {
+				if ae, ok := err.(*apperr.AppError); ok {
+					writeErr(w, ae)
+				} else {
+					writeErr(w, apperr.Internal("校验工作空间失败"))
+				}
 				return
 			}
 
@@ -56,6 +66,22 @@ func RequireWorkspaceMember(db *sql.DB) func(http.Handler) http.Handler {
 	}
 }
 
+// EnsureWorkspaceActive returns 403 if the workspace is disabled or missing.
+func EnsureWorkspaceActive(db *sql.DB, wsID string) error {
+	var disabled sql.NullString
+	err := db.QueryRow(`SELECT disabled_at FROM workspaces WHERE id = ?`, wsID).Scan(&disabled)
+	if err == sql.ErrNoRows {
+		return apperr.NotFound("工作空间不存在")
+	}
+	if err != nil {
+		return err
+	}
+	if disabled.Valid && disabled.String != "" {
+		return apperr.Forbidden("工作区已停用")
+	}
+	return nil
+}
+
 func RequireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if MemberRole(r.Context()) != "admin" {
@@ -64,4 +90,32 @@ func RequireAdmin(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// RequirePlatformAdmin ensures the JWT user has users.is_platform_admin = 1.
+func RequirePlatformAdmin(db *sql.DB) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			uid := UserID(r.Context())
+			if uid == "" {
+				writeErr(w, apperr.Unauthorized("请先登录"))
+				return
+			}
+			var flag int
+			err := db.QueryRow(`SELECT is_platform_admin FROM users WHERE id = ?`, uid).Scan(&flag)
+			if err == sql.ErrNoRows {
+				writeErr(w, apperr.Unauthorized("用户不存在"))
+				return
+			}
+			if err != nil {
+				writeErr(w, apperr.Internal("校验平台管理员失败"))
+				return
+			}
+			if flag != 1 {
+				writeErr(w, apperr.Forbidden("需要平台超级管理员权限"))
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

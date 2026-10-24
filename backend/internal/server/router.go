@@ -31,6 +31,8 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 	wsH := &handlers.WorkspaceHandler{DB: sqlDB}
 	projH := &handlers.ProjectHandler{DB: sqlDB}
 	memH := &handlers.MemberHandler{DB: sqlDB}
+	adminH := &handlers.AdminHandler{DB: sqlDB}
+	wsInvH := &handlers.WorkspaceInviteHandler{DB: sqlDB}
 	labelH := &handlers.LabelHandler{DB: sqlDB}
 	keyH := &handlers.APIKeyHandler{DB: sqlDB}
 	hookH := &handlers.WebhookHandler{DB: sqlDB}
@@ -47,6 +49,7 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 	jwtOnly := mw.AuthJWT(mw.JWTParser{Secret: cfg.JWTSecret})
 	authAny := mw.AuthJWTOrAPIKey(mw.JWTParser{Secret: cfg.JWTSecret}, sqlDB)
 	wsMem := mw.RequireWorkspaceMember(sqlDB)
+	platformAdmin := mw.RequirePlatformAdmin(sqlDB)
 	idem := mw.Idempotency(sqlDB)
 
 	r.Get("/healthz", health.Healthz)
@@ -61,6 +64,18 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 		api.With(jwtOnly).Get("/workspaces", wsH.ListMine)
 		api.With(jwtOnly).Post("/workspaces", wsH.Create)
 		api.With(jwtOnly).Get("/workspaces/current", wsH.Current)
+		api.With(jwtOnly).Post("/workspace-invites/redeem", wsInvH.Redeem)
+
+		// Platform super-admin (no WS membership required)
+		api.Route("/admin", func(adm chi.Router) {
+			adm.Use(jwtOnly)
+			adm.Use(platformAdmin)
+			adm.Get("/workspaces", adminH.ListWorkspaces)
+			adm.Post("/workspaces", adminH.CreateWorkspace)
+			adm.Patch("/workspaces/{id}", adminH.PatchWorkspace)
+			adm.Get("/users", adminH.ListUsers)
+			adm.Patch("/users/{id}", adminH.PatchUser)
+		})
 
 		api.Route("/workspaces/{workspaceID}", func(ws chi.Router) {
 			ws.Use(authAny)
@@ -68,11 +83,16 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 			ws.Use(idem)
 
 			ws.Get("/", wsH.Get)
+			ws.With(mw.RequireAdmin).Patch("/", wsH.Patch)
 
 			ws.Get("/members", memH.List)
 			ws.With(mw.RequireAdmin).Post("/members", memH.Invite)
 			ws.With(mw.RequireAdmin).Patch("/members/{memberID}", memH.Patch)
 			ws.With(mw.RequireAdmin).Delete("/members/{memberID}", memH.Remove)
+
+			ws.With(mw.RequireAdmin).Get("/invites", wsInvH.List)
+			ws.With(mw.RequireAdmin).Post("/invites", wsInvH.Create)
+			ws.With(mw.RequireAdmin).Post("/invites/{inviteID}/revoke", wsInvH.Revoke)
 
 			ws.Get("/labels", labelH.List)
 			ws.Post("/labels", labelH.Create)

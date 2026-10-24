@@ -36,6 +36,10 @@ func requireWorkspaceMember(db *sql.DB, w http.ResponseWriter, r *http.Request) 
 		middleware.HandleError(w, apperr.BadRequest("缺少 workspaceID"))
 		return "", "", false
 	}
+	if err := middleware.EnsureWorkspaceActive(db, workspaceID); err != nil {
+		middleware.HandleError(w, err)
+		return "", "", false
+	}
 	memberID, err := resolveMember(db, r, workspaceID)
 	if err != nil {
 		middleware.HandleError(w, err)

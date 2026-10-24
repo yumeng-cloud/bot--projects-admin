@@ -23,7 +23,7 @@ JSON 字段：`snake_case`；时间：UTC ISO8601
 | POST | `/auth/register` | `{email,password,name?}` → `{token,user}` |
 | POST | `/auth/login` | 同上；有登录限流 |
 | POST | `/auth/logout` | 清除 session cookie |
-| GET | `/auth/me` | 当前用户（JWT）；**实现待 SHA**：响应增 `is_platform_admin`（bool） |
+| GET | `/auth/me` | 当前用户（JWT）；`user.is_platform_admin` bool（已落地） |
 
 ## Workspaces
 
@@ -33,7 +33,7 @@ JSON 字段：`snake_case`；时间：UTC ISO8601
 | POST | `/workspaces` | 创建（JWT；创建者 → WS `admin`；body `{name, slug?}`；已落地） |
 | GET | `/workspaces/current` | 第一个工作空间（已落地） |
 | GET | `/workspaces/{workspaceID}` | 详情（须为成员；已落地） |
-| PATCH | `/workspaces/{workspaceID}` | **实现待 SHA**：WS admin 改 `{name?, slug?}` |
+| PATCH | `/workspaces/{workspaceID}` | WS Admin 改 `{name?, slug?}`；slug 规则与唯一（已落地） |
 
 也可传 Header `X-Workspace-Id`（与路径二选一，路径优先）。
 
@@ -45,12 +45,12 @@ JSON 字段：`snake_case`；时间：UTC ISO8601
 |--------|------|------|
 | GET | `/workspaces/{ws}/members` | 成员列表（已落地） |
 | POST | `/workspaces/{ws}/members` | WS Admin：`{email, role}` 直接入席（**仅已注册**邮箱；已落地） |
-| PATCH | `/workspaces/{ws}/members/{memberID}` | WS Admin：`{role?, display_name?}`（已落地；**实现待 SHA**：不可摘掉最后一个 admin） |
-| DELETE | `/workspaces/{ws}/members/{memberID}` | WS Admin 移除（已落地；**实现待 SHA**：末 admin 护栏） |
+| PATCH | `/workspaces/{ws}/members/{memberID}` | WS Admin：`{role?, display_name?}`；不可降级最后一个 admin → **409**（已落地） |
+| DELETE | `/workspaces/{ws}/members/{memberID}` | WS Admin 移除；不可摘掉最后一个 admin → **409**（已落地） |
 | GET/POST | `/workspaces/{ws}/labels` | 标签 |
 | PATCH/DELETE | `/workspaces/{ws}/labels/{labelID}` | |
 
-### Workspace invites（人类邀请链 · 契约 / 实现待 SHA）
+### Workspace invites（人类邀请链 · `ymw_` · 已落地）
 
 > **勿与**队席入场码 `ymt_`（`POST …/teams/{id}/invites` · `/team-invites/redeem`）混淆。本段 = **工作区人类成员**邀请链接。
 
@@ -67,11 +67,11 @@ JSON 字段：`snake_case`；时间：UTC ISO8601
 |----|------|
 | `role` | `admin` \| `member` |
 | `status`（派生） | `active` \| `revoked` \| `expired` \| `exhausted` |
-| 未知/非法 code、已吊销/过期 | **400** 中文 |
+| 未知/非法 code | **404**；已吊销/过期/用尽 | **400** 中文；`ymt_` 前缀 → **400** |
 | 非 WS Admin 签发/列表/吊销 | **403** |
 | 非成员访问他 WS | **404**（不泄露） |
 
-### Platform admin（全站超管 · 契约 / 实现待 SHA）
+### Platform admin（全站超管 · 已落地）
 
 > Bootstrap：环境变量 `PLATFORM_ADMIN_EMAILS`（逗号分隔；见 [`.env.example`](../.env.example)）。冷启将匹配邮箱用户授 `users.is_platform_admin`；亦可 seed 升旗。非超管打 `/admin/*` → **403** 中文。
 
@@ -79,11 +79,11 @@ JSON 字段：`snake_case`；时间：UTC ISO8601
 |--------|------|-------------|------|
 | GET | `/admin/workspaces` | `{workspaces:[{id,name,slug,member_count,disabled_at?,created_at,…}]}` | 全站列表 |
 | POST | `/admin/workspaces` | `{name, slug?, owner_email\|owner_user_id}` → `{workspace,…}` | 代开；owner → 该 WS admin |
-| PATCH | `/admin/workspaces/{id}` | `{disabled?\|disabled_at?}` | 停用/恢复；停用后该 WS 成员业务 API → **403**「工作区已停用」 |
+| PATCH | `/admin/workspaces/{id}` | `{disabled:true\|false}` | 停用/恢复；停用后该 WS 成员业务 API → **403**「工作区已停用」 |
 | GET | `/admin/users` | `{users:[…]}`（含 `is_platform_admin`、所属 WS 摘要） | 全站用户 |
 | PATCH | `/admin/users/{id}` | `{is_platform_admin}` | 授/撤平台超管 |
 
-管理操作须写审计（activity 或等价日志；**实现待 SHA**）。
+管理操作写入 `platform_audit_logs`（停用/恢复/代开/授撤超管；已落地）。邀请码前缀 **`ymw_`**（与队席 `ymt_` 隔离）。
 
 ## Projects
 

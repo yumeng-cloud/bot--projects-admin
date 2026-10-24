@@ -156,6 +156,10 @@ func (h *MemberHandler) Patch(w http.ResponseWriter, r *http.Request) {
 			middleware.HandleError(w, apperr.BadRequest("无效角色"))
 			return
 		}
+		if err := guardLastAdmin(h.DB, wsID, mid, role, *req.Role, false); err != nil {
+			middleware.HandleError(w, err)
+			return
+		}
 		role = *req.Role
 	}
 	if req.DisplayName != nil {
@@ -184,6 +188,20 @@ func (h *MemberHandler) Remove(w http.ResponseWriter, r *http.Request) {
 		middleware.HandleError(w, apperr.BadRequest("不能移除自己"))
 		return
 	}
+	var targetRole string
+	err := h.DB.QueryRow(`SELECT role FROM members WHERE id=? AND workspace_id=?`, mid, wsID).Scan(&targetRole)
+	if err == sql.ErrNoRows {
+		middleware.HandleError(w, apperr.NotFound("成员不存在"))
+		return
+	}
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	if err := guardLastAdmin(h.DB, wsID, mid, targetRole, "", true); err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
 	res, err := h.DB.Exec(`DELETE FROM members WHERE id=? AND workspace_id=?`, mid, wsID)
 	if err != nil {
 		middleware.HandleError(w, err)
@@ -195,4 +213,29 @@ func (h *MemberHandler) Remove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	middleware.JSON(w, http.StatusOK, map[string]string{"message": "成员已移除"})
+}
+
+// countHumanAdmins returns number of non-bot admin members in a workspace.
+func countHumanAdmins(db *sql.DB, wsID string) (int, error) {
+	var n int
+	err := db.QueryRow(`SELECT COUNT(*) FROM members WHERE workspace_id=? AND role='admin' AND is_bot=0`, wsID).Scan(&n)
+	return n, err
+}
+
+func guardLastAdmin(db *sql.DB, wsID, memberID, currentRole, newRole string, removing bool) error {
+	if currentRole != "admin" {
+		return nil
+	}
+	demoting := removing || (newRole != "" && newRole != "admin")
+	if !demoting {
+		return nil
+	}
+	n, err := countHumanAdmins(db, wsID)
+	if err != nil {
+		return err
+	}
+	if n <= 1 {
+		return apperr.Conflict("不能移除或降级最后一个管理员")
+	}
+	return nil
 }

@@ -23,7 +23,7 @@ var slugRe = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 func (h *WorkspaceHandler) ListMine(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r.Context())
 	rows, err := h.DB.Query(`
-		SELECT w.id, w.name, w.slug, m.role, m.id
+		SELECT w.id, w.name, w.slug, w.disabled_at, m.role, m.id
 		FROM workspaces w
 		JOIN members m ON m.workspace_id = w.id
 		WHERE m.user_id = ?
@@ -34,18 +34,23 @@ func (h *WorkspaceHandler) ListMine(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 	type item struct {
-		ID       string `json:"id"`
-		Name     string `json:"name"`
-		Slug     string `json:"slug"`
-		Role     string `json:"role"`
-		MemberID string `json:"member_id"`
+		ID          string  `json:"id"`
+		Name        string  `json:"name"`
+		Slug        string  `json:"slug"`
+		DisabledAt  *string `json:"disabled_at"`
+		Role        string  `json:"role"`
+		MemberID    string  `json:"member_id"`
 	}
 	list := []item{}
 	for rows.Next() {
 		var it item
-		if err := rows.Scan(&it.ID, &it.Name, &it.Slug, &it.Role, &it.MemberID); err != nil {
+		var disabled sql.NullString
+		if err := rows.Scan(&it.ID, &it.Name, &it.Slug, &disabled, &it.Role, &it.MemberID); err != nil {
 			middleware.HandleError(w, err)
 			return
+		}
+		if disabled.Valid && disabled.String != "" {
+			it.DisabledAt = &disabled.String
 		}
 		list = append(list, it)
 	}
@@ -200,4 +205,68 @@ func slugify(s string) string {
 		out = "ws-" + idgen.New()[:8]
 	}
 	return out
+}
+
+// Patch updates workspace name/slug. Requires WS admin (caller must be behind RequireAdmin).
+func (h *WorkspaceHandler) Patch(w http.ResponseWriter, r *http.Request) {
+	wsID := middleware.WorkspaceID(r.Context())
+	if wsID == "" {
+		wsID = r.PathValue("workspaceID")
+	}
+	var req struct {
+		Name *string `json:"name"`
+		Slug *string `json:"slug"`
+	}
+	if err := middleware.DecodeJSON(r, &req); err != nil {
+		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
+		return
+	}
+	var name, slug string
+	var disabled sql.NullString
+	err := h.DB.QueryRow(`SELECT name, slug, disabled_at FROM workspaces WHERE id=?`, wsID).Scan(&name, &slug, &disabled)
+	if err == sql.ErrNoRows {
+		middleware.HandleError(w, apperr.NotFound("工作空间不存在"))
+		return
+	}
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	if req.Name != nil {
+		n := strings.TrimSpace(*req.Name)
+		if n == "" {
+			middleware.HandleError(w, apperr.BadRequest("工作空间名称不能为空"))
+			return
+		}
+		name = n
+	}
+	if req.Slug != nil {
+		s := strings.ToLower(strings.TrimSpace(*req.Slug))
+		if s == "" {
+			middleware.HandleError(w, apperr.BadRequest("slug 不能为空"))
+			return
+		}
+		if !slugRe.MatchString(s) {
+			middleware.HandleError(w, apperr.BadRequest("slug 仅允许小写字母、数字与连字符"))
+			return
+		}
+		slug = s
+	}
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	_, err = h.DB.Exec(`UPDATE workspaces SET name=?, slug=?, updated_at=? WHERE id=?`, name, slug, now, wsID)
+	if err != nil {
+		if db.IsUniqueViolation(err) {
+			middleware.HandleError(w, apperr.Conflict("该 slug 已被占用"))
+			return
+		}
+		middleware.HandleError(w, err)
+		return
+	}
+	out := map[string]any{"id": wsID, "name": name, "slug": slug}
+	if disabled.Valid && disabled.String != "" {
+		out["disabled_at"] = disabled.String
+	} else {
+		out["disabled_at"] = nil
+	}
+	middleware.JSON(w, http.StatusOK, map[string]any{"workspace": out})
 }

@@ -22,7 +22,8 @@ type Config struct {
 	SeedAdminEmail  string
 	SeedAdminPass   string
 	SeedWSName      string
-	AttachmentsDir  string
+	AttachmentsDir        string
+	PlatformAdminEmails []string
 }
 
 func Load() Config {
@@ -49,8 +50,20 @@ func Load() Config {
 		SeedAdminEmail:  getenv("SEED_ADMIN_EMAIL", "admin@yumeng.tech"),
 		SeedAdminPass:   getenv("SEED_ADMIN_PASSWORD", "Admin123!"),
 		SeedWSName:      getenv("SEED_WORKSPACE_NAME", "育蒙科技"),
-		AttachmentsDir:  getenv("ATTACHMENTS_DIR", "./data/attachments"),
+		AttachmentsDir:        getenv("ATTACHMENTS_DIR", "./data/attachments"),
+		PlatformAdminEmails: parseCSVEmails(getenv("PLATFORM_ADMIN_EMAILS", "")),
 	}
+}
+
+func parseCSVEmails(s string) []string {
+	var out []string
+	for _, part := range strings.Split(s, ",") {
+		e := strings.ToLower(strings.TrimSpace(part))
+		if e != "" {
+			out = append(out, e)
+		}
+	}
+	return out
 }
 
 func getenv(k, d string) string {

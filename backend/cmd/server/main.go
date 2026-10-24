@@ -28,6 +28,9 @@ func main() {
 			log.Printf("seed warning: %v", err)
 		}
 	}
+	if err := seed.BootstrapPlatformAdmins(sqlDB, cfg.PlatformAdminEmails); err != nil {
+		log.Printf("platform admin bootstrap warning: %v", err)
+	}
 
 	handler := server.NewRouter(sqlDB, cfg)
 	addr := ":" + cfg.Port
