@@ -171,4 +171,5 @@ go run ./cmd/ymbot mcp-serve   # Cursor stdio MCP；tools: board_*；full/ids �
 
 - 班底席位 / 入场码：[`BOT_TEAM_SEAT_P0.md`](./BOT_TEAM_SEAT_P0.md) · [`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md)（`seat.status`=`open|active|stopped|left`；`GET/POST …/teams/{id}/invites`）
 - **T7-3 执行源（已落地 `d9e5a3c`）**：席位作业手册 = `playbook_ref`；roster / bind / handoff 回包含该字段；空或非法 → **400** 中文；升版 T7-4/5 仍后置。开工单 [`NEXT_WAVE_DEBT_T73.md`](./NEXT_WAVE_DEBT_T73.md)（通道 MCP 人话投影待记忆席，勿当已齐）
+- **Issue 归档（实现待 SHA）**：`POST …/issues/archive`；`issue list` 默认无已归档；`include_archived` / `archived_only`（债 [`NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md`](./NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md)）
 
