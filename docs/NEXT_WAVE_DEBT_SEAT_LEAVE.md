@@ -37,10 +37,10 @@
 
 - [x] **L1** stop/unbind Admin 路径单测 · Go `c5f5596` · 产品勾
 - [x] **L2** 审计留痕 · Go `c5f5596` · 产品勾
-- [ ] **L3** 席卡一键停工/离职
-- [ ] **L4** FE client + 文案
+- [x] **L3** 席卡一键停工/离职 · FE `4883426`
+- [x] **L4** FE client + 文案 · FE `4883426`
 - [ ] **L5** QA 箱证
-- [ ] **L6** 箱截
+- [x] **L6** 箱截 `docs/qa-shots/seat-leave-stop-{before,after}.png` · FE `4883426`
 - [ ] **L7** 产品关单
 
 ## 派工
@@ -54,6 +54,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:25 · **React 交 L3/L4/L6** FE `4883426`：对齐 Go `c5f5596` `POST …/seats/{id}/stop|unbind`；席卡+交接抽屉 Popconfirm「停工此席？/离职解绑此席？」；`stopSeat` client + roster 乐观「停工席 · 可补位」；箱截 before/after；`tsc --noEmit` PASS。等 QA L5 → 产品 L7。
 - 2026-10-25 00:23 · **产品勾 L1/L2** Go `c5f5596`：单测绿；`seat.stop`/`seat.unbind` activity+comment。软债搁置：无独立 HTTP Admin JWT 集成测；stop 对 open/left 偏宽松（不挡最小包）。等 React L3/L4/L6。
 - 2026-10-25 · **Go L1/L2 交件**：Admin `stop`→`stopped` / `unbind`→`left`；错态中文+幂等；成功写 `seat.stop`/`seat.unbind` 人话 activity + Issue comment（force 审计已有，沿用 N3）。
 - 2026-10-25 00:19 · **开刀**：PRO_ADMIN C1 产品关 `8c0fe5a`；本包开干。派 Go L1/L2 · React L3/L4/L6 · QA L5。
@@ -62,4 +63,4 @@
 
 ## 关单进度
 
-**开干** · L1/L2 已勾；等 React L3/L4/L6 → QA L5 → L7。
+**开干** · L1–L4/L6 已勾；等 QA L5 → 产品 L7。
