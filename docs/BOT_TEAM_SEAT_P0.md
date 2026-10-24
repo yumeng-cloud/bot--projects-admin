@@ -1,12 +1,9 @@
 # Bot 席位 · 换机迁绑 · 多团队共享 · 模板挂载（P0）
 
 > 产品体验 · 2026-10-24 · Asia/Shanghai  
-> 触发：总指挥脑暴收束——换机镜像+角色迁绑后台 Bot；经验/记忆走共享看板做多团队；模板仓深度融合。  
-> 前置续命（已关）：[`BOT_HANDOFF_CONTINUITY_P0.md`](./BOT_HANDOFF_CONTINUITY_P0.md) · 短原则 [`BOT_CONTINUITY_P0.md`](./BOT_CONTINUITY_P0.md) · 镜像旁路 [`BOT_HANDOFF_MIRROR_P0.md`](./BOT_HANDOFF_MIRROR_P0.md)  
-> **本单不加「文件续命」**；权威仍是服务端 `handoff get`。本单补 **产品面**：席位 / 团队 / 交接墙 / 模板挂载点。  
-> 技术脑暴已收（见 [`BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md`](./BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md)）。  
-> **P0 产品定稿**：§1.1 团队 UUID 拉班底 · 席位迁绑 · 补位扩工不打架；验收 **T1–T5、T8–T11**。  
-> **开工**：Bot 记忆角色 + Go 后端先落地 API/通道；FE 席位 UI 可随后。禁 fan-out 吵用户。
+> 前置（已关）：[`BOT_HANDOFF_CONTINUITY_P0.md`](./BOT_HANDOFF_CONTINUITY_P0.md) · [`BOT_CONTINUITY_P0.md`](./BOT_CONTINUITY_P0.md) · [`BOT_HANDOFF_MIRROR_P0.md`](./BOT_HANDOFF_MIRROR_P0.md)  
+> 续命权威 = 服务端 `handoff get`；本单补产品面：席位 / 团队 / 交接墙 / 模板挂载。技术对齐 [`BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md`](./BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md)。  
+> **P0 定稿**：§1.1 团队 UUID 拉班底 · 席位迁绑 · 补位扩工；验收 **T1–T5、T8–T11**。通道先、FE 席位 UI 随后。进度回总指挥，不 fan-out。
 
 ---
 
@@ -16,15 +13,15 @@
 Bot = **可迁绑的角色席位**（身份挂在工作区·团队下，不钉死某台电脑）。  
 本机 Cursor / Agent = **临时演员**；换机只换演员，不换席位与剧本。
 
-### 0.1 模板仓口径（用户定调 · 禁两套系统）
+### 0.1 模板仓口径
 
-| | 是什么 | 不是什么 |
-|--|--------|----------|
-| **看板** | 唯一真相源与运行时 | — |
-| **模板仓（bot-team-template）** | **看板 Agent 团队的班底作业手册 / 使用说明书**（席位、进场、审查、决策、补位） | **不是**另一套系统、另一套项目管理 |
-| **`ymbot` CLI/MCP** | **手册里的手**：按说明书步骤操作看板（`team pull` / `seat enter` / `handoff get`…） | **不是**与看板并列的第二产品 |
+| 件 | 结论 |
+|----|------|
+| **看板** | 唯一真相源与运行时（Issue / Wiki / 工时 / 记忆） |
+| **模板仓（bot-team-template）** | 班底作业手册（席位、进场、审查、决策、补位） |
+| **`ymbot` CLI/MCP** | 手册里的手：`team pull` → `seat enter` → `handoff get` |
 
-一套链：**读手册 → 伸手（ymbot）→ 写回看板**。文档/README 禁止「模板系统 vs 看板系统」表述。
+作业链：**读手册 → ymbot → 写回看板**。
 
 ---
 
@@ -42,7 +39,7 @@ Bot = **可迁绑的角色席位**（身份挂在工作区·团队下，不钉�
 2. **迁绑**：设置 → Bot 席位 →「绑定此设备 / 此 Agent」（贴同一 Bot Key，或席位邀请码认领）。  
    - 身份跟着**席位**走，不跟着本机文件夹走。  
 3. 新会话主航线：`team pull`（若班底未齐）→ `seat enter` → `handoff get` → 恢复记忆 / Todo / 开放 `YM-n` → 接着干（`whoami` 可选自检）。  
-4. **禁止**把「export → U 盘 → import」写成默认剧本（保留救场）。
+4. 默认用 `handoff get` 续工；`export` / `import` 仅救场。
 
 ### 晚上 · 多团队
 
@@ -139,7 +136,7 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 | **P1** | 模板仓「创建团队」向导 + playbook 挂席位 + 升级 diff | 种子与文档 + React + Bot 记忆角色 |
 | **非本轮** | 跨工作区联邦、自动本机镜像成席位 | — |
 
-脑暴技术面已并入 §1.1；实现以本文验收为准，细节可对齐 `BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md`。
+实现以本文验收为准；细节对齐 `BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md`。
 
 ---
 
@@ -173,9 +170,9 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 
 ## 6. 状态
 
-- [x] 产品体验脑暴 → 本文落库  
-- [x] Bot 记忆角色技术脑暴已到（附录对齐）  
-- [x] 总指挥：**用户睡了·直接开干** — 产品定稿并放行实现  
+- [x] 产品定稿落库  
+- [x] 技术对齐附录（BOT_SEAT_BIND_TECH / BRAINSTORM）  
+- [x] 总指挥放行实现  
 - [x] Bot 记忆角色：通道 CLI/MCP 已按精确契约接线（§7）  
 - [x] Go teams API 合入 main `0968a9a`  
 - [x] **通道 P0 关单**：T8–T11 已勾（证据 `/tmp/ymbot_t9_t10_evidence.txt` · 2026-10-24）  

@@ -1,8 +1,8 @@
-# 席位迁绑 · 技术脑暴（接产品路径）
+# 席位迁绑 · 技术对齐（接产品路径）
 
 > 2026-10-24 · Bot 记忆角色 → 总指挥  
 > 产品路径假定：**主航线** `team pull` → `seat enter` → `handoff get`（slug=席位）+ 团队共享记忆墙  
-> 与 bot-team-template 同一套说明书（非另一系统）。  
+> 与 bot-team-template 同一套说明书。  
 > 现成形状见 `models/bot.go` · 续命 H1–H5 已勾 · mirror P0 已落地
 
 ---
@@ -57,7 +57,7 @@ board_shared_memory_list { project_id? }
 board_shared_memory_get/set        # 权限：ws 成员；与 bot_memories 隔离
 
 # 旁路（仅救场）
-读 mirror latest → board_handoff_import   # 禁止日常
+读 mirror latest → board_handoff_import   # 仅救场
 ```
 
 通道 DX：默认瘦、YM-n、get 含 version；共享 list 同样禁 UUID 刷屏。
