@@ -17,7 +17,7 @@
 | F3 | 禁逐席填表心智（Admin 建队主路径不进「高级·Bot」逐行新建/填 Key） |
 | F4 | **否决**「一键吐全班 `ymk_`」/ `crew/batch` 回 N×token |
 | F5 | Admin 建队主路径 **只发** 全班 `ymt_` 入场包（AUTO_CREW 已绿） |
-| F6 | 入队无身份时 **自动签发单把** `ymk_` 仅回入队方（目标态；API 落点见 §3） |
+| F6 | 入队无身份时 **自动签发单把** `ymk_` 仅回入队方 · **API 已合** `c4ae0a5`（待 QA 箱联验） |
 | F7 | 续命权威 = `handoff get`（按 member）；换机换演员不换席池；扩编权在总指挥；Webhook 下发为主 |
 | F8 | `ymw_`（人类 WS 邀请）与 Bot `ymt_` **分轨**，勿写进 Bot 续命叙事 |
 
@@ -94,7 +94,7 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 
 | 角色 | 投票后首刀 |
 | --- | --- |
-| **Go** | redeem 自动身份 + V1/V2/V6 单测；任用 409 |
+| **Go** | redeem 自动身份 + V1/V2/V6 · **已合** `c4ae0a5`（箱测 PASS） |
 | **React** | V3/V4/V5；Join 成功单把露钥（若投 V3 主路径） |
 | **记忆** | 校验造人不踩 claim 单活；换机同 member；空 focus 人话 · **箱证 PASS** `def5aee`（J 409 / E migrate+handoff / A focus=空）；**GAP=Q1** 仍归 Go |
 | **QA** | 用 §5 矩阵苛刻验；挂已有证 AUTO_CREW/FOOLPROOF/SEAT |
@@ -107,8 +107,8 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 
 | 用例 | 前置 | 步骤 | 期望 / PASS | 现况 |
 | --- | --- | --- | --- | --- |
-| **Q1 新入队自动身份** | 默认班底有 empty；Agent **无** ymk_ | `team join --code ymt_… --role`（可先 install.sh） | 成功；**响应回一把 ymk_**；席 occupied+Bot；whoami=该 Bot | **GAP**（目标态） |
-| **Q2 续队不重发钥** | Q1 后持同 ymk_ | 再 join 同队 | **无新 token**；原席/合法席；memory/handoff 不丢 | 部分可验；自动身份后联验 |
+| **Q1 新入队自动身份** | 默认班底有 empty；Agent **无** ymk_ | `team join --code ymt_… --role`（可先 install.sh） | 成功；**响应回一把 ymk_**；席 occupied+Bot；whoami=该 Bot | **Go 绿** `c4ae0a5`（单测 PASS；待 QA 箱联验） |
+| **Q2 续队不重发钥** | Q1 后持同 ymk_ | 再 join 同队 | **无新 token**；原席/合法席；memory/handoff 不丢 | Go 幂等单测绿；待 QA 联验 |
 | **Q3 活跃禁顶替** | 席 active=BotX | 另一身份/新人指定该席 join 或绑 Key | **409/人话**；席仍 BotX | 已有任用/409；须与 FE 文案一致 |
 | **Q4 新人新席** | 无 empty（或满员） | join/扩编允许 expand | **新席**创建并入座；他席绑定不变 | 挂 allow_expand / SEAT_VIS |
 | **Q5 补位** | 席 left/stopped/departed | 新人 join 补该席 | 入座成功；**审计 comment**；禁对 active force | GAP 细审计断言 |
@@ -117,7 +117,7 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 | **Q8 分布式派发** | 席已绑 Bot+webhook | 指派 Issue 到该席 | **仅该席**唤醒；left 不喊 | 挂 Webhook/下发旧证；抽测 |
 | **Q9 换机续命** | 同 ymk_ 新机 | handoff get / pull | 得 focus/todos/开放 Issue；**不必 Admin 再发钥** | 记忆席 **PASS†** `def5aee`（持钥 leave→migrate）；无钥 bootstrap 仍禁 |
 | **Q10 入场包≠身份** | 公开 `/join` 与可转发提示词 | 抽检正文/URL | **无可复制 ymk_**；自动身份只在**私密成功响应**/FOOLPROOF 单把 | 包侧 COVERED†；自动身份待 Q1 |
-| **Q11（V1）拒造第二人** | 同 ymt_ 已 bootstrap 过 | 再无 Bearer redeem / 假装新人再造 | **拒造第二人**；人话贴旧钥；member 不 +1 | **GAP**（随 Q1） |
+| **Q11（V1）拒造第二人** | 同 ymt_ 已 bootstrap 过 | 再无 Bearer redeem / 假装新人再造 | **拒造第二人**；人话贴旧钥；member 不 +1 | Go 单测绿 `c4ae0a5`；待 QA |
 | **Q12（F）吊销** | 码/钥可吊销 | revoke ymt_ 再 join；revoke ymk_ 再 whoami | ymt_ 入场失败；ymk_ 鉴权失败；旧 ymk_ **不**随码吊销自动废 | **COVERED†** ymt_ N1；ymk_ 子条 GAP |
 | **Q13（K·J）救场双机** | 同 member 双机 / 脏绑 | leave→migrate；handoff；产品救场 | 换机不强迫全班吐钥；禁非法双绑；救场可恢复留痕 | J 单活 **PASS†**；救场全路径仍 **GAP** |
 
@@ -146,7 +146,7 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 - [x] **V3** Web Join 只贴 ymt_ · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
 - [x] **V4** 入场提示词两态 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
 - [x] **V5** 建队文案热修（可先于 API） · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED` · **FE 已合** `e761305`
-- [x] **V6** 并发同码策略 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
+- [x] **V6** 并发同码策略 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED` · **Go 已合** `c4ae0a5`
 - [x] **V7** B1 开干门禁 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
 
 ### H4 文案锚点（种子贡 · **已合** `15880b8` · README/BOT/API）
@@ -177,6 +177,7 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 
 ## 8. 进度
 
+- 2026-10-24 23:50 · **Go redeem 自动身份绿** `c4ae0a5`（无 Bearer→is_bot+ymk_+绑 empty；持钥幂等不重发；人类 JWT 只定位；V1 409 贴旧钥；V2 不自动补位；V6 bootstrapped_member_id；F2 active 409）。箱内 `go test` botmem+handlers PASS。**已派 React V3/V4 + QA Q1 联验**。
 - 2026-10-24 23:49 · **记忆席 A/E/J 箱证收** `def5aee` + `docs/qa-shots/HUMAN_ONBOARD-AEJ-memory-20261024.txt`：J 409 PASS · E leave→migrate→handoff PASS · A `focus=空` PASS · `AUTH_NO_SECOND_MEMBER=PASS`；**Q1 自动身份仍 GAP（Go）**。可选软债：兼岗摘要 focus≠当前席（不挡 A/E，搁置）。
 - 2026-10-24 23:48 · **用户睡前站立（总指挥转）**：后续口径争议**内部**消化——提反对→产品主持拍板→统一口径干；**勿再弹用户票**。H0/H1 仍冻 `b6614ff`。
 - 2026-10-24 23:47 · **H3 挂 Q11–Q13** 用例文件 `7ec3c52`；债表编号与 QA 对齐（Q11=V1 / Q12=F / Q13=K·J）。

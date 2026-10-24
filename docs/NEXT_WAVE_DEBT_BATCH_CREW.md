@@ -91,9 +91,9 @@ POST …/team-invites/redeem  或  通道等价 ymbot team join
 
 ## 产品勾选
 
-- [ ] **B0** 否决全班吐钥 + 任用 + 禁填表 · 产品
-- [ ] **B1** 入队/入席自动身份 API + 单测 · Go
-- [ ] **B2** 建队 CTA=入场包，无全班钥入口 · React
+- [x] **B0** 否决全班吐钥 + 任用 + 禁填表 · 产品（HUMAN_ONBOARD 冻）
+- [x] **B1** 入队/入席自动身份 API + 单测 · Go · `c4ae0a5`
+- [x] **B2** 建队 CTA=入场包，无全班钥入口 · React · V5 `e761305` + AUTO_CREW
 - [ ] **B3** 入队方当次单把 `ymk_` · React/通道
 - [ ] **B4** 席卡演员 + 幂等/禁顶替 · Go+React
 - [ ] **B5** 入场包无 `ymk_` · QA
@@ -102,6 +102,7 @@ POST …/team-invites/redeem  或  通道等价 ymbot team join
 
 ## 进度注记
 
+- 2026-10-24 23:50 · **B1 绿** Go redeem `c4ae0a5`；B0/B2 随 HUMAN 冻+V5 勾。待 React V3/V4（B3）+ QA Q1（B5/B6）。
 - 2026-10-24 23:45 · 上位 HUMAN_ONBOARD 已出**可投表决稿**（A–K + V1–V7）；本债 API 细案等投票后再开 B1。
 - 2026-10-24 23:40 · **全景冻结**：盲改暂停，等 HUMAN_ONBOARD H0+H1。
 - 2026-10-24 23:35 · **改向**：用户否决一键吐全班 `ymk_`；旧 B1 crew/batch 停。新 B1=入队/入席自动身份；Admin 只发 `ymt_` 入场包（AUTO_CREW）。已急停 React 全班钥实现。
@@ -110,4 +111,4 @@ POST …/team-invites/redeem  或  通道等价 ymbot team join
 
 ## 关单进度
 
-**改向已定 · 已开干** · HUMAN_ONBOARD 用户全认推荐 @`b6614ff`；Go 做 redeem 自动身份（=原 B1）。旧吐钥仍废。
+**B1 API 已合** `c4ae0a5` · 待 FE 入队露钥 + QA 箱证后 B7 关单。旧吐钥仍废。
