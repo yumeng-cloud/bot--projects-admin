@@ -1,29 +1,28 @@
-# ISSUE_ARCHIVE · 苛刻复测清单（QA）
+# ISSUE_ARCHIVE · 苛刻复测清单（QA · D2）
 
-> 权威：`docs/NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md`  
-> 总指挥主验四点：①完成批量归档 ②默认 list/board 不见 ③`include_archived` 可拉 ④归档前后 pack 统计 done/total（归档的 done 不计入）  
-> 等 Issue 域 / React 分段交后立刻跑；勿盲测。
+> 权威：`docs/NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md` @`3238466`（总指挥定稿）  
+> 主验：默认 list/board/search **不见**归档；pack/周期计数剔归档；`include_archived=1` / `archived=only` 可拉  
+> 等 Issue 域 / React 分段交后立刻跑；**勿盲测**。
 
 ## 证据
 - 主：`docs/qa-shots/ISSUE_ARCHIVE-qa-retest-YYYYMMDD.txt`
 - 箱截：`docs/qa-shots/issue-archive-*.png`
 
-## 红线（总指挥四点）
+## 红线（D2）
 
 | ID | 步骤 | PASS |
 |----|------|------|
-| Q1 | 完成列/批量：`POST …/issues/batch-archive` 或等价；Done（及可选 Canceled）可批量归档 | |
-| Q2 | 默认 list / board / search / cycle-issues：**不见**已归档（`archived_at IS NULL`） | |
-| Q3 | `include_archived=1` 可拉回；`archived_only=1` 仅归档（only 优先） | |
-| Q4 | Pack / 列计数 / done/total：归档前后对比——**已归档的 done 不计入**；归档后数字下降或剔净 | |
+| Q1 | `POST …/issues/archive` `{ids}`：仅 `status=done`；非 done → 中文 4xx；幂等 | |
+| Q2 | 默认 list / board / search / relations：**不见**已归档 | |
+| Q3 | `include_archived=1` → 含归档；`archived=only` → **仅**归档 | |
+| Q4 | Pack / 列计数 / done/total / 周期聚合：**排除** archived；归档后计数下降且列表无该单 | |
 
-## 补充苛刻
+## 补充
 | ID | 步骤 | PASS |
 |----|------|------|
-| Q5 | GET 单条已归档仍 **200** + `archived_at`；解档回默认列表 | |
-| Q6 | 归档不改 `status`（仍 done/canceled）；与 status 正交 | |
-| Q7 | 人类/Bot 同权可调；跨 WS id 拒 | |
-| Q8 | FE 箱截：列批量、归档后看板空位、已归档视图、详情「已归档」标（有则抽） | |
+| Q5 | GET 单条已归档仍 200 + `archived_at`；status 仍为 done（正交） | |
+| Q6 | Bot/MCP 列表同源默认不返回归档 | |
+| Q7 | FE（有箱截则抽）：完成列批量归档后卡消失；Pack 数字与 BE 一致 | |
 
 ## 关报
-短报产品+总指挥：Overall · Q1–Q4 · 证据 · HEAD。测绿可 push main。
+短报**产品体验**（+总指挥）：Overall · Q1–Q4 · 证据 · HEAD。测绿可 push main。
