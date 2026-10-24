@@ -17,6 +17,7 @@ import type { Key } from 'react'
 import { PlusOutlined, ReloadOutlined, CloseOutlined } from '@ant-design/icons'
 import {
   archiveIssues,
+  batchUpdateIssueStatus,
   createIssue,
   listIssues,
   listProjectLabels,
@@ -24,6 +25,7 @@ import {
   patchIssue,
   unarchiveIssues,
 } from '../../api/issues'
+import { ApiError } from '../../api/client'
 import { IssueDrawer } from '../../components/issue'
 import { MockBanner } from '../../components/common/MockBanner'
 import { useCurrentTeam } from '../../hooks/useCurrentTeam'
@@ -179,21 +181,26 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
 
   const handleBulkStatus = async () => {
     if (!bulkStatus || selectedIssues.length === 0 || bulkBusy) return
+    const target = bulkStatus
     setBulkBusy(true)
     let ok = 0
     let fail = 0
     const updates: Issue[] = []
-    try {
-      // 无 batch status API → 串行 PATCH（C2-2 缺口另报 Issue 域）
+    const applyLocal = (list: Issue[]) => {
+      if (list.length === 0) return
+      const map = new Map(list.map((u) => [u.id, u]))
+      setIssues((prev) => prev.map((i) => map.get(i.id) ?? i))
+    }
+    const serialFallback = async () => {
       for (const iss of selectedIssues) {
-        if (iss.status === bulkStatus) {
+        if (iss.status === target) {
           ok += 1
           continue
         }
         try {
           const { issue: saved } = await patchIssue(workspaceId, iss.id, {
             version: iss.version,
-            status: bulkStatus,
+            status: target,
           })
           updates.push(saved)
           ok += 1
@@ -201,13 +208,54 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
           fail += 1
         }
       }
-      if (updates.length > 0) {
-        const map = new Map(updates.map((u) => [u.id, u]))
-        setIssues((prev) => prev.map((i) => map.get(i.id) ?? i))
+    }
+    try {
+      // C2-2：优先 batch-status；404/501 或整请求失败 → 串行 patch 作 fallback
+      try {
+        const { results } = await batchUpdateIssueStatus(
+          workspaceId,
+          selectedIssues.map((i) => i.id),
+          target,
+          { team_id: teamId || undefined },
+        )
+        const byId = new Map(selectedIssues.map((i) => [i.id, i]))
+        for (const r of results) {
+          if (r.ok) {
+            ok += 1
+            const cur = byId.get(r.id)
+            if (cur) {
+              updates.push({
+                ...cur,
+                status: (r.status as IssueStatus) || target,
+                version: typeof r.version === 'number' ? r.version : cur.version + 1,
+                updated_at: new Date().toISOString(),
+              })
+            }
+          } else {
+            fail += 1
+          }
+        }
+        // 未出现在 results 的勾选项按失败计（去重等）
+        const seen = new Set(results.map((r) => r.id))
+        for (const iss of selectedIssues) {
+          if (!seen.has(iss.id)) fail += 1
+        }
+      } catch (err) {
+        const readyMissing =
+          err instanceof ApiError && (err.status === 404 || err.status === 501)
+        if (readyMissing || !(err instanceof ApiError)) {
+          await serialFallback()
+        } else {
+          message.error((err as Error).message || '批量改状态失败')
+          return
+        }
       }
+      applyLocal(updates)
       if (fail === 0) {
-        message.success(`已将 ${ok} 条改为「${STATUS_LABELS[bulkStatus]}」`)
+        message.success(`已将 ${ok} 条改为「${STATUS_LABELS[target]}」`)
         clearSelection()
+      } else if (ok === 0) {
+        message.error(`批量改状态失败（${fail} 条）`)
       } else {
         message.warning(`改状态完成：成功 ${ok}，失败 ${fail}`)
       }

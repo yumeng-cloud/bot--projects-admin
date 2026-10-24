@@ -47,6 +47,7 @@
 
 ## 进度注记
 
+- 2026-10-25 01:19 Asia/Shanghai · React FE 改接 `batchUpdateIssueStatus` → `POST …/issues/batch-status`；`IssueListPage` 优先批量，404/501/网络失败串行 fallback；按 results Toast。C2 整包已关，本刀热修不挡。
 - 2026-10-25 01:18 · **C2-4 PASS† → C2-5 关单** QA `99795f9` @ FE `a33651d`：多选条/归档/解档/清空/箱截/中文/不挡表头全绿；改状态串行 Soft†；C2-2 `3b8a0d6` 真批量已齐（FE 热修不挡关）。整包 **PRO_ADMIN C2 关**。下一刀：**仅 C3**（列显示配置）；**C4–D / E2 / G 仍冻**。
 - 2026-10-25 01:17 · **产品勾 C2-2** Issue `3b8a0d6`：batch-status 测绿。FE 可改接真批量（不挡 QA）。等 C2-4。
 - 2026-10-25 01:16 · **产品勾 C2-1/C2-3** FE `a33651d`：多选+操作条（改状态/归档/解档/取消）不挡表头；`pro-c-bulk.png` 目视过。C2-2 串行 PATCH 可过门；Issue 域真批量后补不挡 QA。开/续 C2-4。

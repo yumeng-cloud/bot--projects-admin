@@ -210,6 +210,88 @@ export async function patchIssue(
   return { issue: data.issue, mock: false }
 }
 
+export type BatchStatusResultItem = {
+  id: string
+  ok: boolean
+  status?: IssueStatus
+  version?: number
+  error?: string
+}
+
+export type BatchUpdateIssueStatusResult = {
+  results: BatchStatusResultItem[]
+  mock: boolean
+  /** true：整请求失败后走串行 patchIssue */
+  fallback?: boolean
+}
+
+/**
+ * C2-2：批量改状态。
+ * `POST /workspaces/{ws}/issues/batch-status` body `{ ids, status }`；
+ * 可选 query `?team_id=`。返回 `{ results:[{id,ok,status?,version?,error?}] }`。
+ * 404/501 时抛 ApiError，由调用方串行 fallback。
+ */
+export async function batchUpdateIssueStatus(
+  workspaceId: string,
+  ids: string[],
+  status: IssueStatus,
+  opts?: { team_id?: string },
+): Promise<BatchUpdateIssueStatusResult> {
+  const unique = [...new Set(ids.filter(Boolean))]
+  if (unique.length === 0) {
+    return { results: [], mock: preferMock() }
+  }
+
+  if (preferMock()) {
+    const results: BatchStatusResultItem[] = []
+    for (const id of unique) {
+      const idx = mockIssues.findIndex((i) => i.id === id)
+      if (idx < 0) {
+        results.push({ id, ok: false, error: 'Issue 不存在' })
+        continue
+      }
+      const cur = mockIssues[idx]
+      if (opts?.team_id && cur.team_id && cur.team_id !== opts.team_id) {
+        results.push({ id, ok: false, error: 'Issue 不存在' })
+        continue
+      }
+      if (cur.status === status) {
+        results.push({ id, ok: true, status: cur.status, version: cur.version })
+        continue
+      }
+      const next: Issue = {
+        ...cur,
+        status,
+        version: cur.version + 1,
+        updated_at: new Date().toISOString(),
+      }
+      mockIssues[idx] = next
+      results.push({ id, ok: true, status: next.status, version: next.version })
+    }
+    return { results, mock: true }
+  }
+
+  const q = opts?.team_id
+    ? `?team_id=${encodeURIComponent(opts.team_id)}`
+    : ''
+  try {
+    const data = await api<{ results: BatchStatusResultItem[] }>(
+      `/workspaces/${workspaceId}/issues/batch-status${q}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ ids: unique, status }),
+        skipToast: true,
+      },
+    )
+    return { results: data.results || [], mock: false }
+  } catch (err) {
+    if (err instanceof ApiError && (err.status === 404 || err.status === 501)) {
+      throw new ApiError('批量改状态接口尚未就绪', err.code || 'not_found', err.status)
+    }
+    throw err
+  }
+}
+
 export async function createIssue(
   workspaceId: string,
   body: IssueCreate,
