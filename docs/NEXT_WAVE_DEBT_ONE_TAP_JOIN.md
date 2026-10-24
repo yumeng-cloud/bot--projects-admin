@@ -148,15 +148,16 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [x] **E2** `GET /install.sh` · Go `4cdaa04`
 - [x] **E3** `/join` 页露安装 · Go `4cdaa04`
 - [x] **E4** FE 提示词对齐+重截 · React `b76bfc0` · `one-tap-copy-prompt.png`
-- [x] **E5** 无 CLI→装→join 箱证 · QA **PASS† local** `e1b3f26`/`ONE_TAP_E5-qa-retest-20261024.txt`；**prod BLOCKED**（须 API≥`4cdaa04` 重部署后 spotcheck `https://bot.api.sn.cn/install.sh`）
+- [x] **E5** 无 CLI→装→join · local PASS† `e1b3f26`；**prod PASS†** 总指挥 spotcheck：`https://bot.api.sn.cn/install.sh` + `/healthz` =200，脚本对齐 `4cdaa04`（箱 stub DNS 仍超时≠公网挂）
 - [x] **C1** 打开引导 · React FE `/join` 登录预填 JoinWizard · `9779f23`
 - [x] **C2** 提示词航线 join · `ab8b416` + 证 `ONE_TAP-C2-team-join-20261024.txt` PASS
 - [x] **C3** 打开即用箱证 · QA PASS† `ONE_TAP_C3-qa-retest-20261024.txt`（C1@9779f23；C3-4 挂 Q1）
 - [x] **D1** 文档主路径改口 · `518a4b6` BOT.md 主路径=席页复制入场链接/提示词；env/mcp 降附录非推荐；README 轻对齐
-- [x] **D2** 产品关单 · 2026-10-25（prod E5 DNS 后置不挡）
+- [x] **D2** 产品关单 · 2026-10-25（prod E5 已 PASS†）
 
 ## 进度注记
 
+- 2026-10-25 00:30 · **prod E5 解封 PASS†**（总指挥）：`bot.api.sn.cn/install.sh`+`/healthz` 200，对齐 `4cdaa04`；箱 DNS 超时不判挂。无需 redeploy。
 - 2026-10-25 00:20 · **C3 PASS† + D2 关单** QA `d24d563`：打开即用（C1 预填† + redeem 得钥 + 不耗码）；C2 引用 `ab8b416`。prod E5/DNS **后置不挡**。
 - 2026-10-25 00:01 · **C3 PASS†** QA：链接→API/FE 短引导不耗码；登录预填 JoinWizard（string+route+dist）；redeem 无 Bearer→ymk_+席 active+whoami；V3 露钥未回归。E5 prod 仍 BLOCKED 不挡。
 
@@ -192,4 +193,4 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 关单进度
 
-**整单已关** · A/B/C/D/E(local†) 齐；证 C3 `d24d563` · C2 `ab8b416` · C1 `9779f23` · D1 `518a4b6`。prod E5 等运维 redeploy。
+**整单已关** · A/B/C/D/E(local†) 齐；证 C3 `d24d563` · C2 `ab8b416` · C1 `9779f23` · D1 `518a4b6`。prod E5 **PASS†**（总指挥 spotcheck）。
