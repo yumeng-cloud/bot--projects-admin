@@ -132,6 +132,8 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 进度注记
 
+- 2026-10-24 22:10 · 产品确认 A4 PASS（`3397218` / ONE_TAP_A4-qa-retest）；包 A 全勾。
+
 - 2026-10-24 22:09 · QA A4 PASS（箱证 ONE_TAP_A4-qa-retest-20261024.txt）；redeem 仍绿；/join 不 claim。
 
 - 2026-10-24 22:10 · 产品勾 A1–A3（测绿 `joinlink`/`handlers` Join*）；A4 仍 QA。
@@ -141,4 +143,4 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 关单进度
 
-**进行中** · A1–A3 已勾；待 React B + QA A4/C3。
+**进行中** · **包 A 全勾**；待 React B + C/D。
