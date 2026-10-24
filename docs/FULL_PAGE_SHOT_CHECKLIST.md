@@ -58,7 +58,7 @@
 | S4 | **PASS** | `/workspace/qa-shots/S4-cycles.png` |
 | S5 | **PASS** | `/workspace/qa-shots/S5-timeline.png` |
 | S6 | **PASS**（苛刻 · WIKI_UX_P1） | `/workspace/qa-shots/S6-wiki.png` + `S6-wiki-edit.png` |
-| S7 | **PASS**（a84e0ac · YM-n+人名） | `docs/qa-shots/fail-fix-20261024/03-time.png` |
+| S7 | **PASS**（`7fbd3d3` · YM-n+人名） | `docs/qa-shots/s7-time-7fbd3d3/01-time-full.png` |
 | S8 | **PASS**（a84e0ac · 角色中文） | `docs/qa-shots/fail-fix-20261024/05-settings.png` |
 | S9 | **PASS**（a84e0ac · 认领「名」） | `docs/qa-shots/fail-fix-20261024/06-bots.png` |
 
@@ -66,7 +66,7 @@
 
 ## 已知缺口（不挡本轮）
 
-- **S7 工时 Issue 列 raw id**：API List/Get 已 enrich `issue_identifier`/`issue_title`/`member_name`（2026-10-24 · 知识库工时）；待 QA 苛刻复测 `/time` 再改 PASS。
+- **S7 工时 Issue 列 raw id**：已关 · QA 苛刻复测 PASS（2026-10-24 17:52 Asia/Shanghai · `7fbd3d3`）· Issue=`YM-9 …` 成员=`管理员` · 证据 `docs/qa-shots/s7-time-7fbd3d3/`。
 
 ## 苛刻验收标准（总指挥 · 2026-10-24 对齐）
 
@@ -80,7 +80,7 @@
 | ID | 原判 | 苛刻复判 | 债 |
 |----|------|----------|-----|
 | S4 Cycles | PASS | 待 FE 修后按苛刻条复测（总指挥同批点名 Cycles） | 记债 |
-| S7 工时 | PASS → **FAIL** | Issue 列 raw id 等技术字段 | **FAIL 债** |
+| S7 工时 | **PASS**（`7fbd3d3`） | YM-9+标题 / 管理员 | `docs/qa-shots/s7-time-7fbd3d3/` |
 | S8 设置 | PASS → **FAIL** | 苛刻：漂浮空底/技术字段（同批 FAIL） | **FAIL 债** |
 | S9 Bot | PASS → **FAIL** | 苛刻：同批 FAIL | **FAIL 债** |
 | 工作区 | — | 同批 FAIL（裸 hash/漂浮空底） | 记债 |
@@ -107,3 +107,12 @@ Nits（不挡）：树搜索蓝方钮；树宽贴 240 下限；编辑插图小�
 | 5 | 设置/Bot 中文 | PASS — 管理员/机器人；认领「后端」等；无 slug |
 
 看板/列表/排期/抽屉未动。
+
+## S7 苛刻复测 · 2026-10-24 17:52 Asia/Shanghai
+
+| 项 | 结果 |
+| --- | --- |
+| Commit | `7fbd3d3` |
+| API List/Get | **PASS** — `issue_identifier=YM-9` / `issue_title=QA webhook match BOT_A updated` / `member_name=管理员` |
+| FE `/w/…/time` | **PASS** — 列见「YM-9 QA webhook match BOT_A updated」+「管理员」，无 raw id |
+| 证据 | `docs/qa-shots/s7-time-7fbd3d3/01-time-full.png` · `02-time-issue-member-closeup.png` · `api-list.json` · `api-get.json` |
