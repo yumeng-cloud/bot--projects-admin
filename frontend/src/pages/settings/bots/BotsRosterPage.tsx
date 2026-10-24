@@ -554,7 +554,14 @@ export default function BotsRosterPage() {
         wsId={wsId}
         role={drawerRole}
         bots={bots}
-        keyHint={drawerRole ? keyHintForMember(drawerRole.claim?.member_id) : undefined}
+        keyHint={
+          drawerRole
+            ? keyHintForMember(seatOccForRole(drawerRole).occupantId || drawerRole.claim?.member_id)
+            : undefined
+        }
+        occupancyKind={drawerRole ? seatOccForRole(drawerRole).kind : null}
+        occupantMemberId={drawerRole ? seatOccForRole(drawerRole).occupantId : null}
+        occupantLabel={drawerRole ? seatOccForRole(drawerRole).occupantLabel : null}
       />
 
       <JoinTeamWizard

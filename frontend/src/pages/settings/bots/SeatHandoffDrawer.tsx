@@ -28,15 +28,36 @@ type Props = {
   bots: BotRosterItem[]
   /** Key 提示，如「末四 ·7624」；勿传完整 Key */
   keyHint?: string
+  /** 与名册卡同源：team_seats.status（D5）；缺省回落 claim */
+  occupancyKind?: 'active' | 'empty' | 'left' | null
+  /** 占用者 member_id（可来自 team seat，非仅 claim） */
+  occupantMemberId?: string | null
+  occupantLabel?: string | null
 }
 
-export default function SeatHandoffDrawer({ open, onClose, wsId, role, bots, keyHint }: Props) {
+export default function SeatHandoffDrawer({
+  open,
+  onClose,
+  wsId,
+  role,
+  bots,
+  keyHint,
+  occupancyKind = null,
+  occupantMemberId = null,
+  occupantLabel = null,
+}: Props) {
   const [loading, setLoading] = useState(false)
   const [handoff, setHandoff] = useState<BotHandoff | null>(null)
 
-  const memberId = role?.claim?.member_id
+  const claimMid = role?.claim?.member_id || null
+  const kind =
+    occupancyKind || (claimMid ? 'active' : 'empty')
+  const memberId = (kind === 'active' ? occupantMemberId || claimMid : null) || null
   const boundBot = memberId ? bots.find((b) => b.member_id === memberId) : undefined
-  const boundLabel = boundBot?.display_name || (memberId ? '已绑定' : '空闲')
+  const boundLabel =
+    boundBot?.display_name ||
+    occupantLabel ||
+    (memberId ? '已绑定' : kind === 'left' ? '可补位' : '空闲')
 
   const seatMeta: SeatCardMeta = useMemo(
     () => ({
@@ -122,7 +143,13 @@ export default function SeatHandoffDrawer({ open, onClose, wsId, role, bots, key
               style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}
               title={roleDisplay(role)}
             >
-              <Tag color={memberId ? 'blue' : 'default'}>{memberId ? `占用中 · ${boundLabel}` : '空闲'}</Tag>
+              <Tag color={kind === 'active' ? 'blue' : kind === 'left' ? 'orange' : 'default'}>
+                {kind === 'active'
+                  ? `占用中 · ${boundLabel}`
+                  : kind === 'left'
+                    ? '可补位'
+                    : '空闲'}
+              </Tag>
               {keyHint ? <Tag>{keyHint}</Tag> : null}
             </div>
             {role.claim?.claimed_at ? (
@@ -137,7 +164,14 @@ export default function SeatHandoffDrawer({ open, onClose, wsId, role, bots, key
             ) : null}
           </div>
 
-          {!memberId ? (
+          {kind === 'left' ? (
+            <Alert
+              type="warning"
+              showIcon
+              message="停工席 · 可补位"
+              description="此席已停工，可从向导或指派重新占用。交接摘要需绑定后才有。"
+            />
+          ) : !memberId ? (
             <Alert
               type="info"
               showIcon
