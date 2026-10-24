@@ -1,0 +1,60 @@
+PRO_ADMIN D1-4 QA spotcheck · 2026-10-25 01:49 Asia/Shanghai
+Overall: PASS†
+Feature SHA: f57c5c4bfdfbe4e7363415af71a70ba1e9e17ec3 (ancestor of HEAD 5de4fec / local main)
+Debt: docs/NEXT_WAVE_DEBT_PRO_ADMIN_D1.md (parent docs/NEXT_WAVE_DEBT_PRO_ADMIN.md)
+Shot: docs/qa-shots/pro-d-members.png (87891 B @f57c5c4)
+Scope: D1 only. D2–D4 / E2 / G FROZEN — not verified.
+
+Method
+- git fetch; confirm f57c5c4 ancestor of HEAD; git show f57c5c4 --stat
+- Inspect frontend/src/pages/settings/SettingsPage.tsx: memberRoleChip / Dropdown MoreOutlined / 邀请·成员 section titles
+- Grep qaEmpty / 还没有成员 / invite CTA / acb-settings-section-title (B2 empty + A1 shell)
+- Read docs/qa-shots/pro-d-members.png as image
+- Soft† live FE Vite skipped (箱截+源码 suffice; seed qa-d1-seed.html verified)
+
+Accept checklist
+1. 成员表：角色中文芯片（管理员 / 成员 / 机器人）；禁 raw admin/member/is_bot 露脸主 UI …… PASS
+   - memberRoleChip: Tag「机器人」(purple) / 「管理员」(processing) / 「成员」; owner→admin
+   - Column render uses memberRoleChip only; roleOptions labels 管理员/成员
+   - Shot: blue「管理员」/ gray「成员」/ pink「机器人」chips; no English role strings
+
+2. 行操作折叠（⋯ Dropdown 或等价）；主列不挤 …… PASS
+   - Admin ops: Dropdown + MoreOutlined Button aria-label「更多」; items 设为管理员/设为成员/移除
+   - Bot rows: Typography「只读」; action col width 56
+   - Shot: human rows ⋮; Grok Bot「只读」; 设角色/移除 not inline
+
+3. 邀请区（ymw_/链接）与成员表上下分块、有短标题；禁两坨 Form 糊成一张 …… PASS
+   - Separate acb-settings-section: title「邀请」then「成员」
+   - Invite: 邀请已注册成员 Form + 人类邀请链接 Form (ymw_ vs ymt_) + 已签发邀请 Card
+   - Shot: short titles 邀请 / 成员; blocks vertically separated; not one mashed Form
+
+4. 有序密度：禁挤叠、禁大片死白；箱截中文、分块可见、芯片可见 …… PASS
+   - Shot 87891 B Chinese throughout; section titles + chips + ⋮ visible
+   - Table cols 名称/邮箱/角色/操作; invite forms inline wrap; no crush/stack/dead-white
+
+5. B2 空态未回退：无成员时仍有邀请引导（源码保留 B2 路径 / qaEmpty） …… PASS
+   - forceMembersEmpty = searchParams.get('qaEmpty') === '1'
+   - membersEmpty → Empty「还没有成员」+ CTA 邀请成员 / 签发人类邀请 (scroll to #acb-invite-email / #acb-invite-ymw)
+   - Non-admin: 「请联系管理员邀请成员加入」; no technical empty shell
+
+6. 不破坏设置其它分区壳（A1 分区语义大致仍在） …… PASS
+   - Tabs intact: 工作区 / 项目 / 团队 / 成员 / 标签 / 接入
+   - Other section titles still present: 标签 / 身份钥匙 / Webhook / SettingsTeamsPanel「团队」/ SettingsProjectsPanel「项目」
+   - Page bar 设置 + 工作区·项目·团队·成员·标签·接入 + roleLabel(myRole)
+
+FAIL redlines hit? NONE
+- English role chips — NO
+- Ops all inline crowding — NO
+- Invite+table one mashed Form — NO
+- Shot missing/English/crush — NO
+- B2 empty regress — NO
+
+Soft† notes
+- Live FE Vite skipped (standing Soft† optional; source+shot suffice — same as C3/C4)
+- Seed helper frontend/public/qa-d1-seed.html → /w/.../settings?tab=members
+- D2–D4 / E2 / G not opened
+
+Defects: (none blocking)
+
+Verdict: PASS† @f57c5c4
+One-line → 产品+React+总指挥: D1-4 PASS†；成员表中文角色芯片(管理员/成员/机器人)+⋯折叠设角色/移除；邀请区与成员表上下分块短标题；箱截 pro-d-members.png 中文分块芯片可见；B2 qaEmpty空态邀请引导保留；A1 分区壳未破；Soft† 活 FE 略；D2–D4/E2/G 未验。
