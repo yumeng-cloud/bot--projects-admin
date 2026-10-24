@@ -59,6 +59,8 @@ type Props = {
   issue: Issue | null
   workspaceId: string
   projectId: string
+  /** Current team pool (T6I); scopes parent/relation issue picker */
+  teamId?: string | null
   onClose: () => void
   onSaved: (issue: Issue) => void
 }
@@ -201,7 +203,7 @@ function useIssueDrawerNarrow(): boolean {
  * Issue 详情壳：顶栏 chrome + 主栏 + Property 轨。
  * 布局见 frontend/ISSUE_DETAIL_LAYOUT.md
  */
-export function IssueDrawer({ open, issue, workspaceId, projectId, onClose, onSaved }: Props) {
+export function IssueDrawer({ open, issue, workspaceId, projectId, teamId, onClose, onSaved }: Props) {
   const narrowDrawer = useIssueDrawerNarrow()
   const [form] = Form.useForm()
   const [title, setTitle] = useState('')
@@ -281,7 +283,7 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, onClose, onSa
         listProjectMembers(workspaceId),
         listProjectLabels(workspaceId),
         listCycles(workspaceId, projectId),
-        listIssues(workspaceId, { project_id: projectId }),
+        listIssues(workspaceId, { project_id: projectId, team_id: teamId || undefined }),
       ])
       setMembers(m.members)
       setLabels(l.labels)
@@ -289,7 +291,7 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, onClose, onSa
       setProjectIssues(iss.issues || [])
     })()
     void loadSide(issue.id)
-  }, [open, issue, form, workspaceId, projectId, loadSide])
+  }, [open, issue, form, workspaceId, projectId, teamId, loadSide])
 
   /** 标题 / 描述：blur 自动 PATCH（顶栏不再放实心保存） */
   const saveTitleDescription = async () => {

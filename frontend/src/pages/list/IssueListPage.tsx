@@ -402,6 +402,7 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
         issue={current}
         workspaceId={workspaceId}
         projectId={projectId}
+        teamId={teamId}
         onClose={() => setOpen(false)}
         onSaved={(saved) => {
           setIssues((prev) => prev.map((i) => (i.id === saved.id ? saved : i)))

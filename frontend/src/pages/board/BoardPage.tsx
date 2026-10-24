@@ -241,6 +241,7 @@ export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
         issue={current}
         workspaceId={workspaceId}
         projectId={projectId}
+        teamId={teamId}
         onClose={() => setOpen(false)}
         onSaved={(saved) => {
           setIssues((prev) => prev.map((i) => (i.id === saved.id ? saved : i)))

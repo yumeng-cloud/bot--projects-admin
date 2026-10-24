@@ -24,6 +24,7 @@ import { BoardPackStrip } from '../../components/board'
 import { IssueDrawer } from '../../components/issue'
 import { MockBanner } from '../../components/common/MockBanner'
 import { useBoardPackStats } from '../../hooks/useBoardPackStats'
+import { useCurrentTeam } from '../../hooks/useCurrentTeam'
 import type { Cycle, Issue } from '../../types/issue'
 import { STATUS_LABELS } from '../../types/issue'
 import { cycleStatusLabel } from '../../utils/labels'
@@ -36,7 +37,13 @@ export type CyclesPageProps = {
 
 export default function CyclesPage({ workspaceId, projectId }: CyclesPageProps) {
   const navigate = useNavigate()
-  const pack = useBoardPackStats({ workspaceId, projectId })
+  const { teamId, loading: teamLoading } = useCurrentTeam(workspaceId)
+  const pack = useBoardPackStats({
+    workspaceId,
+    projectId,
+    teamId,
+    enabled: !teamLoading,
+  })
   const [loading, setLoading] = useState(true)
   const [cycles, setCycles] = useState<Cycle[]>([])
   const [issues, setIssues] = useState<Issue[]>([])
@@ -45,21 +52,32 @@ export default function CyclesPage({ workspaceId, projectId }: CyclesPageProps) 
   const [current, setCurrent] = useState<Issue | null>(null)
 
   const load = useCallback(async () => {
+    if (teamLoading) {
+      setLoading(true)
+      return
+    }
     setLoading(true)
+    setIssues([]) // I4: clear pool before fetch — no cross-team residue
     try {
-      const [c, i] = await Promise.all([listCycles(workspaceId, projectId), listIssues(workspaceId, { project_id: projectId })])
+      const [c, i] = await Promise.all([
+        listCycles(workspaceId, projectId),
+        listIssues(workspaceId, {
+          project_id: projectId,
+          team_id: teamId || undefined,
+        }),
+      ])
       setCycles(c.cycles)
       setIssues(i.issues)
       if (!selectedId && c.cycles[0]) setSelectedId(c.cycles[0].id)
     } finally {
       setLoading(false)
     }
-  }, [workspaceId, projectId, selectedId])
+  }, [workspaceId, projectId, selectedId, teamId, teamLoading])
 
   useEffect(() => {
-    load()
+    void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId])
+  }, [projectId, teamId, teamLoading])
 
   const selected = cycles.find((c) => c.id === selectedId) || null
   const cycleIssues = useMemo(
@@ -287,6 +305,7 @@ export default function CyclesPage({ workspaceId, projectId }: CyclesPageProps) 
         issue={current}
         workspaceId={workspaceId}
         projectId={projectId}
+        teamId={teamId}
         onClose={() => setOpen(false)}
         onSaved={(saved) => {
           setIssues((prev) => prev.map((i) => (i.id === saved.id ? saved : i)))

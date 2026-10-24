@@ -19,6 +19,7 @@ import {
   TimelineWeekBar,
 } from '../../components/timeline'
 import { IssueDrawer } from '../../components/issue'
+import { useCurrentTeam } from '../../hooks/useCurrentTeam'
 import { MockBanner } from '../../components/common/MockBanner'
 import type { Issue } from '../../types/issue'
 import { STATUS_LABELS } from '../../types/issue'
@@ -178,6 +179,7 @@ function errorMessage(err: unknown, fallback: string): string {
 }
 
 export default function TimelinePage({ workspaceId, projectId }: TimelinePageProps) {
+  const { teamId, loading: teamLoading } = useCurrentTeam(workspaceId)
   const [loading, setLoading] = useState(true)
   const [issues, setIssues] = useState<Issue[]>([])
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
@@ -196,9 +198,17 @@ export default function TimelinePage({ workspaceId, projectId }: TimelinePagePro
   const suppressOpenRef = useRef(false)
 
   const load = useCallback(async () => {
+    if (teamLoading) {
+      setLoading(true)
+      return
+    }
     setLoading(true)
+    setIssues([]) // I4: clear pool before fetch — no cross-team residue
     try {
-      const { issues: list } = await listIssues(workspaceId, { project_id: projectId })
+      const { issues: list } = await listIssues(workspaceId, {
+        project_id: projectId,
+        team_id: teamId || undefined,
+      })
       setIssues(list)
       // 默认展开有子节点的前几层，便于演示 ≥3 层
       const counts = childCountMap(list)
@@ -212,7 +222,7 @@ export default function TimelinePage({ workspaceId, projectId }: TimelinePagePro
     } finally {
       setLoading(false)
     }
-  }, [workspaceId, projectId])
+  }, [workspaceId, projectId, teamId, teamLoading])
 
   useEffect(() => {
     void load()
@@ -708,6 +718,7 @@ export default function TimelinePage({ workspaceId, projectId }: TimelinePagePro
         issue={current}
         workspaceId={workspaceId}
         projectId={projectId}
+        teamId={teamId}
         onClose={() => setDrawerOpen(false)}
         onSaved={(saved) => {
           setIssues((prev) => prev.map((i) => (i.id === saved.id ? saved : i)))

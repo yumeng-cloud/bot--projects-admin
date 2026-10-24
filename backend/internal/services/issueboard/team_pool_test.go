@@ -213,3 +213,43 @@ func TestTeamPool_GetPatchWrongTeam404(t *testing.T) {
 		t.Fatalf("same-team GET: %v", err)
 	}
 }
+
+// TestTeamPool_SearchQScopedToTeam — Search handler wires ListIssuesFilter{Q, TeamID};
+// Q+TeamID must not leak other-team title hits (side-path parity with List).
+func TestTeamPool_SearchQScopedToTeam(t *testing.T) {
+	svc, ws, pid, teamA := setup(t)
+	teamB := insertTeam(t, svc, ws, "B")
+
+	_, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
+		ProjectID: pid, TeamID: teamA, Title: "shared-token-alpha", ActorKind: "human",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = svc.CreateIssue(ws, issueboard.CreateIssueInput{
+		ProjectID: pid, TeamID: teamB, Title: "shared-token-beta", ActorKind: "human",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Unscoped Q (empty TeamID) still sees both — opt-in isolation.
+	all, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{Q: "shared-token"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 2 {
+		t.Fatalf("unscoped search want 2, got %d", len(all))
+	}
+
+	scoped, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{Q: "shared-token", TeamID: teamA})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(scoped) != 1 {
+		t.Fatalf("team-A search want 1, got %d", len(scoped))
+	}
+	if scoped[0].Title != "shared-token-alpha" {
+		t.Fatalf("want alpha, got %q", scoped[0].Title)
+	}
+}
