@@ -31,7 +31,7 @@
 ## 产品勾选
 
 - [x] **C2-1** 多选操作条 · FE `a33651d` · 产品勾（串行 patch；真批量 C2-2 后补）
-- [ ] **C2-2** API（若需）· **缺口**：无 `PATCH …/issues/batch-status`；FE 已串行 `patchIssue`，Issue 域可后补真批量
+- [x] **C2-2** API · Issue `3b8a0d6` · `POST …/issues/batch-status` · 产品勾
 - [x] **C2-3** 箱截 · `pro-c-bulk.png` · FE `a33651d` · 产品勾
 - [ ] **C2-4** QA
 - [ ] **C2-5** 关单
@@ -47,6 +47,7 @@
 
 ## 进度注记
 
+- 2026-10-25 01:17 · **产品勾 C2-2** Issue `3b8a0d6`：batch-status 测绿。FE 可改接真批量（不挡 QA）。等 C2-4。
 - 2026-10-25 01:16 · **产品勾 C2-1/C2-3** FE `a33651d`：多选+操作条（改状态/归档/解档/取消）不挡表头；`pro-c-bulk.png` 目视过。C2-2 串行 PATCH 可过门；Issue 域真批量后补不挡 QA。开/续 C2-4。
 - 2026-10-25 01:20 Asia/Shanghai · React 交 C2-1+C2-3：`IssueListPage` rowSelection + 操作条（改状态/归档 done-only/解档/清空）；`qaBulk=1` 箱截；archive 复用既有 API；改状态串行 PATCH（C2-2 留给 Issue 域）。
 - 2026-10-25 01:06 · **一次拍死**：软债表见 [`SOFT_RULING`](./NEXT_WAVE_DEBT_SOFT_RULING_20261025.md)；React 必须 C2∥SHOT，禁只截图。
