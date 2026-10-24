@@ -122,7 +122,7 @@
 | ID | 标准 | 勾选 |
 |----|------|------|
 | **J1** | 入场码 ≠ UUID ≠ `ymk_`；Admin 可签发/吊销；兑换得正确 workspace+team | [ ] |
-| **J2** | 空 Bot：贴 `ymk_` + 入场码 → 一次 `join` 完成 pull+合法 enter+handoff；箱内自测有记录 | [ ] |
+| **J2** | 空 Bot：贴 `ymk_` + 入场码 → 一次 `join` 完成 pull+合法 enter+handoff；箱内自测有记录 | [x] |
 | **J3** | 活跃席第二路 enter → 409；FE/CLI **无**顶替按钮；新人无空席 → 只加新席 | [ ] |
 | **J4** | 仅停工/离职席可 force/补位；成功留审计 comment | [ ] |
 | **J5** | 重复 join / 重复 pull **幂等**，不清 memory/todos | [ ] |

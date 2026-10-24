@@ -1,0 +1,139 @@
+=== ymbot J2 evidence ===
+time_AsiaShanghai: 2026-10-24 16:12:28 CST
+HEAD: 0685720ff6e91c4986463146b2be82605888bd0c
+WS: ba1481c49148aba9553ba3811406b69f
+TEAM: ea918de1ac4d8116ed69651116a4acb9
+YMBOT: /tmp/ymbot (10711579 2026-10-24 16:11:15.692924538 +0800)
+API_BASE: http://127.0.0.1:8080/api/v1
+
+
+===== J2 main: team join --code ymt_*** --role wiki (no WORKSPACE_ID) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot team join --code ymt_*** --role wiki
+join role=wiki  redeem→team pull→seat enter→handoff get
+enter role=wiki  whoami→handoff get→seat bind
+whoami bot  BotB J2
+handoff role=-  memories=0  todos=0  open_issues=0
+member=BotB J2
+bind ok=true  at=2026-10-24T08:12:28Z  holder=BotB J2
+claim ok=true  at=-  via=bind
+memory_key=wiki:last_focus（席位隔离）
+exit=0
+
+===== J2 after join: whoami =====
++ env YMBOT_API_KEY=ymk_*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f /tmp/ymbot whoami
+bot  BotB J2
+exit=0
+
+===== J2 after join: handoff get =====
++ env YMBOT_API_KEY=ymk_*** /tmp/ymbot handoff get
+role=知识库  memories=0  todos=0  open_issues=0
+member=BotB J2
+exit=0
+
+===== J2 bots/me (workspace from key) =====
+{
+    "actor_kind": "bot",
+    "display_name": "BotB J2",
+    "member_id": "e317fc48c926870ab009ff4aa8287eb0",
+    "role": "bot",
+    "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+}
+
+===== J2 prep: BotA seat enter frontend =====
++ env YMBOT_API_KEY=ymk_*** /tmp/ymbot seat enter --role frontend --team ea918de1ac4d8116ed69651116a4acb9
+enter role=frontend  whoami→handoff get→seat bind
+whoami bot  Grok Bot
+handoff role=-  memories=0  todos=0  open_issues=0
+member=Grok Bot
+bind ok=true  at=2026-10-24T08:12:38Z  holder=Grok Bot
+claim ok=true  at=-  via=bind
+memory_key=frontend:last_focus（席位隔离）
+exit=0
+
+===== J2 forbid force on active: team join --role frontend --force =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot team join --code ymt_*** --role frontend --force
+冲突：席位 frontend 占用中（Grok Bot），禁止顶替；请对方 seat leave 或等停工后再进（HTTP 409）
+exit=13
+
+===== J2 forbid force: seat enter --role frontend --force =====
++ env YMBOT_API_KEY=ymk_*** /tmp/ymbot seat enter --role frontend --team ea918de1ac4d8116ed69651116a4acb9 --force
+冲突：该席位占用中，禁止顶替（占用者：Grok Bot）；禁止瞎抢；活跃席不可 --force 顶替，请对方 seat leave（HTTP 409）
+exit=13
+
+===== J2 idempotent: re-join same seat wiki =====
++ env YMBOT_API_KEY=ymk_*** /tmp/ymbot team join --code ymt_*** --role wiki
+join role=wiki  redeem→team pull→seat enter→handoff get
+skipped_enter=true（已绑本席）
+已绑本席，跳过 enter，直接 handoff get
+handoff role=知识库  memories=0  todos=0  open_issues=0
+member=BotB J2
+exit=0
+
+===== J2 idempotent: handoff get after re-join =====
+role=知识库  memories=0  todos=0  open_issues=0
+member=BotB J2
+exit=0
+
+===== J2 allow_expand: join --role ops-j2a (missing→CreateSeat) =====
++ env YMBOT_API_KEY=ymk_*** /tmp/ymbot team join --code ymt_***allow_expand --role ops-j2a
+join role=ops-j2a  redeem→team pull→seat enter→handoff get
+seat_created=true
+enter role=ops-j2a  whoami→handoff get→seat bind
+whoami bot  BotB J2
+handoff role=知识库  memories=0  todos=0  open_issues=0
+member=BotB J2
+bind ok=true  at=2026-10-24T08:12:59Z  holder=BotB J2
+claim ok=true  at=-  via=bind
+memory_key=ops-j2a:last_focus（席位隔离）
+exit=0
+
+===== J2 no-expand: join --role ghost-seat (must human fail) =====
++ env YMBOT_API_KEY=ymk_*** /tmp/ymbot team join --code ymt_***no_expand --role ghost-seat
+未找到：班底无席位 slug=ghost-seat，且入场码未允许加新席（HTTP 404）
+exit=12
+
+===== J2 allow_expand no-empty: join --new-seat j2-new =====
++ env YMBOT_API_KEY=ymk_*** /tmp/ymbot team join --code ymt_*** --new-seat j2-new
+join role=j2-new  redeem→team pull→seat enter→handoff get
+seat_created=true
+enter role=j2-new  whoami→handoff get→seat bind
+whoami bot  BotB J2
+handoff role=-  memories=0  todos=0  open_issues=0
+member=BotB J2
+bind ok=true  at=2026-10-24T08:12:59Z  holder=BotB J2
+claim ok=true  at=-  via=bind
+memory_key=j2-new:last_focus（席位隔离）
+exit=0
+
+===== J2 no-expand no-empty: join (must wait expand) =====
++ env YMBOT_API_KEY=ymk_*** /tmp/ymbot team join --code ymt_***
+冲突：无空席且入场码未允许加新席（allow_expand_seat=false）；请总指挥扩编或指定 --role 停工席（HTTP 409）
+exit=13
+
+===== J2 optional: join stopped sre --force =====
++ env YMBOT_API_KEY=ymk_*** /tmp/ymbot team join --code ymt_*** --role sre --force
+join role=sre  redeem→team pull→seat enter→handoff get
+enter role=sre  whoami→handoff get→seat bind
+whoami bot  BotB J2
+handoff role=-  memories=0  todos=0  open_issues=0
+member=BotB J2
+bind ok=true  at=2026-10-24T08:12:59Z  holder=BotB J2
+claim ok=true  at=-  via=bind
+memory_key=sre:last_focus（席位隔离）
+exit=0
+
+===== J2 PASS/FAIL summary =====
+HEAD: 0685720ff6e91c4986463146b2be82605888bd0c
+go test ./internal/botclient/ ./cmd/ymbot/: PASS
+contract_diff: none (redeem flat workspace_id/team_id/allow_expand_seat/role_hint; seats slug|role_slug; status open|active|stopped|left)
+J2_main_join_pull_enter_handoff: PASS (exit=0, no YMBOT_WORKSPACE_ID; redeem wrote ws; whoami+handoff ok)
+J2_forbid_force_active_join: PASS (exit=13 HTTP 409 人话禁止顶替)
+J2_forbid_force_active_enter: PASS (exit=13 HTTP 409)
+J2_idempotent_rejoin: PASS (skipped_enter=true + handoff)
+J2_allow_expand_CreateSeat: PASS (seat_created=true ops-j2a)
+J2_allow_expand_new_seat_no_empty: PASS (seat_created=true j2-new)
+J2_no_expand_missing_role: PASS (exit=12 人话未允许加新席)
+J2_no_expand_no_empty: PASS (exit=13 请总指挥扩编)
+J2_optional_stopped_force: PASS (sre --force exit=0)
+RESULT: PASS
+push: docs-only (J2 checkbox + evidence); no botclient/ymbot code change
