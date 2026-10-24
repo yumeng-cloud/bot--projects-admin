@@ -1,5 +1,6 @@
 # 全链路车轮修复（最小可修包）
 
+> **状态：已关** · 2026-10-24 21:25 Asia/Shanghai  
 > 2026-10-24 21:11 Asia/Shanghai · 产品体验  
 > **用户令（总指挥转）：** 登录→WS/队→看板/Issue→归档→Bot席/入场→pins/顶栏换队→超管；扫软债+冒烟缺口，裁最小包定稿即派，免再问。  
 > **不做：** T7-4/5 升版、未分队大入口、跨队搬家大 UI。
@@ -90,18 +91,20 @@
 - [x] **B1** unarchive API · `43eee2c`
 - [x] **B2** FE 解档 · `175399c`（Drawer/PropertyRail「取消归档」；**B4 箱截仍待**）
 - [x] **B3** Relations 剔已归档边 · `43eee2c`（`include_archived=1` 还原）
-- [ ] **B4** 解档箱截
+- [x] **B4** 解档箱截 · `2277e1f` / `wheel-b-unarchive-1-archived.png` + `wheel-b-unarchive-2-restored.png`（YM-31 已归档+取消归档 → 回完成列 Pack 1/6）
 - [x] **C1** 顶栏切队回归 · `be0b8b2` / `wheel-c1-team-a/b.png`（A: YM-20/21 · B: YM-23）
 - [x] **C2** pins 跟队 · `be0b8b2` / `wheel-c2-pins-a/b.png`（A: `qa.pin.iso=from-A`；B: 本队暂无 pin）
 - [x] **C3** Bot 席入场 · `11144b3` / `WHEEL_FIX-C3-seat-enter-20261024.txt` PASS
 - [x] **D1** 用户搜索 · BE `aa1a004` + FE `21bc950`（Input.Search→`?q=`；**D3 箱截仍待**）
 - [x] **D2** 所属 WS · BE `aa1a004` + FE `21bc950`（列 `workspaces[]`；**D3 箱截仍待**）
-- [ ] **D3** 超管箱截
+- [x] **D3** 超管箱截 · `2277e1f` / `wheel-d-users-search.png`（搜 admin + 所属工作区列）
 - [x] **E1** 全链路 smoke txt · `8916e4f` / `WHEEL_FIX-smoke-20261024.txt` PASS=24 FAIL=0
 - [x] **E2** QA 无阻塞 · 同证；软注仅 B4/D3 FE 箱截
-- [ ] **E3** 产品关单
+- [x] **E3** 产品关单 · 2026-10-24 21:25 Asia/Shanghai
 
 ## 进度注记
+
+- 2026-10-24 21:25 · **整单关**：B4/D3 目视 PASS `2277e1f`；E3 勾。
 
 - 2026-10-24 21:20 · 产品目视勾 A1–A3 / B2 / C1–C2 / D1–D2 / E1–E2；**仅余 B4+D3 箱截 → E3 关单**。
 
@@ -113,4 +116,4 @@
 
 ## 关单进度
 
-**差两截关单** · B4 `wheel-b-unarchive-*.png` + D3 `wheel-d-users-search.png` → E3。其余已勾。
+**已关** · 2026-10-24 21:25 Asia/Shanghai · A–E 全勾；证据见上勾选行与 `docs/qa-shots/WHEEL_FIX-smoke-20261024.txt`。
