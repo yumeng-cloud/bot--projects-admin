@@ -302,7 +302,7 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
       {step === 'roster' ? (
         <div>
           <Typography.Paragraph type="secondary" style={{ marginBottom: 10, fontSize: 13 }}>
-            空席可选进入；占用中可点开说明（不能顶替）。无空席时申请新席（码未允许则失败）。
+            空席可选进入；占用中灰显不可选（不能顶替）。无空席时申请新席（码未允许则失败）。
           </Typography.Paragraph>
           {busy && !roster.length ? (
             <div style={{ textAlign: 'center', padding: 24 }}>
@@ -319,14 +319,17 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
                     key={seat.id}
                     type="button"
                     className="acb-bots-seat-card"
-                    disabled={busy && !active}
+                    disabled={active || busy}
+                    tabIndex={active ? -1 : undefined}
+                    aria-disabled={active || busy}
                     aria-label={
                       active
-                        ? `${seatDisplayName(seat)}，占用中，查看说明`
+                        ? `${seatDisplayName(seat)}，占用中，不可选`
                         : `${seatDisplayName(seat)}`
                     }
                     onClick={() => {
-                      if (busy && !active) return
+                      // D3：占用席真正不可进；T3 仅绑定时 409 冲突进专面
+                      if (active || busy) return
                       void onPickSeat(seat)
                     }}
                     style={{
@@ -341,8 +344,9 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
                       background: active
                         ? 'var(--acb-bg-layout, #f5f5f5)'
                         : 'var(--acb-bg-container, #fff)',
-                      opacity: active ? 0.85 : 1,
-                      cursor: 'pointer',
+                      opacity: active ? 0.55 : 1,
+                      cursor: active || busy ? 'not-allowed' : 'pointer',
+                      pointerEvents: active ? 'none' : undefined,
                     }}
                     title={seatDisplayName(seat)}
                   >

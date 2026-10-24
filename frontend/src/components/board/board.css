@@ -500,6 +500,9 @@ html[data-theme='dark'] .acb-col {
   width: 300px;
   max-width: min(300px, 92vw);
   padding: 10px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  max-height: min(560px, 78vh);
 }
 .acb-tpl-panel-head {
   display: flex;
@@ -513,9 +516,12 @@ html[data-theme='dark'] .acb-col {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  /* 首屏容纳默认五列 + Sprint 流，少滚 */
-  max-height: min(480px, 70vh);
+  flex: 1 1 auto;
+  min-height: 0;
+  /* 列表自滚；底部「自定义列/恢复默认」始终可见 */
+  max-height: min(420px, 58vh);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .acb-tpl-item {
   display: flex;
@@ -586,6 +592,8 @@ html[data-theme='dark'] .acb-col {
   margin-top: 8px;
   padding-top: 6px;
   border-top: 1px solid var(--acb-border-secondary);
+  flex-shrink: 0;
+  background: var(--acb-bg-container, #fff);
 }
 .acb-tpl-custom-list {
   display: flex;

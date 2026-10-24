@@ -140,25 +140,28 @@ export default function BotsRosterPage() {
 
   const openSeat = (role: BotRole) => setDrawerRole(role)
 
-  /** 角色卡占用：claim 或团队席位 active 任一即占用（与向导「占用中」对齐） */
+  /** D5：与向导同源读 team_seats.status（active/empty/left）；无席时再回落 claim */
   const seatOccForRole = (role: BotRole) => {
     const claimMid = role.claim?.member_id || null
     const seat =
       teamSeats.find((s) => s.bot_role_id && s.bot_role_id === role.id) ||
       teamSeats.find((s) => s.role_slug && s.role_slug === role.slug)
-    const occ = seat ? seatOccupancy(seat) : null
-    const occupied = Boolean(claimMid) || occ === 'active'
+    const occ: 'active' | 'empty' | 'left' | null = seat ? seatOccupancy(seat) : null
+    let kind: 'active' | 'empty' | 'left'
+    if (occ) kind = occ
+    else kind = claimMid ? 'active' : 'empty'
     const occupantId =
-      claimMid ||
-      seat?.bound_member_id ||
-      seat?.member_id ||
-      seat?.claim?.member_id ||
-      null
+      (kind === 'active'
+        ? claimMid ||
+          seat?.bound_member_id ||
+          seat?.member_id ||
+          seat?.claim?.member_id
+        : null) || null
     const occupantLabel =
       (occupantId ? botName(occupantId) : null) ||
-      seat?.bound_display_name ||
+      (kind === 'active' ? seat?.bound_display_name : null) ||
       null
-    return { occupied, occupantId, occupantLabel, seat }
+    return { kind, occupied: kind === 'active', occupantId, occupantLabel, seat }
   }
 
 
@@ -380,6 +383,7 @@ export default function BotsRosterPage() {
             const bound = occ.occupantLabel || botName(mid)
             const hint = keyHintForMember(mid)
             const busy = occ.occupied
+            const left = occ.kind === 'left'
             const name = roleDisplay(role)
             return (
               <Card
@@ -400,8 +404,11 @@ export default function BotsRosterPage() {
                   >
                     {name}
                   </Typography.Text>
-                  <Tag color={busy ? 'blue' : 'default'} style={{ margin: 0, flexShrink: 0 }}>
-                    {busy ? '占用中' : '空闲'}
+                  <Tag
+                    color={busy ? 'blue' : left ? 'orange' : 'default'}
+                    style={{ margin: 0, flexShrink: 0 }}
+                  >
+                    {busy ? '占用中' : left ? '可补位' : '空闲'}
                   </Tag>
                   {hint ? (
                     <Typography.Text type="secondary" style={{ fontSize: 12, flexShrink: 0 }}>
@@ -420,6 +427,8 @@ export default function BotsRosterPage() {
                         </Typography.Text>
                       ) : null}
                     </span>
+                  ) : left ? (
+                    <Typography.Text type="secondary">停工席 · 可补位</Typography.Text>
                   ) : (
                     <Typography.Text type="secondary">等待绑定</Typography.Text>
                   )}
