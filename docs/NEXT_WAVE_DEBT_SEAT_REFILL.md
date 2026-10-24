@@ -48,6 +48,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:54 · **整包已关**；下一刀 [`NEXT_WAVE_DEBT_SEAT_REFILL_BIND.md`](./NEXT_WAVE_DEBT_SEAT_REFILL_BIND.md)（显式补位码可绑停工席）。
 - 2026-10-25 00:53 · **R4 PASS† → R5 关单** QA `7e2c81a`：可补位入口/文案/不打架/箱截对读 OK。整包 **SEAT_REFILL 关**。仍冻 PRO_ADMIN C2–D/E2/G。
 - 2026-10-25 00:51 · **产品勾 R1–R3** FE `d7e0396`：可补位「复制补位入场码」+ Toast 末四；补位≠扩编；与停工/离职不打架。等 QA R4。
 - 2026-10-25 00:51 · **React 交 R1–R3** FE `d7e0396`：可补位席卡「复制补位入场码」+ 指派；Toast/短说明写补位禁扩编/ymk_；占用中仍停工/离职；箱截 seat-refill-{before,after}.png；`tsc --noEmit` PASS。等 QA R4 → 产品 R5。PRO_ADMIN C2–D/E2/G 仍冻。
