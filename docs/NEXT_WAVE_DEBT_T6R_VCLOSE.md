@@ -1,0 +1,40 @@
+# 下一小包 · 不定整开 T6/T7 · 两刀立刻干
+
+> 2026-10-24 18:03 Asia/Shanghai · 产品体验  
+> **裁定**：不立刻整开 T6（pins+Issue 池按队）/ T7（模板向导=P1）。Issue 现按 project/ws，无 `team_id`；FE 无团队切换器；pins 需新表——整包会闲置半员。
+
+## 为什么不整开
+
+| 项 | 期 | 阻塞 |
+| --- | --- | --- |
+| **T6 全文** | P0.5 | pins 新 API + Issue 池隔离设计未落地 |
+| **T7** | P1 | 模板向导+升版 diff，非本波演示刀 |
+
+## 本包两刀（立刻）
+
+### 刀 A · V-CLOSE 空海记债复验关单
+
+| ID | 标准 | 谁 |
+| --- | --- | --- |
+| **V1** | 箱 5174 重截 Cycles / 工作区 Home / 设置成员：短列表**无**下半屏空罐 | **React**（`87351a9` 已合） |
+| **V2** | 视觉总监或产品目视；勾清 [`CYCLES_WS_VISUAL_DEBT.md`](./qa-shots/CYCLES_WS_VISUAL_DEBT.md)（现仍写「非放行」过时） | **产品** + **UI视觉/总监** 可辅 |
+| **V3** | C-V3「Cycles」中文「周期」若未齐则顺手热修 | **React** |
+
+### 刀 B · T6-R 双队 roster 隔离箱验（T6 最小切片）
+
+| ID | 标准 | 谁 |
+| --- | --- | --- |
+| **R1** | 同 WS 两 `team_id`：`team pull` A/B roster **席位组不同或不串 claim** | **Bot 记忆**（主）· **Go** 缺则补 seed/ensure |
+| **R2** | 证据 `docs/qa-shots/T6R-roster-isolate-*.txt`；**不做** pins、**不改** Issue List 按 team | 同上 |
+| **R3** | 产品勾本文件；`BOT_TEAM_SEAT` T6 **不**整勾，只注「T6-R 切片 PASS」 | **产品** |
+
+## 明确不做
+
+- `team_pins` / 共享记忆墙  
+- Issue 列表按 `team_id` 过滤大改  
+- 从模板创建团队向导（T7）
+
+## 产品勾选
+
+- [ ] 刀 A V-CLOSE  
+- [ ] 刀 B T6-R  

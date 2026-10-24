@@ -28,4 +28,5 @@
 
 ## 结论
 
-**记债 · 交 React**（C-V1/V2/V3 · W-V1 · ST-V1）。非放行。
+**记债 · 交 React**（C-V1/V2/V3 · W-V1 · ST-V1）。  
+> **2026-10-24 18:03**：`87351a9` 短列表勿空 stretch 已合、总监曾放行；本文件结论过时 → 见 [`NEXT_WAVE_DEBT_T6R_VCLOSE.md`](../NEXT_WAVE_DEBT_T6R_VCLOSE.md) **刀 A** 复验关单。
