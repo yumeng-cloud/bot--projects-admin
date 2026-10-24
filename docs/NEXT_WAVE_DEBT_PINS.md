@@ -50,7 +50,10 @@
   - 证据 [`qa-shots/pins-team-isolate-20261024.txt`](./qa-shots/pins-team-isolate-20261024.txt) · `1a38ce4` + API `6915db4`
   - unit `TestPinsTeamIsolate` / `TestPinsDoNotClobberBotMemories` 产品抽跑 ok
   - 双队 GET 不串；跨队 PUT/DELETE → 404；同名 key 与 bot_memories 分表不串
-- [ ] **P4** QA 苛刻复测（记忆已交证据；等 QA）
+- [x] **P4** QA 苛刻复测 PASS · 2026-10-24 19:04 Asia/Shanghai
+  - [`qa-shots/pins-qa-retest-20261024.txt`](./qa-shots/pins-qa-retest-20261024.txt) Overall PASS
+  - FE 墙 [`pins-fe-qa-teamA-wall.png`](./qa-shots/pins-fe-qa-teamA-wall.png) / [`pins-fe-qa-teamB-wall.png`](./qa-shots/pins-fe-qa-teamB-wall.png)
+  - 产品目视：A 仅 A 键；B 仅 `qa.fe.wall.B`；无跨队残留
 - [x] **P5** FE 最小记忆墙 · 2026-10-24 19:03 Asia/Shanghai
   - FE `4459d01` + 热修 `8c2097a` · 箱截 `54d5527`
   - [`pins-p5-list.png`](./qa-shots/pins-p5-list.png) / [`pins-p5-upsert.png`](./qa-shots/pins-p5-upsert.png) / [`pins-p5-switch-team.png`](./qa-shots/pins-p5-switch-team.png)
@@ -59,4 +62,4 @@
 
 ## 关单
 
-半单+：P1–P3 + **P5** 已勾。整单仍待 **P4** QA 苛刻正式交件。`BOT_TEAM_SEAT_P0` T6 注「pins API+FE PASS；Issue 池仍余」。
+**整单关**：P1–P5 全勾 · 2026-10-24 19:04 Asia/Shanghai。`BOT_TEAM_SEAT_P0` T6：**pins PASS**；Issue 池按队另开 [`NEXT_WAVE_DEBT_T6I.md`](./NEXT_WAVE_DEBT_T6I.md)。

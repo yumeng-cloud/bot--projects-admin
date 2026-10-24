@@ -1,0 +1,67 @@
+=== pins QA retest (harsh independent) · P1–P3 API ===
+time_AsiaShanghai: 2026-10-24 19:01:06 Asia/Shanghai
+result: Overall=PASS  P1=PASS P2=PASS P3=PASS P5=PASS
+HEAD: 8c2097a45591487583d7bd6c793b7a4b34ab82b7
+HEAD_oneline: 8c2097a fix(fe): guard TeamPinsPanel load against team switch race (P5)
+6915db4_ancestor: yes
+binary: /tmp/ai-board-server-live (running :8080); /tmp/ai-board-server present
+YMBOT: /tmp/ymbot
+API: http://127.0.0.1:8080
+WS: ba1481c49148aba9553ba3811406b69f
+
+## Fresh teams
+TEAMA: 5fb359bc7f0251d9cd3d9ab55bdb624f  name=QA-PIN-A-20261024190029
+TEAMB: e1354fa81e28f6386bef58228eac0e42  name=QA-PIN-B-20261024190029
+create: both HTTP 201
+roster/ensure: both HTTP 200 seats=5
+KEYA: Grok Bot (ymk_***REDACTED*** from /tmp/ymbot_t2_key1.txt) member=094acad4a3f0aaef2ee6370e790912b4
+KEYB: BotB J2 (ymk_***REDACTED*** from /tmp/ymbot_j2_botb_api_key.txt) member=e317fc48c926870ab009ff4aa8287eb0
+seat enter: KEYA --role frontend --team TEAMA --force → bind ok
+seat enter: KEYB --role frontend --team TEAMB --force → bind ok
+
+## P1 team isolation — PASS
+KEYA PUT /workspaces/{WS}/teams/{TEAMA}/pins body {"key":"qa.pin.iso","value":"from-A"}
+  → HTTP 200 pin key=qa.pin.iso value=from-A team_id=5fb359bc7f0251d9cd3d9ab55bdb624f
+KEYA GET …/teams/{TEAMA}/pins
+  → HTTP 200 pins=[{qa.pin.iso:from-A}] (count=1)
+KEYB GET …/teams/{TEAMB}/pins
+  → HTTP 200 pins=[] (no qa.pin.iso) CLEAN
+
+## P2 cross-team deny — PASS
+KEYB PUT …/teams/{TEAMA}/pins {"key":"qa.pin.iso","value":"hijack-from-B"}
+  → HTTP 404 code=not_found message=团队不存在或无权访问
+KEYB PUT …/teams/{TEAMA}/pins/qa.pin.iso {"value":"hijack-path"}
+  → HTTP 404 code=not_found message=团队不存在或无权访问
+KEYB DELETE …/teams/{TEAMA}/pins/qa.pin.iso
+  → HTTP 404 code=not_found message=团队不存在或无权访问
+KEYA GET …/teams/{TEAMA}/pins
+  → HTTP 200 still qa.pin.iso=from-A
+
+## P3 pin vs bot_memories separate — PASS
+KEYA POST …/bots/{MEM_A}/memories {"key_name":"qa.pin.iso","value_text":"private-mem-from-A"}
+  → HTTP 201 memory id=2609bc48… key_name=qa.pin.iso value_text=private-mem-from-A
+ymbot memory set --key qa.pin.iso --value private-mem-from-A → ok (same value)
+KEYA GET …/teams/{TEAMA}/pins
+  → HTTP 200 pin still value=from-A (unchanged; distinct id from memory)
+KEYA GET …/bots/{MEM_A}/memories?q=qa.pin.iso
+  → HTTP 200 memories=[{qa.pin.iso:private-mem-from-A}] separate from pin
+
+## Unit
+cd backend && env -u DATABASE_URL go test ./internal/services/botmem/ -count=1 -run 'Pin'
+ok  	github.com/yumeng-tech/ai-collab-board/backend/internal/services/botmem	0.097s
+(covers TestPinsTeamIsolate + TestPinsDoNotClobberBotMemories)
+
+## Scope note
+API P1–P3 only; FE P5 / Issue pool / T7 out of scope.
+Keys redacted (ymk_***REDACTED***). Admin JWT used for team create only.
+
+## Overall
+RESULT: PASS
+P1=PASS P2=PASS P3=PASS P5=PASS
+
+## P5 FE
+P5=PASS residue=false. Bot 席位「记忆墙」on :5174, admin session. Teams: T6R-TeamA vs T6R-TeamB.
+A (after return): decision=adopt-B, qa.fe.wall.A=only-team-A, smoke-cli=channel-ok-190150 (A-side write while UI was on B; not a B key).
+B first paint: 「本队暂无 pin」. After upsert: only qa.fe.wall.B=only-team-B. No decision, qa.fe.wall.A, smoke-cli, or ui-joint-a (that key was on 加速班底 and left with that team).
+Switch A→B→A→B reloaded the list each time; cross-team residue false. Copy ok: 本队共享，非席位私有记忆 / 已保存. No raw ids, no crash.
+shots: docs/qa-shots/pins-fe-qa-teamA-wall.png, docs/qa-shots/pins-fe-qa-teamB-wall.png
