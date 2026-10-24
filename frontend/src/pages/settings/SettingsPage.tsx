@@ -19,7 +19,9 @@ import {
   Divider,
 } from 'antd'
 import { CopyOutlined, PlusOutlined } from '@ant-design/icons'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
+import SettingsProjectsPanel from './SettingsProjectsPanel'
+import SettingsTeamsPanel from './SettingsTeamsPanel'
 import { api, ApiError } from '../../api/client'
 import { getWorkspace, listMyWorkspaces, patchWorkspace, slugifyName } from '../../api/workspaces'
 import {
@@ -67,6 +69,17 @@ function expiresPresetToRfc3339(preset: string): string | undefined {
 
 export default function SettingsPage() {
   const { wsId = '' } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab') || 'workspace'
+  const activeTab =
+    tabParam === 'projects' ||
+    tabParam === 'teams' ||
+    tabParam === 'members' ||
+    tabParam === 'labels' ||
+    tabParam === 'integrations' ||
+    tabParam === 'workspace'
+      ? tabParam
+      : 'workspace'
   const [loading, setLoading] = useState(true)
   const [members, setMembers] = useState<Member[]>([])
   const [labels, setLabels] = useState<Label[]>([])
@@ -532,7 +545,7 @@ export default function SettingsPage() {
             设置
           </Typography.Title>
           <Typography.Text type="secondary" className="acb-page-sub">
-            工作区 · 成员 · 标签 · 接入
+            工作区 · 项目 · 团队 · 成员 · 标签 · 接入
             {myRole ? ` · 当前角色 ${roleLabel(myRole)}` : ''}
           </Typography.Text>
         </div>
@@ -544,6 +557,13 @@ export default function SettingsPage() {
       )}
       <div className="acb-surface-panel acb-settings-panel">
         <Tabs
+          activeKey={activeTab}
+          onChange={(key) => {
+            const next = new URLSearchParams(searchParams)
+            if (key === 'workspace') next.delete('tab')
+            else next.set('tab', key)
+            setSearchParams(next, { replace: true })
+          }}
           items={[
             {
               key: 'workspace',
@@ -607,6 +627,16 @@ export default function SettingsPage() {
                   )}
                 </>
               ),
+            },
+            {
+              key: 'projects',
+              label: '项目',
+              children: <SettingsProjectsPanel workspaceId={wsId} isAdmin={isAdmin} />,
+            },
+            {
+              key: 'teams',
+              label: '团队',
+              children: <SettingsTeamsPanel workspaceId={wsId} />,
             },
             {
               key: 'members',

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { Layout, Menu, Typography, Button, Space, Spin, Select, theme } from 'antd'
+import { Layout, Menu, Typography, Button, Space, Spin, theme } from 'antd'
 import {
   DashboardOutlined,
   UnorderedListOutlined,
@@ -20,6 +20,7 @@ import { listProjects, type Project } from '../api/projects'
 import type { User } from '../api/auth'
 import { THEME_MODE_STORAGE_KEY, resolveThemeMode, type ThemeMode } from '../theme'
 import { TeamPoolSelect } from '../components/common/TeamPoolSelect'
+import { ProjectPoolSelect } from '../components/common/ProjectPoolSelect'
 import { CurrentTeamProvider, useCurrentTeam } from '../hooks/useCurrentTeam'
 
 const { Header, Sider, Content } = Layout
@@ -53,6 +54,22 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
   const [projectId, setProjectId] = useState<string | undefined>(routeProjectId)
   const [loading, setLoading] = useState(true)
 
+  const reloadProjects = async (preferId?: string) => {
+    if (!wsId) return [] as Project[]
+    const projRes = await listProjects(wsId).catch(() => ({ projects: [] as Project[] }))
+    const list = projRes.projects || []
+    setProjects(list)
+    const want = preferId || routeProjectId
+    if (want && list.some((p) => p.id === want)) {
+      setProjectId(want)
+    } else if (list.length) {
+      setProjectId(list[0].id)
+    } else {
+      setProjectId(undefined)
+    }
+    return list
+  }
+
   useEffect(() => {
     if (!wsId) return
     localStorage.setItem('workspaceId', wsId)
@@ -63,12 +80,35 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
           listProjects(wsId).catch(() => ({ projects: [] as Project[] })),
         ])
         setWs(wsRes.workspaces.find((w) => w.id === wsId) || null)
-        setProjects(projRes.projects || [])
-        setProjectId(routeProjectId || projRes.projects?.[0]?.id)
+        const list = projRes.projects || []
+        setProjects(list)
+        // B3: 路由项目不在未归档池 → 切到首个未归档；无则清空（空态 B1）
+        if (routeProjectId && list.some((p) => p.id === routeProjectId)) {
+          setProjectId(routeProjectId)
+        } else if (list.length) {
+          setProjectId(list[0].id)
+          if (routeProjectId && !list.some((p) => p.id === routeProjectId)) {
+            const tab =
+              loc.pathname.includes('/issues') || loc.pathname.includes('/list')
+                ? 'issues'
+                : loc.pathname.includes('/cycles')
+                  ? 'cycles'
+                  : loc.pathname.includes('/timeline')
+                    ? 'timeline'
+                    : 'board'
+            nav(`/w/${wsId}/projects/${list[0].id}/${tab}`, { replace: true })
+          }
+        } else {
+          setProjectId(undefined)
+          if (routeProjectId) {
+            nav(`/w/${wsId}/board`, { replace: true })
+          }
+        }
       } finally {
         setLoading(false)
       }
     })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to ws/route project
   }, [wsId, routeProjectId])
 
   const selected = useMemo(() => {
@@ -92,6 +132,15 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
     document.documentElement.style.colorScheme = next
     location.reload()
   }
+
+  const tabFromSelected = () =>
+    selected[0] === 'list'
+      ? 'issues'
+      : selected[0] === 'cycles'
+        ? 'cycles'
+        : selected[0] === 'timeline'
+          ? 'timeline'
+          : 'board'
 
   if (loading) {
     return (
@@ -171,24 +220,32 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
           }}
         >
           <Space className="acb-header-context" size={10} align="center">
-            <Select
-              size="small"
-              variant="borderless"
-              style={{ minWidth: 160 }}
-              placeholder="项目"
-              value={projectId}
-              options={projects.map((p) => ({ value: p.id, label: `${p.key_prefix} · ${p.name}` }))}
-              onChange={(id) => {
+            <ProjectPoolSelect
+              workspaceId={wsId || ''}
+              projects={projects}
+              projectId={projectId}
+              onSelect={(id) => {
                 setProjectId(id)
-                const tab =
-                  selected[0] === 'list'
-                    ? 'issues'
-                    : selected[0] === 'cycles'
-                      ? 'cycles'
-                      : selected[0] === 'timeline'
-                        ? 'timeline'
-                        : 'board'
-                nav(`/w/${wsId}/projects/${id}/${tab}`)
+                try {
+                  localStorage.setItem('ai-collab-board:projectId', id)
+                } catch {
+                  /* ignore */
+                }
+                nav(`/w/${wsId}/projects/${id}/${tabFromSelected()}`)
+              }}
+              onCreated={(project) => {
+                setProjects((prev) => {
+                  if (prev.some((p) => p.id === project.id)) return prev
+                  return [project, ...prev]
+                })
+                setProjectId(project.id)
+                try {
+                  localStorage.setItem('ai-collab-board:projectId', project.id)
+                } catch {
+                  /* ignore */
+                }
+                nav(`/w/${wsId}/projects/${project.id}/board`)
+                void reloadProjects(project.id)
               }}
             />
             <AppHeaderTeam />
