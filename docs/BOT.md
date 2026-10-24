@@ -1,6 +1,6 @@
 # Bot 连续性（记忆 / 角色 / Handoff）
 
-> **已有** API Key/`ymk_` + Bot REST；**本次补** `ymbot` CLI+MCP（[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md)）。记忆向量/语义召回：见 [`embed.md`](./embed.md)（upsert 写 `bot_memory` 向量；`GET …/memories?q=&mode=hybrid|semantic|keyword`）。
+> Bot 领席位入场包（`ymt_`）→ **入场时自动得**身份（`ymk_`）→ CLI/MCP 开干。REST / 记忆 / handoff 见下文；通道规格 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md)；向量召回 [`embed.md`](./embed.md)。
 
 ## 职责
 
@@ -13,6 +13,16 @@
 - **Handoff**：只读续工包（无独立表），组装 memories + 未完成 todos + 指派中的开放 Issues
 
 Bot **不得**将 Issue 自动流转到 `done`（需人类确认）。
+
+### 入场与三前缀（H4）
+
+| 前缀 | 含义 |
+|------|------|
+| `ymt_` | 队席入场码（人从建队入场包复制） |
+| `ymk_` | Bot 身份钥匙（join/redeem **无钥时自动签发**，当次回入队方） |
+| `ymw_` | 人类工作区邀请（与 Bot 分轨；见 [`API.md`](./API.md)） |
+
+主路径：`ymbot team join --code ymt_…`（或通道等价）→ 响应里的 `ymk_` 写入 `YMBOT_API_KEY` → `whoami` / `handoff get`。设置里 Admin 单把签 `ymk_` 是旁路，不是建队主路径。公开 `/join` 只是说明页，redeem/得钥在成功响应。
 
 ### 排期叶子领取（与角色认领区分）
 
@@ -133,6 +143,8 @@ API client：`frontend/src/api/bots.ts`（snake_case）。
 
 ```bash
 export YMBOT_API_URL=http://127.0.0.1:8080
+# 空手：先 join 拿自动签发的 ymk_；续队/换机：导出已有钥匙
+# go run ./cmd/ymbot team join --code ymt_*** --role frontend
 export YMBOT_API_KEY=ymk_***
 export YMBOT_WORKSPACE_ID=<ws>
 # 可选：YMBOT_MEMBER_ID（缺省 GET …/bots/me）
@@ -154,12 +166,12 @@ go run ./cmd/ymbot mcp-serve   # Cursor stdio MCP；tools: board_*；full/ids �
 通道 DX（省 token / 少 UUID）：[`BOT_CHANNEL_DX_P0.md`](./BOT_CHANNEL_DX_P0.md)。默认无 32 位 hex；`--id` 附加裸 id；`--full` 接近 REST。Issue 可读名：优先嵌套 `assignee.display_name`，否则 `members` 映射 `assignee_id`；入参 `YM-n`→id 由通道解析。
 
 共享客户端：`internal/botclient`（Bearer；Idempotency-Key：CLI/MCP 参数 → env → 自动 UUID；一行中文错误含吊销/无效；Bot 禁 `status=done`）。
-鉴权主路径：**API Key only**（不主推密码 login）。
+干活鉴权：入场后的 **`ymk_`**（Bearer）；人用浏览器 JWT。设置里单把签钥是旁路。
 
 ## 边界
 
-- 不新建 handoff 表；不改 `schema.sql` 已有 bot_* 列
-- 不负责 Issue 状态机 / 看板 UI / API Key CRUD
+- Handoff 无独立表；由 service 组装
+- Issue 状态机 / 看板 UI 在其它域；Admin 单把 `ymk_` CRUD 在设置旁路
 - Bot 禁止自动 `done` Issue
 - claim 冲突返回 `conflict`；记忆按 key upsert
 
@@ -169,7 +181,8 @@ go run ./cmd/ymbot mcp-serve   # Cursor stdio MCP；tools: board_*；full/ids �
 - 续命短原则：[`BOT_CONTINUITY_P0.md`](./BOT_CONTINUITY_P0.md)
 - 续命验收 H1–H5：[`BOT_HANDOFF_CONTINUITY_P0.md`](./BOT_HANDOFF_CONTINUITY_P0.md)
 
+- 人用入场锚点：[`NEXT_WAVE_DEBT_HUMAN_ONBOARD.md`](./NEXT_WAVE_DEBT_HUMAN_ONBOARD.md) §H4
 - 班底席位 / 入场码：[`BOT_TEAM_SEAT_P0.md`](./BOT_TEAM_SEAT_P0.md) · [`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md)（`seat.status`=`open|active|stopped|left`；`GET/POST …/teams/{id}/invites`）
-- **T7-3 执行源（已落地 `d9e5a3c`）**：席位作业手册 = `playbook_ref`；roster / bind / handoff 回包含该字段；空或非法 → **400** 中文；升版 T7-4/5 仍后置。开工单 [`NEXT_WAVE_DEBT_T73.md`](./NEXT_WAVE_DEBT_T73.md)（通道 MCP 人话投影待记忆席，勿当已齐）
+- **T7-3 执行源（已落地 `d9e5a3c`）**：席位作业手册 = `playbook_ref`；roster / bind / handoff 回包含该字段；空或非法 → **400** 中文；升版 T7-4/5 仍后置。开工单 [`NEXT_WAVE_DEBT_T73.md`](./NEXT_WAVE_DEBT_T73.md)（通道 MCP 人话投影见记忆席进度）
 - **Issue 归档（实现待 SHA）**：`POST …/issues/archive`；`issue list` 默认无已归档；`include_archived` / `archived=only`（债 [`NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md`](./NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md)）
 

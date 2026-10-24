@@ -24,17 +24,17 @@
 
 看板 / 列表 / 周期 / 排期 / Wiki / 工时——深色疏朗、属性进轨、详情居中留白。Issue 抽屉按 Linear 习惯打磨：即时改属性、空态不吵、活动可折。时区默认 **Asia/Shanghai**。
 
-### 席位制 Bot：认席，不认裸 Key
+### 席位制 Bot：人发入场包，Bot 入场得身份
 
-设置里是**角色席位**（前端 / PM / QA / 后端 / 知识库…），不是一串冷冰冰的 Key 列表。
+设置里是**角色席位**（前端 / PM / QA / 后端 / 知识库…）。人在浏览器建队后复制全班入场包（`ymt_`）；Bot 持码 join，**入场时自动获得**身份钥匙（`ymk_`），再按席开干。
 
-- **入场码**进班底；占用席单活，二绑默认 **409**，禁止互顶。
+- 占用席单活，二绑默认 **409**，禁止互顶。
 - **补位 / 扩工**不偷别人的 in-progress；仅停工/离职席可 force，并留人话审计。
-- **换机续工**：绑回同一席 → `handoff get` 续 focus / Todo / 开放 Issue；export/import 只是救场备份。
+- **换机续工**：持原 `ymk_` → `handoff get` 续 focus / Todo / 开放 Issue；export/import 只是救场备份。
 
 ### 模板一键空席 + 手册挂载
 
-选内置班底模板 → 本工作区新建团队 + N 个**空席**（slug / 显示名 / `playbook_ref`），发码入场、按席开工。同模板开第二队：形状一样，记忆与 pins **不串队**。通道侧以席位 `playbook_ref` 为唯一手册入口——路径一眼可读，空/非法 ref 给人话错误。
+选内置班底模板 → 本工作区新建团队 + N 个**空席**（slug / 显示名 / `playbook_ref`）→ **复制全班入场包**（`ymt_` + role）发给各 Agent。同模板开第二队：形状一样，记忆与 pins **不串队**。通道侧以席位 `playbook_ref` 为手册入口。
 
 ### 团队隔离：池子、席位、pins
 
@@ -66,7 +66,7 @@ Bot 不靠刷屏。`ymbot`（及 MCP）默认**人话短输出**：席位、交�
 
 ## Quick Start
 
-**开通主路径（生产）**：**注册 → 登录 → 创建工作空间**（`POST /api/v1/workspaces`；创建者成为该空间 admin）。无需依赖 seed。
+**人用主航线**：**注册 → 登录 → 创建工作空间** → 浏览器用看板；需要班底时从模板建队并复制入场包（`ymt_`）。演示 seed 可选，不是唯一开工法。
 
 ```bash
 git clone https://github.com/yumeng-cloud/bot--projects-admin.git
@@ -85,6 +85,18 @@ make dev                 # API :8080 + Vite UI :5173
 | API | http://127.0.0.1:8080 |
 | Health | `GET /healthz` |
 
+### 三前缀（别混）
+
+| 前缀 | 给谁 | 干什么 |
+|------|------|--------|
+| `ymt_` | Bot 入场 | 队席入场码（人复制入场包发出去） |
+| `ymk_` | Bot 身份 | 入场成功后自动签发；之后 CLI/MCP 带这把钥匙 |
+| `ymw_` | 人类 | 工作区邀请链（与 Bot 入场分轨） |
+
+**Bot 主路径**：领 `ymt_` → join → **自动得** `ymk_` → 开干。设置里单把签 `ymk_` 是救场/高级旁路，不是建队主路径。
+
+公开 `/join?code=ymt_…` 是落地说明页（安装 CLI、复制提示词）；真正 redeem / 拿到 `ymk_` 在 CLI、通道或向导的**成功响应**里。
+
 ### 本地演示捷径（可选 seed）
 
 想跳过注册、直接进样例数据时：`make seed`（带 `SEED_SAMPLE_DATA=1`），或启动前同时设 `AUTO_SEED=1` + `SEED_SAMPLE_DATA=1`；仅 `AUTO_SEED` 只建结构不灌演示。生产保持二者关闭。
@@ -95,7 +107,7 @@ make dev                 # API :8080 + Vite UI :5173
 | 密码 | `Admin123!` |
 | 工作空间 | 育蒙科技（slug: `yumeng`） |
 
-⚠️ **告警**：生产永不默认灌演示数据。务必 `AUTO_SEED=0` 且勿开 `SEED_SAMPLE_DATA`；另设 `PLATFORM_ADMIN_EMAILS`、换强密码、切 Postgres（见 [`.env.example`](./.env.example)）。
+生产部署：`AUTO_SEED=0`、不开 `SEED_SAMPLE_DATA`；设 `PLATFORM_ADMIN_EMAILS`、换强密码、切 Postgres（见 [`.env.example`](./.env.example)）。
 
 ### 数据库
 
@@ -124,7 +136,7 @@ make test                # backend go test + frontend pnpm build
                                     SQLite（开发）或 Postgres+pgvector
 ```
 
-人走浏览器；Bot 走 Key（`ymk_`）+ CLI/MCP。席位与 `playbook_ref` 把「谁在干、按哪本手册干」钉死在服务端。
+人走浏览器建仓/建队并发 `ymt_`；Bot 持码入场自动得 `ymk_`，再用 CLI/MCP。席位与 `playbook_ref` 钉在服务端。
 
 ---
 

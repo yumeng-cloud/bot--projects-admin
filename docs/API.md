@@ -149,7 +149,7 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 
 ## Teams / Seats / Invites（Bot 班底）
 
-鉴权同工作区：`AuthJWTOrAPIKey` + 成员；签发/列表入场码需 **Admin**。
+鉴权同工作区：`AuthJWTOrAPIKey` + 成员；签发/列表入场码需 **Admin**。人用主路径：建队 → 复制全班 `ymt_` 入场包；Bot 持码 join 时自动得 `ymk_`（设置单把签钥为旁路）。`ymw_` 人类邀请见上「Workspace invites」。
 
 | Method | Path | 说明 |
 |--------|------|------|
@@ -168,7 +168,7 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 
 | Method | Path | 说明 |
 |--------|------|------|
-| GET | `/join?code=ymt_…&role={slug}&seat={id?}&api={override?}` | 轻页：校验 code；展示**一键安装** / 复制提示词 / 看板深链 / `ymbot team join`。**不**调用 redeem、不另造 claim |
+| GET | `/join?code=ymt_…&role={slug}&seat={id?}&api={override?}` | 落地说明页：校验 code；展示安装 CLI / 提示词 / 深链 / `ymbot team join`。redeem 与自动签发 `ymk_` 在 CLI/通道/向导**成功响应**，本页不代完成入场 |
 | GET | `/install.sh` | 一键装 `ymbot` CLI（text/plain）；生产 `https://bot.api.sn.cn/install.sh`。备：仓库 raw `scripts/install-ymbot.sh` |
 
 - 规范链接：`https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}`（生产默认；自托管改 `PUBLIC_API_BASE`）
