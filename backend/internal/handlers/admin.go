@@ -27,12 +27,19 @@ type adminWorkspaceDTO struct {
 	CreatedAt   string  `json:"created_at"`
 }
 
+type adminUserWorkspaceRef struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
 type adminUserDTO struct {
-	ID              string `json:"id"`
-	Email           string `json:"email"`
-	Name            string `json:"name"`
-	IsPlatformAdmin bool   `json:"is_platform_admin"`
-	CreatedAt       string `json:"created_at"`
+	ID              string                  `json:"id"`
+	Email           string                  `json:"email"`
+	Name            string                  `json:"name"`
+	IsPlatformAdmin bool                    `json:"is_platform_admin"`
+	CreatedAt       string                  `json:"created_at"`
+	Workspaces      []adminUserWorkspaceRef `json:"workspaces"`
 }
 
 func (h *AdminHandler) writeAudit(actorUserID, action, targetType, targetID string, payload any) {
@@ -215,7 +222,8 @@ func (h *AdminHandler) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ListUsers GET /api/v1/admin/users
+// ListUsers GET /api/v1/admin/users — optional ?q= filters email/name (case-insensitive).
+// Each user includes workspaces:[{id,name,slug}] from members.
 func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	var rows *sql.Rows
@@ -242,9 +250,53 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		it.IsPlatformAdmin = flag == 1
+		it.Workspaces = []adminUserWorkspaceRef{}
 		list = append(list, it)
 	}
+	if err := h.attachUserWorkspaces(list); err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
 	middleware.JSON(w, http.StatusOK, map[string]any{"users": list})
+}
+
+func (h *AdminHandler) attachUserWorkspaces(list []adminUserDTO) error {
+	if len(list) == 0 {
+		return nil
+	}
+	byID := make(map[string]int, len(list))
+	args := make([]any, 0, len(list))
+	ph := make([]string, 0, len(list))
+	for i := range list {
+		byID[list[i].ID] = i
+		args = append(args, list[i].ID)
+		ph = append(ph, "?")
+		if list[i].Workspaces == nil {
+			list[i].Workspaces = []adminUserWorkspaceRef{}
+		}
+	}
+	query := `SELECT m.user_id, w.id, w.name, w.slug
+		FROM members m
+		JOIN workspaces w ON w.id = m.workspace_id
+		WHERE m.user_id IN (` + strings.Join(ph, ",") + `)
+		ORDER BY w.created_at ASC`
+	rows, err := h.DB.Query(query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var uid, id, name, slug string
+		if err := rows.Scan(&uid, &id, &name, &slug); err != nil {
+			return err
+		}
+		idx, ok := byID[uid]
+		if !ok {
+			continue
+		}
+		list[idx].Workspaces = append(list[idx].Workspaces, adminUserWorkspaceRef{ID: id, Name: name, Slug: slug})
+	}
+	return rows.Err()
 }
 
 // PatchUser PATCH /api/v1/admin/users/{id} — grant/revoke is_platform_admin
@@ -293,6 +345,6 @@ func (h *AdminHandler) PatchUser(w http.ResponseWriter, r *http.Request) {
 	}
 	h.writeAudit(actor, action, "user", uid, map[string]any{"email": email, "is_platform_admin": newFlag == 1})
 	middleware.JSON(w, http.StatusOK, map[string]any{
-		"user": adminUserDTO{ID: uid, Email: email, Name: name, IsPlatformAdmin: newFlag == 1, CreatedAt: created},
+		"user": adminUserDTO{ID: uid, Email: email, Name: name, IsPlatformAdmin: newFlag == 1, CreatedAt: created, Workspaces: []adminUserWorkspaceRef{}},
 	})
 }

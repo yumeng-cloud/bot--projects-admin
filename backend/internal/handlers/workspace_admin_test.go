@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -379,4 +380,101 @@ func TestAuditLogged(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("disable %d %s", rr.Code, rr.Body.String())
 	}
+}
+
+func TestListUsersSearchAndWorkspaces(t *testing.T) {
+	h, _, _ := wsAdminEnv(t)
+	adminTok := loginUser(t, h, "admin@yumeng.tech", "Admin123!")
+	normalTok, normalID := registerUser(t, h, "searchme@test.com", "password1", "可搜用户")
+
+	// create WS owned by searchme → membership
+	rr := doJSON(t, h, http.MethodPost, "/api/v1/admin/workspaces", adminTok, map[string]string{
+		"name": "所属空间", "slug": "owned-ws", "owner_user_id": normalID,
+	})
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("create ws %d %s", rr.Code, rr.Body.String())
+	}
+	var created struct {
+		Workspace struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+			Slug string `json:"slug"`
+		} `json:"workspace"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &created)
+	if created.Workspace.ID == "" {
+		t.Fatalf("no ws id: %s", rr.Body.String())
+	}
+
+	// q= email hit
+	rr = doJSON(t, h, http.MethodGet, "/api/v1/admin/users?q=searchme", adminTok, nil)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("search email %d %s", rr.Code, rr.Body.String())
+	}
+	var byEmail struct {
+		Users []struct {
+			ID         string `json:"id"`
+			Email      string `json:"email"`
+			Name       string `json:"name"`
+			Workspaces []struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+				Slug string `json:"slug"`
+			} `json:"workspaces"`
+		} `json:"users"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &byEmail)
+	if len(byEmail.Users) != 1 || byEmail.Users[0].ID != normalID {
+		t.Fatalf("email search want 1 hit got %s", rr.Body.String())
+	}
+	ws := byEmail.Users[0].Workspaces
+	if len(ws) != 1 || ws[0].ID != created.Workspace.ID || ws[0].Name != "所属空间" || ws[0].Slug != "owned-ws" {
+		t.Fatalf("workspaces want owned-ws got %+v body=%s", ws, rr.Body.String())
+	}
+
+	// q= display name hit
+	rr = doJSON(t, h, http.MethodGet, "/api/v1/admin/users?q="+url.QueryEscape("可搜"), adminTok, nil)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("search name %d %s", rr.Code, rr.Body.String())
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &byEmail)
+	if len(byEmail.Users) != 1 || byEmail.Users[0].Email != "searchme@test.com" {
+		t.Fatalf("name search want 1 hit got %s", rr.Body.String())
+	}
+
+	// q= miss
+	rr = doJSON(t, h, http.MethodGet, "/api/v1/admin/users?q=zzznomatch", adminTok, nil)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("miss %d %s", rr.Code, rr.Body.String())
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &byEmail)
+	if len(byEmail.Users) != 0 {
+		t.Fatalf("miss want 0 got %s", rr.Body.String())
+	}
+
+	// empty q still lists (includes seed admin + searchme); workspaces key present
+	rr = doJSON(t, h, http.MethodGet, "/api/v1/admin/users", adminTok, nil)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("list all %d %s", rr.Code, rr.Body.String())
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &byEmail)
+	if len(byEmail.Users) < 2 {
+		t.Fatalf("list all want >=2 got %s", rr.Body.String())
+	}
+	found := false
+	for _, u := range byEmail.Users {
+		if u.ID == normalID {
+			found = true
+			if u.Workspaces == nil {
+				t.Fatalf("workspaces null for %s", normalID)
+			}
+			if len(u.Workspaces) != 1 || u.Workspaces[0].Slug != "owned-ws" {
+				t.Fatalf("list workspaces %+v", u.Workspaces)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("normal user missing in list: %s", rr.Body.String())
+	}
+	_ = normalTok // silence if unused in future refactors
 }
