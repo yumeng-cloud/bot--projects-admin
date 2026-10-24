@@ -78,6 +78,147 @@ export function getTeam(workspaceId: string, teamId: string) {
   return api<{ team: Team }>(`${ws(workspaceId)}/teams/${teamId}`)
 }
 
+/** T7-R：本 WS 新建团队；可选 template_key（Go 挂模板时可能顺带建空席） */
+export function createTeam(
+  workspaceId: string,
+  body: { name: string; slug?: string; template_key?: string },
+  idempotencyKey?: string,
+) {
+  return api<{ team: Team; roster?: TeamSeat[] }>(`${ws(workspaceId)}/teams`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    idempotencyKey,
+    skipToast: true,
+  })
+}
+
+/** 预览/ensure 用席位行 */
+export type TeamTemplateSeat = {
+  slug: string
+  name: string
+  /** 建议挂载；ensure 入参为字符串（JSON {repo,ref,path} 或 path） */
+  playbook_ref: string
+}
+
+export type TeamTemplateCatalogItem = {
+  key: string
+  name: string
+  description?: string
+  seats: TeamTemplateSeat[]
+  source: 'api' | 'builtin'
+}
+
+/** FE 内置「默认班底」—— GET 模板目录未就绪时仅作预览 */
+export const BUILTIN_TEAM_TEMPLATES: TeamTemplateCatalogItem[] = [
+  {
+    key: 'default',
+    name: '默认班底',
+    description: '五席：前端 / 产品经理 / QA / 后端 / 知识库；空席未绑 Key',
+    source: 'builtin',
+    seats: [
+      { slug: 'frontend', name: '前端', playbook_ref: 'playbook/frontend.md' },
+      { slug: 'pm', name: '产品经理', playbook_ref: 'playbook/pm.md' },
+      { slug: 'qa', name: 'QA', playbook_ref: 'playbook/qa.md' },
+      { slug: 'backend', name: '后端', playbook_ref: 'playbook/backend.md' },
+      { slug: 'wiki', name: '知识库', playbook_ref: 'playbook/wiki.md' },
+    ],
+  },
+]
+
+/** 预览 path → ensure 用的 JSON 字符串（兼容校验 playbook_ref 的 Go） */
+export function playbookRefForEnsure(pathOrJson: string): string {
+  const raw = (pathOrJson || '').trim()
+  if (!raw) return ''
+  if (raw.startsWith('{')) return raw
+  return JSON.stringify({
+    repo: 'bot-team-template',
+    ref: 'main',
+    path: raw.replace(/^\/+/, ''),
+  })
+}
+
+function normalizePlaybookRef(v: unknown): string {
+  if (v == null) return ''
+  if (typeof v === 'string') {
+    const s = v.trim()
+    if (!s) return ''
+    if (s.startsWith('{')) {
+      try {
+        const o = JSON.parse(s) as { path?: string }
+        return (o.path || s).trim()
+      } catch {
+        return s
+      }
+    }
+    return s
+  }
+  if (typeof v === 'object') {
+    const o = v as { path?: string; repo?: string; ref?: string }
+    if (o.path) return String(o.path)
+    try {
+      return JSON.stringify(v)
+    } catch {
+      return ''
+    }
+  }
+  return String(v)
+}
+
+function normalizeTemplateItem(raw: unknown, source: 'api' | 'builtin'): TeamTemplateCatalogItem | null {
+  if (!raw || typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  const key = String(o.key || o.id || o.template_key || '').trim().toLowerCase()
+  if (!key) return null
+  const name = String(o.name || key).trim() || key
+  const description = o.description != null ? String(o.description) : undefined
+  const seatsRaw = Array.isArray(o.seats) ? o.seats : []
+  const seats: TeamTemplateSeat[] = seatsRaw
+    .map((row) => {
+      if (!row || typeof row !== 'object') return null
+      const s = row as Record<string, unknown>
+      const slug = String(s.slug || s.role_slug || '').trim().toLowerCase()
+      if (!slug) return null
+      const seatName = String(s.name || s.display_name || slug).trim() || slug
+      const pref = normalizePlaybookRef(s.playbook_ref)
+      return { slug, name: seatName, playbook_ref: pref || `playbook/${slug}.md` }
+    })
+    .filter((x): x is TeamTemplateSeat => Boolean(x))
+  if (!seats.length) return null
+  return { key, name, description, seats, source }
+}
+
+/**
+ * 拉模板目录：优先 GET …/team-templates 与 …/bot-team-templates；
+ * 404/未就绪 → 内置「默认班底」。
+ */
+export async function listTeamTemplates(workspaceId: string): Promise<{
+  templates: TeamTemplateCatalogItem[]
+  fromApi: boolean
+}> {
+  const paths = [
+    `${ws(workspaceId)}/team-templates`,
+    `${ws(workspaceId)}/bot-team-templates`,
+  ]
+  for (const p of paths) {
+    try {
+      const res = await api<{ templates?: unknown[]; items?: unknown[] }>(p, {
+        skipToast: true,
+      } as ApiRequestInit)
+      const list = res.templates || res.items || []
+      const templates = list
+        .map((x) => normalizeTemplateItem(x, 'api'))
+        .filter((x): x is TeamTemplateCatalogItem => Boolean(x))
+      if (templates.length) return { templates, fromApi: true }
+    } catch (e: unknown) {
+      if (e instanceof ApiError && (e.status === 404 || e.status === 501)) continue
+      if (e instanceof ApiError && e.status >= 500) continue
+      // 其它错误也降级内置，避免挡创建
+      break
+    }
+  }
+  return { templates: BUILTIN_TEAM_TEMPLATES.map((t) => ({ ...t, seats: t.seats.map((s) => ({ ...s })) })), fromApi: false }
+}
+
 export function getRoster(workspaceId: string, teamId: string) {
   return api<{ roster: TeamSeat[] }>(`${ws(workspaceId)}/teams/${teamId}/roster`)
 }
@@ -90,11 +231,13 @@ export function ensureRoster(
     seats?: { slug: string; name?: string; playbook_ref?: string }[]
   },
   idempotencyKey?: string,
+  init?: Pick<ApiRequestInit, 'skipToast'>,
 ) {
   return api<{ roster: TeamSeat[] }>(`${ws(workspaceId)}/teams/${teamId}/roster/ensure`, {
     method: 'POST',
     body: JSON.stringify(body || {}),
     idempotencyKey,
+    skipToast: init?.skipToast,
   })
 }
 

@@ -20,7 +20,7 @@ import {
   Typography,
   message,
 } from 'antd'
-import { CopyOutlined, SendOutlined, UserAddOutlined } from '@ant-design/icons'
+import { CopyOutlined, PlusOutlined, SendOutlined, UserAddOutlined } from '@ant-design/icons'
 import {
   claimBotRole,
   listBotRoles,
@@ -54,6 +54,7 @@ import {
   writeStoredTeamId,
 } from '../../../utils/currentTeam'
 import JoinTeamWizard from './JoinTeamWizard'
+import CreateTeamFromTemplateModal from './CreateTeamFromTemplateModal'
 import SeatConflictPanel, { type SeatConflictInfo } from './SeatConflictPanel'
 import SeatHandoffDrawer from './SeatHandoffDrawer'
 import TeamPinsPanel from './TeamPinsPanel'
@@ -89,6 +90,7 @@ export default function BotsRosterPage() {
   const [drawerRole, setDrawerRole] = useState<BotRole | null>(null)
   const [claiming, setClaiming] = useState<string | null>(null)
   const [joinOpen, setJoinOpen] = useState(false)
+  const [createFromTplOpen, setCreateFromTplOpen] = useState(false)
   const [conflictOpen, setConflictOpen] = useState(false)
   const [conflictInfo, setConflictInfo] = useState<SeatConflictInfo | null>(null)
   const [teams, setTeams] = useState<Team[]>([])
@@ -183,6 +185,13 @@ export default function BotsRosterPage() {
         /* keep */
       }
     })()
+  }
+
+
+  const onTeamCreatedFromTemplate = (team: Team, _roster: TeamSeat[]) => {
+    writeStoredTeamId(wsId, team.id)
+    setTeamId(team.id)
+    void load()
   }
 
   const teamSelect =
@@ -457,6 +466,9 @@ export default function BotsRosterPage() {
           </Typography.Title>
           <Space size={8} wrap>
             {teamSelect}
+            <Button size="small" icon={<PlusOutlined />} onClick={() => setCreateFromTplOpen(true)}>
+              从模板创建
+            </Button>
             <Tooltip title="Admin 签发团队入场码（ymt_）">
               <Button size="small" icon={<CopyOutlined />} loading={inviteBusy} onClick={() => void onCopyInvite()}>
                 复制入场码
@@ -480,6 +492,12 @@ export default function BotsRosterPage() {
           </Empty>
         </div>
         {/* 空态不重复列邀请；有绑定时下方统一列表 */}
+        <CreateTeamFromTemplateModal
+          open={createFromTplOpen}
+          wsId={wsId}
+          onClose={() => setCreateFromTplOpen(false)}
+          onCreated={onTeamCreatedFromTemplate}
+        />
         <JoinTeamWizard
           open={joinOpen}
           onClose={() => setJoinOpen(false)}
@@ -532,6 +550,9 @@ export default function BotsRosterPage() {
         </Typography.Title>
         <Space size={8} wrap>
           {teamSelect}
+          <Button size="small" icon={<PlusOutlined />} onClick={() => setCreateFromTplOpen(true)}>
+            从模板创建
+          </Button>
           <Button size="small" type="primary" icon={<UserAddOutlined />} onClick={() => setJoinOpen(true)}>
             加入班底
           </Button>
@@ -824,6 +845,12 @@ export default function BotsRosterPage() {
         occupantLabel={drawerRole ? seatOccForRole(drawerRole).occupantLabel : null}
       />
 
+      <CreateTeamFromTemplateModal
+        open={createFromTplOpen}
+        wsId={wsId}
+        onClose={() => setCreateFromTplOpen(false)}
+        onCreated={onTeamCreatedFromTemplate}
+      />
       <JoinTeamWizard
         open={joinOpen}
         onClose={() => setJoinOpen(false)}
