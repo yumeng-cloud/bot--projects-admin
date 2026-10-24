@@ -186,4 +186,4 @@
 
 ## 关单进度
 
-**B/C1–C3/SEAT_LEAVE/E1/E3 + SEAT_REFILL/BIND/SHOT 正式关** · **C4 React 已交**（等 QA/产品；C5 `pro-c-admin-ws.png` 本刀齐）· **D / E2 / G 仍冻**。
+**B/C1–C5/SEAT_LEAVE/E1/E3 + SEAT_REFILL/BIND/SHOT 正式关** · **下一刀仅 D1**；**D2–D4 / E2 / G 仍冻**。
