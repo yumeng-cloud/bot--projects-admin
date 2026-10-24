@@ -1,0 +1,68 @@
+=== T7-R Independent QA retest (harsh) ===
+time_AsiaShanghai: 2026-10-24 19:20:42 Asia/Shanghai
+result: Overall=PASS R1=PASS R2=PASS R3=PASS R4=evidence
+evidence_file: docs/qa-shots/T7R-qa-retest-20261024.txt
+R4_alias_note: product R4 path docs/qa-shots/T7R-template-create-20261024.txt kept separate (memory); this file is independent QA retest
+HEAD_at_run: 8d4be1f (8d4be1f418e8badbc2d1ddb23d2c6ea9ce66f34b)
+ancestor_716c3d0: required+verified
+binary: /tmp/ai-board-server rebuilt; DB_DRIVER=postgres; :8080
+YMBOT_API_URL: http://127.0.0.1:8080
+WS: ba1481c49148aba9553ba3811406b69f
+TEAMA: fb64f690fdba7e7be73bb59e107d6527  name=QA-T7R-A-20261024-192042  template_key=default
+TEAMB: 57055a26f10c8d307a0cf3ad33cde5a3  name=QA-T7R-B-20261024-192042  template_key=default
+KEYA: Grok Bot (ymk_ from /tmp/ymbot_t2_key1.txt)
+KEYB: BotB J2 (ymk_ from /tmp/ymbot_j2_botb_api_key.txt)
+
+## Assertions
+- [PASS] R1 GET templates 200: HTTP 200
+- [PASS] R1 has default: n=1
+- [PASS] R1 default has seats: n=5
+- [PASS] R1 POST from-template 201: HTTP 201 body_keys=['roster', 'team']
+- [PASS] R1 team id: id=fb64f690fdba7e7be73bb59e107d6527
+- [PASS] R1 template_key default: tk=default
+- [PASS] R1 N seats match template: got=5 want=5
+- [PASS] R1 slug/display match template: slugs=['backend', 'frontend', 'pm', 'qa', 'wiki']
+- [PASS] R1 each seat playbook_ref: prefs=['bot-team-template@main:playbook/班底与补位.md', 'bot-team-template@main:roles/前端研发/', 'bot-team-template@main:playbook/班底与补位.md', 'bot-team-template@main:playbook/班底与补位.md', 'bot-team-template@main:playbook/班底与补位.md']
+- [PASS] R1 status=open: statuses=['open', 'open', 'open', 'open', 'open']
+- [PASS] R1 no bound_member_id: bounds=[None, None, None, None, None]
+- [PASS] R2 HTTP 400: HTTP 400
+- [PASS] R2 Chinese message: msg='未知模板：ghost-nope'
+- [PASS] R2 mentions unknown/ghost: msg='未知模板：ghost-nope'
+- [PASS] R3 POST B 201: HTTP 201
+- [PASS] R3 same shape: A=[('backend', '后端', 'bot-team-template@main:playbook/班底与补位.md'), ('frontend', '前端', 'bot-team-template@main:roles/前端研发/'), ('pm', '产品经理', 'bot-team-template@main:playbook/班底与补位.md'), ('qa', 'QA', 'bot-team-template@main:playbook/班底与补位.md'), ('wiki', '知识库', 'bot-team-template@main:playbook/班底与补位.md')] B=[('backend', '后端', 'bot-team-template@main:playbook/班底与补位.md'), ('frontend', '前端', 'bot-team-template@main:roles/前端研发/'), ('pm', '产品经理', 'bot-team-template@main:playbook/班底与补位.md'), ('qa', 'QA', 'bot-team-template@main:playbook/班底与补位.md'), ('wiki', '知识库', 'bot-team-template@main:playbook/班底与补位.md')]
+- [PASS] R3 seat ids disjoint: overlap=set() |A|=5 |B|=5
+- [PASS] R3 PUT pin A 200: HTTP 200 {'pin': {'id': '164999a0c460dbe75778710aa2a455b3', 'workspace_id': 'ba1481c49148aba9553ba3811406b69f', 'team_id': 'fb64f690fdba7e7be73bb59e107d6527', 'key': 'decision', 'value': 't7r-qa-retest-A-20261024-192042', 'updated_by': 'aefdd027463b5481ceac7a02a2955d79', 'updated_at': '2026-10-24T11:20:42.046178387Z'}}
+- [PASS] R3 pin visible on A: pins=[{'id': '164999a0c460dbe75778710aa2a455b3', 'workspace_id': 'ba1481c49148aba9553ba3811406b69f', 'team_id': 'fb64f690fdba7e7be73bb59e107d6527', 'key': 'decision', 'value': 't7r-qa-retest-A-20261024-192042', 'updated_by': 'aefdd027463b5481ceac7a02a2955d79', 'updated_at': '2026-10-24T11:20:42.046178387Z'}]
+- [PASS] R3 pin NOT on B: pins_b=[]
+- [PASS] R3 KEYA enter A: rc=0 err=
+- [PASS] R3 KEYB enter B: rc=0 err=
+- [PASS] R3 KEYA memory set: rc=0 err=
+- [PASS] R3 KEYA sees own memory: out_snip='[\n  {\n    "key": "alpha:last_focus",\n    "updated_at": "2026-10-24T10:05:29Z",\n    "value": "T6-A-focus-1792836329"\n  },\n  {\n    "key": "decision",\n    "updated_at": "2026-10-24T11:20:42Z",\n    "value": "t7r-private-A-memory-20261024-192042"\n  },\n  {\n    "key": "frontend:last_focus",\n    "updated_at'
+- [PASS] R3 KEYB does NOT see KEYA memory: out_snip='[]\n'
+- [PASS] R3 pins≠memories collide ok (pin intact): pin_val=t7r-qa-retest-A-20261024-192042 pins=[('decision', 't7r-qa-retest-A-20261024-192042')]
+- [PASS] R3 KEYB cannot read A pin: HTTP 404 {'code': 'not_found', 'message': '团队不存在或无权访问'}
+- [PASS] Unit Template|FromTemplate|DualTeams: rc=0 out=ok  	github.com/yumeng-tech/ai-collab-board/backend/internal/services/botmem	0.128s err=
+
+## Raw summary (Key 勿进 git)
+GET team-templates → HTTP 200
+POST from-template A → HTTP 201 name=QA-T7R-A-20261024-192042
+GET roster A → HTTP 200 seats=5
+POST ghost-nope → HTTP 400 msg=未知模板：ghost-nope
+POST from-template B → HTTP 201 name=QA-T7R-B-20261024-192042
+GET roster B → HTTP 200 seats=5
+PUT A/pins decision → HTTP 200
+GET A/pins → n=1 keys=['decision']
+GET B/pins → n=0 keys=[]
+KEYA seat enter A frontend rc=0 out='{\n  "bind": {\n    "bound_at": "2026-10-24T11:20:42Z",\n    "claimed_at": "2026-10-24T11:20:42Z",\n    "holder": "Grok Bot",\n    "ok": true,\n    "slug": "frontend"\n  },\n  "claim": {\n    "ok": true,\n    "' err=''
+KEYB seat enter B frontend rc=0 out='{\n  "bind": {\n    "bound_at": "2026-10-24T11:20:42Z",\n    "claimed_at": "2026-10-24T11:20:42Z",\n    "holder": "BotB J2",\n    "ok": true,\n    "slug": "frontend"\n  },\n  "claim": {\n    "ok": true,\n    "v' err=''
+KEYA memory set rc=0 out='[\n  {\n    "key": "decision",\n    "updated_at": "2026-10-24T11:20:42Z",\n    "value": "t7r-private-A-memory-20261024-192042"\n  }\n]\n'
+KEYA memory list → '[\n  {\n    "key": "alpha:last_focus",\n    "updated_at": "2026-10-24T10:05:29Z",\n    "value": "T6-A-focus-1792836329"\n  },\n  {\n    "key": "decision",\n    "updated_at": "2026-10-24T11:20:42Z",\n    "value": "t7r-private-A-memory-20261024-192042"\n  },\n  {\n    "key": "frontend:last_focus",\n    "updated_at": "2026-10-24T10:03:03Z",\n    "value": "QA-T2-retest-1792836183"\n  },\n  {\n    "key": "gamma:last_fo'
+KEYB memory list → '[]\n'
+KEYB GET A/pins/decision → HTTP 404 {'code': 'not_found', 'message': '团队不存在或无权访问'}
+go test → rc=0
+ok  	github.com/yumeng-tech/ai-collab-board/backend/internal/services/botmem	0.128s
+
+
+
+## Defect
+(none)

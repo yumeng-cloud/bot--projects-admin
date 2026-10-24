@@ -1,0 +1,3 @@
+R4 evidence alias (independent QA retest 2026-10-24 Asia/Shanghai):
+- product/memory: docs/qa-shots/T7R-template-create-20261024.txt (do not overwrite)
+- independent QA: docs/qa-shots/T7R-qa-retest-20261024.txt (PASS)
