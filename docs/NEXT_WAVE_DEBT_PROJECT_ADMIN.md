@@ -108,9 +108,11 @@
 - [x] **C2** 无示例可活 · QA PASS @37c2f4b · `PROJECT_ADMIN-qa-retest-20261024.txt`
 - [x] **C3** 0 队可建可切 · QA PASS（team-admin-topbar + API 建/切）
 - [x] **C4** QA 项目+团队闭环 · `PROJECT_ADMIN-qa-retest-20261024.txt` + FULL_COVER §@37c2f4b
-- [ ] **D1** 产品关单
+- [x] **D1** 产品关单 · 项目/团队在设置 Tab 与顶栏「新建/管理」· FE `37c2f4b` · QA `PROJECT_ADMIN-qa-retest-20261024.txt`
 
 ## 进度注记
+
+- 2026-10-24 22:23 · **D1 产品关**：设置/顶栏可管项目与团队；整单 A–T–C–S–D 全勾。
 
 - 2026-10-24 22:22 · **QA C2–C4 PASS** @`37c2f4b`（verify HEAD `7ba2d26`）：新空 WS 建项目/团队闭环；顶栏箱截非死胡同；证 `docs/qa-shots/PROJECT_ADMIN-qa-retest-20261024.txt` + FULL_COVER §@37c2f4b。**D1 请产品关**。
 
@@ -124,4 +126,4 @@
 
 ## 关单进度
 
-**待 D1** · A/B/T/C1 产品勾；**C2–C4 QA PASS**（`PROJECT_ADMIN-qa-retest-20261024.txt` · HEAD含 `37c2f4b`）→ 请产品 D1 关单。
+**已关** · A/B/T/C/S/D 全勾 · FE `37c2f4b` · QA 证 `PROJECT_ADMIN-qa-retest-20261024.txt`。
