@@ -44,3 +44,10 @@
 
 - [ ] R1–R4 API/箱验 · 产品勾
 - [ ] R5 FE（可后）
+
+## 文档回链
+
+- REST 契约：[`API.md`](./API.md)「Team templates（T7-R）」· **实现待 SHA**
+- 手册索引：[`BOT_TEAM_TEMPLATE_INDEX.md`](./BOT_TEAM_TEMPLATE_INDEX.md)
+- 验收表：[`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md)（本波勾 T7-1/2/3/6/7；T7-4/5 后置）
+

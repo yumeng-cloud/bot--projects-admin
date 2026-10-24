@@ -112,9 +112,9 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 
 | Method | Path | 说明 |
 |--------|------|------|
-| GET/POST | `/workspaces/{ws}/teams` | 团队列表 / 创建 |
+| GET/POST | `/workspaces/{ws}/teams` | 团队列表 / 创建（`template_key`；T7-R 见下） |
 | GET | `/workspaces/{ws}/teams/{teamID}` | 详情 |
-| GET/POST | `/workspaces/{ws}/teams/{teamID}/roster` · `…/roster/ensure` | 班底席位；ensure 幂等 |
+| GET/POST | `/workspaces/{ws}/teams/{teamID}/roster` · `…/roster/ensure` | 班底席位；ensure 幂等（可带 `playbook_ref`；T7-R 见下） |
 | POST | `/workspaces/{ws}/teams/{teamID}/seats` | 加席；`status` 初始 `open` |
 | POST | `…/seats/{seatID}/bind` · `unbind` · `stop` | 绑定 / 解绑→`left` / 停工→`stopped` |
 | POST | `…/seats/expand` · `…/expand` | 给空闲席派叶子 Issue（≠加新席） |
@@ -122,6 +122,41 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 | GET | `/workspaces/{ws}/teams/{teamID}/invites` | Admin 列已签发；**无**明文 code / hash；含 `status`/`use_count`/`expires_at`/`code_tail` 等 |
 | POST | `/workspaces/{ws}/teams/{teamID}/invites/{inviteID}/revoke` | Admin 吊销；幂等已吊销仍 200 + `status=revoked` |
 | POST | `/team-invites/redeem` | `{code}` → `{workspace_id,team_id,allow_expand_seat,seat_slug?,role_hint?}`（不在 ws 路径下） |
+
+### Team templates（T7-R · 契约 / 实现待 SHA）
+
+> 权威开工单：[`NEXT_WAVE_DEBT_T7.md`](./NEXT_WAVE_DEBT_T7.md)（`95e27c6`）。手册索引：[`BOT_TEAM_TEMPLATE_INDEX.md`](./BOT_TEAM_TEMPLATE_INDEX.md)。  
+> **本波仅 R1–R2**（选模板 → 空席 + `playbook_ref` + 错误码）。**升版 dry-run/apply（T7-4/5）后置**，勿当本波必验。  
+> 验收对齐 [`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) **T7-1 / T7-2 / T7-3 / T7-6 / T7-7**（非整表 T7）。
+
+**现状（只读）**：`POST …/teams` 已收 `template_key`；`POST …/roster/ensure` 已收 `seats[].playbook_ref`，且 `template_key` 空/`default` 时用内置五席（**无**自动绑 Key）。**尚无**「模板清单」与「一键按手册展开全席 playbook_ref」的完整 T7-R 路径 → 下文标 **实现待 SHA**。
+
+| Method | Path | Body / Query | 响应 | 说明 |
+|--------|------|--------------|------|------|
+| GET | `/workspaces/{ws}/team-templates` | — | `{templates:[{key,name,description?,seats:[{slug,display_name,playbook_ref}]}]}` | **待 SHA**：可读手册索引（内置 `default` + `bot-team-template` 等） |
+| POST | `/workspaces/{ws}/teams` | `{name, slug?, template_key}` | `{team}`（含 `template_key`） | 已有创建；T7-R：**从模板创建**时 `template_key` 必填且须为清单内 key |
+| POST | `/workspaces/{ws}/teams/{teamID}/roster/ensure` | `{template_key?, seats?:[{slug,name,playbook_ref}]}` | `{roster: seats[]}` | 已有幂等；T7-R：仅 `template_key`、空 `seats` → 按索引展开空席+`playbook_ref`（**待 SHA** 挂手册）；显式 `seats` 仍可用 |
+| POST | `/workspaces/{ws}/teams/from-template`（可选别名） | `{name, slug?, template_key}` | `{team, roster}` | **待 SHA**：创建+ensure 一次完成；无则客户端串两步亦可 |
+
+**字段**
+
+| 字段 | 位置 | 约定 |
+|------|------|------|
+| `template_key` | team / ensure body | 如 `default`、`bot-team-template`；未知 → **400** 人话 |
+| `role_slug` / `slug` | seat | 短 slug（`frontend`…）；与手册席位一致 |
+| `display_name` / `name` | seat | 显示名 |
+| `playbook_ref` | seat | 字符串 `repo@ref:path`（见索引）；空席创建后**未**绑 Key（`status=open`） |
+
+**错误（R2）**
+
+| 情况 | HTTP |
+|------|------|
+| 未知 / 空（从模板路径）`template_key` | **400** 中文 |
+| 非法 `playbook_ref`（无法解析 path） | **400** 中文 |
+| 团队不存在 / 非本 WS | **404** |
+| 他队 path | **404**（不泄露） |
+
+**不做（本波）**：升版 dry-run diff / apply；自动绑 Key；模板写回用户 git；静默覆盖 memory。
 
 **seat.status**：`open` | `active` | `stopped` | `left`（空串读出按 `open`）。`bind`/`claim`/enter 成功后写 **`active`**；活跃席 `bind(force)` 硬拒；force 仅 `stopped|left`（及脏绑）。**force 成功**另写人对人可见审计：`activities.action=seat.force_bind`（payload 人话 `comment`/`summary`）+ 关联开放 Issue **comment**（原/新占用者 assignee）。
 
