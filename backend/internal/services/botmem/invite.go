@@ -216,20 +216,32 @@ func (s *Service) RedeemInvite(code string) (*models.TeamInviteRedeemResult, err
 	return out, nil
 }
 
-// RevokeInvite 吊销入场码（Admin）。
-func (s *Service) RevokeInvite(workspaceID, teamID, inviteID string) error {
+// RevokeInvite 吊销入场码（Admin）。已吊销再调仍成功，返回 status=revoked（幂等）。
+func (s *Service) RevokeInvite(workspaceID, teamID, inviteID string) (*models.TeamInvite, error) {
+	inv, err := s.getInviteByID(workspaceID, inviteID)
+	if err != nil {
+		return nil, err
+	}
+	if inv.TeamID != teamID {
+		return nil, apperr.NotFound("入场码不存在")
+	}
+	if inv.RevokedAt != nil && strings.TrimSpace(*inv.RevokedAt) != "" {
+		inv.Code = ""
+		return inv, nil
+	}
 	now := nowUTC()
-	res, err := s.DB.Exec(`UPDATE team_invites SET revoked_at = ?, updated_at = ?
+	_, err = s.DB.Exec(`UPDATE team_invites SET revoked_at = ?, updated_at = ?
 		WHERE id = ? AND workspace_id = ? AND team_id = ? AND revoked_at IS NULL`,
 		now, now, inviteID, workspaceID, teamID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return apperr.NotFound("入场码不存在或已吊销")
+	inv, err = s.getInviteByID(workspaceID, inviteID)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	inv.Code = ""
+	return inv, nil
 }
 
 // enrichInvite 填充 status / code_tail；不设明文 code（Create 在调用后自行赋值）。

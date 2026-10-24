@@ -104,4 +104,5 @@ func MountTeamsChi(r chi.Router, db *sql.DB) {
 	m.Post("/teams/{teamID}/expand", h.ExpandSeats)
 	m.Get("/teams/{teamID}/invites", h.ListInvites)
 	m.Post("/teams/{teamID}/invites", h.CreateInvite)
+	m.Post("/teams/{teamID}/invites/{inviteID}/revoke", h.RevokeInvite)
 }

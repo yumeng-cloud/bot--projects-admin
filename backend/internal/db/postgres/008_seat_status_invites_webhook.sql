@@ -1,5 +1,6 @@
 -- 008: team_seats.status + team_invites (ymt_) + webhook seat/member filters (G2/G3/G6a)
 ALTER TABLE team_seats ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'open';
+UPDATE team_seats SET status = 'active' WHERE bound_member_id IS NOT NULL AND bound_member_id != '' AND status = 'open';
 
 CREATE TABLE IF NOT EXISTS team_invites (
   id TEXT PRIMARY KEY,

@@ -249,6 +249,24 @@ func (h *TeamHandler) ListInvites(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, map[string]any{"invites": list})
 }
 
+// RevokeInvite Admin 吊销入场码；已吊销再吊 → 仍 200 + status=revoked（幂等）。
+func (h *TeamHandler) RevokeInvite(w http.ResponseWriter, r *http.Request) {
+	ws, actor, ok := requireWorkspaceMember(h.DB, w, r)
+	if !ok {
+		return
+	}
+	if resolveMemberRole(h.DB, r, actor) != "admin" {
+		middleware.HandleError(w, apperr.Forbidden("需要管理员权限才能吊销入场码"))
+		return
+	}
+	inv, err := h.Svc.RevokeInvite(ws, r.PathValue("teamID"), r.PathValue("inviteID"))
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	middleware.JSON(w, http.StatusOK, map[string]any{"invite": inv})
+}
+
 func (h *TeamHandler) CreateInvite(w http.ResponseWriter, r *http.Request) {
 	ws, actor, ok := requireWorkspaceMember(h.DB, w, r)
 	if !ok {
@@ -352,6 +370,7 @@ func MountTeams(mux *http.ServeMux, db *sql.DB, wrap func(http.Handler) http.Han
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/expand", h.Idempotent(h.ExpandSeats))
 	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}/invites", h.ListInvites)
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/invites", h.Idempotent(h.CreateInvite))
+	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/invites/{inviteID}/revoke", h.Idempotent(h.RevokeInvite))
 	// G3 redeem：不在 workspace 路径下（Bot 持 ymk_ 定位团队）
 	reg("POST /api/v1/team-invites/redeem", h.RedeemInvite)
 }

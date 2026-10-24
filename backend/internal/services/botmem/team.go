@@ -265,6 +265,10 @@ func scanRosterRow(row interface{ Scan(dest ...any) error }) (models.TeamSeat, e
 	if boundMember.Valid {
 		seat.BoundMemberID = &boundMember.String
 		seat.MemberID = &boundMember.String
+		// 迁移前已绑席可能仍落 open；有 bound 且非停工/离职 → 读出按 active
+		if seat.Status == models.SeatStatusOpen {
+			seat.Status = models.SeatStatusActive
+		}
 	}
 	if boundAt.Valid {
 		seat.BoundAt = &boundAt.String

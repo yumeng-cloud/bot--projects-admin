@@ -41,6 +41,9 @@ func TestCreateTeamIdempotentAndEnsureRoster(t *testing.T) {
 	if bound.BoundMemberID == nil || *bound.BoundMemberID != m1 {
 		t.Fatalf("bind: %+v", bound)
 	}
+	if bound.Status != "active" {
+		t.Fatalf("after bind status=%s want active", bound.Status)
+	}
 	r2, err := svc.EnsureRoster(ws, teamID, botmem.EnsureRosterInput{})
 	if err != nil {
 		t.Fatal(err)
@@ -156,6 +159,9 @@ func TestBindSeatForceDirtyBindWritesAudit(t *testing.T) {
 	}
 	if forced.BoundMemberID == nil || *forced.BoundMemberID != m2 {
 		t.Fatalf("force dirty bind: %+v", forced)
+	}
+	if forced.Status != "active" {
+		t.Fatalf("force dirty status=%s want active", forced.Status)
 	}
 	var action, payload string
 	err = svc.DB.QueryRow(
@@ -319,13 +325,13 @@ func TestTeamInviteRedeem(t *testing.T) {
 	if !ok || ae.Code != "forbidden" {
 		t.Fatalf("want forbidden %#v", err)
 	}
-	if err := svc.RevokeInvite(ws, team.ID, inv.ID); err != nil {
+	if _, err := svc.RevokeInvite(ws, team.ID, inv.ID); err != nil {
 		// already at max; create fresh to revoke
 		inv2, err2 := svc.CreateInvite(ws, team.ID, botmem.CreateInviteInput{CreatedBy: m1})
 		if err2 != nil {
 			t.Fatal(err2)
 		}
-		if err := svc.RevokeInvite(ws, team.ID, inv2.ID); err != nil {
+		if _, err := svc.RevokeInvite(ws, team.ID, inv2.ID); err != nil {
 			t.Fatal(err)
 		}
 		_, err = svc.RedeemInvite(inv2.Code)
@@ -387,7 +393,7 @@ func TestListInvitesNoPlainCode(t *testing.T) {
 	if list[0].Status != "exhausted" || list[0].UseCount != 1 {
 		t.Fatalf("after redeem: %+v", list[0])
 	}
-	if err := svc.RevokeInvite(ws, team.ID, inv.ID); err != nil {
+	if _, err := svc.RevokeInvite(ws, team.ID, inv.ID); err != nil {
 		t.Fatal(err)
 	}
 	list, err = svc.ListInvites(ws, team.ID)
@@ -396,5 +402,81 @@ func TestListInvitesNoPlainCode(t *testing.T) {
 	}
 	if list[0].Status != "revoked" {
 		t.Fatalf("want revoked got %q", list[0].Status)
+	}
+}
+
+func TestBindSeatLeftForceActive(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "LeftForce"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "fe", Name: "前端"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	// 活跃 force → 409
+	_, err = svc.BindSeat(ws, team.ID, s1.ID, m2, true)
+	if err == nil {
+		t.Fatal("expected 409 on active force")
+	}
+	ae, ok := err.(*apperr.AppError)
+	if !ok || ae.Code != "conflict" {
+		t.Fatalf("want conflict %#v", err)
+	}
+	left, err := svc.UnbindSeat(ws, team.ID, s1.ID, m1, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if left.Status != "left" {
+		t.Fatalf("status=%s want left", left.Status)
+	}
+	// left 可 force（或无需 force）成功且 active
+	re, err := svc.BindSeat(ws, team.ID, s1.ID, m2, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if re.BoundMemberID == nil || *re.BoundMemberID != m2 || re.Status != "active" {
+		t.Fatalf("left force rebind: %+v", re)
+	}
+}
+
+func TestClaimSyncsLinkedSeatActive(t *testing.T) {
+	svc, ws, m1, _ := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "ClaimSync"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops2", Name: "运维2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s1.Status != "open" || s1.BotRoleID == nil {
+		t.Fatalf("seat: %+v", s1)
+	}
+	if _, err := svc.Claim(ws, *s1.BotRoleID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	got, err := svc.GetRoster(ws, team.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var found bool
+	for _, s := range got {
+		if s.ID == s1.ID {
+			found = true
+			if s.BoundMemberID == nil || *s.BoundMemberID != m1 {
+				t.Fatalf("claim should bind seat: %+v", s)
+			}
+			if s.Status != "active" {
+				t.Fatalf("after claim status=%s want active", s.Status)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("seat missing from roster")
 	}
 }

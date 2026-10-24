@@ -47,12 +47,16 @@ export type TeamInvite = {
   /** 仅签发当次明文；之后列表只有末四 */
   code?: string
   code_prefix?: string
+  token_prefix?: string
   code_tail?: string
   allow_expand_seat?: boolean
   max_uses?: number | null
   uses?: number
+  use_count?: number
   expires_at?: string | null
   revoked_at?: string | null
+  /** active | revoked | expired | exhausted */
+  status?: string
   created_at?: string
 }
 
@@ -144,11 +148,43 @@ export async function createTeamInvite(
   return res
 }
 
-/** GET list 路由尚未挂载时会 404；调用方勿轮询，仅本地签发缓存即可 */
 export function listTeamInvites(workspaceId: string, teamId: string) {
   return api<{ invites: TeamInvite[] }>(`${ws(workspaceId)}/teams/${teamId}/invites`, {
     skipToast: true,
   } as ApiRequestInit)
+}
+
+/** Admin 吊销入场码；幂等已吊销仍 200 */
+export function revokeTeamInvite(
+  workspaceId: string,
+  teamId: string,
+  inviteId: string,
+  idempotencyKey?: string,
+) {
+  return api<{ invite: TeamInvite }>(
+    `${ws(workspaceId)}/teams/${teamId}/invites/${inviteId}/revoke`,
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
+      idempotencyKey,
+      skipToast: true,
+    },
+  )
+}
+
+export function inviteStatusCn(status?: string | null): string {
+  switch ((status || '').toLowerCase()) {
+    case 'revoked':
+      return '已吊销'
+    case 'expired':
+      return '已过期'
+    case 'exhausted':
+      return '已用尽'
+    case 'active':
+      return '有效'
+    default:
+      return status || '有效'
+  }
 }
 
 /** 兑换入场码 → workspace+team(+roster) */
@@ -187,7 +223,7 @@ export function seatDisplayName(seat: TeamSeat): string {
 
 export function inviteTail(inv: TeamInvite): string {
   if (inv.code_tail) return inv.code_tail
-  const raw = inv.code || inv.code_prefix || ''
+  const raw = inv.code || inv.code_prefix || inv.token_prefix || ''
   const clean = raw.replace(/^ymt_/i, '')
   return clean.slice(-4) || '····'
 }

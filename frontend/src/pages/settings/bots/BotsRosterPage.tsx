@@ -7,6 +7,9 @@ import {
   Collapse,
   Drawer,
   Empty,
+  Input,
+  Modal,
+  Popconfirm,
   Select,
   Space,
   Spin,
@@ -16,7 +19,7 @@ import {
   Typography,
   message,
 } from 'antd'
-import { CopyOutlined, UserAddOutlined } from '@ant-design/icons'
+import { CopyOutlined, SendOutlined, UserAddOutlined } from '@ant-design/icons'
 import {
   claimBotRole,
   listBotRoles,
@@ -29,15 +32,19 @@ import { ApiError, api } from '../../../api/client'
 import {
   createTeamInvite,
   getRoster,
+  inviteStatusCn,
   inviteTail,
   isInviteServiceMissing,
   isSeatConflict,
   listTeamInvites,
   listTeams,
+  revokeTeamInvite,
   seatOccupancy,
   type TeamInvite,
   type TeamSeat,
 } from '../../../api/teams'
+import { createIssue } from '../../../api/issues'
+import { listProjects } from '../../../api/projects'
 import { formatWikiTime } from '../../../utils/time'
 import JoinTeamWizard from './JoinTeamWizard'
 import SeatConflictPanel, { type SeatConflictInfo } from './SeatConflictPanel'
@@ -83,6 +90,16 @@ export default function BotsRosterPage() {
   const [inviteBusy, setInviteBusy] = useState(false)
   /** 签发当次明文，只存活到复制成功后的一次 Toast；列表只留末四 */
   const [lastPlainInvite, setLastPlainInvite] = useState<string | null>(null)
+  const [revokingId, setRevokingId] = useState<string | null>(null)
+  /** N2：占用席下发任务 */
+  const [dispatchOpen, setDispatchOpen] = useState(false)
+  const [dispatchTitle, setDispatchTitle] = useState('')
+  const [dispatchBusy, setDispatchBusy] = useState(false)
+  const [dispatchTarget, setDispatchTarget] = useState<{
+    memberId: string
+    seatName: string
+    botName: string
+  } | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -147,6 +164,74 @@ export default function BotsRosterPage() {
   }, [roles, teamSeats, forceEmpty])
 
   const openSeat = (role: BotRole) => setDrawerRole(role)
+
+  const onRevokeInvite = async (inv: TeamInvite) => {
+    if (!teamId) return
+    setRevokingId(inv.id)
+    try {
+      const { invite } = await revokeTeamInvite(wsId, teamId, inv.id, crypto.randomUUID())
+      setIssuedInvites((prev) =>
+        prev.map((x) =>
+          x.id === inv.id
+            ? { ...x, ...invite, status: invite.status || 'revoked', revoked_at: invite.revoked_at || x.revoked_at || new Date().toISOString() }
+            : x,
+        ),
+      )
+      message.success(`已吊销入场码（末四 ·${inviteTail(invite.status ? invite : inv)}）`)
+    } catch (e: unknown) {
+      if (isInviteServiceMissing(e)) {
+        message.warning('吊销接口尚未开通')
+      } else {
+        message.error(e instanceof ApiError ? e.message : '吊销失败')
+      }
+    } finally {
+      setRevokingId(null)
+    }
+  }
+
+  const openDispatch = (role: BotRole) => {
+    const occ = seatOccForRole(role)
+    const memberId = occ.seat?.bound_member_id || occ.occupantId
+    if (!occ.occupied || !memberId) {
+      message.warning('请先占用席位再下发')
+      return
+    }
+    setDispatchTarget({
+      memberId,
+      seatName: roleDisplay(role),
+      botName: occ.occupantLabel || botName(memberId) || 'Bot',
+    })
+    setDispatchTitle('')
+    setDispatchOpen(true)
+  }
+
+  const onDispatchCreate = async () => {
+    if (!dispatchTarget) return
+    const title = dispatchTitle.trim() || `给「${dispatchTarget.seatName}」的任务`
+    setDispatchBusy(true)
+    try {
+      const { projects } = await listProjects(wsId)
+      const projectId = projects?.[0]?.id
+      if (!projectId) {
+        message.error('暂无项目，无法建 Issue')
+        return
+      }
+      const { issue } = await createIssue(wsId, {
+        project_id: projectId,
+        title,
+        status: 'todo',
+        assignee_id: dispatchTarget.memberId,
+      })
+      message.success(`已下发 ${issue.identifier} → ${dispatchTarget.botName}`)
+      setDispatchOpen(false)
+      setDispatchTarget(null)
+    } catch (e: unknown) {
+      message.error(e instanceof ApiError ? e.message : '下发失败')
+    } finally {
+      setDispatchBusy(false)
+    }
+  }
+
 
   /** D5：与向导同源读 team_seats.status（active/empty/left）；无席时再回落 claim */
   const seatOccForRole = (role: BotRole) => {
@@ -310,12 +395,7 @@ export default function BotsRosterPage() {
             </Button>
           </Empty>
         </div>
-        {issuedInvites.length ? (
-          <Typography.Paragraph type="secondary" style={{ marginTop: 12, fontSize: 12 }}>
-            已签发 · {issuedInvites.slice(0, 5).map((i) => `末四 ·${inviteTail(i)}`).join(' · ')}
-            {lastPlainInvite ? null : null}
-          </Typography.Paragraph>
-        ) : null}
+        {/* 空态不重复列邀请；有绑定时下方统一列表 */}
         <JoinTeamWizard
           open={joinOpen}
           onClose={() => setJoinOpen(false)}
@@ -449,6 +529,17 @@ export default function BotsRosterPage() {
                   <Button size="small" type="link" style={{ padding: 0 }} onClick={() => openSeat(role)}>
                     查看交接
                   </Button>
+                  {busy ? (
+                    <Button
+                      size="small"
+                      type="link"
+                      style={{ padding: 0 }}
+                      icon={<SendOutlined />}
+                      onClick={() => openDispatch(role)}
+                    >
+                      下发任务
+                    </Button>
+                  ) : null}
                   {busy && role.claim?.member_id ? (
                     <Button size="small" type="link" danger style={{ padding: 0 }} onClick={() => void onRelease(role)}>
                       释放
@@ -480,9 +571,57 @@ export default function BotsRosterPage() {
       )}
 
       {issuedInvites.length ? (
-        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}>
-          已签发入场码 · {issuedInvites.slice(0, 8).map((i) => `末四 ·${inviteTail(i)}`).join(' · ')}
-        </Typography.Paragraph>
+        <Card size="small" className="acb-bots-invite-list" title="已签发入场码" style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {issuedInvites.slice(0, 12).map((inv) => {
+              const st = (inv.status || (inv.revoked_at ? 'revoked' : 'active')).toLowerCase()
+              const revoked = st === 'revoked'
+              return (
+                <div
+                  key={inv.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    minHeight: 32,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <Typography.Text style={{ fontFamily: 'var(--acb-font-mono, monospace)', fontSize: 13 }}>
+                    末四 ·{inviteTail(inv)}
+                  </Typography.Text>
+                  <Tag color={revoked ? 'default' : st === 'active' ? 'green' : 'orange'} style={{ margin: 0 }}>
+                    {inviteStatusCn(st)}
+                  </Tag>
+                  {!revoked ? (
+                    <Popconfirm
+                      title="吊销此入场码？"
+                      description="吊销后无法再用该码加入；已进席不受影响。"
+                      okText="吊销"
+                      cancelText="取消"
+                      okButtonProps={{ danger: true }}
+                      onConfirm={() => void onRevokeInvite(inv)}
+                    >
+                      <Button
+                        size="small"
+                        type="link"
+                        danger
+                        style={{ padding: 0 }}
+                        loading={revokingId === inv.id}
+                      >
+                        吊销
+                      </Button>
+                    </Popconfirm>
+                  ) : (
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      —
+                    </Typography.Text>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </Card>
       ) : null}
 
       <Collapse
@@ -547,6 +686,34 @@ export default function BotsRosterPage() {
           },
         ]}
       />
+
+
+      <Modal
+        title="下发任务"
+        open={dispatchOpen}
+        onCancel={() => (!dispatchBusy ? setDispatchOpen(false) : undefined)}
+        onOk={() => void onDispatchCreate()}
+        okText="创建并指派"
+        cancelText="取消"
+        confirmLoading={dispatchBusy}
+        destroyOnHidden
+        centered
+      >
+        {dispatchTarget ? (
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+              负责人预填：{dispatchTarget.botName}（席位「{dispatchTarget.seatName}」）
+            </Typography.Text>
+            <Input
+              placeholder="Issue 标题（可空，将用默认文案）"
+              value={dispatchTitle}
+              onChange={(e) => setDispatchTitle(e.target.value)}
+              onPressEnter={() => void onDispatchCreate()}
+              autoFocus
+            />
+          </Space>
+        ) : null}
+      </Modal>
 
       <SeatHandoffDrawer
         open={Boolean(drawerRole)}

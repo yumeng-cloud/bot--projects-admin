@@ -157,3 +157,102 @@ func TestListInvitesAdmin(t *testing.T) {
 		t.Fatalf("code_tail missing: %#v", item)
 	}
 }
+
+func TestRevokeInviteAdminIdempotent(t *testing.T) {
+	mux := teamInvitesMux(t)
+	token, wsID := loginAdmin(t, mux)
+
+	body, _ := json.Marshal(map[string]string{"name": "班底-吊销"})
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/"+wsID+"/teams", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("create team %d %s", rr.Code, rr.Body.String())
+	}
+	var teamRes struct {
+		Team struct {
+			ID string `json:"id"`
+		} `json:"team"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &teamRes)
+	teamID := teamRes.Team.ID
+
+	invBody, _ := json.Marshal(map[string]any{"allow_expand_seat": false, "max_uses": 5})
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/"+wsID+"/teams/"+teamID+"/invites", bytes.NewReader(invBody))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("create invite %d %s", rr.Code, rr.Body.String())
+	}
+	var createRes struct {
+		Invite map[string]any `json:"invite"`
+		Code   string         `json:"code"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &createRes)
+	inviteID, _ := createRes.Invite["id"].(string)
+	if inviteID == "" {
+		t.Fatalf("no invite id: %s", rr.Body.String())
+	}
+	code := createRes.Code
+
+	revokePath := "/api/v1/workspaces/" + wsID + "/teams/" + teamID + "/invites/" + inviteID + "/revoke"
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, revokePath, bytes.NewReader([]byte("{}")))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("revoke %d %s", rr.Code, rr.Body.String())
+	}
+	var rev1 struct {
+		Invite map[string]any `json:"invite"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &rev1)
+	if rev1.Invite["status"] != "revoked" {
+		t.Fatalf("status=%v body=%s", rev1.Invite["status"], rr.Body.String())
+	}
+	if rev1.Invite["code"] != nil && rev1.Invite["code"] != "" {
+		t.Fatalf("revoke leaked code: %#v", rev1.Invite["code"])
+	}
+
+	// 幂等再吊
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, revokePath, bytes.NewReader([]byte("{}")))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("revoke again %d %s", rr.Code, rr.Body.String())
+	}
+	var rev2 struct {
+		Invite map[string]any `json:"invite"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &rev2)
+	if rev2.Invite["status"] != "revoked" {
+		t.Fatalf("idempotent status=%v", rev2.Invite["status"])
+	}
+
+	// 列表可见 revoked，且无明文
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/"+wsID+"/teams/"+teamID+"/invites", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("list after revoke %d %s", rr.Code, rr.Body.String())
+	}
+	raw := rr.Body.String()
+	var listRes struct {
+		Invites []map[string]any `json:"invites"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &listRes)
+	if len(listRes.Invites) != 1 || listRes.Invites[0]["status"] != "revoked" {
+		t.Fatalf("list after revoke: %#v", listRes.Invites)
+	}
+	if code != "" && strings.Contains(raw, code) {
+		t.Fatalf("list leaked plain code after revoke")
+	}
+}

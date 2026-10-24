@@ -360,6 +360,7 @@ CREATE TABLE IF NOT EXISTS team_seats (
 CREATE INDEX IF NOT EXISTS idx_team_seats_ws ON team_seats(workspace_id, team_id);
 
 ALTER TABLE team_seats ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'open';
+UPDATE team_seats SET status = 'active' WHERE bound_member_id IS NOT NULL AND bound_member_id != '' AND status = 'open';
 
 CREATE TABLE IF NOT EXISTS team_invites (
   id TEXT PRIMARY KEY,

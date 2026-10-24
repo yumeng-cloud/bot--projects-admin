@@ -369,6 +369,8 @@ CREATE INDEX IF NOT EXISTS idx_team_seats_ws ON team_seats(workspace_id, team_id
 
 -- G2/G3: existing DBs may lack status
 ALTER TABLE team_seats ADD COLUMN status TEXT NOT NULL DEFAULT 'open';
+-- heal: 已绑但仍 open（加列默认）→ active
+UPDATE team_seats SET status = 'active' WHERE bound_member_id IS NOT NULL AND bound_member_id != '' AND status = 'open';
 
 CREATE TABLE IF NOT EXISTS team_invites (
   id TEXT PRIMARY KEY,

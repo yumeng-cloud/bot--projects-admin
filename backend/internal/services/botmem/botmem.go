@@ -202,6 +202,7 @@ func (s *Service) Claim(workspaceID, roleID, memberID string, force bool) (*mode
 		return nil, err
 	} else if active != nil {
 		if active.MemberID == memberID {
+			s.syncSeatsActiveOnClaim(workspaceID, roleID, memberID)
 			return active, nil
 		}
 		return nil, apperr.Conflict("该席位占用中，禁止顶替")
@@ -241,7 +242,21 @@ func (s *Service) Claim(workspaceID, roleID, memberID string, force bool) (*mode
 		}
 		claim = &c
 	}
+	s.syncSeatsActiveOnClaim(workspaceID, roleID, memberID)
 	return claim, nil
+}
+
+// syncSeatsActiveOnClaim claim/enter 成功后：关联 team_seats 写 bound + status=active。
+// 不碰 stopped/left（补位须走 BindSeat/force）。
+func (s *Service) syncSeatsActiveOnClaim(workspaceID, roleID, memberID string) {
+	if roleID == "" || memberID == "" {
+		return
+	}
+	now := nowUTC()
+	_, _ = s.DB.Exec(`UPDATE team_seats SET bound_member_id = ?, bound_at = ?, status = ?, updated_at = ?
+		WHERE workspace_id = ? AND bot_role_id = ?
+		  AND COALESCE(NULLIF(status, ''), 'open') NOT IN ('stopped', 'left')`,
+		memberID, now, models.SeatStatusActive, now, workspaceID, roleID)
 }
 
 func (s *Service) Release(workspaceID, roleID string) error {
