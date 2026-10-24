@@ -25,7 +25,7 @@
 
 | ID | 标准 | 谁 |
 | --- | --- | --- |
-| **R1** | 同 WS 两 `team_id`：`team pull` A/B roster **席位组不同或不串 claim** | **Bot 记忆**（主）· **Go** 缺则补 seed/ensure |
+| **R1** | 同 WS 两 `team_id`：`team pull` A/B roster **席位组不同或不串 claim**（契约 [`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) T6-R · 通道 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) **§11.4**） | **Bot 记忆**（主）· **Go** 缺则补 seed/ensure |
 | **R2** | 证据 `docs/qa-shots/T6R-roster-isolate-*.txt`；**不做** pins、**不改** Issue List 按 team | 同上 |
 | **R3** | 产品勾本文件；`BOT_TEAM_SEAT` T6 **不**整勾，只注「T6-R 切片 PASS」 | **产品** |
 

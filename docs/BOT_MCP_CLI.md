@@ -263,3 +263,24 @@ go run ./cmd/ymbot mcp-serve
 
 **自检一句**：Inspector 能 list tools 且至少跑通 list + comment create + memory set，即本尾勾文档验收通过。
 
+### 11.4 团队上下文 / T6-R 隔离冒烟
+
+> 对接 T6「团队切换隔离」**最小切片**（roster 不串队）。契约全文与本波边界：[`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md)（T6-R）· 产品刀：[`NEXT_WAVE_DEBT_T6R_VCLOSE.md`](./NEXT_WAVE_DEBT_T6R_VCLOSE.md)。
+
+| | |
+|--|--|
+| **切队怎么做** | **换入参**，无 `YMBOT_TEAM_ID` sticky。CLI：`team pull --uuid`（队 A 或 B）；`seat enter` / `leave` / `expand --team <uuid>`。MCP：`board_team_pull.team_uuid`；`board_seat_*` / `board_seat_expand` 的 `team_uuid` |
+| **环境仍只需** | `YMBOT_API_URL` · `YMBOT_API_KEY` · `YMBOT_WORKSPACE_ID`（同 §11.1/11.3） |
+| **REST 作用域** | `/workspaces/{ws}/teams/{teamID}/roster` · `…/seats` · … — path 上的 `teamID` 即隔离边界 |
+| **本切片不做** | pins tool；`board_issue_list` 按 team 过滤；FE 切换器 |
+
+```bash
+# 同 WS 两队（把 A/B 换成真实 team UUID）
+ymbot team pull --uuid "$TEAM_A" --json > /tmp/roster-a.json
+ymbot team pull --uuid "$TEAM_B" --json > /tmp/roster-b.json
+# 验收：两侧 seat id 集合不相交；队 A 的 active claim 不出现在队 B 输出
+```
+
+MCP 等价：Inspector 对 `board_team_pull` 各传一次不同 `team_uuid`（可加 `ids=true` 看裸 id）。  
+**自检一句**：双 pull 席位组不串 → T6-R 通道文档验收过；**不**因此勾满 `BOT_TEAM_SEAT_P0` T6 全文。
+

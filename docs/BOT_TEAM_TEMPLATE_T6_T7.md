@@ -34,9 +34,25 @@
 | 通道 | 可选 `board_pin_list/get/set`；日常续命仍 `handoff get`，**不**用 pin 替代 |
 | 验收 | 队 A 的 pin 与 Issue 池在队 B 不可见；同 member 兼两席私有 `last_focus` 不覆盖 |
 
-### 关单信号
+### 关单信号（全文 T6）
 
 箱内：切团队 UI/CLI → 池与 pins 隔离可演示；文档勾 `BOT_TEAM_SEAT_P0` **T6**。
+
+### T6 最小可验 · T6-R（本波切片 · 对齐产品清单）
+
+> 产品裁定见 [`NEXT_WAVE_DEBT_T6R_VCLOSE.md`](./NEXT_WAVE_DEBT_T6R_VCLOSE.md)：**不定整开** pins + Issue 池按队；先验 **双队 roster 隔离**。  
+> 通道操作与冒烟步骤对接 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) **§11.4**（`831e806` 尾勾延伸）。
+
+| 项 | 最小标准（可验收） |
+|----|-------------------|
+| **切换语义** | 无全局 sticky「当前队」env；**切队 = 换入参** `team_uuid` / CLI `--uuid` / `--team` |
+| **R1 roster** | 同 WS 两 `team_id`：`team pull` / `board_team_pull` 各拉一次 → 席位组 **seat id 不交叉**；队 A claim **不**出现在队 B roster |
+| **R2 作用域** | `seat enter` / `leave` / `expand` 带 `team_uuid` 时，bind/unbind/派叶仅落在该 `team_id` path（REST：`/teams/{teamID}/…`） |
+| **错误** | 错/他队 `team_id` 或不存在 → **404**（或通道等价一行中文）；活跃席抢绑仍 **409**（同 T10，与切队无关） |
+| **明确不做** | `team_pins`；Issue List 按 `team_id` 过滤；FE 团队切换器；私有 `bot_memories` 改按队（仍 member/seat） |
+
+**箱验证据（记忆主跑）**：`docs/qa-shots/T6R-roster-isolate-*.txt`。  
+**勾选口径**：产品勾 T6-R 切片 PASS；`BOT_TEAM_SEAT_P0` **T6 不整勾**（全文仍欠 pins + Issue 池）。
 
 ---
 
@@ -72,9 +88,10 @@
 
 | 已有 | T6/T7 增量 |
 |------|------------|
-| T9 `team pull` 幂等拉班底 | T7 创建时挂 playbook；T6 切团队不串池 |
-| `bot_memories` 私有 | T6 另立团队 pins |
+| T9 `team pull` 幂等拉班底 | T7 创建时挂 playbook；**T6-R** 双队 pull 不串 roster；全文 T6 再扩池/pins |
+| `bot_memories` 私有 | 全文 T6 另立团队 pins（本波不做） |
 | `handoff get` 续命 | 不变；pins 不替代 handoff |
 | bot-team-template 手册 | T7 只读挂载源 |
+| MCP/CLI §11 主航线 | `board_team_pull` / `--team` = 切队入参；冒烟见 **§11.4** |
 
 **派工建议**：实现开子单时 **Bot 记忆角色 + Go**（API）→ **React**（切换/向导）→ **种子与文档**（手册索引与本文勾选）；产品体验关 T6/T7。
