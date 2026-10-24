@@ -32,9 +32,9 @@
 
 ## 产品勾选
 
-- [ ] **V2G-1** 未绑引导
-- [ ] **V2G-2** 409 改写
-- [ ] **V2G-3** 箱截
+- [x] **V2G-1** 未绑引导 · FE `6cd3fd3` · 产品勾
+- [x] **V2G-2** 409 改写 · FE `6cd3fd3` · 产品勾
+- [x] **V2G-3** 箱截 `seat-v2-guide.png` · 产品勾
 - [ ] **V2G-4** QA
 - [ ] **V2G-5** 关单
 
@@ -49,9 +49,10 @@
 
 ## 进度注记
 
+- 2026-10-25 02:27 · **V2G-1～V2G-3 产品勾** FE `6cd3fd3`：Alert 人话 + 409 改写 + `seat-v2-guide.png`；未动 BE。开 **QA V2G-4**。
 - 2026-10-25 02:22 · B405+E4 关后总指挥建议；产品拍开。SOFT V2 claim 仍禁。
 - 2026-10-25 02:26 Asia/Shanghai · **React 交 V2G-1～V2G-3**：`JoinTeamWizard` 通码未绑+停工席 → Alert 人话；409「补位须走显式绑席」FE 改写；箱截 `docs/qa-shots/seat-v2-guide.png`；`tsc --noEmit` + `vite build` PASS。**禁**解冻静默补。勾选留给产品/QA（V2G-4/5）。
 
 ## 关单进度
 
-**React 已交** · 等 QA V2G-4 / 产品 V2G-5。
+**等 QA V2G-4** · V2G-1～V2G-3 已勾（FE `6cd3fd3`）。
