@@ -19,13 +19,30 @@ func scanRelation(row interface{ Scan(dest ...any) error }) (models.IssueRelatio
 	return r, err
 }
 
-func (s *Service) ListRelations(workspaceID, issueID string) ([]models.IssueRelation, error) {
+// ListRelations returns edges touching issueID.
+// Default (includeArchived=false): omit edges whose from or to issue is archived (WHEEL_FIX B3).
+// includeArchived=true: return all edges (no physical delete).
+func (s *Service) ListRelations(workspaceID, issueID string, includeArchived bool) ([]models.IssueRelation, error) {
 	if err := s.ensureIssueInWorkspace(workspaceID, issueID); err != nil {
 		return nil, err
 	}
-	rows, err := s.DB.Query(`SELECT `+relationCols+` FROM issue_relations
-		WHERE workspace_id = ? AND (from_issue_id = ? OR to_issue_id = ?)
-		ORDER BY created_at ASC`, workspaceID, issueID, issueID)
+	q := `SELECT r.id, r.workspace_id, r.from_issue_id, r.to_issue_id, r.relation_type, r.created_at
+		FROM issue_relations r`
+	args := []any{workspaceID, issueID, issueID}
+	if !includeArchived {
+		q += `
+		JOIN issues f ON f.id = r.from_issue_id AND f.workspace_id = r.workspace_id
+		JOIN issues t ON t.id = r.to_issue_id AND t.workspace_id = r.workspace_id`
+		q += `
+		WHERE r.workspace_id = ? AND (r.from_issue_id = ? OR r.to_issue_id = ?)
+		  AND f.archived_at IS NULL AND t.archived_at IS NULL`
+	} else {
+		q += `
+		WHERE r.workspace_id = ? AND (r.from_issue_id = ? OR r.to_issue_id = ?)`
+	}
+	q += `
+		ORDER BY r.created_at ASC`
+	rows, err := s.DB.Query(q, args...)
 	if err != nil {
 		return nil, err
 	}

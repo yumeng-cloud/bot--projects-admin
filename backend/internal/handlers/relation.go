@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/middleware"
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/pkg/apperr"
@@ -17,7 +18,9 @@ func (h *RelationHandler) List(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	list, err := h.Svc.ListRelations(ws, r.PathValue("issueID"))
+	q := r.URL.Query()
+	includeArchived := q.Get("include_archived") == "1" || strings.EqualFold(q.Get("include_archived"), "true")
+	list, err := h.Svc.ListRelations(ws, r.PathValue("issueID"), includeArchived)
 	if err != nil {
 		middleware.HandleError(w, err)
 		return

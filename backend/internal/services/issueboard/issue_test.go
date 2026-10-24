@@ -391,7 +391,7 @@ func TestConcurrentCreateRelationCycle(t *testing.T) {
 		t.Fatalf("want 1 success + 1 cycle conflict, got ok=%d cycle=%d", okN, cycleN)
 	}
 	// Graph must not contain a cycle: exactly one of the two edges.
-	relsA, err := svc.ListRelations(ws, a.ID)
+	relsA, err := svc.ListRelations(ws, a.ID, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -974,7 +974,6 @@ func TestIssueNestedAssigneeReporterDisplayName(t *testing.T) {
 
 }
 
-
 // T6-I I1：迁移字段可用；Create 必带 team；双队各建单后按队 list 不串。
 func TestI1TeamPoolIsolation(t *testing.T) {
 	svc, ws, pid, tidA := setup(t)
@@ -1320,3 +1319,165 @@ func TestIssueArchive_TeamIsolationAndCycleStats(t *testing.T) {
 	}
 }
 
+func TestIssueUnarchive_IdempotentAndActivity(t *testing.T) {
+	svc, ws, pid, tid := setup(t)
+	mid := insertMember(t, svc, ws)
+
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "to-unarch", ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := "done"
+	iss, err = svc.UpdateIssue(ws, iss.ID, issueboard.UpdateIssueInput{Version: iss.Version, Status: &done, ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// unarchive before archive → idempotent ok
+	res, err := svc.UnarchiveIssues(ws, issueboard.UnarchiveIssuesInput{IDs: []string{iss.ID}, ActorID: mid, ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res) != 1 || !res[0].OK {
+		t.Fatalf("unarchive non-archived: %+v", res)
+	}
+
+	ares, err := svc.ArchiveIssues(ws, issueboard.ArchiveIssuesInput{IDs: []string{iss.ID}, ActorID: mid, ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ares) != 1 || !ares[0].OK {
+		t.Fatalf("archive: %+v", ares)
+	}
+
+	res, err = svc.UnarchiveIssues(ws, issueboard.UnarchiveIssuesInput{IDs: []string{iss.ID}, ActorID: mid, ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res) != 1 || !res[0].OK {
+		t.Fatalf("unarchive: %+v", res)
+	}
+	got, err := svc.GetIssue(ws, iss.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ArchivedAt != nil {
+		t.Fatalf("archived_at should be cleared, got %v", *got.ArchivedAt)
+	}
+	if got.Status != "done" {
+		t.Fatalf("unarchive must not change status, got %s", got.Status)
+	}
+
+	// idempotent again
+	res2, err := svc.UnarchiveIssues(ws, issueboard.UnarchiveIssuesInput{IDs: []string{iss.ID}, ActorID: mid, ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res2) != 1 || !res2[0].OK {
+		t.Fatalf("idempotent unarchive: %+v", res2)
+	}
+
+	// back on default list
+	list, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{ProjectID: pid, TeamID: tid})
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, i := range list {
+		if i.ID == iss.ID {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("unarchived issue should appear in default list")
+	}
+
+	acts, err := svc.ListIssueActivities(ws, iss.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	foundAct := false
+	for _, a := range acts {
+		if a.Action == "issue.unarchived" {
+			foundAct = true
+			break
+		}
+	}
+	if !foundAct {
+		t.Fatal("missing issue.unarchived activity")
+	}
+}
+
+func TestListRelations_FiltersArchivedEnds(t *testing.T) {
+	svc, ws, pid, tid := setup(t)
+	mid := insertMember(t, svc, ws)
+
+	a, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "rel-a", ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "rel-b", ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "rel-c", ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = svc.CreateRelation(ws, a.ID, issueboard.CreateRelationInput{ToIssueID: b.ID, RelationType: "related", ActorID: mid, ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = svc.CreateRelation(ws, a.ID, issueboard.CreateRelationInput{ToIssueID: c.ID, RelationType: "blocks", ActorID: mid, ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	done := "done"
+	b, err = svc.UpdateIssue(ws, b.ID, issueboard.UpdateIssueInput{Version: b.Version, Status: &done, ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ares, err := svc.ArchiveIssues(ws, issueboard.ArchiveIssuesInput{IDs: []string{b.ID}, ActorID: mid, ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ares) != 1 || !ares[0].OK {
+		t.Fatalf("archive b: %+v", ares)
+	}
+
+	// default: edge to archived B hidden; edge to active C kept
+	rels, err := svc.ListRelations(ws, a.ID, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rels) != 1 || rels[0].ToIssueID != c.ID {
+		t.Fatalf("default ListRelations want only A→C, got %+v", rels)
+	}
+
+	// include_archived restores edge to B
+	all, err := svc.ListRelations(ws, a.ID, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 2 {
+		t.Fatalf("include_archived want 2 edges, got %+v", all)
+	}
+
+	// edge still in DB (no physical delete): from B side with include
+	fromB, err := svc.ListRelations(ws, b.ID, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fromB) != 1 {
+		t.Fatalf("edge should remain in DB, got %+v", fromB)
+	}
+	// default from archived B: both ends of A-B has archived B → hidden
+	fromBDef, err := svc.ListRelations(ws, b.ID, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fromBDef) != 0 {
+		t.Fatalf("default from archived should hide edges, got %+v", fromBDef)
+	}
+}
