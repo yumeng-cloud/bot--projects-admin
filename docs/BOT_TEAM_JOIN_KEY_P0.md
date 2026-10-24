@@ -80,7 +80,7 @@
 
 | 已有（T9–T11） | 本单要补 |
 |----------------|----------|
-| `POST …/teams/{id}/roster/ensure`（UUID 路径） | **`POST …/team-invites` 签发** + **`POST …/team-invites/redeem`（入场码→workspace+team）** |
+| `POST …/teams/{id}/roster/ensure`（UUID 路径） | **`POST …/teams/{id}/invites` 签发** + **`GET …/teams/{id}/invites` 列表（Admin，无明文）** + **`POST …/team-invites/redeem`** |
 | `seat enter` / claim 单活 409；force 仅停/离职 | **产品封装 `team join`**；FE 向导；**活跃席 force 入口清零** |
 | `handoff get` | join 成功后 **自动** get（通道一步完成） |
 | FE：席位条 / 交接摘要 / 换机文案（T1/T4/T5） | **空态「加入班底」向导**；入场码输入；选席/加新席；409 专面（可并 T3） |

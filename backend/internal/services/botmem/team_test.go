@@ -334,3 +334,67 @@ func TestTeamInviteRedeem(t *testing.T) {
 		}
 	}
 }
+
+func TestListInvitesNoPlainCode(t *testing.T) {
+	svc, ws, m1, _ := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "ListInv"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	max := 1
+	inv, err := svc.CreateInvite(ws, team.ID, botmem.CreateInviteInput{
+		AllowExpandSeat: true,
+		RoleHint:        "frontend",
+		MaxUses:         &max,
+		CreatedBy:       m1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inv.Code == "" || inv.Status != "active" {
+		t.Fatalf("create: code=%q status=%q", inv.Code, inv.Status)
+	}
+	plain := inv.Code
+
+	list, err := svc.ListInvites(ws, team.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) != 1 {
+		t.Fatalf("len=%d", len(list))
+	}
+	got := list[0]
+	if got.Code != "" {
+		t.Fatalf("list must not return plain code: %q", got.Code)
+	}
+	if got.ID != inv.ID || got.Status != "active" || got.UseCount != 0 {
+		t.Fatalf("list item: %+v", got)
+	}
+	if got.CodeTail == "" || len(got.CodeTail) > 4 {
+		t.Fatalf("code_tail=%q", got.CodeTail)
+	}
+	if !got.AllowExpandSeat {
+		t.Fatal("allow_expand_seat lost")
+	}
+	// redeem once → exhausted
+	if _, err := svc.RedeemInvite(plain); err != nil {
+		t.Fatal(err)
+	}
+	list, err = svc.ListInvites(ws, team.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if list[0].Status != "exhausted" || list[0].UseCount != 1 {
+		t.Fatalf("after redeem: %+v", list[0])
+	}
+	if err := svc.RevokeInvite(ws, team.ID, inv.ID); err != nil {
+		t.Fatal(err)
+	}
+	list, err = svc.ListInvites(ws, team.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if list[0].Status != "revoked" {
+		t.Fatalf("want revoked got %q", list[0].Status)
+	}
+}

@@ -85,8 +85,9 @@
 
 | 能力 | 建议 | 说明 |
 |------|------|------|
-| 签发入场码 | `POST …/teams/{teamID}/invites` → 一次明文 `ymt_` | 总指挥/Admin；hash 入库 |
-| 兑换 | `POST …/team-invites/redeem` `{code}` → `{workspace_id,team_id,roster?}` | Bot 持 `ymk_` 调用 |
+| 签发入场码 | `POST …/teams/{teamID}/invites` → 一次明文 `ymt_`；body `allow_expand_seat` | 总指挥/Admin；hash 入库 |
+| 列已签发 | `GET …/teams/{teamID}/invites` → `{invites:[…]}`（`status`/`use_count`/`expires_at`/`code_tail`；无明文） | Admin |
+| 兑换 | `POST …/team-invites/redeem` `{code}` → `{workspace_id,team_id,…}` | Bot 持 `ymk_` 调用 |
 | 一键 join | 通道 `ymbot team join --code`（= redeem+ensure+bind+handoff get） | 产品封装，非第二套 claim |
 | **加新席** | `ensure` 带新 `role_slug`，或 `POST …/seats` | **≠** 现网 `expand`（expand=给空闲席派叶子 Issue） |
 | force 收窄 | `bind(force)`：**仅** `status∈{left,departed}`（或 empty 无需 force）；`active` → 硬 409 | 现网 force 可顶活跃，**改代码硬拒**（Go 已认） |

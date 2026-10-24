@@ -68,10 +68,16 @@ Bot = **可迁绑的角色席位**（身份挂在工作区·团队下，不钉�
 |------|------|
 | **角色认领** | `BotRoleClaim(workspace_id, role_id, member_id, claimed_at, released_at?)`；同 role **单活**（`released_at IS NULL`）；POST claim 冲突 **409** |
 | **BotRole** | `name, slug, responsibilities, skills, default_project_ids`；列表可嵌 `claim` |
-| **Handoff** | 无表、实时组装：`claimed_role?` + memories + todos(todo\|doing) + 指派开放 issues |
+| **Handoff** | 无表、实时组装：`claimed_role?` + memories + todos(todo|doing) + 指派开放 issues |
 | **记忆** | `bot_memories` UNIQUE`(workspace_id, member_id, key_name)`；可选 `role_id` 未当共享墙；**无**团队/看板级共享记忆表（→ P0.5） |
 
 P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_id` roster = 按团队 UUID 物化/列出 role 席位，不另发明第二套 claim。
+
+
+### 1.3 席位 status 与入场码（实现对齐）
+
+- **`team_seats.status`**：`open`（空席）→ `active`（已绑）→ `stopped`（停工）/ `left`（解绑离职）。活跃席禁止 force 顶替。
+- **入场码**：`POST/GET …/teams/{teamID}/invites`（Admin）；`POST /team-invites/redeem`。列表不回明文；详见 [`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md)。
 
 ---
 

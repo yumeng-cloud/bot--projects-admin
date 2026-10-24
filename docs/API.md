@@ -86,6 +86,28 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 
 写操作建议支持 Header `Idempotency-Key`。
 
+## Teams / Seats / Invites（Bot 班底）
+
+鉴权同工作区：`AuthJWTOrAPIKey` + 成员；签发/列表入场码需 **Admin**。
+
+| Method | Path | 说明 |
+|--------|------|------|
+| GET/POST | `/workspaces/{ws}/teams` | 团队列表 / 创建 |
+| GET | `/workspaces/{ws}/teams/{teamID}` | 详情 |
+| GET/POST | `/workspaces/{ws}/teams/{teamID}/roster` · `…/roster/ensure` | 班底席位；ensure 幂等 |
+| POST | `/workspaces/{ws}/teams/{teamID}/seats` | 加席；`status` 初始 `open` |
+| POST | `…/seats/{seatID}/bind` · `unbind` · `stop` | 绑定 / 解绑→`left` / 停工→`stopped` |
+| POST | `…/seats/expand` · `…/expand` | 给空闲席派叶子 Issue（≠加新席） |
+| POST | `/workspaces/{ws}/teams/{teamID}/invites` | Admin 签发 `ymt_`；**明文 `code` 仅此一次**；body 字段名 `allow_expand_seat` |
+| GET | `/workspaces/{ws}/teams/{teamID}/invites` | Admin 列已签发；**无**明文 code / hash；含 `status`/`use_count`/`expires_at`/`code_tail` 等 |
+| POST | `/team-invites/redeem` | `{code}` → `{workspace_id,team_id,allow_expand_seat,seat_slug?,role_hint?}`（不在 ws 路径下） |
+
+**seat.status**：`open` | `active` | `stopped` | `left`（空串读出按 `open`）。活跃席 `bind(force)` 硬拒；force 仅 `stopped|left`。
+
+**invite.status**（派生、不落库）：`active` | `revoked` | `expired` | `exhausted`。
+
+详见 [`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md) · [`BOT_TEAM_SEAT_P0.md`](./BOT_TEAM_SEAT_P0.md)。
+
 ## 数据库
 
 - 本地默认：`DB_DRIVER=sqlite`，打开时自动 migrate `schema.sql`。

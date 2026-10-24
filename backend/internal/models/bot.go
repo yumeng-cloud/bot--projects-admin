@@ -135,19 +135,31 @@ type TeamInvite struct {
 	WorkspaceID     string  `json:"workspace_id"`
 	TeamID          string  `json:"team_id"`
 	TokenPrefix     string  `json:"token_prefix,omitempty"`
+	// CodeTail 列表展示用末四（自 token_prefix 推导）；非明文
+	CodeTail        string  `json:"code_tail,omitempty"`
 	AllowExpandSeat bool    `json:"allow_expand_seat"`
 	SeatSlug        *string `json:"seat_slug,omitempty"`
 	RoleHint        *string `json:"role_hint,omitempty"`
 	MaxUses         *int    `json:"max_uses,omitempty"`
 	UseCount        int     `json:"use_count"`
+	// Status: active | revoked | expired | exhausted（由 revoked/expires/uses 推导，不落库）
+	Status          string  `json:"status"`
 	ExpiresAt       *string `json:"expires_at,omitempty"`
 	RevokedAt       *string `json:"revoked_at,omitempty"`
 	CreatedBy       *string `json:"created_by,omitempty"`
 	CreatedAt       string  `json:"created_at"`
 	UpdatedAt       string  `json:"updated_at"`
-	// Code 仅 CreateInvite 响应明文，不落库
+	// Code 仅 CreateInvite 响应明文，不落库；List 永不返回
 	Code string `json:"code,omitempty"`
 }
+
+// Invite status 常量（G3 list）
+const (
+	InviteStatusActive    = "active"
+	InviteStatusRevoked   = "revoked"
+	InviteStatusExpired   = "expired"
+	InviteStatusExhausted = "exhausted"
+)
 
 // TeamInviteRedeemResult 兑换响应（无明文、无 hash）
 type TeamInviteRedeemResult struct {

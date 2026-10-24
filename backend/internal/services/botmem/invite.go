@@ -114,6 +114,7 @@ func (s *Service) getInviteByID(workspaceID, id string) (*models.TeamInvite, err
 	if err != nil {
 		return nil, err
 	}
+	enrichInvite(&inv)
 	return &inv, nil
 }
 
@@ -229,4 +230,72 @@ func (s *Service) RevokeInvite(workspaceID, teamID, inviteID string) error {
 		return apperr.NotFound("入场码不存在或已吊销")
 	}
 	return nil
+}
+
+// enrichInvite 填充 status / code_tail；不设明文 code（Create 在调用后自行赋值）。
+func enrichInvite(inv *models.TeamInvite) {
+	if inv == nil {
+		return
+	}
+	inv.CodeTail = inviteCodeTail(inv.TokenPrefix)
+	inv.Status = computeInviteStatus(inv)
+}
+
+func inviteCodeTail(prefix string) string {
+	clean := strings.TrimPrefix(prefix, teamInvitePrefix)
+	if clean == "" {
+		return ""
+	}
+	if len(clean) <= 4 {
+		return clean
+	}
+	return clean[len(clean)-4:]
+}
+
+func computeInviteStatus(inv *models.TeamInvite) string {
+	if inv.RevokedAt != nil && strings.TrimSpace(*inv.RevokedAt) != "" {
+		return models.InviteStatusRevoked
+	}
+	if inv.ExpiresAt != nil && strings.TrimSpace(*inv.ExpiresAt) != "" {
+		exp, perr := time.Parse(time.RFC3339Nano, *inv.ExpiresAt)
+		if perr != nil {
+			exp, perr = time.Parse(time.RFC3339, *inv.ExpiresAt)
+		}
+		if perr == nil && time.Now().UTC().After(exp) {
+			return models.InviteStatusExpired
+		}
+	}
+	if inv.MaxUses != nil && *inv.MaxUses > 0 && inv.UseCount >= *inv.MaxUses {
+		return models.InviteStatusExhausted
+	}
+	return models.InviteStatusActive
+}
+
+// ListInvites Admin 列团队已签发入场码；不含明文 code / token_hash。
+func (s *Service) ListInvites(workspaceID, teamID string) ([]models.TeamInvite, error) {
+	if _, err := s.GetTeam(workspaceID, teamID); err != nil {
+		return nil, err
+	}
+	rows, err := s.DB.Query(`
+		SELECT id, workspace_id, team_id, token_prefix, allow_expand_seat, seat_slug, role_hint,
+			max_uses, use_count, expires_at, revoked_at, created_by, created_at, updated_at
+		FROM team_invites
+		WHERE workspace_id = ? AND team_id = ?
+		ORDER BY created_at DESC`, workspaceID, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]models.TeamInvite, 0)
+	for rows.Next() {
+		inv, err := scanInvite(rows)
+		if err != nil {
+			return nil, err
+		}
+		enrichInvite(&inv)
+		// 明确清空，防止任何路径带上明文
+		inv.Code = ""
+		out = append(out, inv)
+	}
+	return out, rows.Err()
 }

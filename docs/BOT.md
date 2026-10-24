@@ -168,3 +168,6 @@ go run ./cmd/ymbot mcp-serve   # Cursor stdio MCP；tools: board_*；full/ids �
 - Bot 工作流 MCP/CLI 最小能力规格：[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md)
 - 续命短原则：[`BOT_CONTINUITY_P0.md`](./BOT_CONTINUITY_P0.md)
 - 续命验收 H1–H5：[`BOT_HANDOFF_CONTINUITY_P0.md`](./BOT_HANDOFF_CONTINUITY_P0.md)
+
+- 班底席位 / 入场码：[`BOT_TEAM_SEAT_P0.md`](./BOT_TEAM_SEAT_P0.md) · [`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md)（`seat.status`=`open|active|stopped|left`；`GET/POST …/teams/{id}/invites`）
+
