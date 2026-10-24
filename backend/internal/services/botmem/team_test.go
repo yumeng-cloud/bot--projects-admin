@@ -174,8 +174,14 @@ func TestBindSeatForceDirtyBindWritesAudit(t *testing.T) {
 	if action != "seat.force_bind" {
 		t.Fatalf("action=%s", action)
 	}
-	if !strings.Contains(payload, "force 清脏绑") || !strings.Contains(payload, m1) || !strings.Contains(payload, m2) {
-		t.Fatalf("payload=%s", payload)
+	if !strings.Contains(payload, "强制补位") || !strings.Contains(payload, "force") {
+		t.Fatalf("payload missing 人话 force: %s", payload)
+	}
+	if !strings.Contains(payload, m1) || !strings.Contains(payload, m2) {
+		t.Fatalf("payload missing members: %s", payload)
+	}
+	if !strings.Contains(payload, `"force":true`) && !strings.Contains(payload, `"force": true`) {
+		t.Fatalf("payload missing force flag: %s", payload)
 	}
 }
 
@@ -441,6 +447,186 @@ func TestBindSeatLeftForceActive(t *testing.T) {
 	}
 	if re.BoundMemberID == nil || *re.BoundMemberID != m2 || re.Status != "active" {
 		t.Fatalf("left force rebind: %+v", re)
+	}
+}
+
+func countForceBindActivities(t *testing.T, svc *botmem.Service, ws string) int {
+	t.Helper()
+	var n int
+	if err := svc.DB.QueryRow(`SELECT COUNT(*) FROM activities WHERE workspace_id=? AND action=?`, ws, "seat.force_bind").Scan(&n); err != nil {
+		t.Fatalf("count force_bind: %v", err)
+	}
+	return n
+}
+
+func countAuditComments(t *testing.T, svc *botmem.Service, issueID string) int {
+	t.Helper()
+	var n int
+	if err := svc.DB.QueryRow(`SELECT COUNT(*) FROM comments WHERE issue_id=? AND body LIKE ?`, issueID, "%强制补位%").Scan(&n); err != nil {
+		t.Fatalf("count comments: %v", err)
+	}
+	return n
+}
+
+// TestBindSeatStoppedForceWritesVisibleAudit N3：停工席 force 成功 → 人话 activities + Issue comment。
+func TestBindSeatStoppedForceWritesVisibleAudit(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "StopForceAudit"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops", Name: "运维"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	ib := issueboard.New(svc.DB)
+	proj, err := ib.CreateProject(ws, issueboard.CreateProjectInput{Name: "P", KeyPrefix: "SF"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	iss, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{
+		ProjectID: proj.ID, Title: "停工补位审计", Status: "todo", ActorKind: "human", AssigneeID: &m1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.StopSeat(ws, team.ID, s1.ID); err != nil {
+		t.Fatal(err)
+	}
+	beforeAct := countForceBindActivities(t, svc, ws)
+	beforeCmt := countAuditComments(t, svc, iss.ID)
+
+	forced, err := svc.BindSeat(ws, team.ID, s1.ID, m2, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if forced.BoundMemberID == nil || *forced.BoundMemberID != m2 || forced.Status != "active" {
+		t.Fatalf("stopped force: %+v", forced)
+	}
+	if countForceBindActivities(t, svc, ws) != beforeAct+1 {
+		t.Fatalf("want +1 seat.force_bind activity")
+	}
+	var payload string
+	if err := svc.DB.QueryRow(
+		`SELECT payload FROM activities WHERE workspace_id=? AND action=? ORDER BY created_at DESC LIMIT 1`,
+		ws, "seat.force_bind",
+	).Scan(&payload); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"强制补位", "运维", "停工", "force", "BotB"} {
+		if !strings.Contains(payload, want) {
+			t.Fatalf("payload missing %q: %s", want, payload)
+		}
+	}
+	if countAuditComments(t, svc, iss.ID) != beforeCmt+1 {
+		t.Fatalf("want Issue comment 人话审计 on %s", iss.ID)
+	}
+	var body string
+	if err := svc.DB.QueryRow(
+		`SELECT body FROM comments WHERE issue_id=? AND body LIKE ? ORDER BY created_at DESC LIMIT 1`,
+		iss.ID, "%强制补位%",
+	).Scan(&body); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(body, "force") || !strings.Contains(body, "停工") {
+		t.Fatalf("comment body=%q", body)
+	}
+}
+
+// TestBindSeatLeftForceWritesVisibleAudit N3：离职席 force 成功 → 人话审计。
+func TestBindSeatLeftForceWritesVisibleAudit(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "LeftForceAudit"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "qa", Name: "QA"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	ib := issueboard.New(svc.DB)
+	proj, err := ib.CreateProject(ws, issueboard.CreateProjectInput{Name: "P", KeyPrefix: "LF"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	iss, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{
+		ProjectID: proj.ID, Title: "离职补位审计", Status: "in_progress", ActorKind: "human", AssigneeID: &m1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.UnbindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	beforeAct := countForceBindActivities(t, svc, ws)
+	beforeCmt := countAuditComments(t, svc, iss.ID)
+
+	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m2, true); err != nil {
+		t.Fatal(err)
+	}
+	if countForceBindActivities(t, svc, ws) != beforeAct+1 {
+		t.Fatal("want +1 seat.force_bind")
+	}
+	var payload string
+	_ = svc.DB.QueryRow(
+		`SELECT payload FROM activities WHERE workspace_id=? AND action=? ORDER BY created_at DESC LIMIT 1`,
+		ws, "seat.force_bind",
+	).Scan(&payload)
+	if !strings.Contains(payload, "强制补位") || !strings.Contains(payload, "离职") {
+		t.Fatalf("payload=%s", payload)
+	}
+	if countAuditComments(t, svc, iss.ID) != beforeCmt+1 {
+		t.Fatal("want left-force Issue comment")
+	}
+}
+
+// TestBindSeatActiveForceNoVisibleAudit 活跃 force 仍 409，且不写人话审计。
+func TestBindSeatActiveForceNoVisibleAudit(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "ActiveNoAudit"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "fe2", Name: "前端2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	ib := issueboard.New(svc.DB)
+	proj, err := ib.CreateProject(ws, issueboard.CreateProjectInput{Name: "P", KeyPrefix: "AN"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	iss, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{
+		ProjectID: proj.ID, Title: "活跃不可 force", Status: "todo", ActorKind: "human", AssigneeID: &m1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	beforeAct := countForceBindActivities(t, svc, ws)
+	beforeCmt := countAuditComments(t, svc, iss.ID)
+
+	_, err = svc.BindSeat(ws, team.ID, s1.ID, m2, true)
+	if err == nil {
+		t.Fatal("expected 409")
+	}
+	ae, ok := err.(*apperr.AppError)
+	if !ok || ae.Code != "conflict" {
+		t.Fatalf("want conflict %#v", err)
+	}
+	if countForceBindActivities(t, svc, ws) != beforeAct {
+		t.Fatal("active force must not write seat.force_bind")
+	}
+	if countAuditComments(t, svc, iss.ID) != beforeCmt {
+		t.Fatal("active force must not write audit comment")
 	}
 }
 

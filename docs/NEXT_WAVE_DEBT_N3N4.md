@@ -8,10 +8,10 @@
 | | |
 | --- | --- |
 | **谁** | **Go 后端**（必要时 React 只展示已有 comment） |
-| **债** | J4 现仅 `seat.force_bind` activities；**Issue/席位正文 comment** 仍 P0.1 |
-| **做** | 停工/离职席 `force` 成功 → 写一条人话审计（席位 activity 已有则再挂 **Issue comment** 或席位时间线可读文案：谁在何时强制补位） |
+| **债** | ~~J4 现仅 `seat.force_bind` activities；**Issue/席位正文 comment** 仍 P0.1~~ → **已清**（本波 Go） |
+| **做** | 停工/离职席（及脏绑）`force` 成功 → 人话 `seat.force_bind` activity + 关联开放 Issue **comment**（谁、哪席、原状态→占用、force） |
 | **不做** | 活跃席 force；改抢席语义 |
-| **验收** | 箱：停工席 force 后，抽屉评论或活动可见审计句；证据路径写入 J4 脚注 |
+| **验收** | 箱：停工席 force 后，`GET …/activities` 见人话句；Issue 抽屉评论见同文案；单测 `TestBindSeatStoppedForceWritesVisibleAudit` / `…Left…` / `…ActiveForceNoVisibleAudit` |
 
 ## N4 · 下发后「立即推送」可选（J7 P0.5 一刀）
 

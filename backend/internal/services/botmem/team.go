@@ -337,8 +337,10 @@ func (s *Service) BindSeat(workspaceID, teamID, seatID, memberID string, force b
 	if err != nil {
 		return nil, err
 	}
-	forceClearedDirty := false
-	var dirtyFromMember string
+	prevStatus := normalizeSeatStatus(seat.Status)
+	stoppedOrLeft := prevStatus == models.SeatStatusStopped || prevStatus == models.SeatStatusLeft
+	writeForceAudit := false
+	var fromMember string
 	if seat.BoundMemberID != nil && *seat.BoundMemberID != "" && *seat.BoundMemberID != memberID {
 		// 异人 active claim → 即使 force 也 409（活跃禁止顶替）
 		if seat.BotRoleID != nil && *seat.BotRoleID != "" {
@@ -350,8 +352,6 @@ func (s *Service) BindSeat(workspaceID, teamID, seatID, memberID string, force b
 				return nil, apperr.Conflict("该席位占用中，禁止顶替")
 			}
 		}
-		st := normalizeSeatStatus(seat.Status)
-		stoppedOrLeft := st == models.SeatStatusStopped || st == models.SeatStatusLeft
 		// 无 active claim 的残留 bound = 脏绑；stopped/left 可补位
 		if !force && !stoppedOrLeft {
 			msg := "该席位已绑定其他成员"
@@ -360,15 +360,19 @@ func (s *Service) BindSeat(workspaceID, teamID, seatID, memberID string, force b
 			}
 			return nil, apperr.Conflict(msg)
 		}
-		dirtyFromMember = *seat.BoundMemberID
+		fromMember = *seat.BoundMemberID
 		if force {
-			forceClearedDirty = true
+			writeForceAudit = true
 		}
 		_, err = s.DB.Exec(`UPDATE team_seats SET bound_member_id = NULL, bound_at = NULL, updated_at = ? WHERE id = ?`,
 			nowUTC(), seatID)
 		if err != nil {
 			return nil, err
 		}
+	} else if force && stoppedOrLeft {
+		// 停工/离职席已清绑：force 成功仍须人话审计（N3 / J4 P0.1）
+		writeForceAudit = true
+		fromMember = s.lastClaimMemberID(seat)
 	}
 	now := nowUTC()
 	_, err = s.DB.Exec(`UPDATE team_seats SET bound_member_id = ?, bound_at = ?, status = ?, updated_at = ? WHERE id = ?`,
@@ -381,28 +385,127 @@ func (s *Service) BindSeat(workspaceID, teamID, seatID, memberID string, force b
 			return nil, err
 		}
 	}
-	if forceClearedDirty {
-		s.writeSeatForceAudit(workspaceID, memberID, seat, dirtyFromMember, memberID)
+	if writeForceAudit {
+		s.writeSeatForceAudit(workspaceID, memberID, seat, fromMember, memberID, prevStatus)
 	}
 	return s.getSeat(workspaceID, teamID, seatID)
 }
 
-// writeSeatForceAudit 脏绑 force 成功后的可读审计（activities，禁止只 UpsertMemory）。
-func (s *Service) writeSeatForceAudit(workspaceID, actorID string, seat *models.TeamSeat, fromMember, toMember string) {
-	comment := fmt.Sprintf("force 清脏绑：席位「%s」(%s) 自成员 %s 改绑至 %s（无 active claim）",
-		seat.DisplayName, seat.RoleSlug, fromMember, toMember)
+// lastClaimMemberID 停工/离职清绑后仍可从 claim 历史还原原占用者（审计用）。
+func (s *Service) lastClaimMemberID(seat *models.TeamSeat) string {
+	if seat == nil || seat.BotRoleID == nil || *seat.BotRoleID == "" {
+		return ""
+	}
+	var mid string
+	err := s.DB.QueryRow(`SELECT member_id FROM bot_role_claims WHERE role_id = ? ORDER BY claimed_at DESC LIMIT 1`,
+		*seat.BotRoleID).Scan(&mid)
+	if err != nil {
+		return ""
+	}
+	return mid
+}
+
+func seatStatusZh(st string) string {
+	switch normalizeSeatStatus(st) {
+	case models.SeatStatusStopped:
+		return "停工"
+	case models.SeatStatusLeft:
+		return "离职"
+	case models.SeatStatusActive:
+		return "占用"
+	case models.SeatStatusOpen:
+		return "空席"
+	default:
+		if st == "" {
+			return "未知"
+		}
+		return st
+	}
+}
+
+func (s *Service) memberDisplayName(workspaceID, memberID string) string {
+	if memberID == "" {
+		return ""
+	}
+	var name string
+	err := s.DB.QueryRow(`SELECT COALESCE(NULLIF(display_name,''), id) FROM members WHERE id = ? AND workspace_id = ?`,
+		memberID, workspaceID).Scan(&name)
+	if err != nil || name == "" {
+		return memberID
+	}
+	return name
+}
+
+// writeSeatForceAudit force 成功后的人对人可见审计：workspace activities 人话句 + 关联开放 Issue comment。
+// 仅 stopped/left / 脏绑 force 路径调用；禁止只 UpsertMemory。
+func (s *Service) writeSeatForceAudit(workspaceID, actorID string, seat *models.TeamSeat, fromMember, toMember, fromStatus string) {
+	toName := s.memberDisplayName(workspaceID, toMember)
+	fromName := s.memberDisplayName(workspaceID, fromMember)
+	fromZh := seatStatusZh(fromStatus)
+	// active+force 成功 ⇒ 无 active claim 的脏绑（真活跃已在 BindSeat 409）
+	if normalizeSeatStatus(fromStatus) == models.SeatStatusActive {
+		fromZh = "脏绑"
+	}
+	var comment string
+	if fromMember != "" {
+		comment = fmt.Sprintf("%s 强制补位席位「%s」（%s）：原成员 %s（%s）→ 占用（force）",
+			toName, seat.DisplayName, seat.RoleSlug, fromName, fromZh)
+	} else {
+		comment = fmt.Sprintf("%s 强制补位席位「%s」（%s）：%s → 占用（force）",
+			toName, seat.DisplayName, seat.RoleSlug, fromZh)
+	}
 	payload, _ := json.Marshal(map[string]any{
-		"comment":         comment,
-		"seat_id":         seat.ID,
-		"team_id":         seat.TeamID,
-		"role_slug":       seat.RoleSlug,
-		"from_member_id":  fromMember,
-		"to_member_id":    toMember,
+		"comment":        comment,
+		"summary":        comment,
+		"seat_id":        seat.ID,
+		"team_id":        seat.TeamID,
+		"role_slug":      seat.RoleSlug,
+		"from_member_id": fromMember,
+		"to_member_id":   toMember,
+		"from_status":    fromStatus,
+		"to_status":      models.SeatStatusActive,
+		"force":          true,
 	})
 	_, _ = s.DB.Exec(`INSERT INTO activities
 		(id, workspace_id, issue_id, actor_id, actor_kind, action, payload, created_at)
 		VALUES (?,?,NULL,?,?,?,?,?)`,
 		idgen.New(), workspaceID, actorID, "bot", "seat.force_bind", string(payload), nowUTC())
+
+	// 人对人可见：挂到原占用者（或补位者）名下开放 Issue 评论区
+	s.writeSeatForceIssueComments(workspaceID, actorID, fromMember, toMember, comment)
+}
+
+func (s *Service) writeSeatForceIssueComments(workspaceID, authorID, fromMember, toMember, body string) {
+	ids := map[string]struct{}{}
+	for _, mid := range []string{fromMember, toMember} {
+		if mid == "" {
+			continue
+		}
+		rows, err := s.DB.Query(`SELECT id FROM issues
+			WHERE workspace_id = ? AND assignee_id = ? AND status IN ('todo','in_progress','in_review')`,
+			workspaceID, mid)
+		if err != nil {
+			continue
+		}
+		for rows.Next() {
+			var id string
+			if rows.Scan(&id) == nil && id != "" {
+				ids[id] = struct{}{}
+			}
+		}
+		rows.Close()
+	}
+	if len(ids) == 0 {
+		return
+	}
+	ib := issueboard.New(s.DB)
+	for issueID := range ids {
+		_, _ = ib.CreateComment(workspaceID, issueID, issueboard.CreateCommentInput{
+			Body:      body,
+			AuthorID:  authorID,
+			ActorKind: "bot",
+		})
+	}
 }
 
 func (s *Service) UnbindSeat(workspaceID, teamID, seatID, memberID string, asAdmin bool) (*models.TeamSeat, error) {

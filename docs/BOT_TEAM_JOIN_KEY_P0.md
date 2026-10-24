@@ -72,7 +72,7 @@
 
 - **废除**：对活跃席的任何 force / 「确认顶替」产品入口（含 FE）。  
 - **保留**：仅 `stopped|left` 席的 `--force`（通道）+ 管理端「标记停工」后的补位。  
-- **P0.1**：force 成功必须写 Issue/席位 comment 审计（T10④ 已标补强）。
+- **P0.1**：force 成功必须写 Issue/席位 comment 审计（T10④）→ **N3 已清**：人话 activity + 关联开放 Issue comment。
 
 ---
 

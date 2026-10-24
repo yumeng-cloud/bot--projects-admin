@@ -104,7 +104,7 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 | POST | `/workspaces/{ws}/teams/{teamID}/invites/{inviteID}/revoke` | Admin 吊销；幂等已吊销仍 200 + `status=revoked` |
 | POST | `/team-invites/redeem` | `{code}` → `{workspace_id,team_id,allow_expand_seat,seat_slug?,role_hint?}`（不在 ws 路径下） |
 
-**seat.status**：`open` | `active` | `stopped` | `left`（空串读出按 `open`）。`bind`/`claim`/enter 成功后写 **`active`**；活跃席 `bind(force)` 硬拒；force 仅 `stopped|left`。
+**seat.status**：`open` | `active` | `stopped` | `left`（空串读出按 `open`）。`bind`/`claim`/enter 成功后写 **`active`**；活跃席 `bind(force)` 硬拒；force 仅 `stopped|left`（及脏绑）。**force 成功**另写人对人可见审计：`activities.action=seat.force_bind`（payload 人话 `comment`/`summary`）+ 关联开放 Issue **comment**（原/新占用者 assignee）。
 
 **invite.status**（派生、不落库）：`active` | `revoked` | `expired` | `exhausted`。
 
