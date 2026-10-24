@@ -1,6 +1,6 @@
 import { api } from './client'
 
-/** C3 / C8：全站工作区（Go 未齐 → 404/403，调用方空态 + Toast） */
+/** C3 / C8：全站工作区（超管） */
 export type AdminWorkspace = {
   id: string
   name: string
@@ -24,13 +24,11 @@ export function listAdminWorkspaces() {
   return api<{ workspaces: AdminWorkspace[] }>('/admin/workspaces', { skipToast: true })
 }
 
-export function patchAdminWorkspace(
-  id: string,
-  body: { disabled?: boolean; status?: string },
-) {
+/** PATCH body 仅 {disabled:boolean}（API.md） */
+export function patchAdminWorkspace(id: string, body: { disabled: boolean }) {
   return api<{ workspace: AdminWorkspace }>(`/admin/workspaces/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify(body),
+    body: JSON.stringify({ disabled: body.disabled }),
     skipToast: true,
   })
 }

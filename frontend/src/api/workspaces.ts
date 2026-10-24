@@ -4,8 +4,16 @@ export type Workspace = {
   id: string
   name: string
   slug: string
-  role: string
-  member_id: string
+  /** listMine 项上常有；GET 详情时 role 在响应顶层 */
+  role?: string
+  member_id?: string
+}
+
+/** GET /workspaces/{id}：role / member_id 在顶层，workspace 仅 id/name/slug */
+export type GetWorkspaceResp = {
+  workspace: { id: string; name: string; slug: string; role?: string }
+  role?: string
+  member_id?: string
 }
 
 export type CreateWorkspaceResp = {
@@ -36,7 +44,7 @@ export function listMyWorkspaces() {
 }
 
 export function getWorkspace(workspaceId: string) {
-  return api<{ workspace: Workspace }>(`/workspaces/${workspaceId}`)
+  return api<GetWorkspaceResp>(`/workspaces/${workspaceId}`)
 }
 
 /** A1：POST /workspaces；创建者成为 admin */
@@ -50,7 +58,7 @@ export function createWorkspace(body: { name: string; slug?: string }) {
   })
 }
 
-/** A5：PATCH /workspaces/{id} 改名/slug（WS admin）；Go 未齐时由调用方 Toast */
+/** A5：PATCH /workspaces/{id} 改名/slug（WS admin） */
 export function patchWorkspace(
   workspaceId: string,
   body: { name?: string; slug?: string },

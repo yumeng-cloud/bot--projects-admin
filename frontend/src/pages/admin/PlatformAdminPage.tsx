@@ -29,8 +29,7 @@ import {
 import { formatShanghai } from '../../utils/time'
 
 /**
- * C7–C9：平台超管台壳。仅 is_platform_admin 可见；
- * Go 未齐时列表空态 + 中文错误 Toast，不造假数据。
+ * C7–C9：平台超管台。仅 is_platform_admin 可见；真实 API，无假数据。
  */
 export default function PlatformAdminPage() {
   const nav = useNavigate()
@@ -70,14 +69,12 @@ export default function PlatformAdminPage() {
         e instanceof ApiError
           ? e.status === 403
             ? '需要平台超级管理员权限'
-            : e.status === 404
-              ? '平台工作区接口尚未就绪'
-              : e.message
+            : e.message
           : e instanceof Error
             ? e.message
             : '加载失败'
       setWsErr(msg)
-      message.error(msg)
+      if (e instanceof ApiError && e.status !== 404) message.error(msg)
     } finally {
       setWsLoading(false)
     }
@@ -95,14 +92,12 @@ export default function PlatformAdminPage() {
         e instanceof ApiError
           ? e.status === 403
             ? '需要平台超级管理员权限'
-            : e.status === 404
-              ? '平台用户接口尚未就绪'
-              : e.message
+            : e.message
           : e instanceof Error
             ? e.message
             : '加载失败'
       setUserErr(msg)
-      message.error(msg)
+      if (e instanceof ApiError && e.status !== 404) message.error(msg)
     } finally {
       setUserLoading(false)
     }
@@ -286,7 +281,7 @@ export default function PlatformAdminPage() {
                         ]}
                       />
                     ) : (
-                      empty(wsErr ? '接口未就绪，暂无数据' : '暂无全站工作区')
+                      empty(wsErr || '暂无全站工作区')
                     )}
                   </Spin>
                 </>
@@ -342,7 +337,7 @@ export default function PlatformAdminPage() {
                         ]}
                       />
                     ) : (
-                      empty(userErr ? '接口未就绪，暂无数据' : '暂无用户')
+                      empty(userErr || '暂无用户')
                     )}
                   </Spin>
                 </>
@@ -351,7 +346,7 @@ export default function PlatformAdminPage() {
           ]}
         />
         <div className="acb-surface-panel-foot">
-          平台管理仅对超管可见。后端路由：GET/PATCH /api/v1/admin/workspaces、GET/PATCH /api/v1/admin/users。
+          平台管理仅对超管可见。可停用/恢复工作区、代开工作空间、授撤平台超管。
         </div>
       </div>
     </div>

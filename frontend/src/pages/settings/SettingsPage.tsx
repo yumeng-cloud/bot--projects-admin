@@ -14,7 +14,9 @@ import {
   Space,
   Popconfirm,
   Alert,
+  Card,
 } from 'antd'
+import { CopyOutlined } from '@ant-design/icons'
 import { useParams } from 'react-router-dom'
 import { api, ApiError } from '../../api/client'
 import { getWorkspace, listMyWorkspaces, patchWorkspace, slugifyName } from '../../api/workspaces'
@@ -25,6 +27,14 @@ import {
   removeMember,
   type WorkspaceMember,
 } from '../../api/members'
+import {
+  createWorkspaceInvite,
+  listWorkspaceInvites,
+  revokeWorkspaceInvite,
+  workspaceInviteStatusCn,
+  workspaceInviteTail,
+  type WorkspaceInvite,
+} from '../../api/workspaceInvites'
 import { roleLabel } from '../../utils/labels'
 import { formatShanghai } from '../../utils/time'
 
@@ -44,6 +54,14 @@ function isBotMember(m: Member): boolean {
   return m.is_bot === true || m.is_bot === 1 || m.role === 'bot'
 }
 
+function expiresPresetToRfc3339(preset: string): string | undefined {
+  if (!preset || preset === 'never') return undefined
+  const days = Number(preset)
+  if (!Number.isFinite(days) || days <= 0) return undefined
+  const d = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+  return d.toISOString()
+}
+
 export default function SettingsPage() {
   const { wsId = '' } = useParams()
   const [loading, setLoading] = useState(true)
@@ -60,6 +78,15 @@ export default function SettingsPage() {
   const [inviteForm] = Form.useForm<{ email: string; role: 'admin' | 'member'; display_name?: string }>()
   const [inviting, setInviting] = useState(false)
 
+  const [linkForm] = Form.useForm<{
+    email?: string
+    role: 'admin' | 'member'
+    expires: string
+  }>()
+  const [linkBusy, setLinkBusy] = useState(false)
+  const [wsInvites, setWsInvites] = useState<WorkspaceInvite[]>([])
+  const [lastPlainCode, setLastPlainCode] = useState<string | null>(null)
+
   const isAdmin = myRole === 'admin' || myRole === 'owner'
 
   const adminCount = useMemo(
@@ -72,6 +99,16 @@ export default function SettingsPage() {
     const data = await listMembers(wsId)
     setMembers(data.members || [])
   }, [wsId])
+
+  const reloadInvites = useCallback(async () => {
+    if (!wsId || !isAdmin) return
+    try {
+      const data = await listWorkspaceInvites(wsId)
+      setWsInvites(data.invites || [])
+    } catch {
+      /* 非 admin / 暂无列表时静默 */
+    }
+  }, [wsId, isAdmin])
 
   useEffect(() => {
     ;(async () => {
@@ -89,19 +126,22 @@ export default function SettingsPage() {
         if (l.status === 'fulfilled') setLabels(l.value.labels || [])
         if (k.status === 'fulfilled') setKeys(k.value.api_keys || [])
         if (h.status === 'fulfilled') setHooks(h.value.webhooks || [])
+        let role = ''
         if (ws.status === 'fulfilled') {
-          const w = ws.value.workspace
-          setMyRole(w.role || '')
-          setWsName(w.name || '')
-          setWsSlug(w.slug || '')
-          wsForm.setFieldsValue({ name: w.name, slug: w.slug })
+          const data = ws.value
+          const w = data.workspace
+          role = data.role || w?.role || ''
+          setMyRole(role)
+          setWsName(w?.name || '')
+          setWsSlug(w?.slug || '')
+          wsForm.setFieldsValue({ name: w?.name, slug: w?.slug })
         } else {
-          // 兜底：listMine 匹配（若 get 失败）
           try {
             const mine = await listMyWorkspaces()
             const hit = mine.workspaces.find((x) => x.id === wsId)
             if (hit) {
-              setMyRole(hit.role || '')
+              role = hit.role || ''
+              setMyRole(role)
               setWsName(hit.name || '')
               setWsSlug(hit.slug || '')
               wsForm.setFieldsValue({ name: hit.name, slug: hit.slug })
@@ -110,10 +150,18 @@ export default function SettingsPage() {
             /* ignore */
           }
         }
+        if (role === 'admin' || role === 'owner') {
+          try {
+            const inv = await listWorkspaceInvites(wsId)
+            setWsInvites(inv.invites || [])
+          } catch {
+            setWsInvites([])
+          }
+        }
         const firstErr = [m, l, k, h].find((x) => x.status === 'rejected') as
           | PromiseRejectedResult
           | undefined
-        if (firstErr) setErr(firstErr.reason?.message || '部分设置接口尚未就绪')
+        if (firstErr) setErr(firstErr.reason?.message || '部分设置接口加载失败')
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : '加载失败'
         setErr(msg)
@@ -142,6 +190,82 @@ export default function SettingsPage() {
       message.error(e instanceof ApiError || e instanceof Error ? e.message : '邀请失败')
     } finally {
       setInviting(false)
+    }
+  }
+
+  const onCreateLink = async () => {
+    try {
+      const values = await linkForm.validateFields()
+      setLinkBusy(true)
+      const { invite, code } = await createWorkspaceInvite(
+        wsId,
+        {
+          email: values.email?.trim() || undefined,
+          role: values.role,
+          expires_at: expiresPresetToRfc3339(values.expires),
+        },
+        crypto.randomUUID(),
+      )
+      const plain = code || invite.code || ''
+      if (plain) {
+        setLastPlainCode(plain)
+        try {
+          await navigator.clipboard.writeText(plain)
+          message.success(`已签发并复制邀请码（末四 ·${workspaceInviteTail(invite)}）`)
+        } catch {
+          message.success(`已签发邀请码（末四 ·${workspaceInviteTail(invite)}），请手动复制`)
+        }
+      } else {
+        message.success('已签发邀请')
+      }
+      setWsInvites((prev) => [
+        {
+          ...invite,
+          code: undefined,
+          code_tail: workspaceInviteTail(invite),
+          status: invite.status || 'active',
+        },
+        ...prev.filter((x) => x.id !== invite.id),
+      ])
+      linkForm.resetFields()
+      linkForm.setFieldsValue({ role: 'member', expires: 'never' })
+      await reloadInvites()
+    } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return
+      message.error(e instanceof ApiError || e instanceof Error ? e.message : '签发失败')
+    } finally {
+      setLinkBusy(false)
+    }
+  }
+
+  const onRevokeLink = async (inv: WorkspaceInvite) => {
+    try {
+      const { invite } = await revokeWorkspaceInvite(wsId, inv.id, crypto.randomUUID())
+      setWsInvites((prev) =>
+        prev.map((x) =>
+          x.id === inv.id
+            ? {
+                ...x,
+                ...invite,
+                status: invite.status || 'revoked',
+                revoked_at: invite.revoked_at || x.revoked_at || new Date().toISOString(),
+              }
+            : x,
+        ),
+      )
+      message.success(`已吊销邀请（末四 ·${workspaceInviteTail(invite.status ? invite : inv)}）`)
+    } catch (e) {
+      message.error(e instanceof ApiError || e instanceof Error ? e.message : '吊销失败')
+    }
+  }
+
+  const onCopyPlain = async () => {
+    if (!lastPlainCode) return
+    try {
+      await navigator.clipboard.writeText(lastPlainCode)
+      message.success('已复制邀请码')
+    } catch {
+      message.warning('复制失败，请手动选中复制')
     }
   }
 
@@ -189,12 +313,7 @@ export default function SettingsPage() {
       message.success('工作区已更新')
     } catch (e) {
       if (e && typeof e === 'object' && 'errorFields' in e) return
-      const status = e instanceof ApiError ? e.status : 0
-      if (status === 404 || status === 405 || status === 501) {
-        message.info('改名/slug 即将支持，后端接口尚未就绪')
-      } else {
-        message.error(e instanceof ApiError || e instanceof Error ? e.message : '保存失败')
-      }
+      message.error(e instanceof ApiError || e instanceof Error ? e.message : '保存失败')
     } finally {
       setWsSaving(false)
     }
@@ -357,7 +476,7 @@ export default function SettingsPage() {
                         保存
                       </Button>
                       <Typography.Paragraph type="secondary" style={{ marginTop: 12, fontSize: 12 }}>
-                        改名与 slug 需工作区管理员；若后端尚未开放 PATCH，将提示即将支持。
+                        仅工作区管理员可改名与标识。保存后立即生效。
                       </Typography.Paragraph>
                     </Form>
                   ) : (
@@ -386,7 +505,7 @@ export default function SettingsPage() {
                   {isAdmin ? (
                     <div style={{ marginBottom: 16 }}>
                       <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-                        邀请成员
+                        邀请已注册成员
                       </Typography.Text>
                       <Form
                         form={inviteForm}
@@ -422,8 +541,139 @@ export default function SettingsPage() {
                         </Form.Item>
                       </Form>
                       <Typography.Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>
-                        目前仅支持邀请已注册账号。人类邀请链接即将支持（与 Bot 入场码隔离）。
+                        对方须已注册；未注册请用下方「人类邀请链接」。
                       </Typography.Paragraph>
+
+                      <Typography.Text strong style={{ display: 'block', marginBottom: 8, marginTop: 16 }}>
+                        人类邀请链接
+                      </Typography.Text>
+                      <Form
+                        form={linkForm}
+                        layout="inline"
+                        initialValues={{ role: 'member', expires: 'never' }}
+                        style={{ rowGap: 8, flexWrap: 'wrap', marginBottom: 8 }}
+                      >
+                        <Form.Item
+                          name="email"
+                          rules={[{ type: 'email', message: '邮箱格式不正确' }]}
+                        >
+                          <Input placeholder="邮箱（可选，未注册亦可）" style={{ width: 220 }} />
+                        </Form.Item>
+                        <Form.Item name="role" rules={[{ required: true }]}>
+                          <Select
+                            style={{ width: 120 }}
+                            options={[
+                              { value: 'admin', label: '管理员' },
+                              { value: 'member', label: '成员' },
+                            ]}
+                          />
+                        </Form.Item>
+                        <Form.Item name="expires">
+                          <Select
+                            style={{ width: 140 }}
+                            options={[
+                              { value: 'never', label: '不过期' },
+                              { value: '7', label: '7 天后' },
+                              { value: '30', label: '30 天后' },
+                            ]}
+                          />
+                        </Form.Item>
+                        <Form.Item>
+                          <Button
+                            type="primary"
+                            loading={linkBusy}
+                            onClick={() => void onCreateLink()}
+                          >
+                            签发邀请码
+                          </Button>
+                        </Form.Item>
+                      </Form>
+                      <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}>
+                        签发码以 <Typography.Text code>ymw_</Typography.Text> 开头，与 Bot
+                        队席码 <Typography.Text code>ymt_</Typography.Text> 隔离。明文仅展示一次。
+                      </Typography.Paragraph>
+
+                      {lastPlainCode ? (
+                        <Alert
+                          type="success"
+                          showIcon
+                          style={{ marginBottom: 12 }}
+                          message="邀请码（仅此一次，请妥善转发）"
+                          description={
+                            <Space wrap>
+                              <Typography.Text code copyable={{ text: lastPlainCode }}>
+                                {lastPlainCode}
+                              </Typography.Text>
+                              <Button size="small" icon={<CopyOutlined />} onClick={() => void onCopyPlain()}>
+                                复制
+                              </Button>
+                            </Space>
+                          }
+                        />
+                      ) : null}
+
+                      {wsInvites.length ? (
+                        <Card size="small" title="已签发邀请" style={{ marginBottom: 12 }}>
+                          <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                            {wsInvites.slice(0, 20).map((inv) => {
+                              const st = (inv.status || 'active').toLowerCase()
+                              const canRevoke = st === 'active'
+                              return (
+                                <div
+                                  key={inv.id}
+                                  style={{
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    gap: 8,
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                  }}
+                                >
+                                  <Space wrap size={8}>
+                                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                      末四 ·{workspaceInviteTail(inv)}
+                                    </Typography.Text>
+                                    <Tag>{workspaceInviteStatusCn(st)}</Tag>
+                                    <Tag>{roleLabel(inv.role)}</Tag>
+                                    {inv.email ? (
+                                      <Typography.Text style={{ fontSize: 12 }}>{inv.email}</Typography.Text>
+                                    ) : (
+                                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                        不限邮箱
+                                      </Typography.Text>
+                                    )}
+                                    {inv.expires_at ? (
+                                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                        过期 {formatShanghai(inv.expires_at)}
+                                      </Typography.Text>
+                                    ) : null}
+                                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                      使用 {inv.use_count ?? 0}
+                                      {inv.max_uses != null ? `/${inv.max_uses}` : ''}
+                                    </Typography.Text>
+                                  </Space>
+                                  {canRevoke ? (
+                                    <Popconfirm
+                                      title="确认吊销此邀请？"
+                                      okText="吊销"
+                                      cancelText="取消"
+                                      onConfirm={() => void onRevokeLink(inv)}
+                                    >
+                                      <Button size="small" danger type="link">
+                                        吊销
+                                      </Button>
+                                    </Popconfirm>
+                                  ) : null}
+                                </div>
+                              )
+                            })}
+                          </Space>
+                        </Card>
+                      ) : (
+                        <Typography.Paragraph type="secondary" style={{ fontSize: 12 }}>
+                          暂无已签发的人类邀请。
+                        </Typography.Paragraph>
+                      )}
                     </div>
                   ) : null}
 
@@ -437,10 +687,11 @@ export default function SettingsPage() {
                       columns={memberColumns}
                     />
                   ) : (
-                    empty('暂无成员或接口未就绪')
+                    empty('暂无成员')
                   )}
                   <div className="acb-settings-tab-foot">
                     成员含人类与 Bot。Bot 行只读；席位与入场码请到侧栏「Bot」管理。
+                    兑换人类邀请码可在首页「兑换邀请码」。
                     {!isAdmin ? ' 你当前不是管理员，成员表只读。' : ''}
                   </div>
                 </>
@@ -483,7 +734,7 @@ export default function SettingsPage() {
                   ]}
                 />
               ) : (
-                empty('暂无标签或接口未就绪')
+                empty('暂无标签')
               ),
             },
             {
@@ -513,7 +764,7 @@ export default function SettingsPage() {
                   ]}
                 />
               ) : (
-                empty('暂无 API Key 或接口未就绪')
+                empty('暂无 API Key')
               ),
             },
             {
@@ -537,7 +788,7 @@ export default function SettingsPage() {
                   ]}
                 />
               ) : (
-                empty('暂无 Webhook 或接口未就绪')
+                empty('暂无 Webhook')
               ),
             },
           ]}

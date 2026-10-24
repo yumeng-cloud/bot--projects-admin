@@ -22,7 +22,7 @@ export default function ProjectRedirect({ tab }: { tab: 'board' | 'issues' | 'cy
         const first = res.projects?.[0]
         if (!cancelled) {
           if (first) setProjectId(first.id)
-          else setErr('暂无项目，请先 seed 或创建项目')
+          else setErr('暂无项目，请先创建项目')
         }
       } catch (e: unknown) {
         if (!cancelled) {

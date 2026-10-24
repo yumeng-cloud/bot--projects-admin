@@ -12,7 +12,7 @@ import {
   message,
   Empty,
 } from 'antd'
-import { PlusOutlined, CrownOutlined } from '@ant-design/icons'
+import { PlusOutlined, CrownOutlined, GiftOutlined } from '@ant-design/icons'
 import { me } from '../api/auth'
 import {
   createWorkspace,
@@ -21,6 +21,7 @@ import {
   type Workspace,
 } from '../api/workspaces'
 import { ApiError } from '../api/client'
+import { redeemWorkspaceInvite } from '../api/workspaceInvites'
 import { roleLabel } from '../utils/labels'
 
 export default function HomePage({ onLogout }: { onLogout: () => void }) {
@@ -36,6 +37,9 @@ export default function HomePage({ onLogout }: { onLogout: () => void }) {
   const [creating, setCreating] = useState(false)
   const [slugTouched, setSlugTouched] = useState(false)
   const [form] = Form.useForm<{ name: string; slug?: string }>()
+  const [redeemOpen, setRedeemOpen] = useState(false)
+  const [redeeming, setRedeeming] = useState(false)
+  const [redeemForm] = Form.useForm<{ code: string }>()
 
   const reload = async () => {
     const meResp = await me()
@@ -91,6 +95,35 @@ export default function HomePage({ onLogout }: { onLogout: () => void }) {
     }
   }
 
+
+  const openRedeem = () => {
+    redeemForm.resetFields()
+    setRedeemOpen(true)
+  }
+
+  const onRedeem = async () => {
+    try {
+      const values = await redeemForm.validateFields()
+      const code = values.code.trim()
+      if (/^ymt_/i.test(code)) {
+        message.error('邀请码须以 ymw_ 开头（与队席 ymt_ 隔离）')
+        return
+      }
+      setRedeeming(true)
+      const res = await redeemWorkspaceInvite(code, crypto.randomUUID())
+      const wsId = res.workspace_id
+      message.success('已加入工作空间')
+      setRedeemOpen(false)
+      localStorage.setItem('workspaceId', wsId)
+      nav(`/w/${wsId}/board`)
+    } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return
+      message.error(e instanceof ApiError || e instanceof Error ? e.message : '兑换失败')
+    } finally {
+      setRedeeming(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="acb-page" style={{ textAlign: 'center', paddingTop: 48 }}>
@@ -118,6 +151,9 @@ export default function HomePage({ onLogout }: { onLogout: () => void }) {
               平台管理
             </Button>
           ) : null}
+          <Button icon={<GiftOutlined />} onClick={openRedeem}>
+            兑换邀请码
+          </Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             创建工作空间
           </Button>
@@ -136,13 +172,18 @@ export default function HomePage({ onLogout }: { onLogout: () => void }) {
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
                 <span>
-                  还没有工作空间，创建一个开始协作
+                  还没有工作空间，创建一个开始协作，或兑换邀请码加入
                 </span>
               }
             >
-              <Button type="primary" size="large" icon={<PlusOutlined />} onClick={openCreate}>
-                创建工作空间
-              </Button>
+              <Space>
+                <Button type="primary" size="large" icon={<PlusOutlined />} onClick={openCreate}>
+                  创建工作空间
+                </Button>
+                <Button size="large" icon={<GiftOutlined />} onClick={openRedeem}>
+                  兑换邀请码
+                </Button>
+              </Space>
             </Empty>
           </div>
         ) : (
@@ -195,9 +236,37 @@ export default function HomePage({ onLogout }: { onLogout: () => void }) {
           />
         )}
         <div className="acb-surface-panel-foot">
-          登录后可自助创建工作空间，并在设置中邀请成员协作。进入后可用看板、列表、周期与 Wiki。
+          登录后可自助创建工作空间，或兑换 ymw_ 邀请码加入；设置中可邀请成员与签发链接。
         </div>
       </div>
+
+      <Modal
+        title="兑换工作区邀请码"
+        open={redeemOpen}
+        onCancel={() => setRedeemOpen(false)}
+        onOk={() => void onRedeem()}
+        confirmLoading={redeeming}
+        okText="兑换并进入"
+        cancelText="取消"
+        destroyOnClose
+      >
+        <Form form={redeemForm} layout="vertical" requiredMark="optional" style={{ marginTop: 8 }}>
+          <Form.Item
+            name="code"
+            label="邀请码"
+            extra="须以 ymw_ 开头；队席码 ymt_ 请到 Bot 班底兑换"
+            rules={[
+              { required: true, message: '请粘贴邀请码' },
+              {
+                pattern: /^ymw_[A-Za-z0-9_-]+$/i,
+                message: '邀请码须以 ymw_ 开头',
+              },
+            ]}
+          >
+            <Input placeholder="ymw_…" autoFocus />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <Modal
         title="创建工作空间"
