@@ -13,26 +13,42 @@ import (
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/services/issueboard"
 )
 
-// defaultRosterSeats 与 seed.SeedBotRoles 一致。
-var defaultRosterSeats = []EnsureSeatInput{
-	{Slug: "frontend", Name: "前端"},
-	{Slug: "pm", Name: "产品经理"},
-	{Slug: "qa", Name: "QA"},
-	{Slug: "backend", Name: "后端"},
-	{Slug: "wiki", Name: "知识库"},
-}
-
 type CreateTeamInput struct {
 	ID          string
 	Name        string
 	Slug        string
-	TemplateKey string
+	TemplateKey string // 同 template_id；有值则按模板幂等建空席（不绑 Key）
+}
+
+// CreateTeamResult 创建团队；挂模板时附带空席 roster。
+type CreateTeamResult struct {
+	Team   *models.Team
+	Roster []models.TeamSeat
 }
 
 func (s *Service) CreateTeam(workspaceID string, in CreateTeamInput) (*models.Team, error) {
+	res, err := s.CreateTeamFromTemplate(workspaceID, in)
+	if err != nil {
+		return nil, err
+	}
+	return res.Team, nil
+}
+
+// CreateTeamFromTemplate 创建团队；template_key/id 非空时按内置模板建空席（T7-R R1）。
+func (s *Service) CreateTeamFromTemplate(workspaceID string, in CreateTeamInput) (*CreateTeamResult, error) {
 	in.Name = strings.TrimSpace(in.Name)
 	if in.Name == "" {
 		return nil, apperr.BadRequest("团队名称不能为空")
+	}
+	tk := strings.TrimSpace(in.TemplateKey)
+	var tmpl *TeamTemplate
+	if tk != "" {
+		var err error
+		tmpl, err = GetTeamTemplate(tk)
+		if err != nil {
+			return nil, err
+		}
+		tk = tmpl.ID
 	}
 	id := strings.TrimSpace(in.ID)
 	if id == "" {
@@ -53,21 +69,48 @@ func (s *Service) CreateTeam(workspaceID string, in CreateTeamInput) (*models.Te
 		if existingWS != workspaceID {
 			return nil, apperr.Conflict("该团队 ID 已属于其他工作区")
 		}
-		return s.GetTeam(workspaceID, id)
+		team, gerr := s.GetTeam(workspaceID, id)
+		if gerr != nil {
+			return nil, gerr
+		}
+		roster, rerr := s.GetRoster(workspaceID, id)
+		if rerr != nil {
+			return nil, rerr
+		}
+		return &CreateTeamResult{Team: team, Roster: roster}, nil
 	}
 	if err != sql.ErrNoRows {
 		return nil, err
 	}
 
 	_, err = s.DB.Exec(`INSERT INTO teams (id, workspace_id, name, slug, template_key, created_at, updated_at)
-		VALUES (?,?,?,?,?,?,?)`, id, workspaceID, in.Name, slugVal, strings.TrimSpace(in.TemplateKey), now, now)
+		VALUES (?,?,?,?,?,?,?)`, id, workspaceID, in.Name, slugVal, tk, now, now)
 	if err != nil {
 		if db.IsUniqueViolation(err) {
 			return nil, apperr.Conflict("该团队 slug 已存在")
 		}
 		return nil, err
 	}
-	return s.GetTeam(workspaceID, id)
+	team, err := s.GetTeam(workspaceID, id)
+	if err != nil {
+		return nil, err
+	}
+	res := &CreateTeamResult{Team: team, Roster: []models.TeamSeat{}}
+	if tmpl != nil {
+		roster, err := s.EnsureRoster(workspaceID, id, EnsureRosterInput{
+			TemplateKey: tmpl.ID,
+			Seats:       templateSeatsToEnsure(tmpl),
+		})
+		if err != nil {
+			return nil, err
+		}
+		res.Roster = roster
+		// 刷新 template_key（EnsureRoster 会写）
+		if team2, gerr := s.GetTeam(workspaceID, id); gerr == nil {
+			res.Team = team2
+		}
+	}
+	return res, nil
 }
 
 func (s *Service) ListTeams(workspaceID string) ([]models.Team, error) {
@@ -136,8 +179,37 @@ func (s *Service) EnsureRoster(workspaceID, teamID string, in EnsureRosterInput)
 	}
 	seats := in.Seats
 	tk := strings.TrimSpace(strings.ToLower(in.TemplateKey))
-	if len(seats) == 0 && (tk == "" || tk == "default") {
-		seats = defaultRosterSeats
+	if len(seats) == 0 {
+		if tk == "" {
+			// 无模板、无显式席位 → 用内置 default（含 playbook_ref）
+			tmpl, err := GetTeamTemplate("default")
+			if err != nil {
+				return nil, err
+			}
+			seats = templateSeatsToEnsure(tmpl)
+			tk = tmpl.ID
+			in.TemplateKey = tmpl.ID
+		} else {
+			tmpl, err := GetTeamTemplate(tk)
+			if err != nil {
+				return nil, err
+			}
+			seats = templateSeatsToEnsure(tmpl)
+			in.TemplateKey = tmpl.ID
+		}
+	} else if tk != "" {
+		// 显式席位 + 模板 key：校验模板存在；席位 playbook 仍以入参为准
+		if _, err := GetTeamTemplate(tk); err != nil {
+			return nil, err
+		}
+	}
+	// 校验显式席位的 playbook_ref（若非空须合法 JSON）
+	for _, seat := range seats {
+		if pref := strings.TrimSpace(seat.PlaybookRef); pref != "" {
+			if _, err := ParsePlaybookRef(pref); err != nil {
+				return nil, err
+			}
+		}
 	}
 	if len(seats) == 0 {
 		return s.GetRoster(workspaceID, teamID)

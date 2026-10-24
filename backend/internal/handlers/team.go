@@ -43,6 +43,15 @@ func (h *TeamHandler) resolveBindMember(w http.ResponseWriter, r *http.Request, 
 }
 
 func (h *TeamHandler) CreateTeam(w http.ResponseWriter, r *http.Request) {
+	h.createTeam(w, r, false)
+}
+
+// CreateTeamFromTemplate POST …/teams/from-template：template_key 必填；返回 team+roster。
+func (h *TeamHandler) CreateTeamFromTemplate(w http.ResponseWriter, r *http.Request) {
+	h.createTeam(w, r, true)
+}
+
+func (h *TeamHandler) createTeam(w http.ResponseWriter, r *http.Request, requireTemplate bool) {
 	ws, _, ok := requireWorkspaceMember(h.DB, w, r)
 	if !ok {
 		return
@@ -52,19 +61,46 @@ func (h *TeamHandler) CreateTeam(w http.ResponseWriter, r *http.Request) {
 		Name        string `json:"name"`
 		Slug        string `json:"slug"`
 		TemplateKey string `json:"template_key"`
+		TemplateID  string `json:"template_id"`
 	}
 	if err := middleware.DecodeJSON(r, &req); err != nil {
 		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
 		return
 	}
-	team, err := h.Svc.CreateTeam(ws, botmem.CreateTeamInput{
-		ID: req.ID, Name: req.Name, Slug: req.Slug, TemplateKey: req.TemplateKey,
+	tk := req.TemplateKey
+	if tk == "" {
+		tk = req.TemplateID
+	}
+	if requireTemplate && tk == "" {
+		middleware.HandleError(w, apperr.BadRequest("从模板创建须指定 template_key"))
+		return
+	}
+	res, err := h.Svc.CreateTeamFromTemplate(ws, botmem.CreateTeamInput{
+		ID: req.ID, Name: req.Name, Slug: req.Slug, TemplateKey: tk,
 	})
 	if err != nil {
 		middleware.HandleError(w, err)
 		return
 	}
-	middleware.JSON(w, http.StatusCreated, map[string]any{"team": team})
+	out := map[string]any{"team": res.Team}
+	if tk != "" || requireTemplate {
+		out["roster"] = res.Roster
+	}
+	middleware.JSON(w, http.StatusCreated, out)
+}
+
+// ListTeamTemplates GET …/team-templates：内置手册清单（T7-R）。
+func (h *TeamHandler) ListTeamTemplates(w http.ResponseWriter, r *http.Request) {
+	_, _, ok := requireWorkspaceMember(h.DB, w, r)
+	if !ok {
+		return
+	}
+	list, err := botmem.ListTeamTemplateDTOs()
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	middleware.JSON(w, http.StatusOK, map[string]any{"templates": list})
 }
 
 func (h *TeamHandler) ListTeams(w http.ResponseWriter, r *http.Request) {
@@ -113,6 +149,7 @@ func (h *TeamHandler) EnsureRoster(w http.ResponseWriter, r *http.Request) {
 	}
 	var req struct {
 		TemplateKey string `json:"template_key"`
+		TemplateID  string `json:"template_id"`
 		Seats       []struct {
 			Slug        string `json:"slug"`
 			Name        string `json:"name"`
@@ -120,7 +157,11 @@ func (h *TeamHandler) EnsureRoster(w http.ResponseWriter, r *http.Request) {
 		} `json:"seats"`
 	}
 	_ = middleware.DecodeJSON(r, &req)
-	in := botmem.EnsureRosterInput{TemplateKey: req.TemplateKey}
+	tk := req.TemplateKey
+	if tk == "" {
+		tk = req.TemplateID
+	}
+	in := botmem.EnsureRosterInput{TemplateKey: tk}
 	for _, s := range req.Seats {
 		in.Seats = append(in.Seats, botmem.EnsureSeatInput{Slug: s.Slug, Name: s.Name, PlaybookRef: s.PlaybookRef})
 	}
@@ -358,6 +399,8 @@ func MountTeams(mux *http.ServeMux, db *sql.DB, wrap func(http.Handler) http.Han
 		mux.Handle(pattern, wrap(fn))
 	}
 	reg("POST /api/v1/workspaces/{workspaceID}/teams", h.Idempotent(h.CreateTeam))
+	reg("POST /api/v1/workspaces/{workspaceID}/teams/from-template", h.Idempotent(h.CreateTeamFromTemplate))
+	reg("GET /api/v1/workspaces/{workspaceID}/team-templates", h.ListTeamTemplates)
 	reg("GET /api/v1/workspaces/{workspaceID}/teams", h.ListTeams)
 	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}", h.GetTeam)
 	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}/roster", h.GetRoster)
