@@ -152,6 +152,49 @@
 
 ---
 
+
+## Q11（V1）拒造第二人
+
+| 项 | 内容 |
+| --- | --- |
+| **前置** | 同 Agent/同入场路径已通过 join 自动（或预置）获得身份 member M1；队内已有其席绑定 |
+| **步骤** | 1) 再次无身份或「假装新人」走同一 ymt_ 入场/自动造人路径 2) 或对已绑定身份重复触发 auto-mint |
+| **期望** | **拒绝造第二人**：不新建第二个 `is_bot` member；不第二把无关 ymk_；幂等回到 M1 / 人话已存在 |
+| **PASS 准则** | ① member 计数不 +1（同 fingerprint/claim 键）② 若回 token 则仍属 M1 ③ 席绑定仍 M1 ④ 无静默双 Bot |
+| **FAIL 信号** | 每次 join 新造 Bot；双 ymk_ 双 member；席上串人 |
+| **关联证/债** | HUMAN_ONBOARD 可投表 V1 · 自动身份首刀 · Bot 记忆单活 claim |
+| **状态** | **GAP**（随 Q1 自动身份实装后苛刻验；合入前不挡文档） |
+
+---
+
+## Q12（F）吊销
+
+| 项 | 内容 |
+| --- | --- |
+| **前置** | 有效 ymt_ 入场码；有效 ymk_ 身份钥；对应席可观测 |
+| **步骤** | 1) Admin 吊销 ymt_ → 再 redeem/join 2) Admin 吊销 ymk_ → 再 whoami/业务 API |
+| **期望** | ymt_ revoked 后入场失败（人话）；ymk_ revoked 后鉴权失败；吊销幂等；席/审计符合产品（不把 active 静默顶掉除非规则允许） |
+| **PASS 准则** | ① revoke ymt_ → status=revoked；再 join 非 2xx/人话失败 ② revoke 幂等 200 ③ revoke ymk_ → whoami/API 401 或人话无效钥 ④ UI Popconfirm 吊销路径可用 |
+| **FAIL 信号** | 吊销后码/钥仍可用；吊销半截；无错误提示 |
+| **关联证/债** | N1 `ec1742d` · FE 吊销 Popconfirm · API.md api-keys revoke · 附录吊销行 |
+| **状态** | **COVERED†**（ymt_ N1）；ymk_ 吊销箱证可再抽 → 记 ymk_ 子条 **GAP** 不挡本条主 PASS† |
+
+---
+
+## Q13（K·J）救场双机
+
+| 项 | 内容 |
+| --- | --- |
+| **前置** | Bot 已绑定；机 A 持 ymk_ 可 whoami；机 B 为新环境；可选：脏绑/卡住需救场 |
+| **步骤** | 1) **J 多机**：机 B 仅配同一 ymk_ + handoff get/pull 2) **K 救场**：模拟脏绑/误占后走产品救场（rebind/清脏/重发 ymt_ 仅当规则允许） |
+| **期望** | 换机/双机不强迫 Admin 再吐全班钥；handoff 权威续命；不非法双绑挤 active；救场后人话可恢复且留痕 |
+| **PASS 准则** | ① 机 B whoami=同一 Bot ② handoff 得 focus/todos/开放 Issue ③ 无第二 member ④ 救场后可开干；禁「全班吐 ymk_」救场 |
+| **FAIL 信号** | 换机必须 Admin 重发全班钥；双机双 Bot；救场静默顶 active |
+| **关联证/债** | Q9 换机 · T2/WHEEL handoff · HUMAN_ONBOARD S5/K/J · 单活 claim |
+| **状态** | **GAP**（Q9 局部 COVERED†；双机+救场联验待开干后抽） |
+
+---
+
 ## 汇总
 
 | ID | 场景锚 | 状态 | 主证据 / 债 |
@@ -166,9 +209,12 @@
 | Q8 | S4 | **COVERED†** | J7 / N2 / N4 / PATROL |
 | Q9 | S5 | **COVERED†** | T2 / WHEEL C3 / BOT 续命 |
 | Q10 | S1×横切 | **COVERED†** | ONE_TAP A4/E5 + F6 + C7；自动身份段随 Q1 |
+| Q11 | V1 | **GAP** | 拒造第二人；随自动身份苛刻验 |
+| Q12 | F | **COVERED†** | 吊销 ymt_ N1；ymk_ 子条 GAP |
+| Q13 | K·J | **GAP** | 救场双机；Q9 局部可挂 |
 
-**计数：** COVERED† **6** · GAP **3**（Q2/Q4/Q7）· BLOCKED **1**（Q1）  
-（Q2 在「仅已持钥 rejoin」子条可先升 COVERED†；表内保守记 GAP 直至自动身份闭环。）
+**计数：** COVERED† **7** · GAP **5**（Q2/Q4/Q7/Q11/Q13）· BLOCKED **1**（Q1）  
+（Q2 在「仅已持钥 rejoin」子条可先升 COVERED†；表内保守记 GAP 直至自动身份闭环。Q11–Q13 票过 `b6614ff` 后补入。）
 
 ## 附录 · 吊销 / 双钥（非 §6 主列，供债验收引用）
 
@@ -181,5 +227,6 @@
 ## 产品吸收（H3）
 
 - 勾 [`NEXT_WAVE_DEBT_HUMAN_ONBOARD.md`](../NEXT_WAVE_DEBT_HUMAN_ONBOARD.md) **H3**：QA §6 补严文件 = **`docs/qa-shots/HUMAN_ONBOARD-QA-CASES.md`**。  
-- 开干自动身份后：优先重跑 **Q1 → Q2 → Q10**，并补 Q7 巡检文件。  
-- 勿把 `decabb0` 旧「全班 ymk_」当验收；以 `6eaa4ff` §6 + `1f96809` 改向为准。
+- 开干自动身份后：优先重跑 **Q1 → Q2 → Q10 → Q11**，并补 Q7 巡检、Q13 双机救场。  
+- Q11–Q13 对齐票过可投表（V1 拒造第二人 / F 吊销 / K·J 救场双机）。  
+- 勿把 `decabb0` 旧「全班 ymk_」当验收；以冻结 HUMAN_ONBOARD + `1f96809` 改向为准。
