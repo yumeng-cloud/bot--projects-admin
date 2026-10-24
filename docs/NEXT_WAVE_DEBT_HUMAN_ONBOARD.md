@@ -127,7 +127,7 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 ## 6. 产品勾选（总指挥投票结果回写）
 
 ### 场景
-- [x] **A** 空手上场（推荐 / 备选：____） · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
+- [x] **A** 空手上场 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
 - [x] **B** 续队 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
 - [x] **C** 补位 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
 - [x] **D** 分布式 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
