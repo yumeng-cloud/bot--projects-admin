@@ -47,6 +47,7 @@
 
 ## 进度注记
 
+- 2026-10-25 01:06 · **一次拍死**：软债表见 [`SOFT_RULING`](./NEXT_WAVE_DEBT_SOFT_RULING_20261025.md)；React 必须 C2∥SHOT，禁只截图。
 - 2026-10-25 01:05 · 短票统一：重开本刀；与 SHOT 并行。Issue 域：archive 已有；batch status 待喊。
 - 2026-10-25 01:04 · 曾撤回；01:05 总指挥反对后恢复。
 
