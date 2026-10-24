@@ -87,9 +87,9 @@
 - [ ] **A1** a3 去 seed 重拍
 - [ ] **A2** 开通进场冒烟
 - [ ] **A3** redeem 抽核
-- [ ] **B1** unarchive API
+- [x] **B1** unarchive API · `43eee2c`
 - [ ] **B2** FE 解档
-- [ ] **B3** Relations 剔已归档边
+- [x] **B3** Relations 剔已归档边 · `43eee2c`（`include_archived=1` 还原）
 - [ ] **B4** 解档箱截
 - [ ] **C1** 顶栏切队回归
 - [ ] **C2** pins 跟队
@@ -102,6 +102,8 @@
 - [ ] **E3** 产品关单
 
 ## 进度注记
+
+- 2026-10-24 21:15 · B1/B3 `43eee2c` 测绿勾；等 React B2/B4。
 
 - 2026-10-24 21:14 · C3 Bot 席入场 PASS `11144b3`。
 
