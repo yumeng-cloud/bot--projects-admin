@@ -1,0 +1,86 @@
+WS_ADMIN independent harsh retest · 2026-10-24 20:48 Asia/Shanghai (CST, UTC+8)
+QA eyes: independent (do not trust product 勾)
+API: rebuilt /tmp/ai-board-server from current main; restarted :8080
+  healthz OK; PLATFORM_ADMIN_EMAILS=admin@yumeng.tech bootstrap granted
+  DB: postgres://…@127.0.0.1:5432/ai_collab (from .env)
+FE: :5174 vite up; C11-c via code path + shots (live UI not required)
+
+SHAs
+  HEAD at retest write: e78c88f (docs product A/B+C shots) — ancestors include:
+  Go  05a1d35 feat(backend): platform admin, workspace disable, human invites
+  FE  5dbf62a feat(fe): WS自助开通 + 成员 + 平台台壳 C7–C9
+  FE  2148f60 feat(fe): 人类工作区邀请链 ymw_（B3/B4）
+
+Overall: PASS (redlines C11 + INV)
+
+================================================================================
+C11 · 鉴权双验
+================================================================================
+C11-a PASS — 非超管 JWT → /api/v1/admin/* 全部 403 中文
+  GET  /admin/workspaces → 403 {"code":"forbidden","message":"需要平台超级管理员权限"}
+  GET  /admin/users      → 403 {"code":"forbidden","message":"需要平台超级管理员权限"}
+  POST /admin/workspaces → 403 {"code":"forbidden","message":"需要平台超级管理员权限"}
+  PATCH /admin/workspaces/deadbeef → 403 同上
+  PATCH /admin/users/deadbeef      → 403 同上
+  actor: qa-c11-normal-*@example.com is_platform_admin=false
+
+C11-b PASS — 超管 JWT 同路由可达
+  GET  /admin/workspaces → 200 (list incl. 育蒙科技 / 验收工作区A / …)
+  GET  /admin/users      → 200
+  POST /admin/workspaces → 201 代开 QA代开 / qa-proxy-* owner=非超管
+  PATCH /admin/workspaces/{id} disabled=false → 200
+  actor: admin@yumeng.tech is_platform_admin=true (seed + PLATFORM_ADMIN_EMAILS)
+
+C11-c PASS — FE 非超管无「平台管理」入口；直链挡
+  code HomePage.tsx:149-151 仅 user?.is_platform_admin 渲染「平台管理」
+  code PlatformAdminPage.tsx:120-121 !is_platform_admin → <Navigate to="/" replace />
+  shot ws-admin-a1-empty.png / a2: 验收用户A6 顶栏无「平台管理」
+  shot ws-admin-c1-platform.png: 仅超管台（admin@yumeng.tech）；注：该 shot 只拍超管视角
+
+C11-d PASS — curl 证据见上（本文件）
+
+================================================================================
+人类邀请 ≠ ymt_
+================================================================================
+INV-1 PASS — POST …/workspaces/{id}/invites 签发人类邀请；明文一次；列表可见不泄明文
+  code=ymw_0b0e302dc319b69df84a73797620a57be3e7407ad9f85def HTTP 201
+  GET invites → 200；仅 token_prefix/code_tail；全文 CODE 未出现在列表
+
+INV-2 PASS — redeem 入席；吊销后不可再用
+  POST /workspace-invites/redeem (newbie-qa-unreg 注册后) → 200 member role=member
+  revoke → 200 status=revoked
+  redeem revoked → 400 {"code":"bad_request","message":"邀请已吊销"}
+
+INV-3 PASS — token 前缀 ymw_ 非 ymt_；队席路径拒 WS 邀请
+  prefix ymw_ YES / ymt_ NO
+  ymw_ → POST /team-invites/redeem → 400 {"message":"入场码须以 ymt_ 开头"}
+    (JWT 与 bot API key 两种鉴权均同文案)
+
+INV-4 PASS — ymt_ 不进 workspace redeem；两边中文可区分
+  real ymt_7019480d… → POST /workspace-invites/redeem
+    → 400 {"message":"邀请码须以 ymw_ 开头（与队席 ymt_ 隔离）"}
+  对照 INV-3「入场码须以 ymt_ 开头」——文案人话可分
+
+INV-5 PASS — 未注册邮箱可签发；注册后 redeem 入席
+  invite email=newbie-qa-unreg@example.com 时用户尚不存在 → 201
+  随后 register 同邮箱 → redeem 200
+
+INV list/create as WS admin: PASS（上述均用 WS 创建者 admin JWT）
+
+================================================================================
+Light scan（非阻塞）
+================================================================================
+A shots: a1 空态「还没有工作空间…」无「请运行 seed」脚注自助开通 — OK
+         a2 创建 modal 名称/slug — OK
+         a3 进看板后「无法进入项目视图 / 暂无项目，请先 seed 或创建项目」—
+            注：项目空态仍含 seed 口吻（非 C11/INV 红线；记债给产品/FE，非本刀假绿）
+B shots: b1/b2/b3 成员+人类邀请链接 UI 明确「ymw_ … 与 ymt_ 隔离」；吊销；改角色下拉 — OK
+C shot:  c1 平台台工作区/用户 Tab + 代开 + 停用开关 — OK（超管视角）
+go test ./internal/handlers/ -run 'WorkspaceAdmin|WorkspaceInvite|PlatformAdmin' → ok
+
+Defects (redline): none
+Notes (non-blocking):
+  - a3 项目空态仍写「请先 seed」——与 A3「去 seed 空态」债面不同层（WS 空态已去；项目层残留）
+  - 未做全站 live UI 点击 C11-c 直链；以代码门 + 非超管 shot 无入口为准
+
+API left running: /tmp/ai-board-server :8080 healthz ok
