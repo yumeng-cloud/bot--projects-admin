@@ -15,8 +15,10 @@ import {
   Popconfirm,
   Alert,
   Card,
+  Modal,
+  Divider,
 } from 'antd'
-import { CopyOutlined } from '@ant-design/icons'
+import { CopyOutlined, PlusOutlined } from '@ant-design/icons'
 import { useParams } from 'react-router-dom'
 import { api, ApiError } from '../../api/client'
 import { getWorkspace, listMyWorkspaces, patchWorkspace, slugifyName } from '../../api/workspaces'
@@ -35,6 +37,7 @@ import {
   workspaceInviteTail,
   type WorkspaceInvite,
 } from '../../api/workspaceInvites'
+import { createApiKey, listApiKeys } from '../../api/apiKeys'
 import { roleLabel } from '../../utils/labels'
 import { formatShanghai } from '../../utils/time'
 
@@ -87,6 +90,19 @@ export default function SettingsPage() {
   const [wsInvites, setWsInvites] = useState<WorkspaceInvite[]>([])
   const [lastPlainCode, setLastPlainCode] = useState<string | null>(null)
 
+  const [labelOpen, setLabelOpen] = useState(false)
+  const [labelForm] = Form.useForm<{ name: string; color: string }>()
+  const [labelBusy, setLabelBusy] = useState(false)
+
+  const [keyOpen, setKeyOpen] = useState(false)
+  const [keyForm] = Form.useForm<{ name: string }>()
+  const [keyBusy, setKeyBusy] = useState(false)
+  const [lastKeyToken, setLastKeyToken] = useState<string | null>(null)
+
+  const [hookOpen, setHookOpen] = useState(false)
+  const [hookForm] = Form.useForm<{ url: string }>()
+  const [hookBusy, setHookBusy] = useState(false)
+
   const isAdmin = myRole === 'admin' || myRole === 'owner'
 
   const adminCount = useMemo(
@@ -106,9 +122,39 @@ export default function SettingsPage() {
       const data = await listWorkspaceInvites(wsId)
       setWsInvites(data.invites || [])
     } catch {
-      /* 非 admin / 暂无列表时静默 */
+      /* 非管理员 / 暂无列表时静默 */
     }
   }, [wsId, isAdmin])
+
+  const reloadLabels = useCallback(async () => {
+    if (!wsId) return
+    try {
+      const data = await api<{ labels: Label[] }>(`/workspaces/${wsId}/labels`)
+      setLabels(data.labels || [])
+    } catch {
+      /* ignore */
+    }
+  }, [wsId])
+
+  const reloadKeys = useCallback(async () => {
+    if (!wsId) return
+    try {
+      const data = await listApiKeys(wsId)
+      setKeys(data.api_keys || [])
+    } catch {
+      /* ignore */
+    }
+  }, [wsId])
+
+  const reloadHooks = useCallback(async () => {
+    if (!wsId) return
+    try {
+      const data = await api<{ webhooks: Webhook[] }>(`/workspaces/${wsId}/webhooks`)
+      setHooks(data.webhooks || [])
+    } catch {
+      /* ignore */
+    }
+  }, [wsId])
 
   useEffect(() => {
     ;(async () => {
@@ -304,12 +350,12 @@ export default function SettingsPage() {
     try {
       const values = await wsForm.validateFields()
       setWsSaving(true)
-      const resp = await patchWorkspace(wsId, {
-        name: values.name.trim(),
-        slug: values.slug.trim().toLowerCase(),
-      })
+      const body: { name: string; slug?: string } = { name: values.name.trim() }
+      if (isAdmin && values.slug) body.slug = values.slug.trim().toLowerCase()
+      const resp = await patchWorkspace(wsId, body)
       setWsName(resp.workspace.name)
       setWsSlug(resp.workspace.slug)
+      wsForm.setFieldsValue({ name: resp.workspace.name, slug: resp.workspace.slug })
       message.success('工作区已更新')
     } catch (e) {
       if (e && typeof e === 'object' && 'errorFields' in e) return
@@ -319,16 +365,77 @@ export default function SettingsPage() {
     }
   }
 
+  const onCreateLabel = async () => {
+    try {
+      const values = await labelForm.validateFields()
+      setLabelBusy(true)
+      await api(`/workspaces/${wsId}/labels`, {
+        method: 'POST',
+        body: JSON.stringify({
+          name: values.name.trim(),
+          color: values.color || '#5E6AD2',
+        }),
+      })
+      message.success('已新建标签')
+      setLabelOpen(false)
+      labelForm.resetFields()
+      await reloadLabels()
+    } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return
+      message.error(e instanceof ApiError || e instanceof Error ? e.message : '新建失败')
+    } finally {
+      setLabelBusy(false)
+    }
+  }
+
+  const onCreateKey = async () => {
+    try {
+      const values = await keyForm.validateFields()
+      setKeyBusy(true)
+      const res = await createApiKey(wsId, { name: values.name.trim() }, crypto.randomUUID())
+      setLastKeyToken(res.token || null)
+      message.success('已新建 API Key')
+      setKeyOpen(false)
+      keyForm.resetFields()
+      await reloadKeys()
+    } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return
+      message.error(e instanceof ApiError || e instanceof Error ? e.message : '新建失败')
+    } finally {
+      setKeyBusy(false)
+    }
+  }
+
+  const onCreateHook = async () => {
+    try {
+      const values = await hookForm.validateFields()
+      setHookBusy(true)
+      await api(`/workspaces/${wsId}/webhooks`, {
+        method: 'POST',
+        body: JSON.stringify({ url: values.url.trim() }),
+      })
+      message.success('已新建 Webhook')
+      setHookOpen(false)
+      hookForm.resetFields()
+      await reloadHooks()
+    } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return
+      message.error(e instanceof ApiError || e instanceof Error ? e.message : '新建失败')
+    } finally {
+      setHookBusy(false)
+    }
+  }
+
   if (loading) {
     return (
-      <div className="acb-page" style={{ textAlign: 'center', paddingTop: 48 }}>
+      <div className="acb-page acb-pro-admin" style={{ textAlign: 'center', paddingTop: 48 }}>
         <Spin />
       </div>
     )
   }
 
   const empty = (description: string) => (
-    <div className="acb-empty-panel">
+    <div className="acb-empty-panel" style={{ minHeight: 120, padding: '20px 16px' }}>
       <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={description} />
     </div>
   )
@@ -360,8 +467,7 @@ export default function SettingsPage() {
       width: isAdmin ? 140 : 110,
       render: (v: string, row: Member) => {
         if (!isAdmin || isBotMember(row)) return roleLabel(v)
-        const soleAdmin =
-          adminCount <= 1 && (row.role === 'admin' || row.role === 'owner')
+        const soleAdmin = adminCount <= 1 && (row.role === 'admin' || row.role === 'owner')
         return (
           <Select
             size="small"
@@ -413,15 +519,20 @@ export default function SettingsPage() {
       : []),
   ]
 
+  const roleOptions = [
+    { value: 'admin' as const, label: '管理员' },
+    { value: 'member' as const, label: '成员' },
+  ]
+
   return (
-    <div className="acb-page">
+    <div className="acb-page acb-pro-admin">
       <div className="acb-page-bar">
         <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
+          <Typography.Title level={4} className="acb-page-title">
             设置
           </Typography.Title>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            工作区、成员、标签与接入凭据
+          <Typography.Text type="secondary" className="acb-page-sub">
+            工作区 · 成员 · 标签 · 接入
             {myRole ? ` · 当前角色 ${roleLabel(myRole)}` : ''}
           </Typography.Text>
         </div>
@@ -439,6 +550,7 @@ export default function SettingsPage() {
               label: '工作区',
               children: (
                 <>
+                  <p className="acb-settings-hint">修改工作区显示名称；管理员还可调整 URL 标识。</p>
                   {isAdmin ? (
                     <Form
                       form={wsForm}
@@ -456,28 +568,32 @@ export default function SettingsPage() {
                         name="name"
                         label="名称"
                         rules={[{ required: true, message: '请填写名称' }]}
+                        style={{ marginBottom: 12 }}
                       >
                         <Input maxLength={80} />
                       </Form.Item>
                       <Form.Item
                         name="slug"
-                        label="标识（slug）"
+                        label={
+                          <span>
+                            URL 标识
+                            <span className="acb-settings-slug-extra">用于 URL</span>
+                          </span>
+                        }
                         rules={[
-                          { required: true, message: '请填写 slug' },
+                          { required: true, message: '请填写 URL 标识' },
                           {
                             pattern: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
                             message: '仅允许小写字母、数字与连字符',
                           },
                         ]}
+                        style={{ marginBottom: 16 }}
                       >
                         <Input maxLength={64} />
                       </Form.Item>
                       <Button type="primary" loading={wsSaving} onClick={() => void onSaveWorkspace()}>
                         保存
                       </Button>
-                      <Typography.Paragraph type="secondary" style={{ marginTop: 12, fontSize: 12 }}>
-                        仅工作区管理员可改名与标识。保存后立即生效。
-                      </Typography.Paragraph>
                     </Form>
                   ) : (
                     <div>
@@ -486,12 +602,7 @@ export default function SettingsPage() {
                         <br />
                         {wsName || '—'}
                       </Typography.Paragraph>
-                      <Typography.Paragraph>
-                        <Typography.Text type="secondary">标识</Typography.Text>
-                        <br />
-                        {wsSlug || '—'}
-                      </Typography.Paragraph>
-                      <Alert type="info" showIcon message="仅管理员可修改工作区名称与标识" />
+                      <Alert type="info" showIcon message="仅管理员可修改工作区名称与 URL 标识" />
                     </div>
                   )}
                 </>
@@ -503,7 +614,7 @@ export default function SettingsPage() {
               children: (
                 <>
                   {isAdmin ? (
-                    <div style={{ marginBottom: 16 }}>
+                    <div>
                       <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
                         邀请已注册成员
                       </Typography.Text>
@@ -523,13 +634,7 @@ export default function SettingsPage() {
                           <Input placeholder="已注册邮箱" style={{ width: 220 }} />
                         </Form.Item>
                         <Form.Item name="role" rules={[{ required: true }]}>
-                          <Select
-                            style={{ width: 120 }}
-                            options={[
-                              { value: 'admin', label: '管理员' },
-                              { value: 'member', label: '成员' },
-                            ]}
-                          />
+                          <Select style={{ width: 120 }} options={roleOptions} />
                         </Form.Item>
                         <Form.Item name="display_name">
                           <Input placeholder="显示名（可选）" style={{ width: 140 }} />
@@ -540,7 +645,7 @@ export default function SettingsPage() {
                           </Button>
                         </Form.Item>
                       </Form>
-                      <Typography.Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>
+                      <Typography.Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12, marginBottom: 0 }}>
                         对方须已注册；未注册请用下方「人类邀请链接」。
                       </Typography.Paragraph>
 
@@ -553,20 +658,11 @@ export default function SettingsPage() {
                         initialValues={{ role: 'member', expires: 'never' }}
                         style={{ rowGap: 8, flexWrap: 'wrap', marginBottom: 8 }}
                       >
-                        <Form.Item
-                          name="email"
-                          rules={[{ type: 'email', message: '邮箱格式不正确' }]}
-                        >
+                        <Form.Item name="email" rules={[{ type: 'email', message: '邮箱格式不正确' }]}>
                           <Input placeholder="邮箱（可选，未注册亦可）" style={{ width: 220 }} />
                         </Form.Item>
                         <Form.Item name="role" rules={[{ required: true }]}>
-                          <Select
-                            style={{ width: 120 }}
-                            options={[
-                              { value: 'admin', label: '管理员' },
-                              { value: 'member', label: '成员' },
-                            ]}
-                          />
+                          <Select style={{ width: 120 }} options={roleOptions} />
                         </Form.Item>
                         <Form.Item name="expires">
                           <Select
@@ -579,18 +675,14 @@ export default function SettingsPage() {
                           />
                         </Form.Item>
                         <Form.Item>
-                          <Button
-                            type="primary"
-                            loading={linkBusy}
-                            onClick={() => void onCreateLink()}
-                          >
+                          <Button type="primary" loading={linkBusy} onClick={() => void onCreateLink()}>
                             签发邀请码
                           </Button>
                         </Form.Item>
                       </Form>
                       <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}>
-                        签发码以 <Typography.Text code>ymw_</Typography.Text> 开头，与 Bot
-                        队席码 <Typography.Text code>ymt_</Typography.Text> 隔离。明文仅展示一次。
+                        签发码以 <Typography.Text code>ymw_</Typography.Text> 开头，与 Bot 队席码{' '}
+                        <Typography.Text code>ymt_</Typography.Text> 隔离。明文仅展示一次。
                       </Typography.Paragraph>
 
                       {lastPlainCode ? (
@@ -613,7 +705,7 @@ export default function SettingsPage() {
                       ) : null}
 
                       {wsInvites.length ? (
-                        <Card size="small" title="已签发邀请" style={{ marginBottom: 12 }}>
+                        <Card size="small" title="已签发邀请" style={{ marginBottom: 0 }}>
                           <Space direction="vertical" style={{ width: '100%' }} size={8}>
                             {wsInvites.slice(0, 20).map((inv) => {
                               const st = (inv.status || 'active').toLowerCase()
@@ -670,12 +762,14 @@ export default function SettingsPage() {
                           </Space>
                         </Card>
                       ) : (
-                        <Typography.Paragraph type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 0 }}>
                           暂无已签发的人类邀请。
                         </Typography.Paragraph>
                       )}
                     </div>
                   ) : null}
+
+                  {isAdmin ? <Divider className="acb-settings-divider" style={{ margin: '20px 0' }} /> : null}
 
                   {members.length ? (
                     <Table
@@ -687,10 +781,10 @@ export default function SettingsPage() {
                       columns={memberColumns}
                     />
                   ) : (
-                    empty('暂无成员')
+                    empty('还没有成员')
                   )}
                   <div className="acb-settings-tab-foot">
-                    成员含人类与 Bot。Bot 行只读；席位与入场码请到侧栏「Bot」管理。
+                    成员含人类与机器人。机器人行只读；席位与入场码请到侧栏「Bot」管理。
                     兑换人类邀请码可在首页「兑换邀请码」。
                     {!isAdmin ? ' 你当前不是管理员，成员表只读。' : ''}
                   </div>
@@ -700,100 +794,235 @@ export default function SettingsPage() {
             {
               key: 'labels',
               label: `标签 (${labels.length})`,
-              children: labels.length ? (
-                <Table
-                  className="acb-list-table"
-                  size="small"
-                  rowKey="id"
-                  dataSource={labels}
-                  pagination={false}
-                  columns={[
-                    { title: '名称', dataIndex: 'name' },
-                    {
-                      title: '颜色',
-                      dataIndex: 'color',
-                      width: 120,
-                      render: (v: string) => (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                          <span
-                            aria-hidden
-                            style={{
-                              width: 12,
-                              height: 12,
-                              borderRadius: 3,
-                              background: v || 'var(--acb-border)',
-                              border: '1px solid var(--acb-border)',
-                            }}
-                          />
-                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                            {v || '—'}
+              children: (
+                <>
+                  <div className="acb-settings-section-head">
+                    <span className="acb-settings-section-title">标签</span>
+                    {isAdmin ? (
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<PlusOutlined />}
+                        onClick={() => {
+                          labelForm.setFieldsValue({ name: '', color: '#5E6AD2' })
+                          setLabelOpen(true)
+                        }}
+                      >
+                        新建
+                      </Button>
+                    ) : null}
+                  </div>
+                  {labels.length ? (
+                    <Table
+                      className="acb-list-table"
+                      size="small"
+                      rowKey="id"
+                      dataSource={labels}
+                      pagination={false}
+                      columns={[
+                        { title: '名称', dataIndex: 'name' },
+                        {
+                          title: '颜色',
+                          dataIndex: 'color',
+                          width: 120,
+                          render: (v: string) => (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                              <span
+                                aria-hidden
+                                style={{
+                                  width: 12,
+                                  height: 12,
+                                  borderRadius: 3,
+                                  background: v || 'var(--acb-border)',
+                                  border: '1px solid var(--acb-border)',
+                                }}
+                              />
+                              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                {v || '—'}
+                              </Typography.Text>
+                            </span>
+                          ),
+                        },
+                      ]}
+                    />
+                  ) : (
+                    empty('还没有标签')
+                  )}
+                </>
+              ),
+            },
+            {
+              key: 'integrations',
+              label: '接入',
+              children: (
+                <>
+                  <div className="acb-settings-section">
+                    <div className="acb-settings-section-head">
+                      <span className="acb-settings-section-title">API Key</span>
+                      {isAdmin ? (
+                        <Button
+                          type="primary"
+                          size="small"
+                          icon={<PlusOutlined />}
+                          onClick={() => {
+                            keyForm.resetFields()
+                            setKeyOpen(true)
+                          }}
+                        >
+                          新建
+                        </Button>
+                      ) : null}
+                    </div>
+                    {lastKeyToken ? (
+                      <Alert
+                        type="success"
+                        showIcon
+                        style={{ marginBottom: 12 }}
+                        closable
+                        onClose={() => setLastKeyToken(null)}
+                        message="密钥明文仅此一次，请妥善保存"
+                        description={
+                          <Typography.Text code copyable={{ text: lastKeyToken }}>
+                            {lastKeyToken}
                           </Typography.Text>
-                        </span>
-                      ),
-                    },
-                  ]}
-                />
-              ) : (
-                empty('暂无标签')
-              ),
-            },
-            {
-              key: 'keys',
-              label: 'API Key',
-              children: keys.length ? (
-                <Table
-                  className="acb-list-table"
-                  size="small"
-                  rowKey="id"
-                  dataSource={keys}
-                  pagination={false}
-                  columns={[
-                    { title: '名称', dataIndex: 'name' },
-                    {
-                      title: 'Key',
-                      dataIndex: 'key_prefix',
-                      width: 120,
-                      render: (v: string) => keyTail(v),
-                    },
-                    {
-                      title: '创建',
-                      dataIndex: 'created_at',
-                      width: 140,
-                      render: (v?: string) => (v ? formatShanghai(v) : '—'),
-                    },
-                  ]}
-                />
-              ) : (
-                empty('暂无 API Key')
-              ),
-            },
-            {
-              key: 'webhooks',
-              label: 'Webhook',
-              children: hooks.length ? (
-                <Table
-                  className="acb-list-table"
-                  size="small"
-                  rowKey="id"
-                  dataSource={hooks}
-                  pagination={false}
-                  columns={[
-                    { title: 'URL', dataIndex: 'url', ellipsis: true },
-                    {
-                      title: '启用',
-                      dataIndex: 'enabled',
-                      width: 72,
-                      render: (v) => (v ? '是' : '否'),
-                    },
-                  ]}
-                />
-              ) : (
-                empty('暂无 Webhook')
+                        }
+                      />
+                    ) : null}
+                    {keys.length ? (
+                      <Table
+                        className="acb-list-table"
+                        size="small"
+                        rowKey="id"
+                        dataSource={keys}
+                        pagination={false}
+                        columns={[
+                          { title: '名称', dataIndex: 'name' },
+                          {
+                            title: '密钥',
+                            dataIndex: 'key_prefix',
+                            width: 120,
+                            render: (v: string) => keyTail(v),
+                          },
+                          {
+                            title: '创建',
+                            dataIndex: 'created_at',
+                            width: 140,
+                            render: (v?: string) => (v ? formatShanghai(v) : '—'),
+                          },
+                        ]}
+                      />
+                    ) : (
+                      empty('还没有 API Key')
+                    )}
+                  </div>
+
+                  <div className="acb-settings-section">
+                    <div className="acb-settings-section-head">
+                      <span className="acb-settings-section-title">Webhook</span>
+                      {isAdmin ? (
+                        <Button
+                          type="primary"
+                          size="small"
+                          icon={<PlusOutlined />}
+                          onClick={() => {
+                            hookForm.resetFields()
+                            setHookOpen(true)
+                          }}
+                        >
+                          新建
+                        </Button>
+                      ) : null}
+                    </div>
+                    {hooks.length ? (
+                      <Table
+                        className="acb-list-table"
+                        size="small"
+                        rowKey="id"
+                        dataSource={hooks}
+                        pagination={false}
+                        columns={[
+                          { title: '地址', dataIndex: 'url', ellipsis: true },
+                          {
+                            title: '状态',
+                            dataIndex: 'enabled',
+                            width: 88,
+                            render: (v) => (
+                              <Tag color={v ? 'success' : 'default'}>{v ? '启用' : '停用'}</Tag>
+                            ),
+                          },
+                        ]}
+                      />
+                    ) : (
+                      empty('还没有 Webhook')
+                    )}
+                  </div>
+                </>
               ),
             },
           ]}
         />
       </div>
+
+      <Modal
+        title="新建标签"
+        open={labelOpen}
+        onCancel={() => setLabelOpen(false)}
+        onOk={() => void onCreateLabel()}
+        confirmLoading={labelBusy}
+        okText="创建"
+        cancelText="取消"
+        destroyOnHidden
+      >
+        <Form form={labelForm} layout="vertical" style={{ marginTop: 8 }}>
+          <Form.Item name="name" label="名称" rules={[{ required: true, message: '请填写名称' }]}>
+            <Input maxLength={40} />
+          </Form.Item>
+          <Form.Item name="color" label="颜色" initialValue="#5E6AD2">
+            <Input type="color" style={{ width: 56, padding: 2 }} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="新建 API Key"
+        open={keyOpen}
+        onCancel={() => setKeyOpen(false)}
+        onOk={() => void onCreateKey()}
+        confirmLoading={keyBusy}
+        okText="创建"
+        cancelText="取消"
+        destroyOnHidden
+      >
+        <Form form={keyForm} layout="vertical" style={{ marginTop: 8 }}>
+          <Form.Item name="name" label="名称" rules={[{ required: true, message: '请填写名称' }]}>
+            <Input placeholder="例如：自动化脚本" maxLength={80} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="新建 Webhook"
+        open={hookOpen}
+        onCancel={() => setHookOpen(false)}
+        onOk={() => void onCreateHook()}
+        confirmLoading={hookBusy}
+        okText="创建"
+        cancelText="取消"
+        destroyOnHidden
+      >
+        <Form form={hookForm} layout="vertical" style={{ marginTop: 8 }}>
+          <Form.Item
+            name="url"
+            label="回调地址"
+            rules={[
+              { required: true, message: '请填写回调地址' },
+              { type: 'url', message: '请输入有效的 http(s) 地址' },
+            ]}
+          >
+            <Input placeholder="https://…" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   )
 }

@@ -13,6 +13,7 @@ import {
   LogoutOutlined,
   BulbOutlined,
   MoonOutlined,
+  CrownOutlined,
 } from '@ant-design/icons'
 import { listMyWorkspaces, type Workspace } from '../api/workspaces'
 import { listProjects, type Project } from '../api/projects'
@@ -103,15 +104,17 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
         breakpoint="lg"
         collapsedWidth={64}
         theme="light"
+        className="acb-sider"
         style={{
           borderRight: `1px solid ${t.colorBorderSecondary}`,
           height: '100%',
-          overflow: 'auto',
+          overflow: 'hidden',
         }}
       >
         <div
           style={{
             height: 48,
+            flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
             padding: '0 14px',
@@ -125,6 +128,7 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
         <Menu
           mode="inline"
           selectedKeys={selected}
+          className="acb-sider-menu"
           style={{ border: 'none', marginTop: 4 }}
           items={[
             { key: 'board', icon: <DashboardOutlined />, label: <Link to={projectId ? `${base}/board` : `/w/${wsId}/board`}>看板</Link> },
@@ -133,10 +137,23 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
             { key: 'timeline', icon: <ScheduleOutlined />, label: <Link to={projectId ? `${base}/timeline` : `/w/${wsId}/timeline`}>排期</Link> },
             { key: 'wiki', icon: <BookOutlined />, label: <Link to={`/w/${wsId}/wiki`}>Wiki</Link> },
             { key: 'time', icon: <ClockCircleOutlined />, label: <Link to={`/w/${wsId}/time`}>工时</Link> },
+            { type: 'divider' },
             { key: 'settings', icon: <SettingOutlined />, label: <Link to={`/w/${wsId}/settings`}>设置</Link> },
             { key: 'bots', icon: <RobotOutlined />, label: <Link to={`/w/${wsId}/settings/bots`}>Bot</Link> },
           ]}
         />
+        {user?.is_platform_admin ? (
+          <div className="acb-sider-foot">
+            <Link
+              to="/admin"
+              className={`acb-sider-foot-link${loc.pathname.startsWith('/admin') ? ' is-active' : ''}`}
+              title="平台管理（仅超管）"
+            >
+              <CrownOutlined style={{ fontSize: 12 }} />
+              <span>平台管理</span>
+            </Link>
+          </div>
+        ) : null}
       </Sider>
       <Layout style={{ height: '100%', minWidth: 0, overflow: 'hidden' }}>
         <Header

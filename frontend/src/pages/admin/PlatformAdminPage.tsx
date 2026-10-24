@@ -5,8 +5,8 @@ import {
   Button,
   Form,
   Input,
+  Modal,
   Spin,
-  Switch,
   Table,
   Tabs,
   Tag,
@@ -14,8 +14,9 @@ import {
   message,
   Empty,
   Popconfirm,
+  Space,
 } from 'antd'
-import { ArrowLeftOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons'
 import { me, type User } from '../../api/auth'
 import { ApiError } from '../../api/client'
 import {
@@ -30,7 +31,7 @@ import {
 import { formatShanghai } from '../../utils/time'
 
 /**
- * C7–C9：平台超管台。仅 is_platform_admin 可见；真实 API，无假数据。
+ * 平台超管台（PRO_ADMIN A2）：顶栏标题+副文+主操作一排；工作区|用户对等；表区 hug。
  */
 export default function PlatformAdminPage() {
   const nav = useNavigate()
@@ -42,6 +43,7 @@ export default function PlatformAdminPage() {
   const [userErr, setUserErr] = useState<string | null>(null)
   const [wsLoading, setWsLoading] = useState(false)
   const [userLoading, setUserLoading] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
   const [createForm] = Form.useForm<{ name: string; slug?: string; owner_email: string }>()
   const [creating, setCreating] = useState(false)
   const [userQuery, setUserQuery] = useState('')
@@ -129,7 +131,7 @@ export default function PlatformAdminPage() {
 
   if (boot) {
     return (
-      <div className="acb-page" style={{ textAlign: 'center', paddingTop: 48 }}>
+      <div className="acb-page acb-pro-admin" style={{ textAlign: 'center', paddingTop: 48 }}>
         <Spin />
       </div>
     )
@@ -158,12 +160,13 @@ export default function PlatformAdminPage() {
         slug: values.slug?.trim() || undefined,
         owner_email: values.owner_email.trim().toLowerCase(),
       })
-      message.success('已代开工作空间')
+      message.success('已新建工作区')
       createForm.resetFields()
+      setCreateOpen(false)
       await loadWorkspaces()
     } catch (e) {
       if (e && typeof e === 'object' && 'errorFields' in e) return
-      message.error(e instanceof ApiError || e instanceof Error ? e.message : '代开失败')
+      message.error(e instanceof ApiError || e instanceof Error ? e.message : '新建失败')
     } finally {
       setCreating(false)
     }
@@ -180,25 +183,37 @@ export default function PlatformAdminPage() {
   }
 
   const empty = (desc: string) => (
-    <div className="acb-empty-panel" style={{ padding: 24 }}>
+    <div className="acb-empty-panel" style={{ padding: 24, minHeight: 120 }}>
       <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={desc} />
     </div>
   )
 
   return (
-    <div className="acb-page">
+    <div className="acb-page acb-pro-admin">
       <div className="acb-page-bar">
         <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
+          <Typography.Title level={4} className="acb-page-title">
             平台管理
           </Typography.Title>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            全站工作区与用户 · {user.name} · {user.email}
+          <Typography.Text type="secondary" className="acb-page-sub">
+            全站工作区与用户 · {user.name || user.email}
           </Typography.Text>
         </div>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => nav('/')}>
-          返回工作区
-        </Button>
+        <Space>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => nav('/')}>
+            返回工作区
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              createForm.resetFields()
+              setCreateOpen(true)
+            }}
+          >
+            新建工作区
+          </Button>
+        </Space>
       </div>
 
       <div className="acb-surface-panel">
@@ -206,35 +221,9 @@ export default function PlatformAdminPage() {
           items={[
             {
               key: 'workspaces',
-              label: '工作区',
+              label: `工作区${workspaces.length ? ` (${workspaces.length})` : ''}`,
               children: (
                 <>
-                  <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    代开工作空间
-                  </Typography.Text>
-                  <Form form={createForm} layout="inline" style={{ marginBottom: 16, rowGap: 8 }}>
-                    <Form.Item name="name" rules={[{ required: true, message: '请填写名称' }]}>
-                      <Input placeholder="名称" style={{ width: 160 }} />
-                    </Form.Item>
-                    <Form.Item name="slug">
-                      <Input placeholder="slug（可选）" style={{ width: 140 }} />
-                    </Form.Item>
-                    <Form.Item
-                      name="owner_email"
-                      rules={[
-                        { required: true, message: '请填写 owner 邮箱' },
-                        { type: 'email', message: '邮箱格式不正确' },
-                      ]}
-                    >
-                      <Input placeholder="owner 邮箱" style={{ width: 200 }} />
-                    </Form.Item>
-                    <Form.Item>
-                      <Button type="primary" loading={creating} onClick={() => void onCreateWs()}>
-                        代开
-                      </Button>
-                    </Form.Item>
-                  </Form>
-
                   {wsErr ? (
                     <Alert
                       type="warning"
@@ -265,7 +254,13 @@ export default function PlatformAdminPage() {
                               <Link to={`/w/${row.id}/board`}>{v}</Link>
                             ),
                           },
-                          { title: 'slug', dataIndex: 'slug', width: 140, ellipsis: true },
+                          {
+                            title: 'URL 标识',
+                            dataIndex: 'slug',
+                            width: 140,
+                            ellipsis: true,
+                            render: (v?: string) => v || '—',
+                          },
                           {
                             title: '成员',
                             dataIndex: 'member_count',
@@ -279,27 +274,34 @@ export default function PlatformAdminPage() {
                             render: (v?: string) => (v ? formatShanghai(v) : '—'),
                           },
                           {
-                            title: '停用',
-                            key: 'disabled',
-                            width: 90,
+                            title: '状态',
+                            key: 'status',
+                            width: 120,
                             render: (_, row) => {
                               const disabled = !!(row.disabled_at || row.status === 'disabled')
                               return (
-                                <Popconfirm
-                                  title={disabled ? '确认恢复该工作区？' : '确认停用该工作区？'}
-                                  okText="确认"
-                                  cancelText="取消"
-                                  onConfirm={() => void onToggleDisable(row, !disabled)}
-                                >
-                                  <Switch size="small" checked={disabled} checkedChildren="停" unCheckedChildren="用" />
-                                </Popconfirm>
+                                <Space size={8}>
+                                  <Tag color={disabled ? 'default' : 'success'}>
+                                    {disabled ? '已停用' : '启用'}
+                                  </Tag>
+                                  <Popconfirm
+                                    title={disabled ? '确认恢复该工作区？' : '确认停用该工作区？'}
+                                    okText="确认"
+                                    cancelText="取消"
+                                    onConfirm={() => void onToggleDisable(row, !disabled)}
+                                  >
+                                    <Button type="link" size="small" style={{ padding: 0 }}>
+                                      {disabled ? '恢复' : '停用'}
+                                    </Button>
+                                  </Popconfirm>
+                                </Space>
                               )
                             },
                           },
                         ]}
                       />
                     ) : (
-                      empty(wsErr || '暂无全站工作区')
+                      empty(wsErr || '还没有工作区')
                     )}
                   </Spin>
                 </>
@@ -307,7 +309,7 @@ export default function PlatformAdminPage() {
             },
             {
               key: 'users',
-              label: '用户',
+              label: `用户${users.length ? ` (${users.length})` : ''}`,
               children: (
                 <>
                   <Input.Search
@@ -321,6 +323,11 @@ export default function PlatformAdminPage() {
                     }}
                     style={{ maxWidth: 320, marginBottom: 12 }}
                   />
+                  {!userQueryDebounced.trim() ? (
+                    <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: -4, marginBottom: 12 }}>
+                      输入邮箱或名称筛选用户
+                    </Typography.Paragraph>
+                  ) : null}
                   {userErr ? (
                     <Alert
                       type="warning"
@@ -353,10 +360,10 @@ export default function PlatformAdminPage() {
                               const list = row.workspaces || []
                               if (!list.length) return '—'
                               return (
-                                <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
+                                <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 8 }}>
                                   {list.map((w) => (
                                     <Tag key={w.id} style={{ margin: 0 }}>
-                                      {w.name || w.slug || w.id}
+                                      {w.name || '未命名工作区'}
                                     </Tag>
                                   ))}
                                 </span>
@@ -371,20 +378,37 @@ export default function PlatformAdminPage() {
                           },
                           {
                             title: '平台超管',
-                            key: 'is_platform_admin',
-                            width: 110,
+                            key: 'platform_admin',
+                            width: 120,
                             render: (_, row) => (
-                              <Switch
-                                size="small"
-                                checked={!!row.is_platform_admin}
-                                onChange={(checked) => void onTogglePlatformAdmin(row, checked)}
-                              />
+                              <Space size={8}>
+                                <Tag color={row.is_platform_admin ? 'processing' : 'default'}>
+                                  {row.is_platform_admin ? '是' : '否'}
+                                </Tag>
+                                <Popconfirm
+                                  title={
+                                    row.is_platform_admin
+                                      ? '确认撤消该用户的平台超管？'
+                                      : '确认授予平台超管？'
+                                  }
+                                  okText="确认"
+                                  cancelText="取消"
+                                  onConfirm={() => void onTogglePlatformAdmin(row, !row.is_platform_admin)}
+                                >
+                                  <Button type="link" size="small" style={{ padding: 0 }}>
+                                    {row.is_platform_admin ? '撤消' : '授予'}
+                                  </Button>
+                                </Popconfirm>
+                              </Space>
                             ),
                           },
                         ]}
                       />
                     ) : (
-                      empty(userErr || (userQueryDebounced.trim() ? '无匹配用户' : '暂无用户'))
+                      empty(
+                        userErr ||
+                          (userQueryDebounced.trim() ? '无匹配用户' : '还没有用户'),
+                      )
                     )}
                   </Spin>
                 </>
@@ -392,10 +416,45 @@ export default function PlatformAdminPage() {
             },
           ]}
         />
-        <div className="acb-surface-panel-foot">
-          平台管理仅对超管可见。可停用/恢复工作区、代开工作空间、授撤平台超管。
-        </div>
       </div>
+
+      <Modal
+        title="新建工作区"
+        open={createOpen}
+        onCancel={() => setCreateOpen(false)}
+        onOk={() => void onCreateWs()}
+        confirmLoading={creating}
+        okText="创建"
+        cancelText="取消"
+        destroyOnHidden
+      >
+        <Form form={createForm} layout="vertical" style={{ marginTop: 8 }}>
+          <Form.Item name="name" label="名称" rules={[{ required: true, message: '请填写名称' }]}>
+            <Input placeholder="工作区名称" maxLength={80} />
+          </Form.Item>
+          <Form.Item
+            name="slug"
+            label={
+              <span>
+                URL 标识
+                <span className="acb-settings-slug-extra">用于 URL</span>
+              </span>
+            }
+          >
+            <Input placeholder="可选，留空自动生成" maxLength={64} />
+          </Form.Item>
+          <Form.Item
+            name="owner_email"
+            label="所有者邮箱"
+            rules={[
+              { required: true, message: '请填写所有者邮箱' },
+              { type: 'email', message: '邮箱格式不正确' },
+            ]}
+          >
+            <Input placeholder="已注册用户邮箱" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   )
 }
