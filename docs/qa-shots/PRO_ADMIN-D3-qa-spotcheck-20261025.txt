@@ -1,0 +1,73 @@
+PRO_ADMIN D3-4 QA spotcheck · 2026-10-25 02:15 Asia/Shanghai
+Overall: PASS†
+Feature SHA: 7def3a285a26b578260a61bd44a3cb08da40d38b (ancestor of HEAD 4571e9c / local main)
+Debt: docs/NEXT_WAVE_DEBT_PRO_ADMIN_D3.md (parent docs/NEXT_WAVE_DEBT_PRO_ADMIN.md)
+Shot: docs/qa-shots/pro-d-users.png (53037 B @7def3a2)
+Seed: frontend/public/qa-d3-seed.html → /admin?tab=users
+Scope: D3 only. D4 / G FROZEN — not verified.
+Accept补强（产品正式开验细则并入）: 用户 Tab Select「按所属工作区筛选」可搜/可清；与邮箱名称 q 叠加；Soft† API 无 workspace_id → FE 按 workspaces[].id（不挡 PASS†）；清空恢复；空结果人话；箱截对照 pro-d-users.png。
+
+Method
+- git merge-base --is-ancestor 7def3a2 HEAD → OK；git show 7def3a2 --stat
+- Inspect PlatformAdminPage.tsx: userWsFilter / filteredUsers / 清空筛选 / empty 人话；admin.ts listAdminUsers（无 workspace_id 发出）
+- Read docs/qa-shots/pro-d-users.png as image
+- Soft† live FE Vite skipped（箱截+源码 suffice；seed qa-d3-seed.html verified）
+
+Accept checklist
+1. 用户台顶：所属 WS 筛（Select 可搜 + allowClear）与邮箱/名称防抖 q 叠加 …… PASS
+   - Select: allowClear + showSearch + optionFilterProp="label" + placeholder/aria「按所属工作区筛选」
+   - options ← workspaces.map id/name；notFoundContent「无匹配工作区」
+   - Input.Search 邮箱/名称 + userQuery → 300ms debounce → userQueryDebounced → loadUsers({q})
+   - 叠加：API ?q= 结果上再 FE 按 userWsFilter 滤（filteredUsers）；status 文案可同时显示 q 与工作区名
+   - 清空 Button 同时清 userQuery / userQueryDebounced / userWsFilter
+
+2. Soft† FE 按 row.workspaces[].id 滤（API 无 workspace_id = Soft† OK，非 FAIL） …… PASS
+   - admin.ts listAdminUsers: 仅透传 q；void opts?.workspace_id（不向 API 发 workspace_id）
+   - 注释明示「D3：API 暂无 workspace_id；所属 WS 筛由 FE Soft†（row.workspaces[].id）完成」
+   - filteredUsers = userWsFilter ? users.filter(row => (row.workspaces||[]).some(w => w.id === userWsFilter)) : users
+   - loadUsers 仅传 q，不依赖 BE workspace_id
+   - **Soft† 明示：FE滤非BE** — 总指挥接受；不挡 PASS†
+
+3. 清空筛恢复全部；空结果人话（中文，非技术口吻） …… PASS
+   - 清空筛选：setUserQuery('') + setUserQueryDebounced('') + setUserWsFilter(undefined) → filteredUsers=users 全量
+   - allowClear on Select 单独清 WS 筛亦可
+   - 空结果（仅 WS 筛）：「该工作区下暂无用户，试试其他工作区或清空筛选」
+   - 空结果（含 q / 叠加）：「无匹配用户，试试其他邮箱/名称或工作区，或清空筛选」
+   - 无筛空台：「还没有用户 · 输入邮箱或名称筛选用户」
+   - 引导文案：「输入邮箱或名称，或按所属工作区筛选；清空筛选项即恢复全部」
+   - 禁英文/技术口吻 — 源码中文人话
+
+4. 箱截 pro-d-users.png：WS 筛可见；中文；禁挤叠/死白 …… PASS
+   - Exists 53037 B @7def3a2；中文主 UI
+   - 用户 tab 激活「用户 (2)」；搜框 placeholder「输入邮箱或名称筛选用户」
+   - Select 可见且已选「育蒙科技」；status「正在按所属工作区筛选 · 工作区「育蒙科技」 · 清空筛选」
+   - 两行均含「育蒙科技」芯片（FE 滤结果一致）；所属工作区芯片可点样式保留（D2）
+   - 禁挤叠/死白/英文露脸 — shot OK
+   - Seed: frontend/public/qa-d3-seed.html → /admin?tab=users
+
+5. 不破坏 D2 芯片可点跳 / C4 工作区筛 / A2 壳 …… PASS
+   - D2: Tag onClick → onUserWsChipClick；myWsIds；有权 nav(`/w/{id}/board`) / 无权复制+Toast 源码仍在
+   - C4: filteredWorkspaces + wsQuery + wsStatusFilter 源码仍在
+   - A2: 页顶「平台管理」+ 副文 + 返回工作区 / 新建工作区；Tabs 工作区|用户 intact
+   - Shot: A2 chrome + 用户表 + WS 筛可见
+
+FAIL redlines hit? NONE
+- no WS filter — NO（Select 源码+shot）
+- cannot stack with q — NO（debounce q + FE userWsFilter）
+- clear does not restore — NO（三态同清）
+- empty silent/English — NO（中文人话）
+- Soft† treated as FAIL wrongly — NO（FE滤非BE 接受）
+- shot missing WS filter UI — NO（Select「育蒙科技」+ status 可见）
+- D2/C4/A2 break — NO
+
+Soft† notes
+- **FE滤非BE**：API GET /admin/users 无 workspace_id；FE 按 row.workspaces[].id 客户端滤。总指挥明示 Soft† 不挡 PASS†。
+- listAdminUsers 签名预留 workspace_id 但不发出；日后 BE 支持可切换。
+- Live FE Vite skipped（standing Soft† optional; source+shot suffice）
+- Seed helper frontend/public/qa-d3-seed.html → /admin?tab=users
+- D4 / G not opened
+
+Defects: (none blocking)
+
+Verdict: PASS† @7def3a2
+One-line → 产品+React+总指挥: D3-4 PASS†；用户台 Select「按所属工作区筛选」可搜/可清，与防抖 q 叠加；Soft† FE 按 workspaces[].id（API 无 workspace_id，FE滤非BE，不挡 PASS†）；清空恢复+空结果中文人话；箱截 pro-d-users.png WS 筛可见；D2 芯片/C4/A2 未破；Soft† 活 FE 略；D4/G 未验。
