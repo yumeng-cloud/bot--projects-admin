@@ -112,3 +112,8 @@ bind ok=true  holder=QA Bot B
 - Standing order: evidence committed + `git push origin/main` after this file lands.
 - No temp branches to delete (only main).
 - Local API left running: /tmp/ai-board-server :8080 healthz 200 (post-4cdaa04 binary).
+
+## Push attempt
+- git push origin main FAILED: `fatal: could not read Username for https://github.com` (box GITHUB_TOKEN invalid; api.github.com DNS timeout from shell)
+- cursor-github get_repository permissions for connected account kiyotakali: pull=true push=false on yumeng-cloud/bot--projects-admin
+- Local commit ready: 2d2f4a6 (main ahead of origin/main by 1). Parent/owner must push or grant push access.
