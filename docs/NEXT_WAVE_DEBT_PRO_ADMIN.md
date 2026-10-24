@@ -115,7 +115,7 @@
 - [x] **B2** 无成员引导 · `95974f1` / `pro-b-empty-no-members.png` · QA PASS `76824d1`
 - [x] **B3** 无 Issue 引导 · `95974f1` · QA PASS `76824d1`
 - [x] **B4** 空态箱截 · `95974f1`（无成员/无 Issue；无项目复用 B1 `pro-b-empty-no-project.png`）
-- [x] **C1** 归档显隐 · `8c0fe5a` / `pro-c-archived-toggle.png`
+- [x] **C1** 归档显隐 · FE `8c0fe5a` + QA `0e76217` / `pro-c-archived-toggle.png`
 - [ ] **C2** 多选批量
 - [ ] **C3** 列显示配置
 - [ ] **C4** 超管 WS 筛选
@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:21 · **QA C1 抽验 PASS** `0e76217` / `PRO_ADMIN-C1-qa-spotcheck-20261025.txt`（默认关/开归档/其它筛/截全过）。**C1 关绿维持**。
 - 2026-10-25 00:19 · **产品勾 C1** `8c0fe5a`：滤镜「显示已归档」默认关；开→`include_archived`+弱标签灰行；其它筛保持；箱截 `pro-c-archived-toggle.png` 过。C2–E/G 仍冻。**下一刀 SEAT_LEAVE 开刀**。
 - 2026-10-25 00:18 · **C1 关绿** React `8c0fe5a`：列表滤镜「显示已归档」默认关；开→`include_archived=1`；归档行弱标签+灰态；其它筛保持；箱截 `pro-c-archived-toggle.png`；`tsc --noEmit` PASS。C2–E/G 仍冻；下一刀 SEAT_LEAVE。
 - 2026-10-25 00:53 · **对齐总指挥**：本波认 **C1 归档显隐**（@`2e328dd`）先关；SEAT_LEAVE 排 C1 关后下一刀（债已落 `71e9b4a`，不丢）。C2–E/G 仍冻。
