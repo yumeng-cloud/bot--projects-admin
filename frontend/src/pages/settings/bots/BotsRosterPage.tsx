@@ -38,7 +38,6 @@ import {
   isInviteServiceMissing,
   isSeatConflict,
   listTeamInvites,
-  listTeams,
   revokeTeamInvite,
   seatOccupancy,
   type Team,
@@ -47,12 +46,8 @@ import {
 } from '../../../api/teams'
 import { createIssue, notifyIssue } from '../../../api/issues'
 import { listProjects } from '../../../api/projects'
+import { useCurrentTeam } from '../../../hooks/useCurrentTeam'
 import { formatWikiTime } from '../../../utils/time'
-import {
-  readStoredTeamId,
-  resolveTeamId,
-  writeStoredTeamId,
-} from '../../../utils/currentTeam'
 import JoinTeamWizard from './JoinTeamWizard'
 import CreateTeamFromTemplateModal from './CreateTeamFromTemplateModal'
 import SeatConflictPanel, { type SeatConflictInfo } from './SeatConflictPanel'
@@ -83,6 +78,7 @@ export default function BotsRosterPage() {
   const { wsId = '' } = useParams()
   const [searchParams] = useSearchParams()
   const forceEmpty = searchParams.get('f1empty') === '1'
+  const { teams, teamId, setTeamId, loading: teamLoading } = useCurrentTeam(wsId)
   const [loading, setLoading] = useState(true)
   const [bots, setBots] = useState<BotRosterItem[]>([])
   const [roles, setRoles] = useState<BotRole[]>([])
@@ -93,10 +89,6 @@ export default function BotsRosterPage() {
   const [createFromTplOpen, setCreateFromTplOpen] = useState(false)
   const [conflictOpen, setConflictOpen] = useState(false)
   const [conflictInfo, setConflictInfo] = useState<SeatConflictInfo | null>(null)
-  const [teams, setTeams] = useState<Team[]>([])
-  const [teamId, setTeamId] = useState<string | null>(() =>
-    wsId ? readStoredTeamId(wsId) : null,
-  )
   /** 与向导同源的团队席位占用（N4 同步） */
   const [teamSeats, setTeamSeats] = useState<TeamSeat[]>([])
   const [issuedInvites, setIssuedInvites] = useState<TeamInvite[]>([])
@@ -119,41 +111,16 @@ export default function BotsRosterPage() {
   const load = async () => {
     setLoading(true)
     try {
-      const [b, r, k, teams] = await Promise.all([
+      const [b, r, k] = await Promise.all([
         listBots(wsId),
         listBotRoles(wsId),
         api<{ api_keys: ApiKeyRow[] }>(`/workspaces/${wsId}/api-keys`).catch(() => ({
           api_keys: [] as ApiKeyRow[],
         })),
-        listTeams(wsId).catch(() => ({ teams: [] })),
       ])
       setBots(b.bots || [])
       setRoles(r.bot_roles || [])
       setKeys((k.api_keys || []).filter((x) => !x.revoked_at))
-      const teamList = teams.teams || []
-      setTeams(teamList)
-      // 与 list/board 共用 acb.team.<wsId>；保留当前队（若仍在列表）否则回落首队
-      const tid = resolveTeamId(teamList, teamId || readStoredTeamId(wsId))
-      setTeamId(tid)
-      writeStoredTeamId(wsId, tid)
-      if (tid) {
-        try {
-          const rost = await getRoster(wsId, tid)
-          setTeamSeats(rost.roster || [])
-        } catch {
-          setTeamSeats([])
-        }
-        // Go 29f9404+ 已挂 GET invites（无明文）；失败则保留本页签发缓存
-        try {
-          const inv = await listTeamInvites(wsId, tid)
-          setIssuedInvites(inv.invites || [])
-        } catch {
-          /* 保留本地签发缓存 */
-        }
-      } else {
-        setTeamSeats([])
-        setIssuedInvites([])
-      }
     } catch (e: unknown) {
       message.error(e instanceof Error ? e.message : '加载失败')
     } finally {
@@ -165,51 +132,43 @@ export default function BotsRosterPage() {
     void load()
   }, [wsId])
 
-  /** 换队：写共享 current-team；清空席/邀请缓存；记忆墙由 TeamPinsPanel 按 teamId 换池（P5） */
-  const onTeamChange = (tid: string) => {
-    setTeamId(tid)
-    writeStoredTeamId(wsId, tid)
+  /** 顶栏 CurrentTeam 换队：清空席/邀请缓存并 refetch；记忆墙由 TeamPinsPanel 按 teamId 换池（P5） */
+  useEffect(() => {
     setTeamSeats([])
     setIssuedInvites([])
+    if (!wsId || !teamId) return
+    let cancelled = false
     void (async () => {
       try {
-        const rost = await getRoster(wsId, tid)
-        setTeamSeats(rost.roster || [])
+        const rost = await getRoster(wsId, teamId)
+        if (!cancelled) setTeamSeats(rost.roster || [])
       } catch {
-        setTeamSeats([])
+        if (!cancelled) setTeamSeats([])
       }
+      // Go 29f9404+ 已挂 GET invites（无明文）；失败则保留本页签发缓存
       try {
-        const inv = await listTeamInvites(wsId, tid)
-        setIssuedInvites(inv.invites || [])
+        const inv = await listTeamInvites(wsId, teamId)
+        if (!cancelled) setIssuedInvites(inv.invites || [])
       } catch {
-        /* keep */
+        /* 保留本地签发缓存 */
       }
     })()
-  }
-
+    return () => {
+      cancelled = true
+    }
+  }, [wsId, teamId])
 
   const onTeamCreatedFromTemplate = (team: Team, _roster: TeamSeat[]) => {
-    writeStoredTeamId(wsId, team.id)
     setTeamId(team.id)
     void load()
   }
 
-  const teamSelect =
-    teams.length > 1 ? (
-      <Select
-        size="small"
-        value={teamId || undefined}
-        placeholder="选择团队"
-        style={{ minWidth: 140 }}
-        options={teams.map((t) => ({ value: t.id, label: t.name }))}
-        onChange={(v) => onTeamChange(v)}
-        popupMatchSelectWidth={false}
-      />
-    ) : teams.length === 1 ? (
-      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-        团队 · {teams[0].name}
-      </Typography.Text>
-    ) : null
+  const currentTeamName = teams.find((t) => t.id === teamId)?.name
+  const teamLabel = currentTeamName ? (
+    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+      当前队 · {currentTeamName}
+    </Typography.Text>
+  ) : null
 
   const botName = (memberId?: string | null) =>
     memberId ? bots.find((b) => b.member_id === memberId)?.display_name || '已绑定' : null
@@ -427,7 +386,7 @@ export default function BotsRosterPage() {
     }
   }
 
-  if (loading) {
+  if (loading || teamLoading) {
     return (
       <div className="acb-page acb-bots" style={{ textAlign: 'center', paddingTop: 48 }}>
         <Spin />
@@ -465,7 +424,7 @@ export default function BotsRosterPage() {
             Bot 席位
           </Typography.Title>
           <Space size={8} wrap>
-            {teamSelect}
+            {teamLabel}
             <Button size="small" icon={<PlusOutlined />} onClick={() => setCreateFromTplOpen(true)}>
               从模板创建
             </Button>
@@ -549,7 +508,7 @@ export default function BotsRosterPage() {
           Bot 席位
         </Typography.Title>
         <Space size={8} wrap>
-          {teamSelect}
+          {teamLabel}
           <Button size="small" icon={<PlusOutlined />} onClick={() => setCreateFromTplOpen(true)}>
             从模板创建
           </Button>
