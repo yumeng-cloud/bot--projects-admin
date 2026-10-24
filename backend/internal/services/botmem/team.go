@@ -152,7 +152,7 @@ func (s *Service) EnsureRoster(workspaceID, teamID string, in EnsureRosterInput)
 		if name == "" {
 			name = slug
 		}
-		role, err := s.ensureWSRole(workspaceID, slug, name)
+		role, err := s.ensureTeamRole(workspaceID, teamID, slug, name)
 		if err != nil {
 			return nil, err
 		}
@@ -196,16 +196,25 @@ func (s *Service) EnsureRoster(workspaceID, teamID string, in EnsureRosterInput)
 	return s.GetRoster(workspaceID, teamID)
 }
 
-func (s *Service) ensureWSRole(workspaceID, slug, name string) (*models.BotRole, error) {
+// teamScopedRoleSlug 将席位 slug 映射为按 team 唯一的 bot_roles.slug，
+// 避免同 WS 多队共用 workspace 级角色导致 claim / syncSeats 串队（T6-R）。
+func teamScopedRoleSlug(teamID, slug string) string {
+	return "team:" + teamID + ":" + slug
+}
+
+// ensureTeamRole 为 (team, role_slug) 确保独立 bot_role；幂等。
+// 席位对外仍用短 slug（team_seats.role_slug）；claim 单活落在本队 role 上。
+func (s *Service) ensureTeamRole(workspaceID, teamID, slug, name string) (*models.BotRole, error) {
+	roleSlug := teamScopedRoleSlug(teamID, slug)
 	var id string
-	err := s.DB.QueryRow(`SELECT id FROM bot_roles WHERE workspace_id = ? AND slug = ?`, workspaceID, slug).Scan(&id)
+	err := s.DB.QueryRow(`SELECT id FROM bot_roles WHERE workspace_id = ? AND slug = ?`, workspaceID, roleSlug).Scan(&id)
 	if err == nil {
 		return s.GetRole(workspaceID, id)
 	}
 	if err != sql.ErrNoRows {
 		return nil, err
 	}
-	return s.CreateRole(workspaceID, CreateRoleInput{Name: name, Slug: slug})
+	return s.CreateRole(workspaceID, CreateRoleInput{Name: name, Slug: roleSlug})
 }
 
 func (s *Service) GetRoster(workspaceID, teamID string) ([]models.TeamSeat, error) {
@@ -554,7 +563,7 @@ func (s *Service) CreateSeat(workspaceID, teamID string, in EnsureSeatInput) (*m
 	if err != sql.ErrNoRows {
 		return nil, err
 	}
-	role, err := s.ensureWSRole(workspaceID, slug, name)
+	role, err := s.ensureTeamRole(workspaceID, teamID, slug, name)
 	if err != nil {
 		return nil, err
 	}

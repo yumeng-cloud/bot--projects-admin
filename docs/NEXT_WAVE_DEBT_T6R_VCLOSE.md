@@ -29,6 +29,8 @@
 | **R2** | 证据 `docs/qa-shots/T6R-roster-isolate-*.txt`；**不做** pins、**不改** Issue List 按 team | 同上 |
 | **R3** | 产品勾本文件；`BOT_TEAM_SEAT` T6 **不**整勾，只注「T6-R 切片 PASS」 | **产品** |
 
+> **Go（辅）**：`EnsureRoster`/`CreateSeat` 现按 `team:`+teamID 建独立 `bot_role`，同 WS 双队同 slug **claim/bound 不串**；测例 `TestTwoTeamsRosterClaimIsolation`。记忆箱验：`POST …/teams` → `…/roster/ensure` → `GET …/roster` → `…/seats/{id}/bind`。
+
 ## 明确不做
 
 - `team_pins` / 共享记忆墙  

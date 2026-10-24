@@ -666,3 +666,128 @@ func TestClaimSyncsLinkedSeatActive(t *testing.T) {
 		t.Fatal("seat missing from roster")
 	}
 }
+
+// TestTwoTeamsRosterClaimIsolation T6-R：同 WS 两队同 slug 席位 id 不交、claim/bound 不串。
+func TestTwoTeamsRosterClaimIsolation(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	teamA, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "TeamA", Slug: "team-a"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	teamB, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "TeamB", Slug: "team-b"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if teamA.ID == teamB.ID {
+		t.Fatal("expected distinct team ids")
+	}
+
+	ra, err := svc.EnsureRoster(ws, teamA.ID, botmem.EnsureRosterInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rb, err := svc.EnsureRoster(ws, teamB.ID, botmem.EnsureRosterInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ra) == 0 || len(rb) == 0 {
+		t.Fatalf("empty roster a=%d b=%d", len(ra), len(rb))
+	}
+
+	idsA := map[string]struct{}{}
+	slugSeatA := map[string]string{}
+	for _, s := range ra {
+		idsA[s.ID] = struct{}{}
+		slugSeatA[s.RoleSlug] = s.ID
+	}
+	for _, s := range rb {
+		if _, ok := idsA[s.ID]; ok {
+			t.Fatalf("seat id %s appears in both teams", s.ID)
+		}
+	}
+
+	feA := slugSeatA["frontend"]
+	if feA == "" {
+		t.Fatal("team A missing frontend")
+	}
+	var feB string
+	for _, s := range rb {
+		if s.RoleSlug == "frontend" {
+			feB = s.ID
+			break
+		}
+	}
+	if feB == "" {
+		t.Fatal("team B missing frontend")
+	}
+
+	boundA, err := svc.BindSeat(ws, teamA.ID, feA, m1, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if boundA.BoundMemberID == nil || *boundA.BoundMemberID != m1 {
+		t.Fatalf("A bind: %+v", boundA)
+	}
+	if boundA.Claim == nil || boundA.Claim.MemberID != m1 {
+		t.Fatalf("A claim missing: %+v", boundA.Claim)
+	}
+
+	// 队 B 同 slug 须可独立 bind（不因 A 的 claim 409）
+	boundB, err := svc.BindSeat(ws, teamB.ID, feB, m2, false)
+	if err != nil {
+		t.Fatalf("B bind blocked by A claim (isolation hole): %v", err)
+	}
+	if boundB.BoundMemberID == nil || *boundB.BoundMemberID != m2 {
+		t.Fatalf("B bind: %+v", boundB)
+	}
+
+	// 再拉 roster：A 的 claim/bound 不得出现在 B
+	rb2, err := svc.GetRoster(ws, teamB.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range rb2 {
+		if s.RoleSlug != "frontend" {
+			continue
+		}
+		if s.BoundMemberID != nil && *s.BoundMemberID == m1 {
+			t.Fatalf("A member leaked onto B seat: %+v", s)
+		}
+		if s.Claim != nil && s.Claim.MemberID == m1 {
+			t.Fatalf("A claim leaked onto B roster: %+v", s.Claim)
+		}
+		if s.BoundMemberID == nil || *s.BoundMemberID != m2 {
+			t.Fatalf("B frontend bound want m2: %+v", s)
+		}
+	}
+
+	ra2, err := svc.GetRoster(ws, teamA.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range ra2 {
+		if s.RoleSlug != "frontend" {
+			continue
+		}
+		if s.BoundMemberID == nil || *s.BoundMemberID != m1 {
+			t.Fatalf("A frontend disturbed: %+v", s)
+		}
+		if s.Claim != nil && s.Claim.MemberID == m2 {
+			t.Fatalf("B claim leaked onto A: %+v", s.Claim)
+		}
+	}
+
+	// bot_role_id 须按队隔离
+	if boundA.BotRoleID == nil || boundB.BotRoleID == nil || *boundA.BotRoleID == *boundB.BotRoleID {
+		t.Fatalf("expected distinct bot_role_id per team seat; A=%v B=%v", boundA.BotRoleID, boundB.BotRoleID)
+	}
+
+	// ensure 幂等且不串队改绑
+	ra3, err := svc.EnsureRoster(ws, teamA.ID, botmem.EnsureRosterInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ra3) != len(ra) {
+		t.Fatalf("A roster grew on re-ensure: %d -> %d", len(ra), len(ra3))
+	}
+}
