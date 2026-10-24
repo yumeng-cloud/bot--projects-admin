@@ -101,4 +101,26 @@ INTERVAL_SEC=900 … ./scripts/handoff-mirror.sh --loop
 
 - `bash -n scripts/handoff-mirror.sh`  
 - 无 Key：`--dry-run` 或缺配置 → exit ≠ 0 且文案清晰  
-- 有 Key：实跑一轮，见 `$MIRROR_DIR/<name>/latest.json`；失败只打日志  
+- 有 Key：实跑一轮，见 `$MIRROR_DIR/<name>/latest.json`；失败只打日志
+
+---
+
+## 6. 最短演示（箱上）
+
+```bash
+# 1) 密钥（gitignore）
+cp scripts/handoff-sidecar/bot-keys.example scripts/handoff-sidecar/bot-keys.local
+# 编辑：name=ymk_…（1–2 只即可）
+
+# 2) 一轮镜像
+YMBOT_API_URL=http://127.0.0.1:8080 \
+YMBOT_WORKSPACE_ID=<ws> \
+BOT_KEYS_FILE=./scripts/handoff-sidecar/bot-keys.local \
+MIRROR_DIR=/tmp/ymbot-handoff-mirror-demo \
+./scripts/handoff-mirror.sh --once
+
+# 3) 读最新
+cat /tmp/ymbot-handoff-mirror-demo/<name>/latest.json | head
+```
+
+箱证：`docs/qa-shots/ymbot-handoff-mirror-demo-20261024.txt`（可演示）。

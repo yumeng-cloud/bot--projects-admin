@@ -130,28 +130,56 @@ func asObjectList(raw json.RawMessage, wrapKey string) ([]map[string]any, map[st
 
 // --- Issue ---
 
+// nestedDisplayName 读嵌套对象的 display_name（或纯字符串）；无则空。
+func nestedDisplayName(m map[string]any, key string) string {
+	v, ok := m[key]
+	if !ok || v == nil {
+		return ""
+	}
+	switch t := v.(type) {
+	case string:
+		return strings.TrimSpace(t)
+	case map[string]any:
+		return strings.TrimSpace(strField(t, "display_name", "name"))
+	default:
+		return ""
+	}
+}
+
+// resolveMemberLabel：嵌套名优先，再 MemberNames(id)；members 失败时默认 "-"，--id/--full 才回落裸 id。
+func resolveMemberLabel(m map[string]any, nestKey, idKey string, names map[string]string, opts ViewOpts) string {
+	if n := nestedDisplayName(m, nestKey); n != "" {
+		return n
+	}
+	aid := ptrStrField(m, idKey)
+	if aid == "" {
+		return "-"
+	}
+	if n := names[aid]; n != "" {
+		return n
+	}
+	if opts.IDs || opts.Full {
+		return aid
+	}
+	return "-"
+}
+
 func (c *Client) projectIssueMap(m map[string]any, names map[string]string, opts ViewOpts) map[string]any {
 	id := strField(m, "id")
 	ident := strField(m, "identifier")
 	if id != "" && ident != "" {
 		c.rememberIssue(id, ident)
 	}
-	aid := ptrStrField(m, "assignee_id")
-	assignee := "-"
-	if aid != "" {
-		if n := names[aid]; n != "" {
-			assignee = n
-		} else if opts.IDs || opts.Full {
-			assignee = aid
-		}
-	}
+	assignee := resolveMemberLabel(m, "assignee", "assignee_id", names, opts)
 	if opts.Full {
-		// near-REST: keep object but prefer readable assignee alongside
+		// near-REST：保留 REST 原字段；仅当无嵌套 display_name 时注入可读字符串 assignee
 		out := map[string]any{}
 		for k, v := range m {
 			out[k] = v
 		}
-		out["assignee"] = assignee
+		if nestedDisplayName(m, "assignee") == "" {
+			out["assignee"] = assignee
+		}
 		return out
 	}
 	out := map[string]any{
@@ -317,17 +345,23 @@ func (c *Client) ProjectComments(raw json.RawMessage, issueIdent string, opts Vi
 			if issueIdent != "" {
 				cp["issue"] = issueIdent
 			}
-			aid := strField(m, "author_id")
-			if n := names[aid]; n != "" {
-				cp["author"] = n
+			if nestedDisplayName(m, "author") == "" {
+				aid := strField(m, "author_id")
+				if n := names[aid]; n != "" {
+					cp["author"] = n
+				}
 			}
 			out = append(out, cp)
 			continue
 		}
-		aid := strField(m, "author_id")
-		author := names[aid]
+		author := nestedDisplayName(m, "author")
 		if author == "" {
-			author = "-"
+			aid := strField(m, "author_id")
+			if n := names[aid]; n != "" {
+				author = n
+			} else {
+				author = "-"
+			}
 		}
 		body := strField(m, "body")
 		item := map[string]any{

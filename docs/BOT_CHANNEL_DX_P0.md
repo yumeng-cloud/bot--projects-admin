@@ -54,6 +54,8 @@ REST 继续带 UUID（乐观锁、关联、前端不变）。DX 只约束 **ymbo
 | `assignee` | **可读名**（无则 `-` / 空）；默认 **不**出 `assignee_id` |
 | `updated_at` | 可选；若出则短 ISO 即可 |
 
+**显示名怎么来（通道）**：优先读 REST 嵌套 `assignee.display_name`（Issue 域可附 id+名）；无嵌套再 `GET …/members` → `assignee_id` 映射。members 懒加载失败时默认 `-`（不吐 UUID）；`--id`/`--full` 才回落裸 id。`identifier`→REST id：`ResolveIssueRef`（`YM-n` 或 UUID）。**瘦 get 不含 `reporter`**；若日后露出，同两路映射 `reporter.display_name` / `reporter_id`。
+
 **默认禁止**出现在列表行：`id`、`project_id`、`workspace_id`、`description`、`version`、整段 labels 数组、关系图等大块。  
 需要时：`--full`（或 MCP `full=true`）再吐接近 REST 的完整对象；仅要钥匙时用 `--id`（见 §2.3）。
 

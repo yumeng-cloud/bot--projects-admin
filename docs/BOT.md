@@ -151,7 +151,7 @@ go run ./cmd/ymbot handoff export --out /tmp/handoff.json   # 换机备份可选
 go run ./cmd/ymbot mcp-serve   # Cursor stdio MCP；tools: board_*；full/ids 同 --full/--id
 ```
 
-通道 DX（省 token / 少 UUID）：[`BOT_CHANNEL_DX_P0.md`](./BOT_CHANNEL_DX_P0.md)。默认无 32 位 hex；`--id` 附加裸 id；`--full` 接近 REST。
+通道 DX（省 token / 少 UUID）：[`BOT_CHANNEL_DX_P0.md`](./BOT_CHANNEL_DX_P0.md)。默认无 32 位 hex；`--id` 附加裸 id；`--full` 接近 REST。Issue 可读名：优先嵌套 `assignee.display_name`，否则 `members` 映射 `assignee_id`；入参 `YM-n`→id 由通道解析。
 
 共享客户端：`internal/botclient`（Bearer；Idempotency-Key：CLI/MCP 参数 → env → 自动 UUID；一行中文错误含吊销/无效；Bot 禁 `status=done`）。
 鉴权主路径：**API Key only**（不主推密码 login）。

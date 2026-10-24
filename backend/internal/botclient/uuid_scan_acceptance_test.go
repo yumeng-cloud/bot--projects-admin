@@ -48,6 +48,9 @@ func TestDefaultStdoutNoUUIDAndGetHasVersion(t *testing.T) {
 	if m := hex.FindAllString(all, -1); len(m) != 0 {
 		t.Fatalf("UUID matches=%d: %v\nall:\n%s", len(m), m, all)
 	}
+	if !strings.Contains(getTxt, "assignee=前端Bot") {
+		t.Fatalf("get missing nested assignee name: %s", getTxt)
+	}
 	if !strings.Contains(getTxt, "version=3") {
 		t.Fatalf("get missing version: %s", getTxt)
 	}

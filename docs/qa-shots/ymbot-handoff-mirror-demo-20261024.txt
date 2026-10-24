@@ -1,0 +1,106 @@
+=== ymbot handoff-mirror demo ===
+time_AsiaShanghai: 2026-10-24 17:24:53 CST
+HEAD: 39a1dc47d1fd636a91e645bf5ce260ede2eebac2
+WS: ba1481c49148aba9553ba3811406b69f
+YMBOT: /tmp/ymbot
+API: http://127.0.0.1:8080
+MIRROR_DIR: /tmp/ymbot-handoff-mirror-demo
+BOT_KEYS_FILE: scripts/handoff-sidecar/bot-keys.local (2 bots; keys redacted)
+
+===== dry-run =====
+[2026-10-24 17:24:53 +0800] dry-run: API_URL=http://127.0.0.1:8080 WORKSPACE=ba1481c49148aba9553ba3811406b69f MIRROR_DIR=/tmp/ymbot-handoff-mirror-demo KEEP_N=24 bots=2
+[2026-10-24 17:24:53 +0800] dry-run: would mirror bot=grok-bot key=ymk_…(redacted)
+[2026-10-24 17:24:53 +0800] dry-run: would mirror bot=botb-j2 key=ymk_…(redacted)
+[2026-10-24 17:24:53 +0800] dry-run: ymbot=/tmp/ymbot
+dry_exit=0
+
+===== --once =====
+[2026-10-24 17:24:53 +0800] OK   grok-bot: /tmp/ymbot-handoff-mirror-demo/grok-bot/handoff-20261024T172453+0800.json
+[2026-10-24 17:24:53 +0800] OK   botb-j2: /tmp/ymbot-handoff-mirror-demo/botb-j2/handoff-20261024T172453+0800.json
+once_exit=0
+
+===== layout =====
+/tmp/ymbot-handoff-mirror-demo/botb-j2/handoff-20261024T172453+0800.json
+/tmp/ymbot-handoff-mirror-demo/botb-j2/latest.json
+/tmp/ymbot-handoff-mirror-demo/grok-bot/handoff-20261024T172453+0800.json
+/tmp/ymbot-handoff-mirror-demo/grok-bot/latest.json
+
+===== grok-bot/latest.json (keys redacted; head) =====
+keys_top=['handoff']
+member_id=094acad4a3f0aaef2ee6370e790912b4
+claimed_role={'claim': {'claimed_at': '2026-10-24T08:12:38.332264122Z', 'id': '6468d62eea1da034fa866b617e757207', 'member_id': '094acad4a3f0aaef2ee6370e790912b4', 'released_at': None, 'role_id': '91dc54d2953e3857816cb370441e3826', 'workspace_id': 'ba1481c49148aba9553ba3811406b69f'}, 'created_at': '2026-10-23T22:06:35.812813847Z', 'default_project_ids': '[]', 'id': '91dc54d2953e3857816cb370441e3826', 'name': '前端', 'responsibilities': 'UI/前端实现、组件与交互', 'skills': '[]', 'slug': 'frontend', 'updated_at': '2026-10-23T22:06:35.812813847Z', 'workspace_id': 'ba1481c49148aba9553ba3811406b69f'}
+memories=0 todos=0 issues=1
+{
+  "handoff": {
+    "claimed_role": {
+      "claim": {
+        "claimed_at": "2026-10-24T08:12:38.332264122Z",
+        "id": "6468d62eea1da034fa866b617e757207",
+        "member_id": "094acad4a3f0aaef2ee6370e790912b4",
+        "released_at": null,
+        "role_id": "91dc54d2953e3857816cb370441e3826",
+        "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+      },
+      "created_at": "2026-10-23T22:06:35.812813847Z",
+      "default_project_ids": "[]",
+      "id": "91dc54d2953e3857816cb370441e3826",
+      "name": "前端",
+      "responsibilities": "UI/前端实现、组件与交互",
+      "skills": "[]",
+      "slug": "frontend",
+      "updated_at": "2026-10-23T22:06:35.812813847Z",
+      "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+    },
+    "generated_at": "2026-10-24T09:24:53.06092756Z",
+    "issue
+...
+
+===== botb-j2/latest.json (keys redacted; head) =====
+keys_top=['handoff']
+member_id=e317fc48c926870ab009ff4aa8287eb0
+claimed_role={'claim': {'claimed_at': '2026-10-24T08:12:59.748987687Z', 'id': '7999471f059a8d749dc040923b379fd1', 'member_id': 'e317fc48c926870ab009ff4aa8287eb0', 'released_at': None, 'role_id': 'efd9c8ae727f2ee436aeff9f53f9891e', 'workspace_id': 'ba1481c49148aba9553ba3811406b69f'}, 'created_at': '2026-10-24T08:09:14.938279906Z', 'default_project_ids': '[]', 'id': 'efd9c8ae727f2ee436aeff9f53f9891e', 'name': 'SRE', 'responsibilities': '', 'skills': '[]', 'slug': 'sre', 'updated_at': '2026-10-24T08:09:14.938279906Z', 'workspace_id': 'ba1481c49148aba9553ba3811406b69f'}
+memories=0 todos=0 issues=0
+{
+  "handoff": {
+    "claimed_role": {
+      "claim": {
+        "claimed_at": "2026-10-24T08:12:59.748987687Z",
+        "id": "7999471f059a8d749dc040923b379fd1",
+        "member_id": "e317fc48c926870ab009ff4aa8287eb0",
+        "released_at": null,
+        "role_id": "efd9c8ae727f2ee436aeff9f53f9891e",
+        "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+      },
+      "created_at": "2026-10-24T08:09:14.938279906Z",
+      "default_project_ids": "[]",
+      "id": "efd9c8ae727f2ee436aeff9f53f9891e",
+      "name": "SRE",
+      "responsibilities": "",
+      "skills": "[]",
+      "slug": "sre",
+      "updated_at": "2026-10-24T08:09:14.938279906Z",
+      "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+    },
+    "generated_at": "2026-10-24T09:24:53.087551664Z",
+    "issues": [],
+    "mem
+...
+
+===== issue list assignee check (通道 DX) =====
+YM-9	QA webhook match BOT_A updated	todo	low	Grok Bot	2026-10-24T08:12:56Z
+YM-10	QA webhook nomatch admin	todo	low	管理员	2026-10-24T08:12:54Z
+YM-1	看板拖拽改状态	in_progress	high	管理员	2026-10-23T22:06:35Z
+YM-2	列表筛选与空状态	todo	medium	管理员	2026-10-23T22:06:35Z
+YM-3	Issue 抽屉乐观锁	in_review	high	管理员	2026-10-23T22:06:35Z
+YM-4	Cycle 容量过载展示	backlog	urgent	管理员	2026-10-23T22:06:35Z
+YM-5	登录页中文文案	done	low	管理员	2026-10-23T22:06:35Z
+YM-6	Webhook 重试策略	todo	medium	管理员	2026-10-23T22:06:35Z
+YM-7	Wiki 搜索 API	backlog	high	管理员	2026-10-23T22:06:35Z
+YM-8	工时报表导出	in_progress	medium	管理员	2026-10-23T22:06:35Z
+
+assignee_uuid_scan: PASS (no UUID in default issue list)
+assignee_readable: PASS
+
+=== verdict ===
+A_issue_display_name: PASS (list assignee 可读名；嵌套优先+members fallback；瘦 get 无 reporter)
+B_handoff_mirror: DEMOABLE (script+template 齐；--once 写出 latest.json)

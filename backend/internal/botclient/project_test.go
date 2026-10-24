@@ -150,3 +150,49 @@ func TestLooksLikeIdentifier(t *testing.T) {
 		t.Fatal("identifier detect")
 	}
 }
+
+func TestProjectIssuesNestedAssigneePreferred(t *testing.T) {
+	raw := json.RawMessage(`{"issues":[{"id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","identifier":"YM-2","title":"N","status":"todo","priority":"low","assignee_id":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","assignee":{"id":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","display_name":"嵌套名"},"updated_at":"2026-10-24T01:02:03Z"}]}`)
+	c := &Client{}
+	c.ensureCaches()
+	c.memberNames = map[string]string{"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb": "Members名"}
+	c.membersLoaded = true
+	items, err := c.ProjectIssues(raw, ViewOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if items[0]["assignee"] != "嵌套名" {
+		t.Fatalf("want nested name, got %#v", items[0]["assignee"])
+	}
+}
+
+func TestProjectIssuesAssigneeFallbackMembers(t *testing.T) {
+	raw := json.RawMessage(`{"issues":[{"id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","identifier":"YM-3","title":"F","status":"todo","priority":"low","assignee_id":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","updated_at":"2026-10-24T01:02:03Z"}]}`)
+	c := &Client{}
+	c.ensureCaches()
+	c.memberNames = map[string]string{"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb": "BotFromMembers"}
+	c.membersLoaded = true
+	items, err := c.ProjectIssues(raw, ViewOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if items[0]["assignee"] != "BotFromMembers" {
+		t.Fatalf("got %#v", items[0]["assignee"])
+	}
+}
+
+func TestProjectIssuesMembersFailShowsDash(t *testing.T) {
+	raw := json.RawMessage(`{"issues":[{"id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","identifier":"YM-4","title":"D","status":"todo","priority":"low","assignee_id":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}]}`)
+	c := &Client{} // no HTTP, MemberNames → empty; membersLoaded false then empty
+	items, err := c.ProjectIssues(raw, ViewOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if items[0]["assignee"] != "-" {
+		t.Fatalf("members miss should be -, got %#v", items[0]["assignee"])
+	}
+	txt := FormatIssueListText(items)
+	if ContainsHexUUID(txt) {
+		t.Fatalf("UUID leaked on members miss: %s", txt)
+	}
+}
