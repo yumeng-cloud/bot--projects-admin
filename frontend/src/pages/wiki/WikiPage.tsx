@@ -50,7 +50,8 @@ import './wiki.css'
 const { Sider, Content } = Layout
 
 function isRenderableTreeNode(n: WikiTreeNode | null | undefined): n is WikiTreeNode {
-  return !!n?.id && String(n.title ?? '').trim().length > 0
+  // keep empty-title pages (render as「无标题」); drop only id-less dirty nodes
+  return !!n?.id
 }
 
 function toTreeData(
@@ -571,7 +572,7 @@ export default function WikiPage() {
   const flatFallback = useMemo(
     () =>
       pages
-        .filter((p) => !!p?.id && String(p.title ?? '').trim().length > 0)
+        .filter((p) => !!p?.id)
         .map((p) => ({
           key: p.id,
           title: renderTreeTitle({
