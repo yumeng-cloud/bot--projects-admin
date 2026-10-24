@@ -1,0 +1,53 @@
+=== TEAM_SWITCH S2 Independent QA retest (harsh) · Bot 席跟顶栏切队 ===
+time_AsiaShanghai: 2026-10-24 20:19 Asia/Shanghai
+result: Overall=PASS
+S2_teamA_14=PASS S2_teamB_5=PASS S2_no_slug_dup=PASS S2_counts=PASS S2_code=PASS S2_topbar=PASS
+fix_SHA: 69f0444
+shots_SHA: 2d1d8db
+HEAD_at_review: 2d1d8db
+evidence_file: docs/qa-shots/TEAM_SWITCH-S2-qa-retest-20261024.txt
+shots:
+  - docs/qa-shots/team-switch-bots-a.png   # 加速班底 · 14 席
+  - docs/qa-shots/team-switch-bots-b.png   # T7R-R5-1024 · 5 空席
+  - docs/qa-shots/team-switch-bots.png     # =bots-b 字节相同别名（旧名保留）
+context_optional:
+  - team-switch-header.png / list-a/b / board（非本项主证）
+
+## 抽核（独立目视 + 对 69f0444 代码）· 不信任 React/产品勾
+
+### 1 team A 席 ≈14 · 非 116 = PASS
+- 箱截 bots-a：顶栏当前队「加速班底」；Bot 席位网格目视 **14** 卡（约 6+6+2）。
+- 可见集远小于 WS 全量 bot_roles（声称 116）；无「平铺全量」形态。
+- 含占用中/入场码末四等本队痕迹；记忆墙「本队暂无 pin」队语境正常。
+
+### 2 team B 席 ≈5 · 异于 A = PASS
+- 箱截 bots-b：顶栏 + 页内「当前队：T7R-R5-1024」；网格 **正好 5** 空席。
+- 五席：后端 / 前端 / 产品经理 / QA / 知识库 · 均「空闲·等待绑定」——模板空席形，与 R5 创建态一致。
+- 与 A 的 14 占用班底明显区分；非同屏混排。
+
+### 3 无 slug 双份 = PASS
+- B：五席 slug/显示名互异，无重复卡。
+- A：14 卡均独立；目视偶见相近中文名（如两张「N3…」类）但为不同席/不同状态，非「同 slug 因 slug-OR 并入」双份。
+- 对码：69f0444 去掉 `slugs.has(r.slug)` 分支；`visibleRoles` **只** `ids.has(r.id)`；Card `key={role.id}`。
+
+### 4 计数对齐 claim 14↔5 = PASS
+- A=14 · B=5 · 与 React claim / 2d1d8db 说明一致。
+- team-switch-bots.png sha 等同 bots-b（别名/旧路径），不另计一态。
+
+### 5 代码交叉 = PASS
+- `visibleRoles`：有 teamId 时 `Set(teamSeats.bot_role_id)` → `roles.filter(r => ids.has(r.id))`；无 slug 并集。
+- 换队：`useEffect([wsId,teamId])` → `getRoster` 重拉 `teamSeats`；网格跟 roster。
+- 前刀 247ff1d 仍含 slug-OR（会把同 slug 的 WS 其它 role 吸进来）；本刀 69f0444 修掉，对齐「去 slug 重复」claim。
+- 观察（不挡）：`seatOccForRole` 占用回落仍可读 slug——只影响占用态归因，不扩大可见集。
+
+### 6 顶栏队语境一致 = PASS
+- A 截：顶栏「加速班底」↔ 14 席班底。
+- B 截：顶栏「T7R-R5-1024」↔ 5 模板空席；页眉「当前队」同文。
+
+## Defect
+(none)
+
+## 备注
+- 苛刻独立抽核；不信任产品重开说明 / React 自报 PASS。
+- S4 产品勾仍可另走；本报只裁定 **S2 Bot 席跟顶栏**。
+- 未开 live 浏览器：箱截清晰且与代码一致，无需补活验。
