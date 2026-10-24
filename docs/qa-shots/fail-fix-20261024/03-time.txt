@@ -1,0 +1,24 @@
+育蒙科技
+看板
+列表
+Cycles
+排期
+Wiki
+工时
+设置
+Bot
+YM · 示例项目
+管理员
+工作区
+工时 / 计费
+时区 Asia/Shanghai
+刷新
+导出 CSV
+记一笔
+工时列表
+汇总
+费率
+Issue	小时	可计费	备注	工作日	成员	操作
+YM-12 QA smoke child 093709	0.5	是	QA smoke	2026-10-24	管理员	
+删除
+1

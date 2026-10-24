@@ -626,3 +626,23 @@ html[data-theme='dark'] .acb-col {
     display: none;
   }
 }
+
+
+/* Cycles density — flush panels, no floating dual cards */
+.acb-cycles-panel {
+  background: var(--acb-bg-container);
+  border: 1px solid var(--acb-border);
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 280px;
+}
+.acb-cycles-row .ant-list-item {
+  padding: 6px 8px !important;
+}
+.acb-cycles-row .ant-list-item-meta-title {
+  margin-bottom: 0 !important;
+  font-size: 13px;
+}
+.acb-cycles-row .ant-list-item-meta-description {
+  font-size: 12px;
+}

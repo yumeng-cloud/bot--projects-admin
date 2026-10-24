@@ -52,3 +52,23 @@
 ## 指派
 
 云端强模型改 FE → PR；产品体验勾 P1-1…P1-7；UI 视觉可复审 token。
+
+
+---
+
+## 验收勾选（2026-10-24 13:04 · 箱 5174 · `dea0f77`）
+
+截图：`wiki-p1-reading.png` / `wiki-p1-edit.png` / `wiki-p1-tree.png` / `wiki-p1-prop-chip.png`  
+DOM：`wiki-p1-checks.json`（chips=3, nakedSelect=false, finishVisible=0, siderW=240, innerW=752）
+
+| ID | 判定 |
+|----|------|
+| **P1-1** | [x] 阅读栏宽约 752，标题/芯片/正文有节奏，非白海漂浮 |
+| **P1-2** | [x] 目录 siderW=240；选中/⋯ 可见 |
+| **P1-3** | [x] Property 芯片×3；点击弹出搜索，非裸 Select 行 |
+| **P1-4** | [x] 无「完成」主钮；保存微文案；删除在 ⋯ |
+| **P1-5** | [x] 编辑态 ByteMD 工具条克制；阅读态无图标汤 |
+| **P1-6** | [x] 画布/侧栏浅灰 + Inter 气质，非 2018 admin 紫表单 |
+| **P1-7** | [x] 箱截整体像 2024 文档产品 |
+
+**整单正式收（2026-10-24 13:05）**：总指挥目审 `wiki-p1-*.png` 确认 P1-1…P1-7 过。毛刺（搜索紫方块等）不挡关；computerUse 双检若打回再开。

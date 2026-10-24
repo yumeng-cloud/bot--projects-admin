@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Tabs, Table, Typography, message, Spin, Empty } from 'antd'
 import { useParams } from 'react-router-dom'
 import { api } from '../../api/client'
+import { roleLabel } from '../../utils/labels'
 
 type Member = { id: string; display_name: string; role: string; is_bot?: number }
 type Label = { id: string; name: string; color: string }
@@ -80,7 +81,7 @@ export default function SettingsPage() {
                 pagination={false}
                 columns={[
                   { title: '名称', dataIndex: 'display_name' },
-                  { title: '角色', dataIndex: 'role' },
+                  { title: '角色', dataIndex: 'role', width: 100, render: (v: string) => roleLabel(v) },
                 ]}
               />
             ) : (

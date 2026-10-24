@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Button,
   DatePicker,
@@ -25,7 +25,11 @@ import {
   listTimeEntries,
   upsertBillingRate,
 } from '../../api/time'
+import { listIssues, listProjectMembers } from '../../api/issues'
 import type { BillingRate, BillingSummary, TimeEntry } from '../../types/time'
+import type { Issue, MemberRef } from '../../types/issue'
+import { memberLabel } from '../../types/issue'
+import { issueReadable } from '../../utils/labels'
 import type { Dayjs } from 'dayjs'
 import { dayjs, formatShanghai, TZ } from '../../utils/time'
 
@@ -36,6 +40,8 @@ export default function TimePage() {
   const [entries, setEntries] = useState<TimeEntry[]>([])
   const [rates, setRates] = useState<BillingRate[]>([])
   const [summary, setSummary] = useState<BillingSummary | null>(null)
+  const [issues, setIssues] = useState<Issue[]>([])
+  const [members, setMembers] = useState<MemberRef[]>([])
   const [loading, setLoading] = useState(false)
   const [entryModal, setEntryModal] = useState(false)
   const [rateModal, setRateModal] = useState(false)
@@ -43,6 +49,45 @@ export default function TimePage() {
   const [range, setRange] = useState<[Dayjs, Dayjs] | null>(null)
   const [entryForm] = Form.useForm()
   const [rateForm] = Form.useForm()
+
+  const issueById = useMemo(() => {
+    const m = new Map<string, Issue>()
+    for (const i of issues) m.set(i.id, i)
+    return m
+  }, [issues])
+
+  const memberById = useMemo(() => {
+    const m = new Map<string, MemberRef>()
+    for (const x of members) m.set(x.id, x)
+    return m
+  }, [members])
+
+  const resolveIssue = (r: TimeEntry) => {
+    const iss = issueById.get(r.issue_id)
+    return issueReadable(r.issue_identifier || iss?.identifier, iss?.title, r.issue_id)
+  }
+
+  const resolveMember = (memberId: string | null | undefined, name?: string | null) => {
+    if (name && name.trim()) return name.trim()
+    if (!memberId) return '工作区默认'
+    const m = memberById.get(memberId)
+    if (m) return memberLabel(m)
+    return '未知成员'
+  }
+
+  const loadMeta = useCallback(async () => {
+    if (!wsId) return
+    try {
+      const [i, m] = await Promise.all([
+        listIssues(wsId, {}).catch(() => ({ issues: [] as Issue[] })),
+        listProjectMembers(wsId).catch(() => ({ members: [] as MemberRef[] })),
+      ])
+      setIssues(i.issues || [])
+      setMembers(m.members || [])
+    } catch {
+      /* ignore */
+    }
+  }, [wsId])
 
   const loadEntries = useCallback(async () => {
     if (!wsId) return
@@ -90,15 +135,19 @@ export default function TimePage() {
   }, [wsId, groupBy, range])
 
   useEffect(() => {
-    loadEntries()
+    void loadMeta()
+  }, [loadMeta])
+
+  useEffect(() => {
+    void loadEntries()
   }, [loadEntries])
 
   useEffect(() => {
-    loadRates()
+    void loadRates()
   }, [loadRates])
 
   useEffect(() => {
-    loadSummary()
+    void loadSummary()
   }, [loadSummary])
 
   const submitEntry = async () => {
@@ -108,6 +157,7 @@ export default function TimePage() {
       hours: v.hours,
       note: v.note,
       billable: v.billable,
+      member_id: v.member_id || undefined,
       worked_at: v.worked_at ? dayjs(v.worked_at).utc().toISOString() : undefined,
     })
     message.success('已记工时')
@@ -142,31 +192,52 @@ export default function TimePage() {
     }
   }
 
-  const toolbar = (
-    <Space wrap style={{ marginBottom: 16 }}>
-      <RangePicker
-        value={range}
-        onChange={(v) => setRange(v as [Dayjs, Dayjs] | null)}
-        allowClear
-      />
-      <Button icon={<ReloadOutlined />} onClick={() => { loadEntries(); loadSummary(); loadRates() }}>
-        刷新
-      </Button>
-      <Button icon={<DownloadOutlined />} onClick={onExport}>
-        导出 CSV
-      </Button>
-    </Space>
-  )
+  const issueOptions = issues.map((i) => ({
+    value: i.id,
+    label: issueReadable(i.identifier, i.title, i.id),
+  }))
+
+  const memberOptions = members.map((m) => ({
+    value: m.id,
+    label: memberLabel(m),
+  }))
 
   return (
-    <div className="acb-page" style={{ padding: 16 }}>
-      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 8 }}>
+    <div className="acb-page">
+      <div className="acb-page-bar">
         <Typography.Title level={4} style={{ margin: 0 }}>
           工时 / 计费
         </Typography.Title>
-        <Typography.Text type="secondary">时区 {TZ}</Typography.Text>
-      </Space>
-      {toolbar}
+        <Space wrap size={8}>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            时区 {TZ}
+          </Typography.Text>
+          <RangePicker
+            value={range}
+            onChange={(v) => setRange(v as [Dayjs, Dayjs] | null)}
+            allowClear
+            size="small"
+          />
+          <Button
+            size="small"
+            icon={<ReloadOutlined />}
+            onClick={() => {
+              void loadMeta()
+              void loadEntries()
+              void loadSummary()
+              void loadRates()
+            }}
+          >
+            刷新
+          </Button>
+          <Button size="small" icon={<DownloadOutlined />} onClick={() => void onExport()}>
+            导出 CSV
+          </Button>
+          <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => setEntryModal(true)}>
+            记一笔
+          </Button>
+        </Space>
+      </div>
 
       <Tabs
         items={[
@@ -174,67 +245,67 @@ export default function TimePage() {
             key: 'entries',
             label: '工时列表',
             children: (
-              <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => setEntryModal(true)}>
-                  记一笔
-                </Button>
-                <Table
-                  rowKey="id"
-                  loading={loading}
-                  dataSource={entries}
-                  pagination={{ pageSize: 20 }}
-                  columns={[
-                    { title: 'Issue', dataIndex: 'issue_id', ellipsis: true },
-                    {
-                      title: '标识',
-                      dataIndex: 'issue_identifier',
-                      render: (v?: string) => v || '—',
-                    },
-                    { title: '小时', dataIndex: 'hours', width: 80 },
-                    {
-                      title: '可计费',
-                      dataIndex: 'billable',
-                      width: 90,
-                      render: (v: boolean) => (v ? '是' : '否'),
-                    },
-                    { title: '备注', dataIndex: 'note', ellipsis: true },
-                    {
-                      title: '工作日',
-                      dataIndex: 'worked_at',
-                      render: (v: string) => formatShanghai(v, 'YYYY-MM-DD'),
-                    },
-                    {
-                      title: '成员',
-                      dataIndex: 'member_name',
-                      render: (v: string, r) => v || r.member_id,
-                    },
-                    {
-                      title: '操作',
-                      width: 80,
-                      render: (_, r) => (
-                        <Button
-                          type="link"
-                          danger
-                          size="small"
-                          onClick={() => {
-                            Modal.confirm({
-                              title: '删除这条工时？',
-                              onOk: async () => {
-                                await deleteTimeEntry(wsId, r.id)
-                                message.success('已删除')
-                                await loadEntries()
-                                await loadSummary()
-                              },
-                            })
-                          }}
-                        >
-                          删除
-                        </Button>
-                      ),
-                    },
-                  ]}
-                />
-              </Space>
+              <Table
+                className="acb-list-table"
+                size="small"
+                rowKey="id"
+                loading={loading}
+                dataSource={entries}
+                pagination={{ pageSize: 20 }}
+                columns={[
+                  {
+                    title: 'Issue',
+                    key: 'issue',
+                    ellipsis: true,
+                    render: (_, r) => resolveIssue(r),
+                  },
+                  { title: '小时', dataIndex: 'hours', width: 72 },
+                  {
+                    title: '可计费',
+                    dataIndex: 'billable',
+                    width: 80,
+                    render: (v: boolean) => (v ? '是' : '否'),
+                  },
+                  { title: '备注', dataIndex: 'note', ellipsis: true },
+                  {
+                    title: '工作日',
+                    dataIndex: 'worked_at',
+                    width: 120,
+                    render: (v: string) => formatShanghai(v, 'YYYY-MM-DD'),
+                  },
+                  {
+                    title: '成员',
+                    key: 'member',
+                    width: 120,
+                    ellipsis: true,
+                    render: (_, r) => resolveMember(r.member_id, r.member_name),
+                  },
+                  {
+                    title: '操作',
+                    width: 72,
+                    render: (_, r) => (
+                      <Button
+                        type="link"
+                        danger
+                        size="small"
+                        onClick={() => {
+                          Modal.confirm({
+                            title: '删除这条工时？',
+                            onOk: async () => {
+                              await deleteTimeEntry(wsId, r.id)
+                              message.success('已删除')
+                              await loadEntries()
+                              await loadSummary()
+                            },
+                          })
+                        }}
+                      >
+                        删除
+                      </Button>
+                    ),
+                  },
+                ]}
+              />
             ),
           },
           {
@@ -264,11 +335,24 @@ export default function TimePage() {
                   </Typography.Paragraph>
                 )}
                 <Table
+                  className="acb-list-table"
+                  size="small"
                   rowKey="group_key"
                   dataSource={summary?.rows || []}
                   pagination={false}
                   columns={[
-                    { title: '分组', dataIndex: 'group_label' },
+                    {
+                      title: '分组',
+                      dataIndex: 'group_label',
+                      render: (v: string, r) => {
+                        if (groupBy === 'member') return resolveMember(r.group_key, v)
+                        if (/^[0-9a-f-]{16,}$/i.test((v || r.group_key || ''))) {
+                          const iss = issueById.get(r.group_key)
+                          return issueReadable(iss?.identifier, iss?.title || v, r.group_key)
+                        }
+                        return v || '—'
+                      },
+                    },
                     { title: '小时', dataIndex: 'hours' },
                     { title: '可计费小时', dataIndex: 'billable_hours' },
                     { title: '金额', dataIndex: 'amount' },
@@ -284,10 +368,12 @@ export default function TimePage() {
             label: '费率',
             children: (
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => setRateModal(true)}>
+                <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => setRateModal(true)}>
                   新增 / 更新费率
                 </Button>
                 <Table
+                  className="acb-list-table"
+                  size="small"
                   rowKey="id"
                   dataSource={rates}
                   pagination={false}
@@ -295,7 +381,7 @@ export default function TimePage() {
                     {
                       title: '成员',
                       dataIndex: 'member_id',
-                      render: (v?: string | null) => v || '工作区默认',
+                      render: (v?: string | null) => resolveMember(v),
                     },
                     { title: '时薪', dataIndex: 'hourly_rate' },
                     { title: '币种', dataIndex: 'currency' },
@@ -316,7 +402,7 @@ export default function TimePage() {
         title="记一笔工时"
         open={entryModal}
         onCancel={() => setEntryModal(false)}
-        onOk={submitEntry}
+        onOk={() => void submitEntry()}
         destroyOnHidden
       >
         <Form
@@ -324,8 +410,22 @@ export default function TimePage() {
           layout="vertical"
           initialValues={{ billable: true, hours: 1, worked_at: dayjs().tz(TZ) }}
         >
-          <Form.Item name="issue_id" label="Issue ID" rules={[{ required: true, message: '必填' }]}>
-            <Input placeholder="issue uuid" />
+          <Form.Item name="issue_id" label="Issue" rules={[{ required: true, message: '请选择 Issue' }]}>
+            <Select
+              showSearch
+              optionFilterProp="label"
+              placeholder="选择 Issue"
+              options={issueOptions}
+            />
+          </Form.Item>
+          <Form.Item name="member_id" label="成员">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="默认当前成员"
+              options={memberOptions}
+            />
           </Form.Item>
           <Form.Item name="hours" label="小时" rules={[{ required: true }]}>
             <InputNumber min={0.1} step={0.25} style={{ width: '100%' }} />
@@ -343,15 +443,21 @@ export default function TimePage() {
       </Modal>
 
       <Modal
-        title="费率 upsert"
+        title="设置费率"
         open={rateModal}
         onCancel={() => setRateModal(false)}
-        onOk={submitRate}
+        onOk={() => void submitRate()}
         destroyOnHidden
       >
         <Form form={rateForm} layout="vertical" initialValues={{ currency: 'CNY', hourly_rate: 500 }}>
-          <Form.Item name="member_id" label="成员 ID（空=工作区默认）">
-            <Input placeholder="可选" />
+          <Form.Item name="member_id" label="成员（空=工作区默认）">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="工作区默认"
+              options={memberOptions}
+            />
           </Form.Item>
           <Form.Item name="hourly_rate" label="时薪" rules={[{ required: true }]}>
             <InputNumber min={0} style={{ width: '100%' }} />

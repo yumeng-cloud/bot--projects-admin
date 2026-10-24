@@ -95,6 +95,39 @@
   border-radius: 6px;
   box-shadow: none;
 }
+/* Sider search submit: ghost/soft — not loud primary purple square */
+.acb-wiki-sider .ant-input-search .ant-input-search-button,
+.acb-wiki-sider .ant-input-search-button.ant-btn-primary,
+.acb-wiki-sider .ant-input-search-button {
+  background: color-mix(in srgb, var(--acb-text) 4%, transparent) !important;
+  border-color: var(--acb-border-secondary) !important;
+  color: var(--acb-text-secondary) !important;
+  box-shadow: none !important;
+}
+
+.acb-wiki-sider .ant-input-search .ant-input-search-button:hover,
+.acb-wiki-sider .ant-input-search-button.ant-btn-primary:hover,
+.acb-wiki-sider .ant-input-search-button:hover {
+  background: color-mix(in srgb, var(--acb-text) 8%, transparent) !important;
+  border-color: var(--acb-border) !important;
+  color: var(--acb-text) !important;
+}
+
+/* Tree row ⋯: hide until row hover (keep visible while menu open / focus) */
+.acb-wiki-sider .ant-tree .ant-dropdown-trigger,
+.acb-wiki-sider .ant-tree .acb-wiki-tree-node-actions {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.acb-wiki-sider .ant-tree .ant-tree-treenode:hover .ant-dropdown-trigger,
+.acb-wiki-sider .ant-tree .ant-tree-treenode:hover .acb-wiki-tree-node-actions,
+.acb-wiki-sider .ant-tree .ant-dropdown-trigger.ant-dropdown-open,
+.acb-wiki-sider .ant-tree .acb-wiki-tree-node-actions.ant-dropdown-open,
+.acb-wiki-sider .ant-tree .ant-dropdown-trigger:focus-visible,
+.acb-wiki-sider .ant-tree .acb-wiki-tree-node-actions:focus-visible {
+  opacity: 1;
+}
 
 /* —— P1-1 Reading column —— */
 .acb-wiki-main {
@@ -348,11 +381,11 @@ button.acb-wiki-prop-chip:focus-visible {
   border-color: var(--acb-border);
 }
 
-/* --empty: softer dashed / lower-opacity border */
+/* --empty: dashed, slightly stronger so readable on #F7F8FA; still quieter than --set */
 .acb-wiki-prop-chip--empty {
   border-style: dashed;
-  border-color: color-mix(in srgb, var(--acb-border-secondary) 70%, transparent);
-  background: color-mix(in srgb, var(--acb-bg-container) 45%, transparent);
+  border-color: color-mix(in srgb, var(--acb-border-secondary) 95%, var(--acb-text) 5%);
+  background: color-mix(in srgb, var(--acb-bg-container) 68%, transparent);
   cursor: pointer;
 }
 

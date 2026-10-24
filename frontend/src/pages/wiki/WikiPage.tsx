@@ -62,6 +62,16 @@ function toTreeData(
 }
 
 
+/** Depth-first first page id in the directory tree. */
+function firstTreePageId(nodes: WikiTreeNode[]): string | undefined {
+  for (const n of nodes || []) {
+    if (n?.id) return n.id
+    const child = firstTreePageId(n.children || [])
+    if (child) return child
+  }
+  return undefined
+}
+
 function issueSelectLabel(i: Pick<Issue, 'identifier' | 'title' | 'id'>): string {
   const idPart = (i.identifier || '').trim()
   const titlePart = (i.title || '').trim()
@@ -95,6 +105,8 @@ export default function WikiPage() {
   const saveTimer = useRef<number | null>(null)
   const pageRef = useRef<WikiPageT | null>(null)
   pageRef.current = page
+  /** Track which space we already auto-opened, to avoid loops when user has no selection. */
+  const autoOpenSpaceRef = useRef<string | null>(null)
 
   const loadSpaces = useCallback(async () => {
     if (!wsId) return
@@ -166,6 +178,7 @@ export default function WikiPage() {
 
   useEffect(() => {
     if (spaceId) {
+      autoOpenSpaceRef.current = null
       setPage(null)
       setEditing(false)
       setSearchHits(null)
@@ -188,6 +201,19 @@ export default function WikiPage() {
       setPageLoading(false)
     }
   }
+
+  // Default-open first directory page — never show「还没有打开页面」while the tree has pages.
+  useEffect(() => {
+    if (!spaceId || page || pageLoading || loading) return
+    if (autoOpenSpaceRef.current === spaceId) return
+    const firstId = firstTreePageId(tree) || pages[0]?.id
+    if (!firstId) return
+    autoOpenSpaceRef.current = spaceId
+    void openPage(firstId)
+    // openPage is stable enough for this mount cycle; tree/pages drive the trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spaceId, tree, pages, page, pageLoading, loading])
+
 
   const onSearch = async () => {
     if (!wsId || !q.trim()) {
@@ -673,12 +699,12 @@ export default function WikiPage() {
 
       <Content className="acb-wiki-main">
         <div className="acb-wiki-main-inner">
-          {pageLoading ? (
+          {pageLoading || (!page && (tree.length > 0 || pages.length > 0)) ? (
             <Spin />
           ) : !page ? (
             <div className="acb-wiki-empty">
-              <p className="acb-wiki-empty-copy">还没有打开页面</p>
-              <p className="acb-wiki-empty-hint">从左侧目录选择，或新建一页开始写团队手册</p>
+              <p className="acb-wiki-empty-copy">还没有页面</p>
+              <p className="acb-wiki-empty-hint">新建一页开始写团队手册</p>
               <Button
                 type="primary"
                 className="acb-wiki-empty-cta"

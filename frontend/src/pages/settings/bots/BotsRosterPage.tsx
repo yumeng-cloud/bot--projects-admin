@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Button, Space, Table, Tag, Typography, message, Spin, Empty } from 'antd'
 import { listBots, listBotRoles, claimBotRole, releaseBotRole, type BotRosterItem, type BotRole } from '../../../api/bots'
+import { roleLabel } from '../../../utils/labels'
 
 export default function BotsRosterPage() {
   const { wsId = '' } = useParams()
@@ -30,12 +31,15 @@ export default function BotsRosterPage() {
 
   return (
     <div className="acb-page">
-      <Typography.Title level={4}>Bot 名册</Typography.Title>
-      <Typography.Paragraph type="secondary">查看 is_bot 成员、认领角色；详情页可看记忆 / Todo / handoff。</Typography.Paragraph>
+      <div className="acb-page-bar">
+        <Typography.Title level={4} style={{ margin: 0 }}>Bot 名册</Typography.Title>
+      </div>
+      <Typography.Paragraph type="secondary">查看机器人成员与角色认领；详情页可看记忆、待办与交接。</Typography.Paragraph>
 
       <Typography.Title level={5}>角色</Typography.Title>
       {roles.length ? (
         <Table
+          className="acb-list-table"
           rowKey="id"
           size="small"
           pagination={false}
@@ -43,14 +47,15 @@ export default function BotsRosterPage() {
           dataSource={roles}
           columns={[
             { title: '名称', dataIndex: 'name' },
-            { title: 'slug', dataIndex: 'slug' },
             { title: '职责', dataIndex: 'responsibilities', ellipsis: true },
             {
               title: '认领',
               render: (_, row) =>
                 row.claim ? (
                   <Space>
-                    <Tag color="blue">{row.claim.member_id.slice(0, 8)}…</Tag>
+                    <Tag color="blue">
+                      {bots.find((b) => b.member_id === row.claim?.member_id)?.display_name || '已认领'}
+                    </Tag>
                     <Button
                       size="small"
                       onClick={async () => {
@@ -75,7 +80,9 @@ export default function BotsRosterPage() {
       <Typography.Title level={5}>Bot 成员</Typography.Title>
       {bots.length ? (
         <Table
+          className="acb-list-table"
           rowKey="member_id"
+          size="small"
           pagination={false}
           dataSource={bots}
           columns={[
@@ -84,10 +91,16 @@ export default function BotsRosterPage() {
               dataIndex: 'display_name',
               render: (v, row) => <Link to={`/w/${wsId}/settings/bots/${row.member_id}`}>{v}</Link>,
             },
-            { title: 'members.role', dataIndex: 'role' },
+            {
+              title: '角色',
+              dataIndex: 'role',
+              width: 100,
+              render: (v: string) => roleLabel(v),
+            },
             {
               title: '启用',
               dataIndex: 'bot_enabled',
+              width: 72,
               render: (v: boolean) => (v ? <Tag color="green">是</Tag> : <Tag>否</Tag>),
             },
             {
@@ -97,7 +110,7 @@ export default function BotsRosterPage() {
             {
               title: '操作',
               render: (_, row) => (
-                <Space>
+                <Space wrap size={4}>
                   <Link to={`/w/${wsId}/settings/bots/${row.member_id}`}>详情</Link>
                   {roles
                     .filter((r) => !r.claim)
@@ -108,11 +121,11 @@ export default function BotsRosterPage() {
                         size="small"
                         onClick={async () => {
                           await claimBotRole(wsId, r.id, row.member_id, crypto.randomUUID())
-                          message.success(`已认领 ${r.name}`)
+                          message.success(`已认领「${r.name}」`)
                           void load()
                         }}
                       >
-                        认领 {r.slug}
+                        认领「{r.name}」
                       </Button>
                     ))}
                 </Space>

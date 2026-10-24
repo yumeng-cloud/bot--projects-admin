@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import {
   Alert,
   Button,
-  Card,
   Col,
+  Dropdown,
   Empty,
   Progress,
   Row,
@@ -16,7 +16,8 @@ import {
   Spin,
   List,
 } from 'antd'
-import { ReloadOutlined } from '@ant-design/icons'
+import type { MenuProps } from 'antd'
+import { MoreOutlined, ReloadOutlined } from '@ant-design/icons'
 import { listCycles, patchCycle, cycleEstimateSum } from '../../api/cycles'
 import { listIssues, patchIssue } from '../../api/issues'
 import { BoardPackStrip } from '../../components/board'
@@ -25,6 +26,7 @@ import { MockBanner } from '../../components/common/MockBanner'
 import { useBoardPackStats } from '../../hooks/useBoardPackStats'
 import type { Cycle, Issue } from '../../types/issue'
 import { STATUS_LABELS } from '../../types/issue'
+import { cycleStatusLabel } from '../../utils/labels'
 import '../../components/board/board.css'
 
 export type CyclesPageProps = {
@@ -138,10 +140,14 @@ export default function CyclesPage({ workspaceId, projectId }: CyclesPageProps) 
           }}
         />
       ) : null}
-      <Row gutter={16}>
+      <Row gutter={16} className="acb-cycles-row">
         <Col span={8}>
-          <Card title="周期列表" size="small">
+          <div className="acb-cycles-panel">
+            <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+              周期列表
+            </Typography.Text>
             <List
+              size="small"
               dataSource={cycles}
               locale={{
                 emptyText: (
@@ -167,7 +173,7 @@ export default function CyclesPage({ workspaceId, projectId }: CyclesPageProps) 
                     <Space direction="vertical" size={0} style={{ width: '100%' }}>
                       <Space>
                         <Typography.Text strong>{c.name}</Typography.Text>
-                        <Tag>{c.status}</Tag>
+                        <Tag>{cycleStatusLabel(c.status)}</Tag>
                         {over && <Tag color="error">过载</Tag>}
                       </Space>
                       <Typography.Text type="secondary">
@@ -178,21 +184,19 @@ export default function CyclesPage({ workspaceId, projectId }: CyclesPageProps) 
                 )
               }}
             />
-          </Card>
+          </div>
         </Col>
         <Col span={16}>
           {selected ? (
-            <Card
-              title={selected.name}
-              size="small"
-              extra={
-                selected.status !== 'completed' ? (
-                  <Button danger onClick={completeCycle}>
+            <div className="acb-cycles-panel">
+              <div className="acb-page-bar" style={{ marginBottom: 8, padding: 0 }}>
+                <Typography.Text strong>{selected.name}</Typography.Text>
+                {selected.status !== 'completed' ? (
+                  <Button danger size="small" onClick={() => void completeCycle()}>
                     结束 Cycle
                   </Button>
-                ) : null
-              }
-            >
+                ) : null}
+              </div>
               {overload && (
                 <Alert
                   type="error"
@@ -230,31 +234,48 @@ export default function CyclesPage({ workspaceId, projectId }: CyclesPageProps) 
                     </div>
                   ),
                 }}
-                renderItem={(i) => (
-                  <List.Item
-                    actions={[
-                      <Button key="open" type="link" onClick={() => { setCurrent(i); setOpen(true) }}>
-                        打开
-                      </Button>,
-                      <Button key="rm" type="link" danger onClick={() => assignIssue(i.id, null)}>
-                        移出
-                      </Button>,
-                    ]}
-                  >
-                    <List.Item.Meta
-                      title={`${i.identifier} ${i.title}`}
-                      description={`${STATUS_LABELS[i.status]} · 估时 ${i.estimate ?? 0}pt`}
-                    />
-                  </List.Item>
-                )}
+                renderItem={(i) => {
+                  const menu: MenuProps = {
+                    items: [
+                      {
+                        key: 'open',
+                        label: '打开',
+                        onClick: () => {
+                          setCurrent(i)
+                          setOpen(true)
+                        },
+                      },
+                      {
+                        key: 'rm',
+                        label: '移出',
+                        danger: true,
+                        onClick: () => void assignIssue(i.id, null),
+                      },
+                    ],
+                  }
+                  return (
+                    <List.Item
+                      actions={[
+                        <Dropdown key="more" menu={menu} trigger={['click']}>
+                          <Button type="text" size="small" icon={<MoreOutlined />} aria-label="更多" />
+                        </Dropdown>,
+                      ]}
+                    >
+                      <List.Item.Meta
+                        title={`${i.identifier} ${i.title}`}
+                        description={`${STATUS_LABELS[i.status]} · 估时 ${i.estimate ?? 0}pt`}
+                      />
+                    </List.Item>
+                  )
+                }}
               />
-            </Card>
+            </div>
           ) : (
-            <Card size="small">
+            <div className="acb-cycles-panel">
               <div className="acb-empty-panel" style={{ minHeight: 140 }}>
                 <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="选择左侧 Cycle 查看容量与 Issue" />
               </div>
-            </Card>
+            </div>
           )}
         </Col>
       </Row>

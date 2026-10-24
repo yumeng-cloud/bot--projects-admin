@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Col, Row, Typography, Spin, Button, Space, Tag } from 'antd'
+import { Button, Space, Spin, Table, Typography } from 'antd'
 import { me } from '../api/auth'
 import { listMyWorkspaces, type Workspace } from '../api/workspaces'
+import { roleLabel } from '../utils/labels'
 
 export default function HomePage({ onLogout }: { onLogout: () => void }) {
   const nav = useNavigate()
@@ -23,40 +24,81 @@ export default function HomePage({ onLogout }: { onLogout: () => void }) {
     })()
   }, [])
 
-  if (loading) return <div style={{ padding: 48, textAlign: 'center' }}><Spin /></div>
+  if (loading) {
+    return (
+      <div className="acb-page" style={{ textAlign: 'center', paddingTop: 48 }}>
+        <Spin />
+      </div>
+    )
+  }
+
+  const enter = (w: Workspace, path: string) => {
+    localStorage.setItem('workspaceId', w.id)
+    nav(`/w/${w.id}/${path}`)
+  }
 
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto', padding: 24 }}>
-      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 24 }}>
+    <div className="acb-page">
+      <div className="acb-page-bar">
         <div>
-          <Typography.Title level={3} style={{ margin: 0 }}>工作空间</Typography.Title>
-          <Typography.Text type="secondary">{user?.name} · {user?.email}</Typography.Text>
+          <Typography.Title level={4} style={{ margin: 0 }}>
+            工作空间
+          </Typography.Title>
+          <Typography.Text type="secondary">
+            {user?.name} · {user?.email}
+          </Typography.Text>
         </div>
         <Button onClick={onLogout}>退出登录</Button>
-      </Space>
-      <Row gutter={[16, 16]}>
-        {workspaces.map((w) => (
-          <Col span={12} key={w.id}>
-            <Card
-              title={w.name}
-              extra={<Tag color="blue">{w.role}</Tag>}
-              hoverable
-              onClick={() => {
-                localStorage.setItem('workspaceId', w.id)
-                nav(`/w/${w.id}/board`)
-              }}
-            >
-              <Typography.Paragraph type="secondary">slug: {w.slug}</Typography.Paragraph>
-              <Typography.Text type="secondary">进入看板 / 列表 / Cycles / 设置</Typography.Text>
-            </Card>
-          </Col>
-        ))}
-        {workspaces.length === 0 && (
-          <Col span={24}>
-            <Card><Typography.Text type="secondary">暂无工作空间，请运行 seed</Typography.Text></Card>
-          </Col>
-        )}
-      </Row>
+      </div>
+
+      <Table
+        className="acb-list-table"
+        size="small"
+        rowKey="id"
+        pagination={false}
+        dataSource={workspaces}
+        locale={{ emptyText: '暂无工作空间，请运行 seed' }}
+        columns={[
+          {
+            title: '名称',
+            dataIndex: 'name',
+            render: (v: string, w) => (
+              <Button type="link" style={{ padding: 0 }} onClick={() => enter(w, 'board')}>
+                {v}
+              </Button>
+            ),
+          },
+          {
+            title: '角色',
+            dataIndex: 'role',
+            width: 100,
+            render: (v: string) => roleLabel(v),
+          },
+          {
+            title: '进入',
+            key: 'nav',
+            render: (_, w) => (
+              <Space size={4} wrap>
+                <Button size="small" type="link" onClick={() => enter(w, 'board')}>
+                  看板
+                </Button>
+                <Button size="small" type="link" onClick={() => enter(w, 'list')}>
+                  列表
+                </Button>
+                <Button size="small" type="link" onClick={() => enter(w, 'cycles')}>
+                  Cycles
+                </Button>
+                <Button size="small" type="link" onClick={() => enter(w, 'wiki')}>
+                  Wiki
+                </Button>
+                <Button size="small" type="link" onClick={() => enter(w, 'settings')}>
+                  设置
+                </Button>
+              </Space>
+            ),
+          },
+        ]}
+      />
     </div>
   )
 }
