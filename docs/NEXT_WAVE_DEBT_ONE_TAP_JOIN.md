@@ -6,6 +6,8 @@
 > **生产 API 根（默认写入链接/提示词）：** `https://bot.api.sn.cn`  
 > **承接：** 队席入场码 `ymt_` + `team join` / redeem 已有（[`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md)）；本波只做「一键带走」，不重做 claim。
 
+> **2026-10-24 23:11 扩包：** 用户怒「创建成功无钥匙 / ymk vs ymt 两套心智」→ 另开 [`NEXT_WAVE_DEBT_ONE_TAP_FOOLPROOF.md`](./NEXT_WAVE_DEBT_ONE_TAP_FOOLPROOF.md)：创建即露 `ymk_` + 首跑提示词可嵌钥；席页入场仍只 `ymt_`。**首跑/成功页嵌钥** 修正下文「默认可转发提示词禁 ymk_」——公开入场链/日常复制提示词仍禁。
+
 ## 一句话
 
 Admin 在 Bot 席页点一下 → 剪贴板里是 **入场链接** 或 **给 Cursor/Agent 的系统提示词**；对方打开/粘贴即能 **装 CLI（若无）→ 连 API 根 → join**——**禁止假设已装 ymbot**，**禁止再甩 YMBOT_* / 手改 mcp.json / 长安装文档**。
