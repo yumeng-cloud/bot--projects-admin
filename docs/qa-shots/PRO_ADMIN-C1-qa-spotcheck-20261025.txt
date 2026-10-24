@@ -1,0 +1,47 @@
+PRO_ADMIN C1 QA spotcheck · 2026-10-25 00:20 Asia/Shanghai
+Repo: ai-collab-board · feature SHA 8c0fe5a · HEAD at verify 4465fa7 (docs tick atop feat)
+Method: git show + source grep + Read(PNG) + live API :8080 (admin@yumeng.tech)
+Harsh independent (not product checkbox rubber-stamp)
+SEAT_LEAVE L5: deferred — not run (C1 gate)
+
+=== C1 Issue 列表「显示已归档」显隐 · 默认关 · include_archived ===
+Verdict: PASS
+
+Source (IssueListPage.tsx @8c0fe5a):
+- showArchived = useState(false) → 默认 OFF
+- listIssues(..., include_archived: showArchived ? 1 : undefined)
+  → OFF 不传；ON 传 1（api/issues.ts qs 仅 true/'1'/1 时 set include_archived=1）
+- OFF：setIssues(list.filter(!isIssueArchived)) 防御剔归档
+- ON：保留归档行；Tag「已归档」+ row class acb-list-row-archived（灰态）
+- 状态/优先/负责人/标签/搜索/被阻塞/已逾期滤镜控件仍在；client selectIssuesWithAncestors 与 showArchived 正交
+- onSaved：归档且 !showArchived 时从表剔除（关态不虚显）
+- list.css：.acb-list-archived-toggle / -tag / -row-archived
+
+API live (WS yumeng · project 示例项目 · team 加速班底):
+- DEFAULT ?project_id&team_id → total=6 archived=0
+  ids YM-24,27,28,30,31,32（无 YM-25/26/29/22/19）
+- include_archived=1 → total=11 archived=5
+  YM-25,26,29,22,19 均带 archived_at（与箱截行一致）
+- include_archived=1&status=done → total=6 archived=5（状态筛仍有效，归档 done 入列）
+- status=todo default / +include_archived=1 → total=4 archived=0（todo 池无归档；筛不坏）
+
+Shot: docs/qa-shots/pro-c-archived-toggle.png
+- 滤镜条保留 状态/优先级/负责人/标签/搜索/被阻塞/已逾期
+- 「显示已归档」Switch = ON（紫）
+- 归档行 YM-25/26/29/22/19 有弱 Tag「已归档」+ 灰态标题；活行 YM-24/27 等无 Tag
+- 与 API include_archived=1 载荷一一对应
+
+Network/query contract (FE→API):
+- OFF：不传 include_archived（BE 默认剔）+ FE 再 filter 防御
+- ON：include_archived=1；归档行可辨
+
+Defects: none
+
+=== Overall ===
+PASS
+Feature SHA: 8c0fe5a
+Verify HEAD: 4465fa7
+Live: API PASS；FE UI soft†（箱截+源码对读；本机无 :5173，未另起 Vite 点开关；契约与箱截对齐）
+Scope note: 仅 C1；C2/C3 未测；SEAT_LEAVE L5 仍 defer
+
+→ 产品 + 总指挥 + React：C1 PASS @8c0fe5a
