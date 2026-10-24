@@ -33,3 +33,11 @@
 ## 产品勾选
 
 - [ ] V1–V3 交件 · 产品勾 · T6 最小关（pins 另单）
+
+
+## 交件注（Bot 记忆 · 2026-10-24 18:06 Asia/Shanghai）
+
+- V1–V3 **PASS** · 证据 [`qa-shots/T6R-roster-isolate-20261024.txt`](./qa-shots/T6R-roster-isolate-20261024.txt)（等同 V3 文件名约定）
+- Go `96df495` team-scoped bot_role；箱内重建重启 API 后双队同 slug bind claim 不串；旧席 re-ensure 改挂
+- **pins 未做**；Issue 无 `team_id` → 池隔离待产品/Go（本包不挡）
+- 产品勾框仍留给产品；`BOT_TEAM_SEAT_P0` T6 已注「最小隔离 PASS；pins 仍 P0.5 余」

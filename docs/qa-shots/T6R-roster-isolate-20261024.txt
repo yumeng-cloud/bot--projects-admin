@@ -1,0 +1,116 @@
+=== T6 / T6-R roster isolate evidence ===
+time_AsiaShanghai: 2026-10-24 18:07 Asia/Shanghai
+result: V1=PASS V2=PASS V3=PASS (pins 未做 · Issue 无 team_id)
+evidence_file: docs/qa-shots/T6R-roster-isolate-20261024.txt
+alias_ok_for: docs/NEXT_WAVE_DEBT_T6.md V3 (T6-team-isolate-*)
+HEAD_at_run: d70464c (Go fix 96df495 team-scoped bot_role; server rebuilt+restarted /tmp/ai-board-server)
+WS: ba1481c49148aba9553ba3811406b69f
+TEAMA: b5633fd496dc36e9ed70b7a788d55fd9  name=T6R-TeamA
+TEAMB: 4e7fa6762a4d44340c885359a951e92a  name=T6R-TeamB
+KEYA: Grok Bot (ymk_ from /tmp/ymbot_t2_key1.txt) member=094acad4a3f0aaef2ee6370e790912b4
+KEYB: BotB J2 (ymk_ from /tmp/ymbot_j2_botb_api_key.txt) member=e317fc48c926870ab009ff4aa8287eb0
+YMBOT_API_URL: http://127.0.0.1:8080
+pins: NOT DONE (no API · 本包禁止)
+T7: NOT DONE
+
+## 设计注（给 QA/产品）
+96df495：EnsureRoster/CreateSeat 为 (team, slug) mint team-scoped bot_roles.slug=team:{teamID}:{slug}；
+对外席位仍短 slug。旧席再 ensure 会 UPDATE team_seats.bot_role_id 挂新 team role。
+Issue 行无 team_id（仅 project_id/workspace_id）→ Issue 池按队过滤待产品/Go；本包不挡。
+兼岗 memory：seat 前缀键（frontend:last_focus）不互相覆盖；handoff 按 member 列全键（非按队滤）。
+
+## 步骤（Key 勿进 git）
+1. 重启 API 到含 96df495 的 /tmp/ai-board-server（本机曾于 18:06 Asia/Shanghai 重建重启）
+2. admin JWT：POST /workspaces/{WS}/teams → TeamA + TeamB
+3. 各 POST …/teams/{id}/roster/ensure seats=[{frontend},{ops}]
+4. GET …/roster：seat id 与 bot_role_id 双队均不同
+5. KEYA seat enter --role frontend --team TEAMA；KEYB 同 slug --team TEAMB
+6. ymbot team pull --uuid A/B 与 GET roster：frontend claim holder/member 互不串
+7. 旧队（pre-fix）再 ensure：frontend bot_role_id 从 workspace 级角色改挂 team:… 角色
+
+## 断言摘要
+- SEAT_IDS_DIFFER: True (A fe f5d2848f… / B fe 802e6dee…)
+- ROLE_IDS_DIFFER: True (A 585be6f0… / B c2ccbc31…)
+- PULL A frontend holder=Grok Bot；PULL B frontend holder=BotB J2
+- GET claim member_id A≠B → V2_CLAIM_ISOLATION_PASS
+- 旧席 re-ensure：OLDA fe bot_role 91dc54d2… → 938a6fd3… (ROLE_CHANGED)；OLDA/OLDB roles differ；claim 清空串读
+
+## 原始 pull（redact）
+=== pull A ===
+[
+  {
+    "claim": "empty",
+    "name": "后端",
+    "slug": "backend"
+  },
+  {
+    "claim": "claimed",
+    "holder": "Grok Bot",
+    "name": "前端",
+    "slug": "frontend"
+  },
+  {
+    "claim": "empty",
+    "name": "运维",
+    "slug": "ops"
+  },
+  {
+    "claim": "empty",
+    "name": "产品经理",
+    "slug": "pm"
+  },
+  {
+    "claim": "empty",
+    "name": "QA",
+    "slug": "qa"
+  },
+  {
+    "claim": "empty",
+    "name": "知识库",
+    "slug": "wiki"
+  }
+]
+
+=== pull B ===
+[
+  {
+    "claim": "empty",
+    "name": "后端",
+    "slug": "backend"
+  },
+  {
+    "claim": "claimed",
+    "holder": "BotB J2",
+    "name": "前端",
+    "slug": "frontend"
+  },
+  {
+    "claim": "empty",
+    "name": "运维",
+    "slug": "ops"
+  },
+  {
+    "claim": "empty",
+    "name": "产品经理",
+    "slug": "pm"
+  },
+  {
+    "claim": "empty",
+    "name": "QA",
+    "slug": "qa"
+  },
+  {
+    "claim": "empty",
+    "name": "知识库",
+    "slug": "wiki"
+  }
+]
+
+=== GET A frontend ===
+seat=f5d2848fb229e4c14cfdeb6fd59adc11 bot_role=585be6f0956c591607d07b5a3b4aea63 member=094acad4a3f0aaef2ee6370e790912b4
+
+=== GET B frontend ===
+seat=802e6dee92c908d6fd60948774a7aa17 bot_role=c2ccbc312ef1e7956278d78195a5938d member=e317fc48c926870ab009ff4aa8287eb0
+
+## unit
+go test ./internal/services/botmem/ -run TestTwoTeamsRosterClaimIsolation → ok (pre-box); full botmem package ok at evidence time

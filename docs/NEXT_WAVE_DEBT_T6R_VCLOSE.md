@@ -44,4 +44,9 @@
   - `81-workspace-home.png`：入口「周期」；surface hug + 底注
   - `81-settings-recheck.png`：成员 Tab hug+脚注
 
-- [ ] 刀 B T6-R  
+- [ ] 刀 B T6-R
+
+## 交件注（刀 B · Bot 记忆）
+
+- [x] 执行侧 PASS · [`qa-shots/T6R-roster-isolate-20261024.txt`](./qa-shots/T6R-roster-isolate-20261024.txt) · Go `96df495`
+- 产品勾框（刀 B）仍留给产品
