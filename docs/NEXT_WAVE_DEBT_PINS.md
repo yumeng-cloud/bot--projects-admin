@@ -42,7 +42,7 @@
 
 - REST 契约：[`API.md`](./API.md)「Team pins」
 - 通道：[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.5 `board_pin_*`
-- 实现：Go `6915db4` · FE `4459d01` · 箱证 `1a38ce4` · 通道 CLI/MCP `board_pin_*`（本包补挂）
+- 实现：Go `6915db4` · FE `4459d01`/`8c2097a` · API 箱证 `1a38ce4` · FE 箱截 `54d5527` · 通道 `63e69c6`
 
 ## 产品勾选
 
@@ -51,8 +51,12 @@
   - unit `TestPinsTeamIsolate` / `TestPinsDoNotClobberBotMemories` 产品抽跑 ok
   - 双队 GET 不串；跨队 PUT/DELETE → 404；同名 key 与 bot_memories 分表不串
 - [ ] **P4** QA 苛刻复测（记忆已交证据；等 QA）
-- [ ] **P5** FE 最小记忆墙（`4459d01` 已推；等 API 绿后箱截再勾）
+- [x] **P5** FE 最小记忆墙 · 2026-10-24 19:03 Asia/Shanghai
+  - FE `4459d01` + 热修 `8c2097a` · 箱截 `54d5527`
+  - [`pins-p5-list.png`](./qa-shots/pins-p5-list.png) / [`pins-p5-upsert.png`](./qa-shots/pins-p5-upsert.png) / [`pins-p5-switch-team.png`](./qa-shots/pins-p5-switch-team.png)
+  - 产品目视：本队 list 见 pin；切/换队后墙为空或换池，无跨队残留；upsert 表单可用
+  - 通道可选 `63e69c6` `board_pin_*` 已挂（不挡 FE 勾）
 
 ## 关单
 
-半单：P1–P3 已勾。整单待 P4+P5。`BOT_TEAM_SEAT_P0` T6 注「pins API 隔离 PASS；Issue 池仍余」。
+半单+：P1–P3 + **P5** 已勾。整单仍待 **P4** QA 苛刻正式交件。`BOT_TEAM_SEAT_P0` T6 注「pins API+FE PASS；Issue 池仍余」。

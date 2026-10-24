@@ -16,6 +16,6 @@
 以 [`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md) **P1–P5** 为准：
 
 - [x] P1–P3 API/箱验 · 产品勾（2026-10-24；P4 等 QA）
-- [ ] P5 FE 最小记忆墙 · 产品勾（React 并行，不挡 API 关半单）
+- [x] P5 FE 最小记忆墙 · 产品勾（`54d5527` 箱截）
 
 关单：`BOT_TEAM_SEAT_P0` T6 注「pins PASS」；Issue 池仍脚注后置。
