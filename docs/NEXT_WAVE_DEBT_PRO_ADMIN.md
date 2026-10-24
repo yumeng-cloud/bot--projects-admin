@@ -115,7 +115,7 @@
 - [x] **B2** 无成员引导 · `95974f1` / `pro-b-empty-no-members.png` · QA PASS `76824d1`
 - [x] **B3** 无 Issue 引导 · `95974f1` · QA PASS `76824d1`
 - [x] **B4** 空态箱截 · `95974f1`（无成员/无 Issue；无项目复用 B1 `pro-b-empty-no-project.png`）
-- [x] **C1** 归档显隐 · `d6b22ce` / `pro-c-archived-toggle.png`
+- [x] **C1** 归档显隐 · `8c0fe5a` / `pro-c-archived-toggle.png`
 - [ ] **C2** 多选批量
 - [ ] **C3** 列显示配置
 - [ ] **C4** 超管 WS 筛选
@@ -138,7 +138,7 @@
 
 ## 进度注记
 
-- 2026-10-25 00:18 · **C1 关绿** React `d6b22ce`：列表滤镜「显示已归档」默认关；开→`include_archived=1`；归档行弱标签+灰态；其它筛保持；箱截 `pro-c-archived-toggle.png`；`tsc --noEmit` PASS。C2–E/G 仍冻；下一刀 SEAT_LEAVE。
+- 2026-10-25 00:18 · **C1 关绿** React `8c0fe5a`：列表滤镜「显示已归档」默认关；开→`include_archived=1`；归档行弱标签+灰态；其它筛保持；箱截 `pro-c-archived-toggle.png`；`tsc --noEmit` PASS。C2–E/G 仍冻；下一刀 SEAT_LEAVE。
 - 2026-10-25 00:53 · **对齐总指挥**：本波认 **C1 归档显隐**（@`2e328dd`）先关；SEAT_LEAVE 排 C1 关后下一刀（债已落 `71e9b4a`，不丢）。C2–E/G 仍冻。
 - 2026-10-25 00:50 · **C1（曾短暂让路 SEAT_LEAVE，已对齐回先关）**：总指挥拍下一 P0=SEAT_LEAVE；C–E/G 仍冻。见 [`NEXT_WAVE_DEBT_SEAT_LEAVE.md`](./NEXT_WAVE_DEBT_SEAT_LEAVE.md)。
 - 2026-10-25 00:45 · **B2/B3/B4 小包正式关** FE `95974f1` + QA `76824d1`。
@@ -164,4 +164,4 @@
 
 ## 关单进度
 
-**B 空态小包已关** · **C1 关绿** `d6b22ce`；下一刀 SEAT_LEAVE；C2–E/G 仍冻。
+**B 空态小包已关** · **C1 关绿** `8c0fe5a`；下一刀 SEAT_LEAVE；C2–E/G 仍冻。
