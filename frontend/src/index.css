@@ -1,0 +1,285 @@
+:root {
+  /* cool-gray clean palette — see docs/UI_CLEAN_P0.md */
+  --acb-bg-layout: #F7F8FA;
+  --acb-bg-sider: #F2F4F8;
+  --acb-bg-container: #FFFFFF;
+  --acb-bg-elevated: #FCFCFD;
+  --acb-border: #E6E8EE;
+  --acb-border-secondary: #EEF0F4;
+  --acb-primary: #5E6AD2;
+  --acb-text: #2A3140;
+  --acb-text-secondary: #4A5263;
+  --acb-text-tertiary: #8A93A6;
+  /* layout spacing (shared light/dark; visual may retune) — breathing sizes kept */
+  --acb-sider-width: 240px;
+  --acb-sider-collapsed-width: 64px;
+  --acb-content-padding-x: 28px;
+  --acb-content-padding-y: 20px;
+  --acb-issue-main-padding-x: 40px;
+  --acb-issue-main-padding-y: 32px;
+  --acb-props-rail-width: 312px;
+  --acb-issue-drawer-wide: 940px;
+  --acb-font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  --acb-bg-layout: #0f1115;
+  --acb-bg-sider: #12141a;
+  --acb-bg-container: #16181d;
+  --acb-bg-elevated: #1c1f26;
+  --acb-border: #2a2e38;
+  --acb-border-secondary: #23262e;
+  --acb-primary: #5e6ad2;
+  --acb-text: #f0f1f4;
+  --acb-text-secondary: #b0b5c3;
+  --acb-text-tertiary: #858b9a;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--acb-font-sans);
+  font-size: 13px;
+  color: var(--acb-text);
+  background: var(--acb-bg-layout);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* restrained scrollbar — thin, low-contrast (U5 visual; overflow ownership is React) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--acb-text) 18%, transparent) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--acb-text) 16%, transparent);
+  border-radius: 3px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--acb-text) 28%, transparent);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Login card: Linear thin border, no floaty elevation */
+.ant-card {
+  border-color: var(--acb-border);
+  box-shadow: none;
+}
+
+/*
+ * Soft primary — Linear/Height: pale indigo fill + brand text.
+ * Scoped to app shell Layout so Login CTA stays solid.
+ * Issue drawer / comment send have tighter overrides in issue-detail.css.
+ */
+.ant-layout .ant-btn-primary:not(.ant-btn-dangerous):not(:disabled):not(.ant-btn-disabled) {
+  background: color-mix(in srgb, var(--acb-primary) 12%, transparent) !important;
+  border-color: transparent !important;
+  color: var(--acb-primary) !important;
+  box-shadow: none !important;
+  font-weight: 500;
+}
+.ant-layout .ant-btn-primary:not(.ant-btn-dangerous):not(:disabled):not(.ant-btn-disabled):hover {
+  background: color-mix(in srgb, var(--acb-primary) 18%, transparent) !important;
+  color: var(--acb-primary) !important;
+  border-color: transparent !important;
+}
+.ant-layout .ant-btn-primary:disabled,
+.ant-layout .ant-btn-primary.ant-btn-disabled {
+  background: color-mix(in srgb, var(--acb-text) 4%, transparent) !important;
+  color: var(--acb-text-tertiary) !important;
+  border-color: transparent !important;
+  opacity: 1;
+}
+
+/* Quiet search / create input in page bar */
+.acb-page-bar .ant-input-affix-wrapper,
+.acb-page-bar .ant-input {
+  border-color: var(--acb-border) !important;
+  border-radius: 8px !important;
+  background: var(--acb-bg-container) !important;
+  box-shadow: none !important;
+}
+.acb-page-bar .ant-input-affix-wrapper:hover,
+.acb-page-bar .ant-input-affix-wrapper-focused,
+.acb-page-bar .ant-input:hover,
+.acb-page-bar .ant-input:focus {
+  border-color: color-mix(in srgb, var(--acb-primary) 35%, var(--acb-border)) !important;
+  box-shadow: none !important;
+}
+
+/* ── B1 Sider — breathing 240 / item 36, soft selected; width via --acb-sider-width ── */
+.ant-layout-sider:not(.ant-layout-sider-collapsed) {
+  flex: 0 0 var(--acb-sider-width) !important;
+  max-width: var(--acb-sider-width) !important;
+  min-width: var(--acb-sider-width) !important;
+  width: var(--acb-sider-width) !important;
+}
+.ant-layout-sider.ant-layout-sider-collapsed {
+  flex: 0 0 var(--acb-sider-collapsed-width) !important;
+  max-width: var(--acb-sider-collapsed-width) !important;
+  min-width: var(--acb-sider-collapsed-width) !important;
+  width: var(--acb-sider-collapsed-width) !important;
+}
+.ant-layout-sider {
+  background: var(--acb-bg-sider) !important;
+  border-right: 1px solid var(--acb-border-secondary) !important;
+  box-shadow: none !important;
+}
+.ant-layout-sider .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+}
+.ant-layout-sider .ant-menu {
+  font-size: 13px;
+  background: transparent !important;
+}
+.ant-layout-sider .ant-menu-item {
+  height: 36px !important;
+  line-height: 36px !important;
+  margin-block: 2px !important;
+  margin-inline: 8px !important;
+  padding-inline: 12px !important;
+  width: calc(100% - 16px) !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  font-weight: 450 !important;
+  color: var(--acb-text-secondary) !important;
+}
+.ant-layout-sider .ant-menu-item .anticon {
+  font-size: 15px !important;
+  width: 16px !important;
+  color: var(--acb-text-tertiary) !important;
+}
+.ant-layout-sider .ant-menu-item .ant-menu-title-content {
+  margin-inline-start: 10px !important;
+}
+/* kill Ant selected left rail / after bar if any */
+.ant-layout-sider .ant-menu-item::after,
+.ant-layout-sider .ant-menu-submenu-title::after {
+  display: none !important;
+  border: none !important;
+}
+.ant-layout-sider .ant-menu-light .ant-menu-item-selected,
+.ant-layout-sider .ant-menu .ant-menu-item-selected {
+  background: color-mix(in srgb, var(--acb-primary) 12%, transparent) !important;
+  color: var(--acb-primary) !important;
+  font-weight: 500 !important;
+}
+.ant-layout-sider .ant-menu-light .ant-menu-item-selected a,
+.ant-layout-sider .ant-menu .ant-menu-item-selected a {
+  color: inherit !important;
+}
+.ant-layout-sider .ant-menu .ant-menu-item-selected .anticon {
+  color: var(--acb-primary) !important;
+}
+.ant-layout-sider .ant-menu .ant-menu-item:hover:not(.ant-menu-item-selected) {
+  background: color-mix(in srgb, var(--acb-text) 4%, transparent) !important;
+  color: var(--acb-text) !important;
+}
+
+/* ── U2 Header — single ~48px layer ── */
+.ant-layout-header {
+  height: 48px !important;
+  line-height: 48px !important;
+  padding-inline: var(--acb-content-padding-x) !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--acb-border-secondary);
+}
+.ant-layout-header .ant-btn {
+  height: 28px;
+}
+.ant-layout-header .ant-select-sm .ant-select-selector {
+  height: 28px !important;
+}
+
+/* Soft ant Tag default — less chrome */
+.ant-tag {
+  border-color: transparent;
+  font-weight: 450;
+}
+
+/* Page shell + Linear empty states (list / cycles / settings) */
+.acb-page {
+  padding: var(--acb-content-padding-y) var(--acb-content-padding-x);
+  color: var(--acb-text);
+}
+.acb-page .ant-typography,
+.acb-page h4.ant-typography {
+  color: var(--acb-text);
+}
+.ant-typography.ant-typography-secondary {
+  color: var(--acb-text-secondary) !important;
+}
+
+.acb-empty-panel {
+  border: 1px dashed var(--acb-border);
+  border-radius: 8px;
+  background: var(--acb-bg-container);
+  min-height: 160px;
+  padding: 28px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.acb-empty-panel .ant-empty {
+  margin: 0;
+}
+.ant-empty {
+  margin-block: 20px 28px;
+}
+.ant-empty-image {
+  height: 36px !important;
+  margin-bottom: 10px !important;
+  opacity: 0.5;
+}
+.ant-empty-image svg {
+  height: 36px;
+}
+.ant-empty-description {
+  color: var(--acb-text-secondary) !important;
+  font-size: 13px !important;
+  line-height: 1.45;
+  max-width: 320px;
+  margin-inline: auto;
+}
+.ant-table-placeholder .ant-table-cell {
+  background: transparent !important;
+  border-bottom: none !important;
+}
+.ant-list-empty-text {
+  padding: 0 !important;
+}
+
+/* Fill AppLayout Content — own scroll; do not grow body */
+.acb-fill-page {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

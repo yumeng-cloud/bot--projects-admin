@@ -1,0 +1,809 @@
+/**
+ * Issue detail layout — Linear issue panel + Height-like density (UI 视觉)
+ * Contract classes (UI 视觉):
+ *   .acb-issue-main      — main column (title / description / comments / activity)
+ *   .acb-props-rail      — property rail alias (= .acb-property-rail)
+ *   .acb-property-row    — horizontal label | value (~32px)
+ * Aliases kept for React split components already shipping:
+ *   .acb-property-rail, .acb-property-label, .acb-property-value
+ *   .acb-property-row__label / __value
+ */
+
+/* —— Drawer chrome —— */
+/* Ensure drawer content column fills viewport so main/rail own scroll (not page) */
+.acb-drawer.acb-issue-drawer .ant-drawer-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.acb-drawer.acb-issue-drawer .ant-drawer-header {
+  flex-shrink: 0;
+  padding: 10px 18px !important;
+  border-bottom: 1px solid var(--acb-border-secondary);
+}
+
+.acb-drawer.acb-issue-drawer .ant-drawer-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+
+.acb-drawer.acb-issue-drawer .ant-drawer-footer {
+  display: none;
+}
+
+.acb-issue-header-id {
+  font-weight: 450;
+  font-size: 12px;
+  color: var(--acb-text-tertiary);
+  letter-spacing: 0.01em;
+}
+
+/* —— Dual-column shell —— */
+.acb-issue-layout {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  background: var(--acb-bg-container);
+}
+
+/* —— Main column —— */
+.acb-issue-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--acb-issue-main-padding-y) var(--acb-issue-main-padding-x);
+  background: var(--acb-bg-container);
+}
+
+.acb-issue-main-inner {
+  max-width: 520px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.acb-issue-title-wrap {
+  margin-bottom: 22px;
+}
+
+.acb-issue-title-input.ant-input,
+.acb-issue-title-input.ant-input:hover,
+.acb-issue-title-input.ant-input:focus {
+  font-size: 25px !important;
+  font-weight: 600;
+  line-height: 1.28;
+  letter-spacing: -0.025em;
+  color: var(--acb-text);
+  padding: 2px 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.acb-issue-title-input.ant-input::placeholder {
+  color: var(--acb-text-tertiary);
+  font-weight: 500;
+}
+
+/* Description wrap — ByteMD lives inside (see .acb-issue-md below) */
+.acb-issue-desc-wrap {
+  margin-bottom: 8px;
+  min-height: 220px;
+}
+
+.acb-issue-main-sections {
+  margin-top: 24px;
+}
+
+/* Comments — quiet divider, composer in-flow (not heavy footer) */
+.acb-issue-comments {
+  padding-top: 22px;
+  border-top: 1px solid var(--acb-border-secondary);
+}
+
+.acb-issue-section-title,
+.acb-issue-section-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--acb-text-tertiary);
+  margin: 0 0 12px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.acb-issue-muted-empty {
+  font-size: 13px;
+  color: var(--acb-text-tertiary);
+  padding: 2px 0 14px;
+  line-height: 1.5;
+}
+
+.acb-issue-comment-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--acb-border-secondary);
+}
+
+.acb-issue-comment-item:last-child {
+  border-bottom: none;
+}
+
+.acb-issue-comment-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.acb-issue-comment-compose,
+.acb-issue-comment-composer {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--acb-border-secondary);
+}
+
+.acb-issue-comment-compose .ant-input,
+.acb-issue-comment-composer .ant-input {
+  font-size: 13px;
+  line-height: 1.55;
+  border-color: transparent !important;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--acb-text) 3.5%, var(--acb-bg-container)) !important;
+  box-shadow: none !important;
+  padding: 8px 10px !important;
+  resize: none;
+}
+
+.acb-issue-comment-compose .ant-input:hover,
+.acb-issue-comment-compose .ant-input:focus,
+.acb-issue-comment-composer .ant-input:hover,
+.acb-issue-comment-composer .ant-input:focus {
+  border-color: transparent !important;
+  background: color-mix(in srgb, var(--acb-text) 5%, var(--acb-bg-container)) !important;
+  box-shadow: none !important;
+}
+
+.acb-issue-comment-compose .ant-input::placeholder,
+.acb-issue-comment-composer .ant-input::placeholder {
+  color: var(--acb-text-tertiary);
+}
+
+/* Activity fold — secondary, quieter than comments */
+.acb-issue-activity-fold,
+.acb-issue-activity {
+  margin-top: 8px;
+  padding-top: 4px;
+}
+
+.acb-issue-activity-fold .ant-collapse,
+.acb-issue-activity .ant-collapse {
+  background: transparent;
+  border: none;
+}
+
+.acb-issue-activity-fold .ant-collapse-item,
+.acb-issue-activity .ant-collapse-item {
+  border: none !important;
+}
+
+.acb-issue-activity-fold .ant-collapse-header,
+.acb-issue-activity .ant-collapse-header {
+  padding: 12px 0 !important;
+  font-size: 12px !important;
+  font-weight: 600;
+  color: var(--acb-text-secondary) !important;
+  align-items: center !important;
+}
+
+.acb-issue-activity-fold .ant-collapse-content,
+.acb-issue-activity .ant-collapse-content {
+  border-top: none !important;
+  background: transparent;
+}
+
+.acb-issue-activity-fold .ant-collapse-content-box,
+.acb-issue-activity .ant-collapse-content-box {
+  padding: 0 0 14px !important;
+}
+
+.acb-activity-timeline .ant-timeline-item {
+  padding-bottom: 10px;
+}
+
+/* —— Property rail (right) — ~312 (B4: 300–320), breathing rows —— */
+.acb-props-rail,
+.acb-property-rail {
+  width: var(--acb-props-rail-width);
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--acb-border-secondary);
+  background: color-mix(in srgb, var(--acb-bg-layout) 55%, var(--acb-bg-container));
+  padding: 14px 14px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Kill Form vertical wall spacing inside rail */
+.acb-props-rail .ant-form-item,
+.acb-property-rail .ant-form-item,
+.acb-issue-drawer .acb-property-row .ant-form-item {
+  margin-bottom: 0 !important;
+}
+
+.acb-props-rail .ant-form-item-label,
+.acb-property-rail .ant-form-item-label {
+  display: none;
+}
+
+/* Horizontal label | value — row ~32px, label muted but readable */
+.acb-property-row {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  height: auto;
+  padding: 4px 8px;
+  border-radius: 6px;
+  gap: 6px;
+  border: none;
+  background: transparent;
+}
+
+.acb-property-row:hover {
+  background: color-mix(in srgb, var(--acb-text) 4%, transparent);
+}
+
+.acb-property-row__label,
+.acb-property-label {
+  flex: 0 0 72px;
+  width: 72px;
+  max-width: 78px;
+  font-size: 11px;
+  font-weight: 450;
+  color: var(--acb-text-tertiary);
+  line-height: 1.25;
+  user-select: none;
+}
+
+.acb-property-row__value,
+.acb-property-value {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.acb-property-row__value .ant-select,
+.acb-property-row__value .ant-input-number,
+.acb-property-value .ant-select,
+.acb-property-value .ant-input-number {
+  width: 100%;
+}
+
+.acb-property-row__value .ant-select-selector,
+.acb-property-row__value .ant-input-number,
+.acb-property-value .ant-select-selector,
+.acb-property-value .ant-input-number {
+  padding-inline: 4px !important;
+  min-height: 26px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.acb-property-row__value .ant-select-focused .ant-select-selector,
+.acb-property-value .ant-select-focused .ant-select-selector,
+.acb-property-row__value .ant-select:hover .ant-select-selector,
+.acb-property-value .ant-select:hover .ant-select-selector {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.acb-property-row__value .ant-select-borderless .ant-select-selector,
+.acb-property-row__value .ant-input-number-borderless,
+.acb-property-value .ant-select-borderless .ant-select-selector,
+.acb-property-value .ant-input-number-borderless {
+  background: transparent !important;
+}
+
+/* Soft label tags in rail — pale pill, no stroke */
+.acb-property-row__value .ant-select-selection-item,
+.acb-property-value .ant-tag,
+.acb-props-rail .ant-tag,
+.acb-property-rail .ant-tag {
+  border: none !important;
+  border-radius: 6px !important;
+  font-weight: 450;
+}
+
+.acb-property-row__value .ant-select-selection-item,
+.acb-property-row__value .ant-select-selection-placeholder,
+.acb-property-value .ant-select-selection-item,
+.acb-property-value .ant-select-selection-placeholder {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 26px;
+  color: var(--acb-text);
+}
+
+.acb-property-row__value .ant-select-selection-placeholder,
+.acb-property-value .ant-select-selection-placeholder {
+  color: var(--acb-text-tertiary);
+}
+
+.acb-property-row__value .ant-input-number-input,
+.acb-property-value .ant-input-number-input {
+  font-size: 13px;
+  height: 26px !important;
+  color: var(--acb-text);
+}
+
+.acb-property-suffix {
+  font-size: 11px;
+  color: var(--acb-text-tertiary);
+  padding-inline: 2px;
+}
+
+/* Relations block in rail */
+.acb-props-rail-section {
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--acb-border-secondary);
+}
+
+.acb-props-rail-section-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--acb-text-secondary);
+  margin: 0 0 8px 6px;
+}
+
+.acb-rel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+
+.acb-rel-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 4px 4px;
+  border-radius: 4px;
+  min-height: 28px;
+}
+
+.acb-rel-item:hover {
+  background: color-mix(in srgb, var(--acb-primary) 5%, transparent);
+}
+
+.acb-rel-item .ant-typography {
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+  color: var(--acb-text-secondary);
+}
+
+/* —— ByteMD skin (.acb-issue-md) — Linear writing surface —— */
+.acb-issue-md {
+  min-height: 220px;
+}
+.acb-issue-md .bytemd {
+  height: auto;
+  min-height: 240px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.acb-issue-md .bytemd:hover,
+.acb-issue-md .bytemd:focus-within {
+  border-color: transparent;
+}
+/* Keep edit|preview tabs; quiet chrome (not a heavy IDE bar) */
+.acb-issue-md .bytemd-toolbar {
+  display: flex !important;
+  align-items: center;
+  border: none;
+  border-bottom: 1px solid var(--acb-border-secondary);
+  background: transparent;
+  padding: 0 0 4px;
+  min-height: 26px;
+}
+.acb-issue-md .bytemd-toolbar-left {
+  /* action icons — keep compact but available for MD helpers */
+  opacity: 0.55;
+}
+.acb-issue-md .bytemd-toolbar-left:hover {
+  opacity: 1;
+}
+.acb-issue-md .bytemd-toolbar-tab {
+  font-size: 12px;
+  font-weight: 450;
+  color: var(--acb-text-tertiary);
+}
+.acb-issue-md .bytemd-toolbar-tab-active {
+  color: var(--acb-text);
+  font-weight: 550;
+}
+.acb-issue-md .bytemd-status {
+  display: none !important;
+}
+.acb-issue-md .bytemd-body {
+  min-height: 220px;
+  border: none;
+}
+.acb-issue-md .CodeMirror,
+.acb-issue-md .bytemd-preview {
+  font-size: 14px;
+  line-height: 1.68;
+  color: var(--acb-text);
+  background: transparent;
+}
+.acb-issue-md .CodeMirror {
+  padding: 4px 0 12px;
+}
+.acb-issue-md .CodeMirror-scroll {
+  min-height: 200px !important;
+}
+.acb-issue-md .CodeMirror-placeholder,
+.acb-issue-md .CodeMirror pre.CodeMirror-placeholder {
+  color: color-mix(in srgb, var(--acb-text-tertiary) 85%, transparent) !important;
+  font-weight: 400;
+}
+
+/* —— Drawer scroll / narrow stack (frontend) —— */
+.acb-issue-layout {
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+.acb-issue-main,
+.acb-props-rail,
+.acb-property-rail {
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+@media (max-width: 639px) {
+  .acb-issue-layout {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .acb-issue-main {
+    flex: 0 0 auto;
+    overflow: visible;
+    min-height: auto;
+    padding: 18px 16px 24px;
+  }
+  .acb-issue-main-inner {
+    max-width: none;
+  }
+  .acb-props-rail,
+  .acb-property-rail {
+    flex: 0 0 auto;
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--acb-border);
+    padding: 12px 12px 18px;
+    overflow: visible;
+    min-height: auto;
+  }
+}
+
+/* —— Empty preview placeholder (frontend) —— */
+.acb-issue-md.is-empty .bytemd-preview .markdown-body:empty::before,
+.acb-issue-md.is-empty .bytemd-preview .markdown-body::before {
+  content: '还没有描述…';
+  display: block;
+  color: var(--acb-text-tertiary);
+  font-size: 14px;
+  line-height: 1.68;
+  pointer-events: none;
+  font-weight: 400;
+}
+.acb-issue-md.is-empty .bytemd-preview {
+  min-height: 200px;
+}
+.acb-issue-md.is-empty .bytemd-preview .markdown-body {
+  min-height: 1.68em;
+  position: relative;
+}
+
+/* —— Attachments (Linear density: one compact row) —— */
+.acb-issue-attachments {
+  margin-top: 16px;
+  margin-bottom: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--acb-border);
+}
+
+.acb-issue-attachments-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.acb-issue-attachment-add-btn.ant-btn {
+  padding-inline: 4px;
+  height: 24px;
+  font-size: 12px;
+}
+
+.acb-issue-attachment-list {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.acb-issue-attachment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 4px 4px 2px;
+  border-radius: 6px;
+}
+
+.acb-issue-attachment-row:hover {
+  background: color-mix(in srgb, var(--acb-primary) 5%, transparent);
+}
+
+.acb-issue-attachment-leading {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.acb-issue-attachment-thumb-img.ant-image,
+.acb-issue-attachment-leading .ant-image {
+  width: 36px;
+  height: 36px;
+  display: block;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--acb-border-secondary);
+}
+
+.acb-issue-attachment-leading .ant-image-img {
+  object-fit: cover;
+}
+
+.acb-issue-attachment-thumb-ph {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--acb-text) 6%, transparent);
+  border: 1px solid var(--acb-border-secondary);
+}
+
+.acb-issue-attachment-icon {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--acb-text-secondary);
+  background: color-mix(in srgb, var(--acb-text) 4%, transparent);
+  border-radius: 4px;
+  border: 1px solid var(--acb-border-secondary);
+}
+
+.acb-issue-attachment-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.3;
+}
+
+.acb-issue-attachment-name {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--acb-text);
+  text-decoration: none;
+}
+
+button.acb-issue-attachment-name-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--acb-text);
+}
+
+button.acb-issue-attachment-name-btn:hover {
+  color: var(--acb-primary);
+}
+
+.acb-issue-attachment-size {
+  font-size: 11px !important;
+  color: var(--acb-text-tertiary) !important;
+  line-height: 1.3;
+}
+
+.acb-issue-attachment-delete {
+  flex-shrink: 0;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.acb-issue-attachment-row:hover .acb-issue-attachment-delete,
+.acb-issue-attachment-row:focus-within .acb-issue-attachment-delete,
+.acb-issue-attachment-delete.ant-btn-loading {
+  opacity: 1;
+}
+
+.acb-issue-attachment-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.acb-issue-attachment-upload-hint {
+  font-size: 12px;
+  color: var(--acb-text-tertiary);
+}
+
+.acb-issue-comment-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* —— Attachment name button (doc download) —— */
+button.acb-issue-attachment-name-btn,
+.acb-issue-attachment-name-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--acb-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+button.acb-issue-attachment-name-btn:hover {
+  text-decoration: underline;
+}
+.acb-issue-attachment-thumb-ph {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  background: var(--acb-border-secondary);
+}
+.acb-issue-comment-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+
+/* —— Header actions: ghost Cancel + soft Save (not ERP solid blocks) —— */
+.acb-issue-drawer .ant-drawer-extra .ant-btn-default {
+  border: none !important;
+  background: transparent !important;
+  color: var(--acb-text-secondary) !important;
+  box-shadow: none !important;
+  font-weight: 450;
+  border-radius: 8px !important;
+  height: 28px;
+  padding-inline: 10px;
+}
+.acb-issue-drawer .ant-drawer-extra .ant-btn-default:hover {
+  background: color-mix(in srgb, var(--acb-text) 5%, transparent) !important;
+  color: var(--acb-text) !important;
+}
+.acb-issue-drawer .ant-drawer-extra .ant-btn-primary {
+  background: color-mix(in srgb, var(--acb-primary) 12%, transparent) !important;
+  border-color: transparent !important;
+  color: var(--acb-primary) !important;
+  box-shadow: none !important;
+  font-weight: 500;
+  border-radius: 8px !important;
+  height: 28px;
+  padding-inline: 12px;
+}
+.acb-issue-drawer .ant-drawer-extra .ant-btn-primary:hover {
+  background: color-mix(in srgb, var(--acb-primary) 18%, transparent) !important;
+  color: var(--acb-primary) !important;
+  border-color: transparent !important;
+}
+.acb-issue-drawer .ant-drawer-extra .ant-btn-primary.ant-btn-loading {
+  opacity: 0.75;
+}
+
+/* Comment send — quiet link-like, not muted grey brick */
+.acb-issue-comment-composer-actions .ant-btn-primary {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--acb-primary) !important;
+  font-weight: 500;
+  font-size: 12px;
+  height: 24px;
+  padding-inline: 8px;
+  border-radius: 6px !important;
+}
+.acb-issue-comment-composer-actions .ant-btn-primary:hover:not(:disabled):not(.ant-btn-disabled) {
+  background: color-mix(in srgb, var(--acb-primary) 10%, transparent) !important;
+  color: var(--acb-primary) !important;
+}
+.acb-issue-comment-composer-actions .ant-btn-primary:disabled,
+.acb-issue-comment-composer-actions .ant-btn-primary.ant-btn-disabled {
+  background: transparent !important;
+  color: var(--acb-text-tertiary) !important;
+  opacity: 1;
+}
+
+/* Relations add row — strip form-wall borders */
+.acb-props-rail-section .ant-select-selector,
+.acb-props-rail-section .ant-select:not(.ant-select-customize-input) .ant-select-selector {
+  border-color: var(--acb-border-secondary) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+}
+.acb-props-rail-section .ant-select:hover .ant-select-selector,
+.acb-props-rail-section .ant-select-focused .ant-select-selector {
+  border-color: color-mix(in srgb, var(--acb-primary) 30%, var(--acb-border)) !important;
+  box-shadow: none !important;
+}
+.acb-props-rail-section .ant-btn-primary {
+  background: color-mix(in srgb, var(--acb-primary) 12%, transparent) !important;
+  border-color: transparent !important;
+  color: var(--acb-primary) !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+}
+.acb-props-rail-section .ant-space-compact .ant-select-selector {
+  border-radius: 6px !important;
+}
+
+/* Attachments divider quieter */
+.acb-issue-attachments {
+  border-top-color: var(--acb-border-secondary) !important;
+}

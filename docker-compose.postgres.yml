@@ -1,0 +1,19 @@
+# 可选：有 Docker 时用。当前 box 无 docker，已用 apt 安装等价栈（postgresql-17 + pgvector）。
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: aicollab
+      POSTGRES_PASSWORD: aicollab
+      POSTGRES_DB: ai_collab
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aicollab -d ai_collab"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  pgdata:
