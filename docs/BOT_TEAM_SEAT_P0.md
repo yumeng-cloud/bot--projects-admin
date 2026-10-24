@@ -185,6 +185,6 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 | MCP `board_team_pull` / `board_seat_enter` / `board_seat_leave` / `board_seat_expand` | 已接线 | 描述短、默认无 UUID |
 | botclient `TeamPull` / `SeatEnter` / `SeatLeave` / `TeamSeatBind` / `TeamSeatExpand` | 已落地 | 记忆键 `SeatMemoryKey(slug,key)`；**未**双写 REST handler |
 | Go `teams` / `team_seats` handler + 迁移 | **Go 同事** | 通道已按精确契约接线 |
-| T9/T10 真服务证据 | 待合入后 CLI 复测 | 单测已绿：roster/`roster` key / expand assigned·skipped / 不抢 in-progress / help |
+| T9/T10 真服务证据 | 通道单测已绿；真服务待 Go 合入 models+mount | PR: bot/team-seat-p0 · 单测：roster key / expand / GuardExpandNoSteal / help |
 
 回链：[`BOT_SEAT_BIND_TECH_P0.md`](./BOT_SEAT_BIND_TECH_P0.md) · [`BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md`](./BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md) · 模板 `playbook/看板席位迁绑.md`
