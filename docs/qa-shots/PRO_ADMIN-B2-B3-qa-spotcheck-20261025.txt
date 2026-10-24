@@ -1,0 +1,47 @@
+PRO_ADMIN B2/B3 QA spotcheck · 2026-10-25 00:12 Asia/Shanghai
+Repo: ai-collab-board · feature SHA 95974f1 · HEAD at verify 15d09a9 (docs tick atop feat)
+Method: source grep + Read(PNG) · live FE soft† (shots+source sufficient)
+Harsh independent (not product checkbox rubber-stamp)
+
+=== B2 无成员 · 成员 Tab 空态引导邀请/ymw_ · 与 Bot 席隔离 ===
+Verdict: PASS
+
+Source (SettingsPage.tsx @95974f1):
+- humanMembers 过滤 isBotMember；membersEmpty = humanMembers.length===0
+- 空态主文案：「还没有成员」+「邀请同事加入，或签发人类邀请码（ymw_ 开头）」
+- CTA：「邀请成员」→ #acb-invite-email；「签发人类邀请」→ #acb-invite-ymw
+- 空态块内 ymt_=0；无「Bot 入场」/机器人入场主推
+- 脚注 Bot 句仅在 botMembers.length>0 || !membersEmpty 时追加（纯人类空态不露 Bot 席）
+- 邀请表单区「ymw_ … 与 Bot 队席码 ymt_ 隔离」属隔离说明，非空态 CTA 推 Bot（合格）
+
+Shot: docs/qa-shots/pro-b-empty-no-members.png
+- 成员(0) Tab；空态「还没有成员」+ ymw_ 引导
+- 按钮「邀请成员」「签发人类邀请」可见
+- 空态区无 Bot 入场 CTA；侧栏 Bot 入口不计入成员空态文案
+
+Defects: none
+
+=== B3 列表/看板无 Issue · 短引导+新建 · 不占半屏死白 ===
+Verdict: PASS
+
+Source:
+- BoardPage.tsx / IssueListPage.tsx：forceEmpty||issues.length===0 → acb-empty-panel
+  minHeight:120 / padding:20px 16px / marginTop:8（非 marginTop:48 半屏）
+- 文案：「还没有 Issue」+「写一条标题，立刻开工」
+- 内嵌 Input「标题」+ primary「新建」；顶栏仍有「+ 新建 Issue」
+- CSS .acb-empty-panel min-height:120px（page.css）— 紧凑，非死白海
+
+Shots:
+- docs/qa-shots/pro-b-empty-no-issue.png（看板）— 紧凑虚线框空态+标题输入+新建；非半屏空白
+- docs/qa-shots/pro-b-empty-no-issue-list.png（列表）— 同构短引导+新建；非半屏死白
+
+Defects: none
+
+=== Overall ===
+PASS
+Feature SHA: 95974f1
+Verify HEAD: 15d09a9
+Live: soft† (箱截+源码对读足够；未另起空团队冒烟)
+Scope note: B4 箱截入库已对读三张 pro-b-empty-no-*；本单只判 B2/B3
+
+→ 产品 + React / 总指挥：B2 PASS · B3 PASS · Overall PASS @95974f1
