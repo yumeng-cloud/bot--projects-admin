@@ -148,6 +148,18 @@ func mcpTools() []map[string]any {
 		{"name": "board_handoff_import", "description": "从备份/外来包救场；非日常续工", "inputSchema": obj(map[string]any{
 			"handoff": map[string]any{"type": "object"}, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "handoff")},
+		{"name": "board_team_pull", "description": "按团队 UUID 幂等拉班底（ensure roster；不双建、不清 memory）；瘦表 slug/claim", "inputSchema": obj(map[string]any{
+			"team_uuid": str, "idempotency_key": idKey, "full": full, "ids": ids,
+		}, "team_uuid")},
+		{"name": "board_seat_enter", "description": "迁绑进场 whoami→handoff→bind|claim；有 team_uuid 走 bind；409 禁瞎抢", "inputSchema": obj(map[string]any{
+			"role": str, "team_uuid": str, "force": bol, "idempotency_key": idKey, "full": full, "ids": ids,
+		}, "role")},
+		{"name": "board_seat_leave", "description": "离席：有 team_uuid 则 unbind，否则 role release", "inputSchema": obj(map[string]any{
+			"role": str, "team_uuid": str, "idempotency_key": idKey, "full": full, "ids": ids,
+		}, "role")},
+		{"name": "board_seat_expand", "description": "未领叶子派空闲已绑席；禁改 in-progress；可 dry_run", "inputSchema": obj(map[string]any{
+			"team_uuid": str, "project_id": str, "limit": map[string]any{"type": "number"}, "dry_run": bol, "idempotency_key": idKey, "full": full, "ids": ids,
+		}, "team_uuid")},
 	}
 }
 
@@ -429,6 +441,94 @@ func callTool(c *botclient.Client, name string, args map[string]any) (string, er
 			return botclient.MarshalView(v), nil
 		}
 		return botclient.MarshalView(botclient.ProjectHandoffImport(raw, opts)), nil
+	case "board_team_pull":
+		uuid := strArg(args, "team_uuid")
+		if uuid == "" {
+			uuid = strArg(args, "uuid")
+		}
+		raw, err := c.TeamPull(uuid)
+		if err != nil {
+			return "", err
+		}
+		if opts.Full {
+			var v any
+			_ = json.Unmarshal(raw, &v)
+			return botclient.MarshalView(v), nil
+		}
+		items, err := botclient.ProjectTeamRoster(raw, opts)
+		if err != nil {
+			return "", err
+		}
+		return botclient.FormatTeamRosterText(items), nil
+	case "board_seat_enter":
+		team := strArg(args, "team_uuid")
+		if team == "" {
+			team = strArg(args, "uuid")
+		}
+		v, err := c.SeatEnter(strArg(args, "role"), botclient.SeatEnterOpts{
+			TeamID: team,
+			Force:  boolArg(args, "force"),
+		})
+		if err != nil {
+			return "", err
+		}
+		if opts.Full {
+			return botclient.MarshalView(v), nil
+		}
+		return botclient.FormatSeatEnterText(v), nil
+	case "board_seat_leave":
+		role := strArg(args, "role")
+		team := strArg(args, "team_uuid")
+		if team == "" {
+			team = strArg(args, "uuid")
+		}
+		v, err := c.SeatLeave(role, botclient.SeatLeaveOpts{TeamID: team})
+		if err != nil {
+			return "", err
+		}
+		via, _ := v["via"].(string)
+		if via == "" {
+			via = "-"
+		}
+		return fmt.Sprintf("left role=%s via=%s\n", role, via), nil
+	case "board_seat_expand":
+		uuid := strArg(args, "team_uuid")
+		if uuid == "" {
+			uuid = strArg(args, "uuid")
+		}
+		dry := boolArg(args, "dry_run")
+		limit := 0
+		if v, ok := args["limit"]; ok && v != nil {
+			switch n := v.(type) {
+			case float64:
+				limit = int(n)
+			case int:
+				limit = n
+			default:
+				fmt.Sscanf(fmt.Sprint(n), "%d", &limit)
+			}
+		}
+		raw, err := c.TeamSeatExpand(uuid, botclient.TeamExpandOpts{
+			ProjectID: strArg(args, "project_id"),
+			Limit:     limit,
+			DryRun:    dry,
+		})
+		if err != nil {
+			if ae, ok := err.(*botclient.APIError); ok && ae.Status == 404 && !dry {
+				return "", fmt.Errorf("%w；可设 dry_run=true 只列建议", err)
+			}
+			return "", err
+		}
+		if opts.Full {
+			var v any
+			_ = json.Unmarshal(raw, &v)
+			return botclient.MarshalView(v), nil
+		}
+		v, err := botclient.ProjectTeamExpand(raw, opts)
+		if err != nil {
+			return "", err
+		}
+		return botclient.FormatTeamExpandText(v), nil
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}

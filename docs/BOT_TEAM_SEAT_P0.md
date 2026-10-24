@@ -165,8 +165,26 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 - [x] 产品体验脑暴 → 本文落库  
 - [x] Bot 记忆角色技术脑暴已到（附录对齐）  
 - [x] 总指挥：**用户睡了·直接开干** — 产品定稿并放行实现  
-- [ ] Bot 记忆角色 + Go 后端：T9–T11 / 迁绑 / roster API  
+- [x] Bot 记忆角色：通道 CLI/MCP 已按精确契约接线（§7）；**未**双写 Go handler/迁移
+- [ ] T9/T10 真服务 CLI 证据（本机/合入后）  
 - [ ] FE 席位 UI（T1/T4/T5）  
 - [ ] 产品体验按验收勾选关单  
 
 **已定稿可开发。** 实现中勿刷屏用户；进度回总指挥 / 产品体验即可。
+
+---
+
+## 7. 通道实现状态（Bot 记忆角色 · 2026-10-24）
+
+| 项 | 状态 | 备注 |
+|----|------|------|
+| CLI `ymbot team pull --uuid` | 已接线 | → `POST …/teams/{id}/roster/ensure` → `{roster}`；瘦表 slug/claim |
+| CLI `migrate enter` / `seat enter` | 已接线 | whoami→handoff→**bind**（`--team`）或 role claim；409 含占用者；`--force` 接管 |
+| CLI `seat leave` | 已接线 | `--team` → unbind（顺带 release）；否则 role release |
+| CLI `seat expand` | 已接线 | → `POST …/expand` `{project_id?,limit?}` → assigned/skipped；`--dry-run` 兜底 |
+| MCP `board_team_pull` / `board_seat_enter` / `board_seat_leave` / `board_seat_expand` | 已接线 | 描述短、默认无 UUID |
+| botclient `TeamPull` / `SeatEnter` / `SeatLeave` / `TeamSeatBind` / `TeamSeatExpand` | 已落地 | 记忆键 `SeatMemoryKey(slug,key)`；**未**双写 REST handler |
+| Go `teams` / `team_seats` handler + 迁移 | **Go 同事** | 通道已按精确契约接线 |
+| T9/T10 真服务证据 | 待合入后 CLI 复测 | 单测已绿：roster/`roster` key / expand assigned·skipped / 不抢 in-progress / help |
+
+回链：[`BOT_SEAT_BIND_TECH_P0.md`](./BOT_SEAT_BIND_TECH_P0.md) · [`BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md`](./BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md) · 模板 `playbook/看板席位迁绑.md`

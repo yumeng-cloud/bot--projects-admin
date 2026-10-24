@@ -56,6 +56,14 @@ export: 换机备份可选；日常续工不需要。import: 救场/迁入可选
   handoff get [--full|--id|--json]          续命权威：服务端摘要，无文件
   handoff export [--out file.json] […]      换机备份可选；日常续工不需要
   handoff import --file file.json|- […]     救场/迁入可选；非日常续工
+  team pull --uuid <team_uuid>              幂等拉班底（ensure roster；不清 memory）
+  migrate enter --role <slug> [--team] [--force]
+                                            进场：whoami→handoff→bind|claim（= seat enter）
+  seat enter --role <slug> [--team] [--force]
+                                            有 --team 走 bind；409 禁瞎抢（须 --force 接管）
+  seat leave --role <slug> [--team]         有 --team 走 unbind，否则 release
+  seat expand --team <uuid> [--project] [--limit N] [--dry-run]
+                                            未领叶子派空闲已绑席；禁改 in-progress
   mcp-serve            stdio MCP（full/ids 同 --full/--id）
 
 输出档位:

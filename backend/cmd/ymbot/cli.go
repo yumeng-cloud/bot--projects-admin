@@ -27,6 +27,12 @@ func runCLI(args []string) error {
 		return cmdMemory(c, args[1:])
 	case "handoff":
 		return cmdHandoff(c, args[1:])
+	case "team":
+		return cmdTeam(c, args[1:])
+	case "seat":
+		return cmdSeat(c, args[1:])
+	case "migrate":
+		return cmdMigrate(c, args[1:])
 	default:
 		return fmt.Errorf("未知命令: %s（ymbot --help）", args[0])
 	}
@@ -554,4 +560,163 @@ func cmdHandoff(c *botclient.Client, args []string) error {
 	default:
 		return fmt.Errorf("未知 handoff 子命令: %s", args[0])
 	}
+}
+
+func cmdTeam(c *botclient.Client, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("用法: ymbot team pull --uuid <team_uuid> [--full|--id|--json]\n按团队 UUID 幂等 ensure roster（不双建、不清 memory）")
+	}
+	switch args[0] {
+	case "pull":
+		fs := newFS("team pull")
+		uuid := fs.String("uuid", "", "团队 UUID")
+		idKey := fs.String("idempotency-key", "", "")
+		full, ids, asJSON := viewFlags(fs)
+		if err := fs.Parse(reorderFlags(args[1:])); err != nil {
+			return err
+		}
+		if *uuid == "" {
+			return fmt.Errorf("用法: ymbot team pull --uuid <team_uuid>")
+		}
+		applyIDKey(c, *idKey)
+		raw, err := c.TeamPull(*uuid)
+		if err != nil {
+			return err
+		}
+		opts := optsFrom(*full, *ids, *asJSON)
+		if opts.Full {
+			printRawFull(raw)
+			return nil
+		}
+		items, err := botclient.ProjectTeamRoster(raw, opts)
+		if err != nil {
+			return err
+		}
+		printView(opts, botclient.FormatTeamRosterText(items), items)
+		return nil
+	default:
+		return fmt.Errorf("未知 team 子命令: %s（pull）", args[0])
+	}
+}
+
+func cmdMigrate(c *botclient.Client, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("用法: ymbot migrate enter --role <slug> [--team <uuid>] [--force]\n同义: ymbot seat enter")
+	}
+	switch args[0] {
+	case "enter":
+		return cmdSeatEnter(c, args[1:])
+	default:
+		return fmt.Errorf("未知 migrate 子命令: %s（enter）", args[0])
+	}
+}
+
+func cmdSeat(c *botclient.Client, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("用法: ymbot seat enter|leave|expand …\nenter：whoami→handoff→bind|--role claim；leave：unbind|release")
+	}
+	switch args[0] {
+	case "enter":
+		return cmdSeatEnter(c, args[1:])
+	case "leave":
+		return cmdSeatLeave(c, args[1:])
+	case "expand":
+		return cmdSeatExpand(c, args[1:])
+	default:
+		return fmt.Errorf("未知 seat 子命令: %s（enter|leave|expand）", args[0])
+	}
+}
+
+func cmdSeatEnter(c *botclient.Client, args []string) error {
+	fs := newFS("seat enter")
+	role := fs.String("role", "", "角色 slug（frontend/pm/qa/backend/wiki…）")
+	team := fs.String("team", "", "团队 UUID（有则走 seat bind；否则 role claim）")
+	force := fs.Bool("force", false, "接管已绑席（写 seat_takeover:<slug>）")
+	idKey := fs.String("idempotency-key", "", "")
+	full, ids, asJSON := viewFlags(fs)
+	if err := fs.Parse(reorderFlags(args)); err != nil {
+		return err
+	}
+	if *role == "" {
+		return fmt.Errorf("用法: ymbot seat enter --role <slug> [--team <uuid>] [--force]\n冲突 409 显示占用者，禁止瞎抢")
+	}
+	applyIDKey(c, *idKey)
+	v, err := c.SeatEnter(*role, botclient.SeatEnterOpts{TeamID: *team, Force: *force})
+	if err != nil {
+		return err
+	}
+	opts := optsFrom(*full, *ids, *asJSON)
+	if opts.Full || opts.JSON {
+		printView(opts, botclient.MarshalView(v), v)
+		return nil
+	}
+	printView(opts, botclient.FormatSeatEnterText(v), v)
+	return nil
+}
+
+func cmdSeatLeave(c *botclient.Client, args []string) error {
+	fs := newFS("seat leave")
+	role := fs.String("role", "", "角色 slug")
+	team := fs.String("team", "", "团队 UUID（有则 unbind；否则 role release）")
+	idKey := fs.String("idempotency-key", "", "")
+	full, ids, asJSON := viewFlags(fs)
+	if err := fs.Parse(reorderFlags(args)); err != nil {
+		return err
+	}
+	if *role == "" {
+		return fmt.Errorf("用法: ymbot seat leave --role <slug> [--team <uuid>]")
+	}
+	applyIDKey(c, *idKey)
+	v, err := c.SeatLeave(*role, botclient.SeatLeaveOpts{TeamID: *team})
+	if err != nil {
+		return err
+	}
+	opts := optsFrom(*full, *ids, *asJSON)
+	via, _ := v["via"].(string)
+	if via == "" {
+		via = "-"
+	}
+	msg := fmt.Sprintf("left role=%s via=%s\n", *role, via)
+	printView(opts, msg, v)
+	return nil
+}
+
+func cmdSeatExpand(c *botclient.Client, args []string) error {
+	fs := newFS("seat expand")
+	team := fs.String("team", "", "团队 UUID")
+	project := fs.String("project", "", "可选项目 UUID，限制未领叶子范围")
+	limit := fs.Int("limit", 0, "最多派发条数（服务端默认 50）")
+	dry := fs.Bool("dry-run", false, "只列建议不改库（服务端缺 expand 时建议模式）")
+	idKey := fs.String("idempotency-key", "", "")
+	full, ids, asJSON := viewFlags(fs)
+	if err := fs.Parse(reorderFlags(args)); err != nil {
+		return err
+	}
+	if *team == "" {
+		return fmt.Errorf("用法: ymbot seat expand --team <uuid> [--project id] [--limit N] [--dry-run]\n仅派未领叶子；禁改他人 in-progress")
+	}
+	applyIDKey(c, *idKey)
+	dryRun := *dry
+	raw, err := c.TeamSeatExpand(*team, botclient.TeamExpandOpts{
+		ProjectID: *project,
+		Limit:     *limit,
+		DryRun:    dryRun,
+	})
+	if err != nil {
+		if ae, ok := err.(*botclient.APIError); ok && ae.Status == 404 && !dryRun {
+			return fmt.Errorf("%w；可加 --dry-run 只列建议", err)
+		}
+		return err
+	}
+	opts := optsFrom(*full, *ids, *asJSON)
+	if opts.Full {
+		printRawFull(raw)
+		return nil
+	}
+	v, err := botclient.ProjectTeamExpand(raw, opts)
+	if err != nil {
+		return err
+	}
+	printView(opts, botclient.FormatTeamExpandText(v), v)
+	return nil
 }
