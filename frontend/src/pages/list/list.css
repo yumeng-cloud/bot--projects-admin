@@ -1,0 +1,61 @@
+/* List page tree table — Linear-like indent + chevron; cool gray via --acb-* */
+
+.acb-list-table.acb-list-tree .ant-table-row-expand-icon-cell {
+  width: 28px;
+  min-width: 28px;
+  padding-inline: 4px !important;
+}
+
+.acb-list-table.acb-list-tree .ant-table-row-expand-icon {
+  border-color: var(--acb-border);
+  background: transparent;
+  color: var(--acb-text-tertiary);
+  width: 16px;
+  height: 16px;
+  line-height: 14px;
+  font-size: 10px;
+  border-radius: 3px;
+}
+
+.acb-list-table.acb-list-tree .ant-table-row-expand-icon:hover {
+  border-color: color-mix(in srgb, var(--acb-primary) 40%, var(--acb-border));
+  color: var(--acb-primary);
+}
+
+.acb-list-table.acb-list-tree .ant-table-row-indent {
+  /* thin guide feel: indent already from antd; keep compact */
+  padding-left: 0 !important;
+}
+
+.acb-list-table.acb-list-tree .ant-table-tbody > tr.acb-list-tree-child > td {
+  background: var(--acb-bg-elevated);
+}
+
+.acb-list-table.acb-list-tree .ant-table-tbody > tr.acb-list-tree-child:hover > td {
+  background: color-mix(in srgb, var(--acb-primary) 4%, var(--acb-bg-elevated)) !important;
+}
+
+.acb-list-subitem-hint {
+  margin-inline-end: 6px !important;
+  padding-inline: 5px !important;
+  font-size: 10px !important;
+  line-height: 16px !important;
+  border-radius: 3px !important;
+  border-color: var(--acb-border) !important;
+  color: var(--acb-text-tertiary) !important;
+  background: var(--acb-bg-layout) !important;
+}
+
+.acb-list-title-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.acb-list-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

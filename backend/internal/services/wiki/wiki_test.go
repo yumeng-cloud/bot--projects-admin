@@ -107,3 +107,47 @@ func TestSpaceCRUD(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCreatePageEmptyTitleDraft(t *testing.T) {
+	svc, wsID, memID := setupDB(t)
+
+	sp, err := svc.CreateSpace(wsID, wiki.CreateSpaceInput{Name: "草稿空间", Slug: "drafts"})
+	if err != nil {
+		t.Fatalf("create space: %v", err)
+	}
+
+	p1, err := svc.CreatePage(wsID, sp.ID, wiki.CreatePageInput{
+		Title: "", BodyMD: "", MemberID: memID,
+	})
+	if err != nil {
+		t.Fatalf("create empty title: %v", err)
+	}
+	if p1.Title != "无标题" {
+		t.Fatalf("expected default title 无标题, got %q", p1.Title)
+	}
+	if p1.BodyMD != "" {
+		t.Fatalf("expected empty body, got %q", p1.BodyMD)
+	}
+
+	p2, err := svc.CreatePage(wsID, sp.ID, wiki.CreatePageInput{
+		Title: "   ", BodyMD: "", MemberID: memID,
+	})
+	if err != nil {
+		t.Fatalf("create second empty title: %v", err)
+	}
+	if p2.Title != "无标题" {
+		t.Fatalf("expected default title 无标题, got %q", p2.Title)
+	}
+	if p1.Slug == p2.Slug {
+		t.Fatalf("expected distinct slugs for two drafts, both %q", p1.Slug)
+	}
+
+	empty := ""
+	updated, err := svc.UpdatePage(wsID, p1.ID, wiki.UpdatePageInput{Title: &empty, MemberID: memID})
+	if err != nil {
+		t.Fatalf("update empty title: %v", err)
+	}
+	if updated.Title != "无标题" {
+		t.Fatalf("update empty title: want 无标题, got %q", updated.Title)
+	}
+}

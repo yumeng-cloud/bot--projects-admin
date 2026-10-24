@@ -6,11 +6,18 @@ import React, {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import { Button, Empty, Space, Spin, Typography, message } from 'antd'
-import { LeftOutlined, ReloadOutlined, RightOutlined } from '@ant-design/icons'
+import { Button, Empty, Spin, Typography, Tooltip, message } from 'antd'
 import { listIssues, patchIssue } from '../../api/issues'
 import { ApiError } from '../../api/client'
-import { TimelineBar, TimelineTreeRow } from '../../components/timeline'
+import {
+  TimelineBar,
+  TimelineTreeRow,
+  TimelineBarMenu,
+  TimelineAxisDrawTrack,
+  TimelineUnscheduledDragSource,
+  TimelineAxisDayDropTarget,
+  TimelineWeekBar,
+} from '../../components/timeline'
 import { IssueDrawer } from '../../components/issue'
 import { MockBanner } from '../../components/common/MockBanner'
 import type { Issue } from '../../types/issue'
@@ -158,6 +165,12 @@ function formatBarLabel(start: string, end: string): string {
   return a === b ? a : `${a} → ${b}`
 }
 
+function formatTooltipRange(start: string, end: string): string {
+  const a = dayjs.tz(start, TZ).format('MM/DD')
+  const b = dayjs.tz(end, TZ).format('MM/DD')
+  return a === b ? a : `${a} – ${b}`
+}
+
 function errorMessage(err: unknown, fallback: string): string {
   if (err instanceof ApiError) return err.message || fallback
   if (err instanceof Error && err.message) return err.message
@@ -179,6 +192,8 @@ export default function TimelinePage({ workspaceId, projectId }: TimelinePagePro
   const axisRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<DragState | null>(null)
   dragRef.current = drag
+  /** S9: onUp clears drag before click; suppress openIssue briefly after real drag/resize */
+  const suppressOpenRef = useRef(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -204,7 +219,8 @@ export default function TimelinePage({ workspaceId, projectId }: TimelinePagePro
   }, [load])
 
   const counts = useMemo(() => childCountMap(issues), [issues])
-  const forest = useMemo(() => buildForest(issues), [issues])
+  const scheduledIssues = useMemo(() => issues.filter((i) => !isUnscheduled(i)), [issues])
+  const forest = useMemo(() => buildForest(scheduledIssues), [scheduledIssues])
   const rows = useMemo(
     () => flattenVisible(forest, expanded, counts),
     [forest, expanded, counts],
@@ -217,6 +233,21 @@ export default function TimelinePage({ workspaceId, projectId }: TimelinePagePro
     for (let i = 0; i < AXIS_DAYS; i++) days.push(start.add(i, 'day'))
     return days
   }, [rangeStart])
+
+  const axisDayStrs = useMemo(() => axisDays.map((d) => d.format(DATE_FMT)), [axisDays])
+
+  /** S6: today column position for vertical line (UI 视觉 CSS) */
+  const todayAxisStyle = useMemo(() => {
+    const today = dayjs().tz(TZ).format(DATE_FMT)
+    const idx = axisDays.findIndex((d) => d.format(DATE_FMT) === today)
+    if (idx < 0) return null
+    const left = (idx / AXIS_DAYS) * 100
+    const width = 100 / AXIS_DAYS
+    return {
+      ['--acb-timeline-today-left' as string]: `${left}%`,
+      ['--acb-timeline-today-width' as string]: `${width}%`,
+    } as React.CSSProperties
+  }, [axisDays])
 
   const rangeEnd = useMemo(
     () => addDays(rangeStart, AXIS_DAYS - 1),
@@ -239,6 +270,11 @@ export default function TimelinePage({ workspaceId, projectId }: TimelinePagePro
   }
 
   const openIssue = (issue: Issue) => {
+    // S9: consume suppress from effective drag/resize (pure click never sets it)
+    if (suppressOpenRef.current) {
+      suppressOpenRef.current = false
+      return
+    }
     setCurrent(issue)
     setDrawerOpen(true)
   }
@@ -313,6 +349,35 @@ export default function TimelinePage({ workspaceId, projectId }: TimelinePagePro
     await commitDates(issue, start, end)
   }
 
+  const clearSchedule = async (issue: Issue) => {
+    const prev = issue
+    setIssues((list) =>
+      list.map((i) =>
+        i.id === issue.id ? { ...i, start_at: null, due_at: null } : i,
+      ),
+    )
+    setCurrent((c) =>
+      c && c.id === issue.id ? { ...c, start_at: null, due_at: null } : c,
+    )
+    setPatchingId(issue.id)
+    try {
+      const { issue: saved } = await patchIssue(workspaceId, issue.id, {
+        version: issue.version,
+        start_at: null,
+        due_at: null,
+      })
+      setIssues((list) => list.map((i) => (i.id === saved.id ? saved : i)))
+      setCurrent((c) => (c && c.id === saved.id ? saved : c))
+      message.success('已清除排期')
+    } catch (err) {
+      setIssues((list) => list.map((i) => (i.id === prev.id ? prev : i)))
+      setCurrent((c) => (c && c.id === prev.id ? prev : c))
+      if (!(err instanceof ApiError)) message.error(errorMessage(err, '清除排期失败'))
+    } finally {
+      setPatchingId(null)
+    }
+  }
+
   const dayWidthPx = (): number => {
     const el = axisRef.current
     if (!el) return 40
@@ -376,9 +441,20 @@ export default function TimelinePage({ workspaceId, projectId }: TimelinePagePro
 
     const onUp = () => {
       const d = dragRef.current
+      // S9: only suppress drawer open when dates actually changed (pure click still opens)
+      const moved = !!(
+        d &&
+        (d.previewStart !== d.startDay || d.previewEnd !== d.endDay)
+      )
+      if (moved) {
+        suppressOpenRef.current = true
+        window.setTimeout(() => {
+          suppressOpenRef.current = false
+        }, 300)
+      }
       setDrag(null)
       if (!d) return
-      if (d.previewStart === d.startDay && d.previewEnd === d.endDay) return
+      if (!moved) return
       const issue = issueById.get(d.issueId)
       if (!issue) return
       void commitDates(issue, d.previewStart, d.previewEnd, { silentOk: true })
@@ -414,24 +490,13 @@ export default function TimelinePage({ workspaceId, projectId }: TimelinePagePro
             左树右轴 · 默认周视图 · 拖条改期（Asia/Shanghai 日历日）
           </Typography.Text>
         </div>
-        <Space size={8}>
-          <Button type="text" size="small" icon={<LeftOutlined />} onClick={() => shiftAxis(-1)}>
-            上一周
-          </Button>
-          <Button
-            type="text"
-            size="small"
-            onClick={() => setRangeStart(dayjs().tz(TZ).startOf('week').format(DATE_FMT))}
-          >
-            本周
-          </Button>
-          <Button type="text" size="small" icon={<RightOutlined />} onClick={() => shiftAxis(1)}>
-            下一周
-          </Button>
-          <Button type="text" size="small" icon={<ReloadOutlined />} onClick={() => void load()}>
-            刷新
-          </Button>
-        </Space>
+        <TimelineWeekBar
+          onPrevWeek={() => shiftAxis(-1)}
+          onThisWeek={() => setRangeStart(dayjs().tz(TZ).startOf('week').format(DATE_FMT))}
+          onNextWeek={() => shiftAxis(1)}
+          onRefresh={() => void load()}
+          refreshDisabled={!!drag}
+        />
       </div>
 
       {loading ? (
@@ -448,105 +513,130 @@ export default function TimelinePage({ workspaceId, projectId }: TimelinePagePro
           >
             <div className="acb-timeline-tree-pane">
               <div className="acb-timeline-tree-head">Issue</div>
-              {rows.map((row) => {
-                const unsch = isUnscheduled(row.issue)
-                return (
-                  <TimelineTreeRow
-                    key={row.issue.id}
-                    level={row.depth}
-                    expandable={row.expandable}
-                    expanded={expanded.has(row.issue.id)}
-                    onToggleExpand={() => toggleExpand(row.issue.id)}
-                    identifier={row.issue.identifier}
-                    title={row.issue.title}
-                    leafBadge={row.isLeaf}
-                    unscheduled={unsch}
-                    selected={current?.id === row.issue.id}
-                    onClick={() => openIssue(row.issue)}
-                    trailing={
-                      <span
-                        style={{
-                          fontSize: 10,
-                          color: 'var(--acb-text-tertiary)',
-                          flex: '0 0 auto',
-                          maxWidth: 48,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                        title={STATUS_LABELS[row.issue.status]}
-                      >
-                        {STATUS_LABELS[row.issue.status]}
-                      </span>
-                    }
-                  />
-                )
-              })}
+              {rows.map((row) => (
+                <TimelineTreeRow
+                  key={row.issue.id}
+                  level={row.depth}
+                  expandable={row.expandable}
+                  expanded={expanded.has(row.issue.id)}
+                  onToggleExpand={() => toggleExpand(row.issue.id)}
+                  identifier={row.issue.identifier}
+                  title={row.issue.title}
+                  leafBadge={row.isLeaf}
+                  selected={current?.id === row.issue.id}
+                  onClick={() => openIssue(row.issue)}
+                  trailing={
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: 'var(--acb-text-tertiary)',
+                        flex: '0 0 auto',
+                        maxWidth: 48,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                      title={STATUS_LABELS[row.issue.status]}
+                    >
+                      {STATUS_LABELS[row.issue.status]}
+                    </span>
+                  }
+                />
+              ))}
             </div>
             <div className="acb-timeline-axis-pane">
-              <div className="acb-timeline-axis-inner" ref={axisRef}>
-                <div className="acb-timeline-axis-head">
-                  {axisDays.map((d) => {
-                    const isToday = d.format(DATE_FMT) === dayjs().tz(TZ).format(DATE_FMT)
-                    const isWeekStart = d.day() === 1 || d.date() === 1
+              <TimelineAxisDayDropTarget
+                days={axisDayStrs}
+                addDays={addDays}
+                onDropIssue={({ issueId, startDay, endDay }) => {
+                  const iss = issueById.get(issueId)
+                  if (iss) void commitDates(iss, startDay, endDay)
+                }}
+              >
+                <div
+                  className={
+                    'acb-timeline-axis-inner' + (todayAxisStyle ? ' has-today-line' : '')
+                  }
+                  ref={axisRef}
+                  style={todayAxisStyle || undefined}
+                >
+                  <div className="acb-timeline-axis-head">
+                    {axisDays.map((d) => {
+                      const isToday = d.format(DATE_FMT) === dayjs().tz(TZ).format(DATE_FMT)
+                      const isWeekStart = d.day() === 1 || d.date() === 1
+                      return (
+                        <div
+                          key={d.format(DATE_FMT)}
+                          className={
+                            'acb-timeline-axis-day' +
+                            (isToday ? ' is-today' : '') +
+                            (isToday || isWeekStart ? ' is-mark' : '')
+                          }
+                          title={d.format('YYYY-MM-DD ddd')}
+                        >
+                          {d.format('M/D')}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {rows.map((row) => {
+                    const range = effectiveRange(row.issue)!
+                    const left = pctForDay(range.start, rangeStart, AXIS_DAYS)
+                    const width = widthPctForRange(range.start, range.end, AXIS_DAYS)
+                    const inView = range.end >= rangeStart && range.start <= rangeEnd
+                    const tip = formatTooltipRange(range.start, range.end)
                     return (
-                      <div
-                        key={d.format(DATE_FMT)}
-                        className={
-                          'acb-timeline-axis-day' +
-                          (isToday ? ' is-today' : '') +
-                          (isToday || isWeekStart ? ' is-mark' : '')
-                        }
-                        title={d.format('YYYY-MM-DD ddd')}
+                      <TimelineAxisDrawTrack
+                        key={row.issue.id}
+                        days={axisDayStrs}
+                        onDrawComplete={({ startDay, endDay }) => {
+                          void commitDates(row.issue, startDay, endDay)
+                        }}
                       >
-                        {d.format('M/D')}
-                      </div>
+                        <div
+                          onPointerDown={(e) => onBarPointerDown(e, row.issue)}
+                          onClick={(e) => {
+                            // S9: dragRef 在 onUp 已清空，还需看 suppressOpenRef
+                            if (suppressOpenRef.current) {
+                              suppressOpenRef.current = false
+                              return
+                            }
+                            if (dragRef.current) return
+                            if ((e.target as HTMLElement).closest?.('[data-handle]')) return
+                            openIssue(row.issue)
+                          }}
+                          style={{
+                            opacity: patchingId === row.issue.id ? 0.7 : inView ? 1 : 0.45,
+                            cursor: 'grab',
+                          }}
+                        >
+                          <Tooltip title={tip}>
+                            <div>
+                              <TimelineBar
+                                leftPct={left}
+                                widthPct={Math.max(width, 100 / AXIS_DAYS)}
+                                label={formatBarLabel(range.start, range.end)}
+                                startLabel={range.start}
+                                endLabel={range.end}
+                                status={row.issue.status}
+                                draggableHint
+                                resizableHint
+                                menu={
+                                  <TimelineBarMenu
+                                    onOpenDetail={() => openIssue(row.issue)}
+                                    onClearSchedule={() => void clearSchedule(row.issue)}
+                                    onScheduleThisWeek={() => void scheduleThisWeek(row.issue)}
+                                    disabled={patchingId === row.issue.id}
+                                  />
+                                }
+                              />
+                            </div>
+                          </Tooltip>
+                        </div>
+                      </TimelineAxisDrawTrack>
                     )
                   })}
                 </div>
-                {rows.map((row) => {
-                  const range = effectiveRange(row.issue)
-                  if (!range) {
-                    return (
-                      <div
-                        key={row.issue.id}
-                        onClick={() => openIssue(row.issue)}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <TimelineBar unscheduled label="未排期" muted />
-                      </div>
-                    )
-                  }
-                  const left = pctForDay(range.start, rangeStart, AXIS_DAYS)
-                  const width = widthPctForRange(range.start, range.end, AXIS_DAYS)
-                  const inView = range.end >= rangeStart && range.start <= rangeEnd
-                  return (
-                    <div
-                      key={row.issue.id}
-                      onPointerDown={(e) => onBarPointerDown(e, row.issue)}
-                      onClick={(e) => {
-                        // 避免拖完立刻点开；仅无拖时打开
-                        if (dragRef.current) return
-                        if ((e.target as HTMLElement).closest?.('[data-handle]')) return
-                        openIssue(row.issue)
-                      }}
-                      style={{
-                        opacity: patchingId === row.issue.id ? 0.7 : inView ? 1 : 0.45,
-                        cursor: 'grab',
-                      }}
-                    >
-                      <TimelineBar
-                        leftPct={left}
-                        widthPct={Math.max(width, 100 / AXIS_DAYS)}
-                        label={formatBarLabel(range.start, range.end)}
-                        startLabel={range.start}
-                        endLabel={range.end}
-                        draggableHint
-                        resizableHint
-                      />
-                    </div>
-                  )
-                })}
-              </div>
+              </TimelineAxisDayDropTarget>
             </div>
           </div>
 
@@ -557,7 +647,7 @@ export default function TimelinePage({ workspaceId, projectId }: TimelinePagePro
                 type="secondary"
                 style={{ fontSize: 12, display: 'block', marginBottom: 6 }}
               >
-                未排期（{unscheduled.length}）— 无 start_at / due_at，可「排到本周」或打开抽屉设期
+                未排期（{unscheduled.length}）— 拖到上方轴松手落该日起 3 天；或「排到本周」/打开抽屉
               </Typography.Text>
               <div
                 style={{
@@ -568,39 +658,44 @@ export default function TimelinePage({ workspaceId, projectId }: TimelinePagePro
                 }}
               >
                 {unscheduled.map((iss) => (
-                  <div
+                  <TimelineUnscheduledDragSource
                     key={iss.id}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'minmax(240px, 320px) 1fr',
-                      alignItems: 'center',
-                    }}
+                    issueId={iss.id}
+                    disabled={patchingId === iss.id}
                   >
-                    <TimelineTreeRow
-                      identifier={iss.identifier}
-                      title={iss.title}
-                      unscheduled
-                      leafBadge={(counts.get(iss.id) || 0) === 0}
-                      onClick={() => openIssue(iss)}
-                      trailing={
-                        <Button
-                          type="link"
-                          size="small"
-                          style={{ fontSize: 11, padding: 0, height: 'auto' }}
-                          disabled={patchingId === iss.id}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            void scheduleThisWeek(iss)
-                          }}
-                        >
-                          排到本周
-                        </Button>
-                      }
-                    />
-                    <div onClick={() => openIssue(iss)} style={{ cursor: 'pointer' }}>
-                      <TimelineBar unscheduled label="未排期" />
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'minmax(240px, 320px) 1fr',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <TimelineTreeRow
+                        identifier={iss.identifier}
+                        title={iss.title}
+                        unscheduled
+                        leafBadge={(counts.get(iss.id) || 0) === 0}
+                        onClick={() => openIssue(iss)}
+                        trailing={
+                          <Button
+                            type="link"
+                            size="small"
+                            style={{ fontSize: 11, padding: 0, height: 'auto' }}
+                            disabled={patchingId === iss.id}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              void scheduleThisWeek(iss)
+                            }}
+                          >
+                            排到本周
+                          </Button>
+                        }
+                      />
+                      <div onClick={() => openIssue(iss)} style={{ cursor: 'pointer' }}>
+                        <TimelineBar unscheduled label="未排期" />
+                      </div>
                     </div>
-                  </div>
+                  </TimelineUnscheduledDragSource>
                 ))}
               </div>
             </div>

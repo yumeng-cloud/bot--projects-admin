@@ -16,7 +16,7 @@
 | PATCH | `/workspaces/{ws}/wiki/spaces/{spaceID}` | 更新 |
 | DELETE | `/workspaces/{ws}/wiki/spaces/{spaceID}` | 删除（级联页面） |
 | GET | `/workspaces/{ws}/wiki/spaces/{spaceID}/pages` | 列出页面 |
-| POST | `/workspaces/{ws}/wiki/spaces/{spaceID}/pages` | 创建页 `{title,slug?,body_md,parent_id?,project_id?,issue_id?}` |
+| POST | `/workspaces/{ws}/wiki/spaces/{spaceID}/pages` | 创建页 `{title?,slug?,body_md?,parent_id?,project_id?,issue_id?}`；title 可空，默认「无标题」；parent_id 省略=根 |
 | GET | `/workspaces/{ws}/wiki/pages/{pageID}` | 页面详情（`body_md` 为 Markdown） |
 | PATCH | `/workspaces/{ws}/wiki/pages/{pageID}` | 更新 |
 | DELETE | `/workspaces/{ws}/wiki/pages/{pageID}` | 删除 |

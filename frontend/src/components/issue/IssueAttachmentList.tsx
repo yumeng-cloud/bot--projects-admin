@@ -101,6 +101,7 @@ export function IssueAttachmentList({
   deletingId,
 }: Props) {
   if (attachments.length === 0) {
+    if (!emptyText) return null
     return <div className="acb-issue-muted-empty">{emptyText}</div>
   }
 

@@ -232,3 +232,6 @@ Bot：只领叶子（无子节点）；父节点只聚合；禁 Bot 自创游离
 - API 概览：[`API.md`](./API.md)  
 - Bot：[`BOT.md`](./BOT.md)、[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md)（其中「不要求时间线」已被本裁定推翻）  
 - Cycle UI：`frontend/src/pages/cycles/CyclesPage.tsx`（容量列表，非 Timeline）
+
+
+续：划线便捷操作见 [`SCHEDULING_UX_P1.md`](./SCHEDULING_UX_P1.md)。

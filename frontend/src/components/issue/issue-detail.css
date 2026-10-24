@@ -71,6 +71,9 @@
 
 .acb-issue-title-wrap {
   margin-bottom: 22px;
+  /* P1: first glyph must never clip */
+  padding-inline-start: 4px;
+  overflow: visible;
 }
 
 .acb-issue-title-input.ant-input,
@@ -79,9 +82,9 @@
   font-size: 25px !important;
   font-weight: 600;
   line-height: 1.28;
-  letter-spacing: -0.025em;
+  letter-spacing: 0;
   color: var(--acb-text);
-  padding: 2px 0 !important;
+  padding: 2px 2px 2px 0 !important;
   border: none !important;
   box-shadow: none !important;
   background: transparent !important;
@@ -95,7 +98,7 @@
 /* Description wrap — ByteMD lives inside (see .acb-issue-md below) */
 .acb-issue-desc-wrap {
   margin-bottom: 8px;
-  min-height: 220px;
+  min-height: 180px;
 }
 
 .acb-issue-main-sections {
@@ -111,11 +114,16 @@
 .acb-issue-section-title,
 .acb-issue-section-label {
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 450;
   color: var(--acb-text-tertiary);
-  margin: 0 0 12px;
-  letter-spacing: 0.02em;
+  margin: 0 0 8px;
+  letter-spacing: 0.015em;
   text-transform: none;
+}
+/* R5: comments title → list tighter */
+.acb-issue-comments > .acb-issue-section-label,
+.acb-issue-comments > .acb-issue-section-title {
+  margin-bottom: 6px;
 }
 
 .acb-issue-muted-empty {
@@ -141,11 +149,26 @@
   gap: 8px;
 }
 
+/* P6: comment delete — hidden until hover / focus-within */
+.acb-issue-comment-delete {
+  opacity: 0 !important;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.12s ease, visibility 0.12s ease;
+}
+.acb-issue-comment-item:hover .acb-issue-comment-delete,
+.acb-issue-comment-item:focus-within .acb-issue-comment-delete,
+.acb-issue-comment-delete.ant-btn-loading {
+  opacity: 1 !important;
+  visibility: visible;
+  pointer-events: auto;
+}
+
 .acb-issue-comment-compose,
 .acb-issue-comment-composer {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--acb-border-secondary);
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--acb-border-secondary) 55%, transparent);
 }
 
 .acb-issue-comment-compose .ant-input,
@@ -154,7 +177,7 @@
   line-height: 1.55;
   border-color: transparent !important;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--acb-text) 3.5%, var(--acb-bg-container)) !important;
+  background: color-mix(in srgb, var(--acb-text) 2%, var(--acb-bg-container)) !important;
   box-shadow: none !important;
   padding: 8px 10px !important;
   resize: none;
@@ -194,10 +217,11 @@
 
 .acb-issue-activity-fold .ant-collapse-header,
 .acb-issue-activity .ant-collapse-header {
-  padding: 12px 0 !important;
-  font-size: 12px !important;
-  font-weight: 600;
-  color: var(--acb-text-secondary) !important;
+  padding: 8px 0 !important;
+  font-size: 11px !important;
+  font-weight: 450;
+  color: var(--acb-text-tertiary) !important;
+  letter-spacing: 0.015em;
   align-items: center !important;
 }
 
@@ -209,11 +233,11 @@
 
 .acb-issue-activity-fold .ant-collapse-content-box,
 .acb-issue-activity .ant-collapse-content-box {
-  padding: 0 0 14px !important;
+  padding: 0 0 8px !important;
 }
 
 .acb-activity-timeline .ant-timeline-item {
-  padding-bottom: 10px;
+  padding-bottom: 6px;
 }
 
 /* —— Property rail (right) — ~312 (B4: 300–320), breathing rows —— */
@@ -223,8 +247,8 @@
   flex-shrink: 0;
   overflow-y: auto;
   border-left: 1px solid var(--acb-border-secondary);
-  background: color-mix(in srgb, var(--acb-bg-layout) 55%, var(--acb-bg-container));
-  padding: 14px 14px 24px;
+  background: color-mix(in srgb, var(--acb-bg-layout) 12%, var(--acb-bg-container));
+  padding: 12px 12px 20px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -242,15 +266,15 @@
   display: none;
 }
 
-/* Horizontal label | value — row ~32px, label muted but readable */
+/* Horizontal label | value — row ~36px (B4), tighter breathing (P5) */
 .acb-property-row {
   display: flex;
   align-items: center;
   min-height: 36px;
   height: auto;
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 6px;
-  gap: 6px;
+  gap: 8px;
   border: none;
   background: transparent;
 }
@@ -288,8 +312,10 @@
 
 .acb-property-row__value .ant-select-selector,
 .acb-property-row__value .ant-input-number,
+.acb-property-row__value .ant-picker,
 .acb-property-value .ant-select-selector,
-.acb-property-value .ant-input-number {
+.acb-property-value .ant-input-number,
+.acb-property-value .ant-picker {
   padding-inline: 4px !important;
   min-height: 26px !important;
   border: none !important;
@@ -300,7 +326,11 @@
 .acb-property-row__value .ant-select-focused .ant-select-selector,
 .acb-property-value .ant-select-focused .ant-select-selector,
 .acb-property-row__value .ant-select:hover .ant-select-selector,
-.acb-property-value .ant-select:hover .ant-select-selector {
+.acb-property-value .ant-select:hover .ant-select-selector,
+.acb-property-row__value .ant-picker-focused,
+.acb-property-value .ant-picker-focused,
+.acb-property-row__value .ant-picker:hover,
+.acb-property-value .ant-picker:hover {
   border: none !important;
   box-shadow: none !important;
   background: transparent !important;
@@ -349,6 +379,39 @@
   font-size: 11px;
   color: var(--acb-text-tertiary);
   padding-inline: 2px;
+  opacity: 0.2;
+  transition: opacity 0.12s ease;
+}
+.acb-property-row:hover .acb-property-suffix,
+.acb-property-row:focus-within .acb-property-suffix {
+  opacity: 0.85;
+}
+
+/* R4: select arrows / date picker icons — quiet until row hover/focus */
+.acb-property-row .ant-select-arrow,
+.acb-property-row .ant-select-clear,
+.acb-property-row .ant-picker-suffix,
+.acb-property-row .ant-picker-clear,
+.acb-property-row .ant-input-number-handler-wrap {
+  opacity: 0.18 !important;
+  transition: opacity 0.12s ease;
+}
+.acb-property-row:hover .ant-select-arrow,
+.acb-property-row:hover .ant-select-clear,
+.acb-property-row:hover .ant-picker-suffix,
+.acb-property-row:hover .ant-picker-clear,
+.acb-property-row:hover .ant-input-number-handler-wrap,
+.acb-property-row:focus-within .ant-select-arrow,
+.acb-property-row:focus-within .ant-select-clear,
+.acb-property-row:focus-within .ant-picker-suffix,
+.acb-property-row:focus-within .ant-picker-clear,
+.acb-property-row:focus-within .ant-input-number-handler-wrap {
+  opacity: 0.85 !important;
+}
+/* Keep open/active select arrow readable even without row hover */
+.acb-property-row .ant-select-open .ant-select-arrow,
+.acb-property-row .ant-picker-focused .ant-picker-suffix {
+  opacity: 0.9 !important;
 }
 
 /* Relations block in rail */
@@ -359,10 +422,11 @@
 }
 
 .acb-props-rail-section-title {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--acb-text-secondary);
-  margin: 0 0 8px 6px;
+  font-size: 11px;
+  font-weight: 450;
+  color: var(--acb-text-tertiary);
+  margin: 0 0 4px 4px;
+  letter-spacing: 0.015em;
 }
 
 .acb-rel-list {
@@ -379,9 +443,9 @@
   gap: 4px;
   font-size: 12px;
   line-height: 1.35;
-  padding: 4px 4px;
+  padding: 2px 4px;
   border-radius: 4px;
-  min-height: 28px;
+  min-height: 26px;
 }
 
 .acb-rel-item:hover {
@@ -397,11 +461,11 @@
 
 /* —— ByteMD skin (.acb-issue-md) — Linear writing surface —— */
 .acb-issue-md {
-  min-height: 220px;
+  min-height: 180px;
 }
 .acb-issue-md .bytemd {
   height: auto;
-  min-height: 240px;
+  min-height: 180px;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -441,7 +505,7 @@
   display: none !important;
 }
 .acb-issue-md .bytemd-body {
-  min-height: 220px;
+  min-height: 160px;
   border: none;
 }
 .acb-issue-md .CodeMirror,
@@ -455,7 +519,7 @@
   padding: 4px 0 12px;
 }
 .acb-issue-md .CodeMirror-scroll {
-  min-height: 200px !important;
+  min-height: 160px !important;
 }
 .acb-issue-md .CodeMirror-placeholder,
 .acb-issue-md .CodeMirror pre.CodeMirror-placeholder {
@@ -504,10 +568,29 @@
   }
 }
 
+
+/* —— P4 / P4′: empty + unfocused — hide ByteMD chrome (tabs+icons) —— */
+.acb-issue-md.is-empty:not(:focus-within) .bytemd-toolbar-left {
+  display: none;
+}
+.acb-issue-md.is-empty:not(:focus-within) .bytemd-toolbar {
+  display: none;
+  height: 0;
+  min-height: 0;
+  opacity: 0;
+  pointer-events: none;
+  border-bottom-color: transparent;
+  padding: 0;
+  overflow: hidden;
+}
+.acb-issue-md.is-empty:not(:focus-within) .bytemd-toolbar-right {
+  opacity: 0;
+  pointer-events: none;
+}
 /* —— Empty preview placeholder (frontend) —— */
 .acb-issue-md.is-empty .bytemd-preview .markdown-body:empty::before,
 .acb-issue-md.is-empty .bytemd-preview .markdown-body::before {
-  content: '还没有描述…';
+  content: '添加描述…';
   display: block;
   color: var(--acb-text-tertiary);
   font-size: 14px;
@@ -516,19 +599,45 @@
   font-weight: 400;
 }
 .acb-issue-md.is-empty .bytemd-preview {
-  min-height: 200px;
+  min-height: 160px;
 }
 .acb-issue-md.is-empty .bytemd-preview .markdown-body {
   min-height: 1.68em;
   position: relative;
 }
 
+/* —— R6: empty description — no box until focus / non-empty —— */
+.acb-issue-md.is-empty:not(:focus-within) .bytemd {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.acb-issue-md.is-empty:not(:focus-within) .bytemd-body,
+.acb-issue-md.is-empty:not(:focus-within) .CodeMirror,
+.acb-issue-md.is-empty:not(:focus-within) .bytemd-preview {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+/* Focused or non-empty: very faint bottom edge only — not a heavy frame */
+.acb-issue-md:focus-within .bytemd,
+.acb-issue-md:not(.is-empty) .bytemd {
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--acb-border-secondary) 55%, transparent);
+  background: transparent;
+  box-shadow: none;
+}
+.acb-issue-md:focus-within .bytemd-toolbar {
+  border-bottom-color: color-mix(in srgb, var(--acb-border-secondary) 70%, transparent);
+}
+
+
 /* —— Attachments (Linear density: one compact row) —— */
 .acb-issue-attachments {
   margin-top: 16px;
   margin-bottom: 4px;
   padding-top: 16px;
-  border-top: 1px solid var(--acb-border);
+  border-top: 1px solid var(--acb-border-secondary);
 }
 
 .acb-issue-attachments-head {
@@ -536,7 +645,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .acb-issue-attachment-add-btn.ant-btn {
@@ -737,18 +846,19 @@ button.acb-issue-attachment-name-btn:hover {
   background: color-mix(in srgb, var(--acb-text) 5%, transparent) !important;
   color: var(--acb-text) !important;
 }
+/* R1 support: Save as ghost/text — React owns remove/blur; do not hide button */
 .acb-issue-drawer .ant-drawer-extra .ant-btn-primary {
-  background: color-mix(in srgb, var(--acb-primary) 12%, transparent) !important;
+  background: transparent !important;
   border-color: transparent !important;
   color: var(--acb-primary) !important;
   box-shadow: none !important;
   font-weight: 500;
   border-radius: 8px !important;
   height: 28px;
-  padding-inline: 12px;
+  padding-inline: 10px;
 }
 .acb-issue-drawer .ant-drawer-extra .ant-btn-primary:hover {
-  background: color-mix(in srgb, var(--acb-primary) 18%, transparent) !important;
+  background: color-mix(in srgb, var(--acb-primary) 8%, transparent) !important;
   color: var(--acb-primary) !important;
   border-color: transparent !important;
 }
@@ -757,16 +867,17 @@ button.acb-issue-attachment-name-btn:hover {
 }
 
 /* Comment send — quiet link-like, not muted grey brick */
+/* R2 support: send looks like text/link (React may change copy to ⌘Enter) */
 .acb-issue-comment-composer-actions .ant-btn-primary {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   color: var(--acb-primary) !important;
-  font-weight: 500;
+  font-weight: 450;
   font-size: 12px;
   height: 24px;
-  padding-inline: 8px;
-  border-radius: 6px !important;
+  padding-inline: 4px;
+  border-radius: 4px !important;
 }
 .acb-issue-comment-composer-actions .ant-btn-primary:hover:not(:disabled):not(.ant-btn-disabled) {
   background: color-mix(in srgb, var(--acb-primary) 10%, transparent) !important;
@@ -779,6 +890,73 @@ button.acb-issue-attachment-name-btn:hover {
   opacity: 1;
 }
 
+
+/* —— P3: quiet「添加关联」 —— */
+.acb-rel-add-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  margin: 0 2px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 450;
+  color: var(--acb-text-tertiary);
+  cursor: pointer;
+  line-height: 1.35;
+  font-family: inherit;
+  min-height: 26px;
+}
+.acb-rel-add-trigger:hover {
+  color: var(--acb-text-secondary);
+  background: color-mix(in srgb, var(--acb-text) 4%, transparent);
+}
+.acb-rel-add-form,
+.acb-rel-add-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px;
+  margin-top: 2px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+.acb-rel-add-form-row,
+.acb-rel-add-composer-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+.acb-rel-add-form-actions,
+.acb-rel-add-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.acb-rel-add-cancel {
+  appearance: none;
+  align-self: flex-end;
+  margin: 0;
+  padding: 2px 6px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 450;
+  font-family: inherit;
+  line-height: 1.35;
+  color: var(--acb-text-tertiary);
+  cursor: pointer;
+}
+.acb-rel-add-cancel:hover {
+  color: var(--acb-text-secondary);
+  background: color-mix(in srgb, var(--acb-text) 4%, transparent);
+}
 /* Relations add row — strip form-wall borders */
 .acb-props-rail-section .ant-select-selector,
 .acb-props-rail-section .ant-select:not(.ant-select-customize-input) .ant-select-selector {
@@ -806,4 +984,73 @@ button.acb-issue-attachment-name-btn:hover {
 /* Attachments divider quieter */
 .acb-issue-attachments {
   border-top-color: var(--acb-border-secondary) !important;
+}
+
+/* —— R3 support: quieter empty attachment chrome (React merges empty UI) —— */
+.acb-issue-attachments .acb-issue-muted-empty {
+  padding: 2px 0 4px;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--acb-text-tertiary) 85%, transparent);
+}
+.acb-issue-attachments-head .acb-issue-attachment-add-btn.ant-btn,
+.acb-issue-attachments .acb-issue-attachment-add-btn.ant-btn {
+  color: var(--acb-text-tertiary);
+  font-weight: 450;
+}
+.acb-issue-attachments-head .acb-issue-attachment-add-btn.ant-btn:hover,
+.acb-issue-attachments .acb-issue-attachment-add-btn.ant-btn:hover {
+  color: var(--acb-text-secondary);
+}
+.acb-issue-attachment-upload-hint {
+  opacity: 0.75;
+}
+
+
+/* —— R2 hooks: comment-send + attachments-empty (React classNames) —— */
+.acb-issue-comment-send.ant-btn-link,
+.acb-issue-comment-composer-actions .acb-issue-comment-send {
+  padding-inline: 4px !important;
+  height: 24px !important;
+  font-size: 12px !important;
+  font-weight: 450 !important;
+  color: var(--acb-primary) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.acb-issue-comment-send.ant-btn-link:hover:not(:disabled),
+.acb-issue-comment-composer-actions .acb-issue-comment-send:hover:not(:disabled) {
+  color: var(--acb-primary) !important;
+  background: color-mix(in srgb, var(--acb-primary) 8%, transparent) !important;
+}
+.acb-issue-comment-send.ant-btn-link:disabled,
+.acb-issue-comment-send.ant-btn-disabled {
+  color: var(--acb-text-tertiary) !important;
+  background: transparent !important;
+}
+
+.acb-issue-attachments-empty {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 2px 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+}
+.acb-issue-attachments-empty .acb-issue-attachment-add-btn,
+.acb-issue-attachments-empty button,
+.acb-issue-attachments-empty .ant-btn {
+  color: var(--acb-text-tertiary) !important;
+  font-size: 12px !important;
+  font-weight: 450 !important;
+  padding-inline: 2px !important;
+  height: 26px !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.acb-issue-attachments-empty .ant-btn:hover,
+.acb-issue-attachments-empty button:hover {
+  color: var(--acb-text-secondary) !important;
+  background: color-mix(in srgb, var(--acb-text) 4%, transparent) !important;
 }

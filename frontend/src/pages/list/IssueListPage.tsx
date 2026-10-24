@@ -13,6 +13,7 @@ import {
   message,
   Checkbox,
 } from 'antd'
+import type { Key } from 'react'
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import {
   createIssue,
@@ -24,12 +25,20 @@ import { IssueDrawer } from '../../components/issue'
 import { MockBanner } from '../../components/common/MockBanner'
 import type { Issue, IssuePriority, IssueStatus, Label, MemberRef } from '../../types/issue'
 import '../../components/board/board.css'
+import './list.css'
 import {
   ISSUE_STATUSES,
   PRIORITY_LABELS,
   STATUS_LABELS,
   memberLabel,
 } from '../../types/issue'
+import {
+  buildIssueTree,
+  hasActiveFilters,
+  isOrphanSubitem,
+  selectIssuesWithAncestors,
+  type IssueTreeRow,
+} from '../../utils/issueTree'
 
 export type IssueListPageProps = {
   workspaceId: string
@@ -42,6 +51,7 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
   const overdue = searchParams.get('overdue') === '1'
 
   const [loading, setLoading] = useState(true)
+  /** Full project list (unfiltered) so tree filters can keep ancestor context. */
   const [issues, setIssues] = useState<Issue[]>([])
   const [members, setMembers] = useState<MemberRef[]>([])
   const [labels, setLabels] = useState<Label[]>([])
@@ -54,6 +64,7 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
   const [current, setCurrent] = useState<Issue | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [creating, setCreating] = useState(false)
+  const [expandedRowKeys, setExpandedRowKeys] = useState<Key[]>([])
 
   const setFlag = (key: 'blocked' | 'overdue', on: boolean) => {
     setSearchParams(
@@ -79,21 +90,17 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
   const load = useCallback(async () => {
     setLoading(true)
     try {
+      // Fetch full project issues; status/priority/assignee/label/q/overdue applied client-side
+      // so matching children keep their ancestor chain. `blocked` stays API-side (needs relations).
       const { issues: list } = await listIssues(workspaceId, {
         project_id: projectId,
-        status,
-        assignee_id: assigneeId,
-        label_id: labelId,
-        q: q || undefined,
         blocked: blocked || undefined,
-        overdue: overdue || undefined,
       })
-      const filtered = priority ? list.filter((i) => i.priority === priority) : list
-      setIssues(filtered)
+      setIssues(list)
     } finally {
       setLoading(false)
     }
-  }, [workspaceId, projectId, status, assigneeId, labelId, q, priority, blocked, overdue])
+  }, [workspaceId, projectId, blocked])
 
   useEffect(() => {
     loadMeta()
@@ -107,6 +114,35 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
     const map = new Map(members.map((m) => [m.id, memberLabel(m)]))
     return (id: string | null) => (id ? map.get(id) || '成员' : '—')
   }, [members])
+
+  const filters = useMemo(
+    () => ({
+      status,
+      priority,
+      assigneeId,
+      labelId,
+      q: q || undefined,
+      overdue: overdue || undefined,
+    }),
+    [status, priority, assigneeId, labelId, q, overdue],
+  )
+
+  const { treeData, visibleIds, expandIds } = useMemo(() => {
+    const { visible, expandIds: ids } = selectIssuesWithAncestors(issues, filters)
+    const idSet = new Set(visible.map((i) => i.id))
+    return {
+      treeData: buildIssueTree(visible),
+      visibleIds: idSet,
+      expandIds: ids,
+    }
+  }, [issues, filters])
+
+  // When filters change, auto-expand ancestor paths so matches stay visible (Linear-like).
+  useEffect(() => {
+    if (hasActiveFilters(filters)) {
+      setExpandedRowKeys(expandIds)
+    }
+  }, [filters, expandIds])
 
   const handleCreate = async () => {
     const title = newTitle.trim()
@@ -171,14 +207,18 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
         <Select
           allowClear
           placeholder="状态"
-          size="small" style={{ width: 120 }} value={status}
+          size="small"
+          style={{ width: 120 }}
+          value={status}
           onChange={setStatus}
           options={ISSUE_STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] }))}
         />
         <Select
           allowClear
           placeholder="优先级"
-          size="small" style={{ width: 100 }} value={priority}
+          size="small"
+          style={{ width: 100 }}
+          value={priority}
           onChange={setPriority}
           options={(Object.keys(PRIORITY_LABELS) as IssuePriority[]).map((p) => ({
             value: p,
@@ -188,35 +228,35 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
         <Select
           allowClear
           placeholder="负责人"
-          size="small" style={{ width: 120 }} value={assigneeId}
+          size="small"
+          style={{ width: 120 }}
+          value={assigneeId}
           onChange={setAssigneeId}
           options={members.map((m) => ({ value: m.id, label: memberLabel(m) }))}
         />
         <Select
           allowClear
           placeholder="标签"
-          size="small" style={{ width: 120 }} value={labelId}
+          size="small"
+          style={{ width: 120 }}
+          value={labelId}
           onChange={setLabelId}
           options={labels.map((l) => ({ value: l.id, label: l.name }))}
         />
         <Input.Search
           allowClear
           placeholder="搜索标题 / 标识"
-          size="small" style={{ width: 200 }} onSearch={setQ}
+          size="small"
+          style={{ width: 200 }}
+          onSearch={setQ}
           onChange={(e) => {
             if (!e.target.value) setQ('')
           }}
         />
-        <Checkbox
-          checked={blocked}
-          onChange={(e) => setFlag('blocked', e.target.checked)}
-        >
+        <Checkbox checked={blocked} onChange={(e) => setFlag('blocked', e.target.checked)}>
           被阻塞
         </Checkbox>
-        <Checkbox
-          checked={overdue}
-          onChange={(e) => setFlag('overdue', e.target.checked)}
-        >
+        <Checkbox checked={overdue} onChange={(e) => setFlag('overdue', e.target.checked)}>
           已逾期
         </Checkbox>
       </Space>
@@ -225,26 +265,27 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
           <Spin />
         </div>
       ) : (
-        <Table
-          className="acb-list-table"
+        <Table<IssueTreeRow>
+          className="acb-list-table acb-list-tree"
           size="small"
           rowKey="id"
-          dataSource={issues}
+          dataSource={treeData}
+          indentSize={18}
+          expandable={{
+            expandedRowKeys,
+            onExpandedRowsChange: (keys) => setExpandedRowKeys([...keys]),
+            indentSize: 18,
+          }}
           locale={{
             emptyText: (
               <div className="acb-empty-panel">
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="还没有 Issue，新建一条"
-                >
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="还没有 Issue，新建一条">
                   <Button
                     type="primary"
                     size="small"
                     icon={<PlusOutlined />}
                     onClick={() => {
-                      const el = document.querySelector<HTMLInputElement>(
-                        '.acb-page-bar input',
-                      )
+                      const el = document.querySelector<HTMLInputElement>('.acb-page-bar input')
                       el?.focus()
                     }}
                   >
@@ -260,10 +301,22 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
               setOpen(true)
             },
             style: { cursor: 'pointer' },
+            className: record.parent_id ? 'acb-list-tree-child' : undefined,
           })}
           columns={[
             { title: '标识', dataIndex: 'identifier', width: 110 },
-            { title: '标题', dataIndex: 'title' },
+            {
+              title: '标题',
+              dataIndex: 'title',
+              render: (title: string, record: IssueTreeRow) => (
+                <span className="acb-list-title-cell">
+                  {isOrphanSubitem(record, visibleIds) ? (
+                    <Tag className="acb-list-subitem-hint">子项</Tag>
+                  ) : null}
+                  <span className="acb-list-title-text">{title}</span>
+                </span>
+              ),
+            },
             {
               title: '状态',
               dataIndex: 'status',

@@ -27,6 +27,13 @@ type Props = {
   cycles: Cycle[]
   onStatusChange: (s: IssueStatus) => void
   onPriorityChange: (p: IssuePriority) => void
+  /** R1: 其余属性即时 PATCH（可选，与 status/priority 同路径） */
+  onAssigneeChange?: (id: string | null) => void
+  onCycleChange?: (id: string | null) => void
+  onEstimateChange?: (v: number | null) => void
+  onLabelsChange?: (ids: string[]) => void
+  onStartAtChange?: (v: unknown) => void
+  onDueAtChange?: (v: unknown) => void
   // relations
   sideLoading: boolean
   relations: IssueRelation[]
@@ -57,6 +64,12 @@ export function IssuePropertyRail({
   cycles,
   onStatusChange,
   onPriorityChange,
+  onAssigneeChange,
+  onCycleChange,
+  onEstimateChange,
+  onLabelsChange,
+  onStartAtChange,
+  onDueAtChange,
   sideLoading,
   relations,
   relationChoices,
@@ -105,9 +118,11 @@ export function IssuePropertyRail({
               variant="borderless"
               size="small"
               allowClear
+              disabled={quickSaving}
               options={members.map((m) => ({ value: m.id, label: memberLabel(m) }))}
               placeholder="未指派"
               popupMatchSelectWidth={false}
+              onChange={(v) => onAssigneeChange?.(v ?? null)}
             />
           </Form.Item>
         </IssuePropertyRow>
@@ -118,13 +133,14 @@ export function IssuePropertyRail({
               variant="borderless"
               size="small"
               allowClear
+              disabled={quickSaving}
               options={cycles.map((c) => ({ value: c.id, label: c.name }))}
               placeholder="未划入"
               popupMatchSelectWidth={false}
+              onChange={(v) => onCycleChange?.(v ?? null)}
             />
           </Form.Item>
         </IssuePropertyRow>
-
 
         <IssuePropertyRow label="开始">
           <Form.Item name="start_at" noStyle>
@@ -136,6 +152,7 @@ export function IssuePropertyRail({
               placeholder="未设"
               style={{ width: '100%' }}
               disabled={quickSaving}
+              onChange={(v) => onStartAtChange?.(v)}
             />
           </Form.Item>
         </IssuePropertyRow>
@@ -150,6 +167,7 @@ export function IssuePropertyRail({
               placeholder="未设"
               style={{ width: '100%' }}
               disabled={quickSaving}
+              onChange={(v) => onDueAtChange?.(v)}
             />
           </Form.Item>
         </IssuePropertyRow>
@@ -162,7 +180,9 @@ export function IssuePropertyRail({
               min={0}
               placeholder="—"
               style={{ width: '100%' }}
+              disabled={quickSaving}
               addonAfter={<span className="acb-property-suffix">pt</span>}
+              onChange={(v) => onEstimateChange?.(typeof v === 'number' ? v : null)}
             />
           </Form.Item>
         </IssuePropertyRow>
@@ -174,9 +194,11 @@ export function IssuePropertyRail({
               size="small"
               mode="multiple"
               maxTagCount="responsive"
+              disabled={quickSaving}
               options={labels.map((l) => ({ value: l.id, label: l.name }))}
               placeholder="添加标签"
               popupMatchSelectWidth={false}
+              onChange={(v) => onLabelsChange?.(v as string[])}
             />
           </Form.Item>
         </IssuePropertyRow>

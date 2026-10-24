@@ -36,6 +36,8 @@ import {
   wikiTree,
 } from '../../api/wiki'
 import type { WikiPage as WikiPageT, WikiSpace, WikiTreeNode } from '../../types/wiki'
+import { formatWikiTime } from '../../utils/time'
+import './wiki.css'
 
 const { Sider, Content } = Layout
 const { TextArea } = Input
@@ -148,6 +150,11 @@ export default function WikiPage() {
     [pages],
   )
 
+  const openCreatePage = () => {
+    pageForm.resetFields()
+    setPageModal(true)
+  }
+
   const createSpace = async () => {
     const v = await spaceForm.validateFields()
     await createWikiSpace(wsId, v)
@@ -208,12 +215,15 @@ export default function WikiPage() {
     )
   }
 
+  const hasPages = Boolean(treeData.length || flatFallback.length)
+
   return (
     <Layout
-      className="acb-fill-page"
+      className="acb-fill-page acb-wiki-shell"
       style={{ background: themeToken.colorBgContainer, height: '100%', overflow: 'hidden' }}
     >
       <Sider
+        className="acb-wiki-sider"
         width={280}
         theme="light"
         style={{
@@ -282,15 +292,12 @@ export default function WikiPage() {
                   type="link"
                   icon={<PlusOutlined />}
                   disabled={!spaceId}
-                  onClick={() => {
-                    pageForm.resetFields()
-                    setPageModal(true)
-                  }}
+                  onClick={openCreatePage}
                 >
                   新建页
                 </Button>
               </Space>
-              {treeData.length || flatFallback.length ? (
+              {hasPages ? (
                 <Tree
                   showIcon
                   treeData={treeData.length ? treeData : flatFallback}
@@ -302,71 +309,98 @@ export default function WikiPage() {
                   }}
                 />
               ) : (
-                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无页面" />
+                <div className="acb-wiki-sider-empty acb-wiki-empty">
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description="这个空间还没有页面"
+                  />
+                  <p className="acb-wiki-empty-hint">从空白页开始，写会议纪要或产品约定</p>
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<PlusOutlined />}
+                    className="acb-wiki-empty-cta"
+                    disabled={!spaceId}
+                    onClick={openCreatePage}
+                  >
+                    新建第一页
+                  </Button>
+                </div>
               )}
             </>
           )}
         </Space>
       </Sider>
 
-      <Content style={{ padding: 20, overflow: 'auto', minWidth: 0, minHeight: 0, flex: 1 }}>
-        {pageLoading ? (
-          <Spin />
-        ) : !page ? (
-          <Empty description="选择或新建一个页面" />
-        ) : editing ? (
-          <Space direction="vertical" style={{ width: '100%' }} size="middle">
-            <Space>
-              <Button type="primary" onClick={saveEdit}>
-                保存
+      <Content className="acb-wiki-main" style={{ overflow: 'auto', minWidth: 0, minHeight: 0, flex: 1 }}>
+        <div className="acb-wiki-main-inner">
+          {pageLoading ? (
+            <Spin />
+          ) : !page ? (
+            <div className="acb-wiki-empty">
+              <Empty description={null} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              <p className="acb-wiki-empty-copy">
+                {hasPages ? '从左侧目录选择一页，或新建一页开始写' : '知识库还是空的，写下团队的第一页'}
+              </p>
+              <p className="acb-wiki-empty-hint">像写文档一样开始，不必填表单</p>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                className="acb-wiki-empty-cta"
+                disabled={!spaceId}
+                onClick={openCreatePage}
+              >
+                {hasPages ? '新建页面' : '新建第一页'}
               </Button>
-              <Button onClick={() => setEditing(false)}>取消</Button>
+            </div>
+          ) : editing ? (
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <div className="acb-wiki-main-toolbar">
+                <Space>
+                  <Button type="primary" onClick={saveEdit}>
+                    保存
+                  </Button>
+                  <Button onClick={() => setEditing(false)}>取消</Button>
+                </Space>
+              </div>
+              <Form form={editForm} layout="vertical">
+                <Form.Item name="title" rules={[{ required: true, message: '必填' }]}>
+                  <Input className="acb-wiki-title-input" placeholder="无标题" />
+                </Form.Item>
+                <Form.Item name="body_md">
+                  <TextArea
+                    className="acb-wiki-md"
+                    rows={20}
+                    placeholder="开始写点什么…"
+                    style={{ fontFamily: 'ui-monospace, monospace' }}
+                  />
+                </Form.Item>
+              </Form>
             </Space>
-            <Form form={editForm} layout="vertical">
-              <Form.Item name="title" label="标题" rules={[{ required: true, message: '必填' }]}>
-                <Input />
-              </Form.Item>
-              <Form.Item name="body_md" label="正文 (Markdown)">
-                <TextArea rows={20} style={{ fontFamily: 'ui-monospace, monospace' }} />
-              </Form.Item>
-            </Form>
-          </Space>
-        ) : (
-          <Space direction="vertical" style={{ width: '100%' }} size="middle">
-            <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-              <Typography.Title level={3} style={{ margin: 0 }}>
-                {page.title}
-              </Typography.Title>
-              <Space>
-                <Button icon={<EditOutlined />} onClick={() => setEditing(true)}>
-                  编辑
-                </Button>
-                <Button danger icon={<DeleteOutlined />} onClick={removePage}>
-                  删除
-                </Button>
-              </Space>
+          ) : (
+            <Space direction="vertical" style={{ width: '100%' }} size={0}>
+              <div className="acb-wiki-main-toolbar">
+                <Typography.Title level={3} className="acb-wiki-title">
+                  {page.title}
+                </Typography.Title>
+                <Space>
+                  <Button icon={<EditOutlined />} onClick={() => setEditing(true)}>
+                    编辑
+                  </Button>
+                  <Button danger icon={<DeleteOutlined />} onClick={removePage}>
+                    删除
+                  </Button>
+                </Space>
+              </div>
+              <Typography.Paragraph className="acb-wiki-meta">
+                更新于 {formatWikiTime(page.updated_at)}
+              </Typography.Paragraph>
+              <pre className={`acb-wiki-body${!page.body_md ? ' is-empty' : ''}`}>
+                {page.body_md || '开始写点什么…'}
+              </pre>
             </Space>
-            <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-              更新于 {page.updated_at || '—'}
-            </Typography.Paragraph>
-            <pre
-              style={{
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                fontSize: 13,
-                lineHeight: 1.6,
-                margin: 0,
-                padding: 16,
-                background: themeToken.colorFillQuaternary,
-                borderRadius: 6,
-                border: `1px solid ${themeToken.colorBorderSecondary}`,
-              }}
-            >
-              {page.body_md || '（空）'}
-            </pre>
-          </Space>
-        )}
+          )}
+        </div>
       </Content>
 
       <Modal

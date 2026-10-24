@@ -11,8 +11,7 @@ type Props = {
 }
 
 /**
- * 描述区旁「附件」区块：紧凑列表 +「添加附件」。
- * List/Delete 硬接 Issue 域；上传失败由 Upload 中文 Toast。
+ * 描述区旁「附件」区块（R3）：空态仅「添加附件…」；有文件再出列表+轻量添加。
  */
 export function IssueAttachmentSection({ workspaceId, issueId }: Props) {
   const [attachments, setAttachments] = useState<IssueAttachment[]>([])
@@ -30,7 +29,6 @@ export function IssueAttachmentSection({ workspaceId, issueId }: Props) {
         setAttachments(res.attachments || [])
       })
       .catch(() => {
-        // api() 已 Toast
         setAttachments([])
       })
       .finally(() => setLoading(false))
@@ -51,32 +49,47 @@ export function IssueAttachmentSection({ workspaceId, issueId }: Props) {
         message.success('已删除')
         reload()
       })
-      .catch(() => {
-        // api() 已 Toast
-      })
+      .catch(() => {})
       .finally(() => setDeletingId(undefined))
   }
 
+  const empty = attachments.length === 0
+
   return (
     <div className="acb-issue-attachments">
-      <div className="acb-issue-attachments-head">
-        <div className="acb-issue-section-label" style={{ marginBottom: 0 }}>
-          附件{attachments.length > 0 ? ` (${attachments.length})` : ''}
+      {empty ? (
+        <div className="acb-issue-attachments-empty">
+          <IssueAttachmentUpload
+            workspaceId={workspaceId}
+            issueId={issueId}
+            label="添加附件…"
+            onUploaded={reload}
+          />
         </div>
-        <IssueAttachmentUpload
-          workspaceId={workspaceId}
-          issueId={issueId}
-          label="添加附件"
-          onUploaded={reload}
-        />
-      </div>
-      <Spin spinning={loading} size="small">
-        <IssueAttachmentList
-          attachments={attachments}
-          onDelete={handleDelete}
-          deletingId={deletingId}
-        />
-      </Spin>
+      ) : (
+        <>
+          <div className="acb-issue-attachments-head">
+            <div className="acb-issue-section-label" style={{ marginBottom: 0 }}>
+              附件 ({attachments.length})
+            </div>
+            <IssueAttachmentUpload
+              workspaceId={workspaceId}
+              issueId={issueId}
+              label="添加附件"
+              onUploaded={reload}
+            />
+          </div>
+          <Spin spinning={loading} size="small">
+            <IssueAttachmentList
+              attachments={attachments}
+              onDelete={handleDelete}
+              deletingId={deletingId}
+              emptyText=""
+            />
+          </Spin>
+        </>
+      )}
+      {empty && loading ? <Spin size="small" /> : null}
     </div>
   )
 }

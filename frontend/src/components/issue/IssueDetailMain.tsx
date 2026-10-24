@@ -12,6 +12,9 @@ type Props = {
   description: string
   onTitleChange: (v: string) => void
   onDescriptionChange: (v: string) => void
+  /** R1: blur 自动保存标题/描述 */
+  onTitleBlur?: () => void
+  onDescriptionBlur?: () => void
   // comments
   sideLoading: boolean
   comments: Comment[]
@@ -35,6 +38,8 @@ export function IssueDetailMain({
   description,
   onTitleChange,
   onDescriptionChange,
+  onTitleBlur,
+  onDescriptionBlur,
   sideLoading,
   comments,
   memberName,
@@ -57,6 +62,7 @@ export function IssueDetailMain({
             placeholder="Issue 标题"
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
+            onBlur={() => onTitleBlur?.()}
           />
         </div>
 
@@ -64,6 +70,7 @@ export function IssueDetailMain({
           <IssueDescriptionEditor
             value={description}
             onChange={onDescriptionChange}
+            onBlur={onDescriptionBlur}
             placeholder="添加描述…"
           />
         </div>
@@ -89,6 +96,7 @@ export function IssueDetailMain({
             memberName={memberName}
             activitySentence={activitySentence}
             actorKindLabel={actorKindLabel}
+            issueId={issueId}
           />
         </div>
       </div>

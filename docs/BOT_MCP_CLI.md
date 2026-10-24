@@ -1,7 +1,7 @@
 # Bot 工作流 · MCP / CLI 最小能力清单
 
 > 产品体验规格（可执行）。**不改业务代码**；落地由「Bot 记忆角色」+ Go 后端分工。  
-> 对照：[`API.md`](./API.md) · [`BOT.md`](./BOT.md) · 根目录 [`COORDINATION.md`](../COORDINATION.md)
+> 对照：[`API.md`](./API.md) · [`BOT.md`](./BOT.md) · [`BOT_CONTINUITY_P0.md`](./BOT_CONTINUITY_P0.md) · [`BOT_HANDOFF_CONTINUITY_P0.md`](./BOT_HANDOFF_CONTINUITY_P0.md) · 根目录 [`COORDINATION.md`](../COORDINATION.md)
 
 ---
 
@@ -9,17 +9,17 @@
 
 | 用户 | 场景 | 期望路径 |
 |------|------|----------|
-| Cursor / IDE 助手 | 在仓库里接看板：拉指派 Issue、写评论、upsert 记忆、会话结束导出 handoff | **MCP tools**（自然语言 → 结构化 tool call） |
+| Cursor / IDE 助手 | 在仓库里接看板：拉指派 Issue、写评论、干活中 upsert 记忆；续工用 handoff get（无文件） | **MCP tools**（自然语言 → 结构化 tool call） |
 | 终端脚本 / CI / 本地 Agent | 一条命令评论、改状态、续工导入；可管道化 | **CLI**（`ymbot …`） |
 | 人类 Admin | 签发/吊销 Bot API Key；不在本清单实现 UI | 现有 REST + 设置页（Integrations / Settings） |
 
-**Bot 典型一天：**
+**Bot 典型一天（续命 = 服务端；见 [`BOT_HANDOFF_CONTINUITY_P0.md`](./BOT_HANDOFF_CONTINUITY_P0.md) / [`BOT_CONTINUITY_P0.md`](./BOT_CONTINUITY_P0.md)）：**
 
-1. 用 `ymk_…` 鉴权 → `whoami` / 确认 `member_id` + workspace  
-2. `handoff get` 恢复上下文（memories + todos + 开放 Issues）  
-3. `issue list --assignee me` → 读详情 → 评论 / 更新属性（**不得**自动 `done`）  
-4. 工作中 `memory set` / `todo` 维护  
-5. 换机或换会话：`handoff export` → 对端 `handoff import`
+1. 用 `ymk_…` 鉴权 → **`whoami`** 确认 `member_id` + workspace  
+2. **`handoff get`（无文件）** 恢复 memories + todos + 开放 Issues  
+3. `issue list --assignee me` → 读详情 → 评论 / 更新属性（**不得**自动 `done`）；叶子用 `issue claim`  
+4. **过程中写回服务端**：`memory set` / `todo` / `comment`（claim 后立刻记进度）；**禁止**攒到会话结束才 export  
+5. 换会话 / 新进程：再 `whoami` → `handoff get` 即可。`export`/`import` **仅可选备份/救场**，非主路径
 
 ---
 
@@ -79,7 +79,7 @@
 | 评论写入 | `board_comment_create` / `ymbot comment create` | `POST …/issues/{id}/comments` | 入：`issue_id, body`；一条命令完成；幂等 Key | **P0** |
 | 记忆读取 | `board_memory_list` / `ymbot memory list` | `GET …/bots/{memberID}/memories?q=` | 入：`q?`；默认当前 Bot member；出：`memories[]` | **P0** |
 | 记忆写入 | `board_memory_set` / `ymbot memory set` | `POST …/bots/{memberID}/memories`（upsert） | 入：`key_name, value_text, tags?`；出：`memory` | **P0** |
-| Handoff 导出 | `board_handoff_get` / `ymbot handoff get\|export` | `GET …/bots/{memberID}/handoff` | CLI：`--out file.json`；出：handoff 包 | **P0** |
+| Handoff 续工/备份 | `board_handoff_get` / `ymbot handoff get\|export` | `GET …/bots/{memberID}/handoff` | **日常续工**：`get` 无文件；`--out`/`export` 仅换机备份可选 | **P0** |
 | Handoff 导入 | `board_handoff_import` / `ymbot handoff import` | `POST …/bots/{memberID}/handoff` | 入：文件或 JSON；出：`imported_* / claimed / warnings` | **P0** |
 | 工作区搜索 | `board_search` / `ymbot search` | `GET …/search?q=` | 入：`q`；出：issues/projects 摘要 | P1 |
 | Cycle 列表 | `board_cycle_list` / `ymbot cycle list` | `GET …/cycles` 或 `…/projects/{id}/cycles` | 入：`project_id?` | P1 |
@@ -108,7 +108,7 @@ MCP / CLI **不得**实现登录密码流；只接受 API Key（人类调试可�
 
 ---
 
-## 6. 「好用」体验标准（≤5）
+## 6. 「好用」体验标准
 
 1. **一条命令完成评论**：`ymbot comment create --issue YM-12 -m "已复现"`（MCP 等价单次 tool call）。  
 2. **错误可读**：通道层把 `{"code","message"}` 打成一行中文 + 退出码（401/403/404/409）；409 提示带上当前 `version`。  
@@ -116,6 +116,7 @@ MCP / CLI **不得**实现登录密码流；只接受 API Key（人类调试可�
 4. **`me` 语义**：`--assignee me` / 缺省 member = Key 绑定成员；handoff/memory 默认操作自己。  
 5. **Bot 护栏透传**：尝试 `status=done` 时通道提前拒绝或原样返回后端错误，文案明确「需人类确认」。
 6. **只领叶子**：用 `issue claim` / `board_issue_claim`；禁教 Bot 自创无父游离 Issue；角色 claim ≠ Issue claim。
+7. **通道 DX（省 token）**：Issue 用 **`YM-n`（identifier）**；列表默认瘦字段；CLI/MCP **默认文本友好**；默认禁 32 位 hex；**`--id` / `ids=true`** 附加裸 id；**`--full` / `full=true`** 才接近 REST 全量。权威验收与勾选：**[`BOT_CHANNEL_DX_P0.md`](./BOT_CHANNEL_DX_P0.md)**（D1–D6 已勾关）。
 
 ---
 
@@ -153,7 +154,7 @@ MCP / CLI **不得**实现登录密码流；只接受 API Key（人类调试可�
 4. **鉴权**：`Bearer ymk_…`，绑定 workspace+member；Admin 签发；禁进 git/handoff。  
 5. **护栏**：幂等默认开；Bot 不自动 done；错误中文可读。  
 6. **落地**：Bot 记忆角色做 MCP/CLI；Go 仅可选补 `bots/me`。  
-7. **验收**：无浏览器走通「续工→干活→评论→记记忆→导出」；Inspector + CLI help 过关。  
+7. **验收**：无浏览器走通「whoami→handoff get→干活→评论→记记忆（服务端）」；export 仅换机可选；Inspector + CLI help 过关。  
 8. **规格全文**：`docs/BOT_MCP_CLI.md`。
 
 ---
@@ -167,11 +168,13 @@ export YMBOT_WORKSPACE_ID=<ws>
 # 可选：YMBOT_IDEMPOTENCY_KEY=<uuid>  # 未传 --idempotency-key 时用于写操作
 
 ymbot whoami
-ymbot handoff get --out /tmp/handoff.json
+ymbot handoff get                                          # 续命：服务端摘要，无文件
 ymbot issue list --assignee me --status in_progress
-ymbot comment create --issue <id> -m "进展：……" --idempotency-key <uuid>
+ymbot comment create --issue YM-12 -m "进展：……" --idempotency-key <uuid>
 ymbot memory set --key last_focus --value "YM-12 复现路径" --idempotency-key <uuid>
-ymbot handoff export --out /tmp/handoff.json
+# 可选：YMBOT_AUTOSAVE=1 或 --autosave → 写成功后 stderr「已写服务端」
+# 换机备份可选（日常不需要）：
+# ymbot handoff export --out /tmp/handoff.json
 ```
 
 MCP 写 tool（`board_issue_create|update` / `board_comment_create` / `board_memory_set` / `board_handoff_import`）可传 `idempotency_key`；错误 `isError` content 为一行中文。

@@ -223,26 +223,66 @@ type CreatePageInput struct {
 	MemberID  string
 }
 
+func (s *Service) pageSlugTaken(spaceID, slug string) (bool, error) {
+	var n int
+	err := s.DB.QueryRow(`SELECT COUNT(1) FROM wiki_pages WHERE space_id = ? AND slug = ?`, spaceID, slug).Scan(&n)
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
+}
+
+// uniqueAutoPageSlug makes an auto-generated slug unique within a space by appending
+// "-" + the first 8 chars of the page id when the base slug is already taken.
+func (s *Service) uniqueAutoPageSlug(spaceID, base, pageID string) (string, error) {
+	taken, err := s.pageSlugTaken(spaceID, base)
+	if err != nil {
+		return "", err
+	}
+	if !taken {
+		return base, nil
+	}
+	suf := pageID
+	if len(suf) > 8 {
+		suf = suf[:8]
+	}
+	cand := base + "-" + suf
+	taken, err = s.pageSlugTaken(spaceID, cand)
+	if err != nil {
+		return "", err
+	}
+	if !taken {
+		return cand, nil
+	}
+	// Extremely rare: full id suffix.
+	return base + "-" + pageID, nil
+}
+
 func (s *Service) CreatePage(workspaceID, spaceID string, in CreatePageInput) (*models.WikiPage, error) {
 	if _, err := s.GetSpace(workspaceID, spaceID); err != nil {
 		return nil, err
 	}
 	in.Title = strings.TrimSpace(in.Title)
 	if in.Title == "" {
-		return nil, apperr.BadRequest("页面标题不能为空")
+		in.Title = "无标题"
 	}
-	slug := strings.TrimSpace(in.Slug)
-	if slug == "" {
-		slug = Slugify(in.Title)
+	explicitSlug := strings.TrimSpace(in.Slug) != ""
+	id := idgen.New()
+	var slug string
+	if explicitSlug {
+		slug = Slugify(in.Slug)
 	} else {
-		slug = Slugify(slug)
+		var err error
+		slug, err = s.uniqueAutoPageSlug(spaceID, Slugify(in.Title), id)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if in.ParentID != nil && *in.ParentID != "" {
 		if _, err := s.GetPage(workspaceID, *in.ParentID); err != nil {
 			return nil, apperr.BadRequest("父页面不存在")
 		}
 	}
-	id := idgen.New()
 	now := nowUTC()
 	var member any
 	if in.MemberID != "" {
@@ -316,7 +356,7 @@ func (s *Service) UpdatePage(workspaceID, pageID string, in UpdatePageInput) (*m
 	if in.Title != nil {
 		t := strings.TrimSpace(*in.Title)
 		if t == "" {
-			return nil, apperr.BadRequest("页面标题不能为空")
+			t = "无标题"
 		}
 		p.Title = t
 	}

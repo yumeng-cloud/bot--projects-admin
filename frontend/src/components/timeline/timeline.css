@@ -182,15 +182,68 @@
   color: var(--acb-text-secondary);
 }
 
+/* ---- S6: status tinted fills (IssueStatus; class from 看板 UI) ---- */
+.acb-timeline-bar.is-status-backlog,
+.acb-timeline-bar.is-status-todo {
+  background: color-mix(in srgb, #7b879c 16%, transparent);
+  border-color: color-mix(in srgb, #7b879c 32%, var(--acb-border));
+  color: var(--acb-text-secondary);
+}
+.acb-timeline-bar.is-status-backlog .acb-timeline-bar-label,
+.acb-timeline-bar.is-status-todo .acb-timeline-bar-label {
+  color: var(--acb-text-secondary);
+}
+
+.acb-timeline-bar.is-status-in_progress {
+  background: color-mix(in srgb, var(--acb-primary) 18%, transparent);
+  border-color: color-mix(in srgb, var(--acb-primary) 38%, var(--acb-border));
+}
+.acb-timeline-bar.is-status-in_progress .acb-timeline-bar-label {
+  color: color-mix(in srgb, var(--acb-primary) 55%, var(--acb-text));
+}
+
+.acb-timeline-bar.is-status-in_review {
+  background: color-mix(in srgb, #a855f7 14%, transparent);
+  border-color: color-mix(in srgb, #a855f7 34%, var(--acb-border));
+}
+.acb-timeline-bar.is-status-in_review .acb-timeline-bar-label {
+  color: color-mix(in srgb, #7c3aed 40%, var(--acb-text));
+}
+
+.acb-timeline-bar.is-status-done {
+  background: color-mix(in srgb, #3db88c 14%, transparent);
+  border-color: color-mix(in srgb, #3db88c 32%, var(--acb-border));
+}
+.acb-timeline-bar.is-status-done .acb-timeline-bar-label {
+  color: color-mix(in srgb, #2a9a72 45%, var(--acb-text-secondary));
+}
+
+.acb-timeline-bar.is-status-canceled {
+  background: color-mix(in srgb, var(--acb-text) 6%, var(--acb-bg-container));
+  border-color: var(--acb-border);
+  color: var(--acb-text-tertiary);
+  opacity: 0.62;
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--acb-text-tertiary) 55%, transparent);
+}
+.acb-timeline-bar.is-status-canceled .acb-timeline-bar-label {
+  color: var(--acb-text-tertiary);
+  text-decoration: line-through;
+}
+
+/* ---- S3: hover resize handles ---- */
 .acb-timeline-bar-handle {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 6px;
+  width: 8px;
   opacity: 0;
-  background: color-mix(in srgb, var(--acb-primary) 55%, transparent);
+  /* soft primary fill + thin light edge so handles read without Ant Form chrome */
+  background: color-mix(in srgb, var(--acb-primary) 42%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 55%, var(--acb-primary));
   transition: opacity 0.12s ease;
   pointer-events: none; /* DnD owned by page; className hint only */
+  z-index: 1;
 }
 
 .acb-timeline-bar:hover .acb-timeline-bar-handle {
@@ -217,6 +270,20 @@
 .acb-timeline-bar.has-resize-hint .acb-timeline-bar-handle {
   pointer-events: auto;
 }
+/* S3: discoverable handles — faint idle hint when resizable; full on hover */
+.acb-timeline-bar.has-resize-hint .acb-timeline-bar-handle {
+  opacity: 0.35;
+}
+.acb-timeline-bar.has-resize-hint:hover .acb-timeline-bar-handle {
+  opacity: 1;
+}
+.acb-timeline-bar.has-drag-hint:active {
+  cursor: grabbing;
+}
+.acb-timeline-bar.has-resize-hint .acb-timeline-bar-handle:hover {
+  background: color-mix(in srgb, var(--acb-primary) 65%, transparent);
+}
+
 
 /* ---- Shell: tree | axis (axis owns horizontal scroll; page Content owns vertical) ---- */
 .acb-timeline-shell {
@@ -253,6 +320,7 @@
   -webkit-overflow-scrolling: touch;
 }
 .acb-timeline-axis-inner {
+  position: relative;
   min-width: max(100%, calc(var(--acb-timeline-axis-days, 14) * 48px));
 }
 .acb-timeline-axis-head {
@@ -271,9 +339,137 @@
   min-width: 48px;
 }
 .acb-timeline-axis-day.is-today {
+  position: relative;
   color: var(--acb-primary);
   font-weight: 600;
+  background: color-mix(in srgb, var(--acb-primary) 8%, transparent);
+}
+/* Header today marker — 2px primary edge on column start */
+.acb-timeline-axis-day.is-today::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: var(--acb-primary);
+  opacity: 0.85;
+  pointer-events: none;
 }
 .acb-timeline-axis-day.is-mark {
   font-weight: 600;
+}
+
+/* S6: full-axis today line (看板 sets --acb-timeline-today-left / width + .has-today-line) */
+.acb-timeline-axis-inner.has-today-line::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--acb-timeline-today-left, 0%);
+  width: 2px;
+  background: var(--acb-primary);
+  opacity: 0.55;
+  z-index: 3;
+  pointer-events: none;
+}
+/* Soft today column wash across body (same vars) */
+.acb-timeline-axis-inner.has-today-line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--acb-timeline-today-left, 0%);
+  width: var(--acb-timeline-today-width, calc(100% / var(--acb-timeline-axis-days, 14)));
+  background: color-mix(in srgb, var(--acb-primary) 5%, transparent);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ---- S5/S1/S2/S8 shell (看板 UI) ---- */
+.acb-timeline-bar-menu-slot {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  z-index: 2;
+}
+.acb-timeline-bar:hover .acb-timeline-bar-menu-slot,
+.acb-timeline-bar-menu-wrap:hover .acb-timeline-bar-menu-slot {
+  opacity: 1;
+}
+.acb-timeline-bar-menu-wrap {
+  position: relative;
+  display: contents;
+}
+.acb-timeline-bar-menu {
+  display: inline-flex;
+}
+.acb-timeline-bar-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--acb-bg-container) 80%, transparent);
+  color: var(--acb-text-secondary);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.acb-timeline-bar-menu-btn:hover {
+  color: var(--acb-text);
+  background: color-mix(in srgb, var(--acb-text) 8%, var(--acb-bg-container));
+}
+.acb-timeline-bar-menu-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* S1: empty-axis draw track + live preview ghost */
+.acb-timeline-axis-draw-track {
+  position: relative;
+  min-height: var(--acb-timeline-row-h, 30px);
+  cursor: crosshair;
+  touch-action: none;
+}
+.acb-timeline-axis-draw-preview {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: var(--acb-timeline-bar-h, 20px);
+  border-radius: var(--acb-timeline-bar-radius, 4px);
+  background: color-mix(in srgb, var(--acb-primary) 28%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--acb-primary) 55%, var(--acb-border));
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* S2: unscheduled drag source + axis drop target */
+.acb-timeline-unscheduled-drag-source {
+  cursor: grab;
+  user-select: none;
+}
+.acb-timeline-unscheduled-drag-source:active {
+  cursor: grabbing;
+}
+.acb-timeline-axis-drop-target {
+  position: relative;
+  min-height: 0;
+}
+.acb-timeline-axis-drop-target.is-drop-over {
+  outline: 1px dashed color-mix(in srgb, var(--acb-primary) 55%, transparent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--acb-primary) 6%, transparent);
+}
+
+/* S8: week nav presentational */
+.acb-timeline-week-bar {
+  flex-wrap: nowrap;
 }

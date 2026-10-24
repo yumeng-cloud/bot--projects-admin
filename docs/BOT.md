@@ -82,15 +82,28 @@ Handoff **无表**，由 service 实时组装。
 - `todos`：status ∈ `todo|doing`
 - `issues`：`assignee_id=member` 且 status ∈ `todo|in_progress|in_review`
 
+## 续命（服务端真相源）
+
+怕干活中途中断来不及 export。短原则 [`BOT_CONTINUITY_P0.md`](./BOT_CONTINUITY_P0.md)；**验收 H1–H5** [`BOT_HANDOFF_CONTINUITY_P0.md`](./BOT_HANDOFF_CONTINUITY_P0.md)：
+
+1. **真相源 = 服务端** handoff / memories / todos / 指派 Issue，**不是**本地文件。
+2. **干活中自动写服务端**：开干就 `memory set` / todo；关键节点 `comment`；claim 后进度写记忆；**禁止**攒到最后才 `handoff export`。
+3. **新 Bot 续工**：`ymbot whoami` → `ymbot handoff get`（**无文件**）即可；MCP：`board_whoami` → `board_handoff_get`。
+4. **`handoff export`**：仅换机备份可选；日常续工不需要。
+
+可选：`--autosave` 或 `YMBOT_AUTOSAVE=1` → claim / comment / memory set 成功后 stderr 提醒「已写服务端」（约定，非后台 daemon，非本地文件）。
+
 ## 续工流程建议
 
-1. Bot 启动 → `GET .../bots/{me}/handoff` 恢复上下文
-2. 认领**角色**（岗位）→ `POST .../bot-roles/{id}/claim`（≠ Issue 叶子 claim）
-3. 从面板 **领取叶子** → `ymbot issue claim` / `board_issue_claim`；勿自创无父游离 Issue
-4. 工作中 upsert memories、维护 todos；写操作带 `Idempotency-Key`
-5. 交接前更新 memories / 打开 todos；下一会话再拉 handoff
-6. **换机续工**：源机 `GET .../handoff` 导出 → 目标机 `POST .../handoff` 导入（memories upsert、未完成 todos、尝试 claim；claim 冲突只记 warning）
-7. 换岗 → `POST .../release` 后由其他成员 claim
+> **续命权威**：服务端 `GET .../bots/{me}/handoff`（`ymbot handoff get`）。详见 [`BOT_HANDOFF_CONTINUITY_P0.md`](./BOT_HANDOFF_CONTINUITY_P0.md)。  
+> `export` / `import` 仅可选备份与救场，**不是**日常换机会话必经。
+
+1. Bot 启动 → **`whoami` → `handoff get`**（无文件）恢复上下文（memories + todos + 开放 Issues）
+2. 按指派 / 开放 `YM-n` 继续；只领叶子；禁自 `done`
+3. **过程中写回服务端**：焦点/卡点 → `memory set`；步骤 → todo；对人类进展 → `comment create`
+4. 断线或换会话：同一 API Key 再 `handoff get` 即可续——**不必**先持有导出文件
+5. （可选）冷备：`handoff export --out file.json`；灾难恢复才 `handoff import`
+
 
 ## 挂载方式
 
@@ -127,12 +140,18 @@ export YMBOT_WORKSPACE_ID=<ws>
 
 go run ./cmd/ymbot --help
 go run ./cmd/ymbot whoami
-go run ./cmd/ymbot issue list --assignee me
-go run ./cmd/ymbot comment create --issue <id> -m "进展…" --idempotency-key <uuid>
+go run ./cmd/ymbot issue list --assignee me          # 默认文本表：YM-n / title / status…
+go run ./cmd/ymbot issue get YM-12                   # 入参接受 YM-n 或 UUID
+go run ./cmd/ymbot comment list --issue YM-12        # 默认摘要；--full 才全量
+go run ./cmd/ymbot comment create --issue YM-12 -m "进展…" --idempotency-key <uuid>
+go run ./cmd/ymbot memory list                       # key + 值摘要
 go run ./cmd/ymbot memory set --key last_focus --value "…" --idempotency-key <uuid>
-go run ./cmd/ymbot handoff export --out /tmp/handoff.json
-go run ./cmd/ymbot mcp-serve   # Cursor stdio MCP；tools: board_*（写 tool 可传 idempotency_key）
+go run ./cmd/ymbot handoff get                       # 续工：服务端摘要（无文件）
+go run ./cmd/ymbot handoff export --out /tmp/handoff.json   # 换机备份可选；日常不需要
+go run ./cmd/ymbot mcp-serve   # Cursor stdio MCP；tools: board_*；full/ids 同 --full/--id
 ```
+
+通道 DX（省 token / 少 UUID）：[`BOT_CHANNEL_DX_P0.md`](./BOT_CHANNEL_DX_P0.md)。默认无 32 位 hex；`--id` 附加裸 id；`--full` 接近 REST。
 
 共享客户端：`internal/botclient`（Bearer；Idempotency-Key：CLI/MCP 参数 → env → 自动 UUID；一行中文错误含吊销/无效；Bot 禁 `status=done`）。
 鉴权主路径：**API Key only**（不主推密码 login）。
@@ -147,3 +166,5 @@ go run ./cmd/ymbot mcp-serve   # Cursor stdio MCP；tools: board_*（写 tool �
 ## 相关
 
 - Bot 工作流 MCP/CLI 最小能力规格：[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md)
+- 续命短原则：[`BOT_CONTINUITY_P0.md`](./BOT_CONTINUITY_P0.md)
+- 续命验收 H1–H5：[`BOT_HANDOFF_CONTINUITY_P0.md`](./BOT_HANDOFF_CONTINUITY_P0.md)

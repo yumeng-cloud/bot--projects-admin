@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Collapse, Spin, Timeline, Typography } from 'antd'
 import type { Activity } from '../../types/issue'
 import { formatShanghai } from '../../utils/time'
@@ -8,6 +9,8 @@ type Props = {
   memberName: (id: string | null | undefined) => string | null
   activitySentence: (action: string, payload: string | null | undefined) => string
   actorKindLabel: (kind: string) => string
+  /** When this changes, collapse resets to closed (drawer reopen / issue switch). */
+  issueId?: string
 }
 
 /** 活动时间线 — 默认折叠，不占首屏（ISSUE_DETAIL_LAYOUT A5） */
@@ -17,7 +20,14 @@ export function IssueActivityFold({
   memberName,
   activitySentence,
   actorKindLabel,
+  issueId,
 }: Props) {
+  const [activeKey, setActiveKey] = useState<string[]>([])
+
+  useEffect(() => {
+    setActiveKey([])
+  }, [issueId])
+
   const sorted = [...activities].sort((a, b) => {
     const t = b.created_at.localeCompare(a.created_at)
     if (t !== 0) return t
@@ -29,7 +39,8 @@ export function IssueActivityFold({
       <Collapse
         ghost
         size="small"
-        defaultActiveKey={[]}
+        activeKey={activeKey}
+        onChange={(keys) => setActiveKey(Array.isArray(keys) ? keys : keys ? [keys] : [])}
         items={[
           {
             key: 'activity',

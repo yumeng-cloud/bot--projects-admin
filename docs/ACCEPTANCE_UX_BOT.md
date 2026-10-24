@@ -167,6 +167,42 @@ P1（search / cycle CLI / role / todo）按规格不阻塞 P0；Cycle **产品�
 
 ---
 
+
+
+---
+
+## D) Bot 通道 DX · 省 token（对照 `BOT_CHANNEL_DX_P0`）
+
+> 权威细则与字段表：[`BOT_CHANNEL_DX_P0.md`](./BOT_CHANNEL_DX_P0.md)。  
+> 状态：**D1–D6 已勾关单**（产品体验 2026-10-24 · Asia/Shanghai · 本机真 Key）。  
+> 本表为验收镜像，关单以 DX 文档勾选+证据为准。
+
+| ID | 标准摘要 | 结果 | 说明 |
+|----|----------|------|------|
+| **D1** | Issue 对外 `YM-n`；入参可 `YM-12` | **通过** | 真 Key：get YM-9/12；YM-9999 exit 12 |
+| **D2** | list 极瘦（identifier/title/status/priority/assignee 名…） | **通过** | 实机 list 瘦字段 + 单测 |
+| **D3** | 默认文本友好；禁 REST 原样 dump | **通过** | 默认文本表 |
+| **D4** | 默认无 32 位 hex；`--id`/`--full`（`ids`/`full`）才放宽 | **通过** | 默认 uuid=0；--id/--full 放宽 |
+| **D5** | handoff/memory/comment 默认摘要 | **通过** | 实机摘要形态 |
+| **D6** | MCP 与 CLI 同规则；示例用 `YM-n` | **通过** | MCP 12 tools；help/BOT.md |
+
+
+
+---
+
+## E) Bot 续命 · 服务端 handoff（对照 `BOT_HANDOFF_CONTINUITY_P0`）
+
+> 权威：[`BOT_HANDOFF_CONTINUITY_P0.md`](./BOT_HANDOFF_CONTINUITY_P0.md)。  
+> 状态：**H1–H5 已勾关单**（产品体验 2026-10-24 · Asia/Shanghai · 真 Key）。
+
+| ID | 标准摘要 | 结果 | 说明 |
+|----|----------|------|------|
+| **H1** | 文档主路径= `handoff get`；export/import 标备份 | **通过** | help/MCP/BOT.md |
+| **H2** | 剧本无强制 export | **通过** | 典型一天 |
+| **H3** | 中途挂：只写 memory+comment 再 get 可续 | **通过** | 真 Key；焦点+YM-9 评论 |
+| **H4** | export 仍可用但非关卡 | **通过** | export --out 成功 |
+| **H5** | BOT / MCP_CLI 与 DX 一致 | **通过** | get 含 version |
+
 ## 修订记录
 
 | 日期 | 说明 |
@@ -177,3 +213,14 @@ P1（search / cycle CLI / role / todo）按规格不阻塞 P0；Cycle **产品�
 | 2026-10-24 | 产品体验：复验勾掉 B1/C6（React 已修 max-width 520 + 窄屏 min(100vw,560)）；附件 P0 继续盯 |
 | 2026-10-24 | Bot 记忆角色：幂等 Key 透传 + 中文错误 + §7 真 Key 关单；优先缺口 #2/#3 关闭；回写本表与 `BOT_MCP_CLI.md` §7 |
 | 2026-10-24 | 增 §C「附件 P0」最小验收（F1–F10）+ 后端/前端催办要点；只改规格，未实现上传代码 |
+| 2026-10-24 | 产品体验：增 §D 通道 DX（D1–D6）镜像；权威见 `BOT_CHANNEL_DX_P0.md` |
+| 2026-10-24 | Bot 记忆角色：通道 DX D1–D6 投影落地（`--id`/`--full` 分档；默认禁 UUID）；状态改「通道已落地待产品体验勾选」 |
+| 2026-10-24 | 产品体验：通道 DX **D1–D6 勾关**（真 Key；默认 stdout UUID=0） |
+| 2026-10-24 | 产品体验：增 §E 续命（H1–H5）；权威 `BOT_HANDOFF_CONTINUITY_P0.md` |
+| 2026-10-24 | 产品体验：续命 **H1–H5 勾关**（真 Key 中途挂复验） |
+
+---
+
+## F) Issue 详情打磨 P0（续）
+
+布局骨架 §A 已关后的观感打磨：见 [`ISSUE_DETAIL_POLISH_P0.md`](./ISSUE_DETAIL_POLISH_P0.md)（P1–P5：标题裁切 / 关联中文 / 关联添加安静 / 空态藏 MD 工具栏 / 整体抽检）。

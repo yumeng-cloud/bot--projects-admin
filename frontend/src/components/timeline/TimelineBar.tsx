@@ -16,11 +16,18 @@ export type TimelineBarProps = {
   unscheduled?: boolean
   muted?: boolean
   /**
+   * Raw Issue.status (backlog|todo|in_progress|in_review|done|canceled).
+   * Sets `data-status` + class `is-status-${status}` for UI视觉 (no colors here).
+   */
+  status?: string
+  /**
    * ClassName hints for page-owned DnD (no listeners here):
    * - has-drag-hint / has-resize-hint toggle CSS cursors & handle hit areas
    */
   draggableHint?: boolean
   resizableHint?: boolean
+  /** Optional ⋯ / menu slot (e.g. TimelineBarMenu) — page owns callbacks */
+  menu?: ReactNode
   className?: string
   style?: CSSProperties
   onClick?: () => void
@@ -44,8 +51,10 @@ export function TimelineBar({
   endLabel,
   unscheduled = false,
   muted = false,
+  status,
   draggableHint = false,
   resizableHint = false,
+  menu,
   className,
   style,
   onClick,
@@ -60,10 +69,14 @@ export function TimelineBar({
       ? [startLabel, endLabel].filter(Boolean).join(' → ')
       : null)
 
+  const statusKey =
+    status && /^[a-z_]+$/.test(status) ? status : undefined
+
   const cls = [
     'acb-timeline-bar',
     unscheduled ? 'is-unscheduled' : '',
     muted || unscheduled ? 'is-muted' : '',
+    statusKey && !unscheduled ? `is-status-${statusKey}` : '',
     draggableHint ? 'has-drag-hint' : '',
     resizableHint ? 'has-resize-hint' : '',
     className || '',
@@ -84,11 +97,13 @@ export function TimelineBar({
         style={barStyle}
         role="img"
         aria-label={typeof text === 'string' ? text : undefined}
+        data-status={statusKey && !unscheduled ? statusKey : undefined}
         onClick={onClick}
       >
         <span className="acb-timeline-bar-handle is-start" aria-hidden data-handle="start" />
         {text ? <span className="acb-timeline-bar-label">{text}</span> : null}
         {children}
+        {menu ? <span className="acb-timeline-bar-menu-slot">{menu}</span> : null}
         <span className="acb-timeline-bar-handle is-end" aria-hidden data-handle="end" />
       </div>
     </div>

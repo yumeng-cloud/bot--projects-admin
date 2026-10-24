@@ -79,7 +79,7 @@ export function IssueCommentList({
                       okButtonProps={{ danger: true, size: 'small' }}
                       onConfirm={() => onRemove(c)}
                     >
-                      <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+                      <Button type="text" size="small" danger className="acb-issue-comment-delete" icon={<DeleteOutlined />} />
                     </Popconfirm>
                   </div>
                 </div>
@@ -106,12 +106,13 @@ export function IssueCommentList({
           />
           <Button
             size="small"
-            type="primary"
+            type="link"
+            className="acb-issue-comment-send"
             loading={commentSending}
             onClick={onSend}
             disabled={!commentBody.trim()}
           >
-            发送评论
+            发送
           </Button>
         </div>
       </div>

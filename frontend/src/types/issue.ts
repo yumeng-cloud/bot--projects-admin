@@ -124,10 +124,10 @@ export interface Comment {
 export type RelationType = 'blocks' | 'blocked_by' | 'related' | 'parent'
 
 export const RELATION_TYPE_LABELS: Record<RelationType, string> = {
-  blocks: 'blocks',
-  blocked_by: 'blocked_by',
-  related: 'related',
-  parent: 'parent',
+  blocks: '阻塞',
+  blocked_by: '被阻塞',
+  related: '相关',
+  parent: '父任务',
 }
 
 export interface IssueRelation {

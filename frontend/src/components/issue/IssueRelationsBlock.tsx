@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Button, Popconfirm, Select, Space, Spin, Typography } from 'antd'
 import { DeleteOutlined } from '@ant-design/icons'
 import type { Issue, IssueRelation, RelationType } from '../../types/issue'
@@ -40,17 +41,28 @@ export function IssueRelationsBlock({
   otherIssueLabel,
   otherIssueId,
 }: Props) {
+  const [addingOpen, setAddingOpen] = useState(false)
+  const prevRelCount = useRef(relations.length)
+
+  useEffect(() => {
+    if (addingOpen && relations.length > prevRelCount.current) {
+      setAddingOpen(false)
+    }
+    prevRelCount.current = relations.length
+  }, [relations.length, addingOpen])
+
+  const closeComposer = () => {
+    setAddingOpen(false)
+    onRelToIdChange(undefined)
+  }
+
   return (
     <div className="acb-props-rail-section">
       <div className="acb-props-rail-section-title">
         关联{relations.length > 0 ? ` (${relations.length})` : ''}
       </div>
       <Spin spinning={loading} size="small">
-        {relations.length === 0 && !loading ? (
-          <div className="acb-issue-muted-empty" style={{ padding: '2px 2px 8px' }}>
-            暂无
-          </div>
-        ) : (
+        {relations.length > 0 ? (
           <div className="acb-rel-list">
             {relations.map((rel) => (
               <div key={rel.id} className="acb-rel-item">
@@ -78,34 +90,50 @@ export function IssueRelationsBlock({
               </div>
             ))}
           </div>
+        ) : null}
+
+        {addingOpen ? (
+          <div className="acb-rel-add-composer">
+            <Space.Compact style={{ width: '100%' }} size="small">
+              <Select
+                size="small"
+                value={relType}
+                onChange={onRelTypeChange}
+                options={RELATION_OPTIONS}
+                style={{ width: 108 }}
+                popupMatchSelectWidth={120}
+              />
+              <Select
+                size="small"
+                showSearch
+                allowClear
+                placeholder="搜索 Issue…"
+                value={relToId}
+                onChange={(v) => onRelToIdChange(v)}
+                style={{ flex: 1, minWidth: 0 }}
+                optionFilterProp="label"
+                options={relationChoices.map((i) => ({
+                  value: i.id,
+                  label: issueOptionLabel(i),
+                }))}
+              />
+              <Button size="small" type="primary" loading={relAdding} onClick={onAdd}>
+                +
+              </Button>
+            </Space.Compact>
+            <button type="button" className="acb-rel-add-cancel" onClick={closeComposer}>
+              取消
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="acb-rel-add-trigger"
+            onClick={() => setAddingOpen(true)}
+          >
+            添加关联
+          </button>
         )}
-        <Space.Compact style={{ width: '100%' }} size="small">
-          <Select
-            size="small"
-            value={relType}
-            onChange={onRelTypeChange}
-            options={RELATION_OPTIONS}
-            style={{ width: 72 }}
-            popupMatchSelectWidth={120}
-          />
-          <Select
-            size="small"
-            showSearch
-            allowClear
-            placeholder="Issue"
-            value={relToId}
-            onChange={(v) => onRelToIdChange(v)}
-            style={{ flex: 1, minWidth: 0 }}
-            optionFilterProp="label"
-            options={relationChoices.map((i) => ({
-              value: i.id,
-              label: issueOptionLabel(i),
-            }))}
-          />
-          <Button size="small" type="primary" loading={relAdding} onClick={onAdd}>
-            +
-          </Button>
-        </Space.Compact>
       </Spin>
     </div>
   )

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Drawer, Form, Space, Button, message, Typography } from 'antd'
+import { Drawer, Form, Space, message, Typography } from 'antd'
 import { patchIssue, listProjectMembers, listProjectLabels, listIssues } from '../../api/issues'
+import type { IssuePatch } from '../../api/issues'
 import { listCycles } from '../../api/cycles'
 import { listComments, createComment, deleteComment } from '../../api/comments'
 import {
@@ -191,7 +192,6 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, onClose, onSa
   const [form] = Form.useForm()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [saving, setSaving] = useState(false)
   const [quickSaving, setQuickSaving] = useState(false)
   const [members, setMembers] = useState<MemberRef[]>([])
   const [labels, setLabels] = useState<Label[]>([])
@@ -277,82 +277,131 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, onClose, onSa
     void loadSide(issue.id)
   }, [open, issue, form, workspaceId, projectId, loadSide])
 
-  const save = async () => {
-    if (!issue) return
+  /** 标题 / 描述：blur 自动 PATCH（顶栏不再放实心保存） */
+  const saveTitleDescription = async () => {
+    if (!issue || quickSaving) return
     const t = title.trim()
     if (!t) {
       message.warning('请输入标题')
+      setTitle(issue.title)
       return
     }
-    const values = form.getFieldsValue()
-    setSaving(true)
+    const nextDesc = description ?? ''
+    const prevDesc = issue.description || ''
+    if (t === issue.title && nextDesc === prevDesc) return
+
+    const prev = issue
+    setQuickSaving(true)
     try {
-      const { issue: saved } = await patchIssue(workspaceId, issue.id, {
-        version: issue.version,
+      const { issue: saved } = await patchIssue(workspaceId, prev.id, {
+        version: prev.version,
         title: t,
-        description: description ?? '',
-        status: values.status as IssueStatus,
-        priority: values.priority as IssuePriority,
-        estimate: values.estimate ?? null,
-        assignee_id: values.assignee_id ?? null,
-        cycle_id: values.cycle_id ?? null,
-        label_ids: values.label_ids,
-        start_at: calendarDayString(values.start_at),
-        due_at: calendarDayString(values.due_at),
+        description: nextDesc,
       })
-      message.success('已保存')
       onSaved(saved)
-      onClose()
-    } catch (err) {
+      void loadSide(saved.id)
+    } catch {
+      setTitle(prev.title)
+      setDescription(prev.description || '')
     } finally {
-      setSaving(false)
+      setQuickSaving(false)
+    }
+  }
+
+  /** Property 轨字段即时 PATCH */
+  const quickPatch = async (
+    body: Omit<IssuePatch, 'version'>,
+    optimistic?: Partial<Issue>,
+    revertForm?: () => void,
+  ) => {
+    if (!issue || quickSaving) return
+    const prev = issue
+    if (optimistic) onSaved({ ...issue, ...optimistic })
+    setQuickSaving(true)
+    try {
+      const { issue: saved } = await patchIssue(workspaceId, prev.id, {
+        version: prev.version,
+        ...body,
+      })
+      onSaved(saved)
+      void loadSide(saved.id)
+    } catch {
+      onSaved(prev)
+      revertForm?.()
+    } finally {
+      setQuickSaving(false)
     }
   }
 
   const quickStatus = async (status: IssueStatus) => {
-    if (!issue || issue.status === status || quickSaving) return
-    const prev = issue
-    const optimistic: Issue = { ...issue, status }
+    if (!issue || issue.status === status) return
+    const prevStatus = issue.status
     form.setFieldValue('status', status)
-    onSaved(optimistic)
-    setQuickSaving(true)
-    try {
-      const { issue: saved } = await patchIssue(workspaceId, prev.id, {
-        version: prev.version,
-        status,
-      })
-      form.setFieldValue('status', saved.status)
-      onSaved(saved)
-      void loadSide(saved.id)
-    } catch (err) {
-      form.setFieldValue('status', prev.status)
-      onSaved(prev)
-    } finally {
-      setQuickSaving(false)
-    }
+    await quickPatch({ status }, { status }, () => form.setFieldValue('status', prevStatus))
   }
 
   const quickPriority = async (priority: IssuePriority) => {
-    if (!issue || issue.priority === priority || quickSaving) return
-    const prev = issue
-    const optimistic: Issue = { ...issue, priority }
+    if (!issue || issue.priority === priority) return
+    const prevPriority = issue.priority
     form.setFieldValue('priority', priority)
-    onSaved(optimistic)
-    setQuickSaving(true)
-    try {
-      const { issue: saved } = await patchIssue(workspaceId, prev.id, {
-        version: prev.version,
-        priority,
-      })
-      form.setFieldValue('priority', saved.priority)
-      onSaved(saved)
-      void loadSide(saved.id)
-    } catch (err) {
-      form.setFieldValue('priority', prev.priority)
-      onSaved(prev)
-    } finally {
-      setQuickSaving(false)
-    }
+    await quickPatch({ priority }, { priority }, () => form.setFieldValue('priority', prevPriority))
+  }
+
+  const quickAssignee = async (assignee_id: string | null) => {
+    if (!issue || (issue.assignee_id ?? null) === (assignee_id ?? null)) return
+    const prev = issue.assignee_id
+    await quickPatch(
+      { assignee_id },
+      { assignee_id },
+      () => form.setFieldValue('assignee_id', prev),
+    )
+  }
+
+  const quickCycle = async (cycle_id: string | null) => {
+    if (!issue || (issue.cycle_id ?? null) === (cycle_id ?? null)) return
+    const prev = issue.cycle_id
+    await quickPatch({ cycle_id }, { cycle_id }, () => form.setFieldValue('cycle_id', prev))
+  }
+
+  const quickEstimate = async (estimate: number | null) => {
+    if (!issue) return
+    const cur = issue.estimate ?? null
+    const next = estimate ?? null
+    if (cur === next) return
+    await quickPatch({ estimate: next }, { estimate: next }, () =>
+      form.setFieldValue('estimate', cur),
+    )
+  }
+
+  const quickLabels = async (label_ids: string[]) => {
+    if (!issue) return
+    const prevIds = (issue.labels || []).map((l) => l.id)
+    const same =
+      prevIds.length === label_ids.length && prevIds.every((id) => label_ids.includes(id))
+    if (same) return
+    await quickPatch({ label_ids }, undefined, () => form.setFieldValue('label_ids', prevIds))
+  }
+
+  const quickStartAt = async (raw: unknown) => {
+    if (!issue) return
+    const next = calendarDayString(raw)
+    const cur = issue.start_at ? String(issue.start_at).slice(0, 10) : null
+    if (cur === next) return
+    const revertTo = calendarDayValue(issue.start_at)
+    await quickPatch({ start_at: next }, { start_at: next }, () =>
+      form.setFieldValue('start_at', revertTo),
+    )
+  }
+
+  const quickDueAt = async (raw: unknown) => {
+    if (!issue) return
+    const next = calendarDayString(raw)
+    const cur = issue.due_at ? String(issue.due_at).slice(0, 10) : null
+    if (cur === next) return
+    const revertTo = calendarDayValue(issue.due_at)
+    await quickPatch({ due_at: next }, { due_at: next }, () =>
+      form.setFieldValue('due_at', revertTo),
+    )
   }
 
   const otherIssueId = (rel: IssueRelation) =>
@@ -446,16 +495,6 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, onClose, onSa
           : { maxWidth: '92vw' },
         body: { padding: 0, overflow: 'hidden', height: '100%' },
       }}
-      extra={
-        <Space size={8}>
-          <Button size="small" onClick={onClose}>
-            取消
-          </Button>
-          <Button size="small" type="primary" loading={saving} onClick={() => void save()}>
-            保存
-          </Button>
-        </Space>
-      }
     >
       {issue && (
         <div className="acb-issue-layout">
@@ -466,6 +505,8 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, onClose, onSa
             description={description}
             onTitleChange={setTitle}
             onDescriptionChange={setDescription}
+            onTitleBlur={() => void saveTitleDescription()}
+            onDescriptionBlur={() => void saveTitleDescription()}
             sideLoading={sideLoading}
             comments={comments}
             memberName={memberName}
@@ -486,6 +527,12 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, onClose, onSa
             cycles={cycles}
             onStatusChange={(s) => void quickStatus(s)}
             onPriorityChange={(p) => void quickPriority(p)}
+            onAssigneeChange={(id) => void quickAssignee(id ?? null)}
+            onCycleChange={(id) => void quickCycle(id ?? null)}
+            onEstimateChange={(v) => void quickEstimate(v)}
+            onLabelsChange={(ids) => void quickLabels(ids)}
+            onStartAtChange={(v) => void quickStartAt(v)}
+            onDueAtChange={(v) => void quickDueAt(v)}
             sideLoading={sideLoading}
             relations={relations}
             relationChoices={relationChoices}

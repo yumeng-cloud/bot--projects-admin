@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -119,6 +120,14 @@ type Client struct {
 	HTTP *http.Client
 	// IdempotencyKey 可选：写操作优先用此值，其次 YMBOT_IDEMPOTENCY_KEY，否则自动生成 UUID。
 	IdempotencyKey string
+
+	// 通道 DX 缓存（identifier↔id、成员显示名）；不落库、不改 REST。
+	cacheOnce     sync.Once
+	cacheMu       sync.Mutex
+	identToID     map[string]string
+	idToIdent     map[string]string
+	memberNames   map[string]string
+	membersLoaded bool
 }
 
 func New(cfg Config) *Client {

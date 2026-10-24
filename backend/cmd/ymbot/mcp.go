@@ -52,7 +52,7 @@ func runMCP() error {
 		}
 		res := handleMCP(c, req)
 		if req.ID == nil || string(req.ID) == "null" {
-			continue // notification
+			continue
 		}
 		writeRPC(res)
 	}
@@ -71,7 +71,7 @@ func handleMCP(c *botclient.Client, req rpcReq) rpcRes {
 		return rpcRes{ID: id, Result: map[string]any{
 			"protocolVersion": "2024-11-05",
 			"capabilities":    map[string]any{"tools": map[string]any{}},
-			"serverInfo":      map[string]any{"name": "ymbot", "version": "0.1.0"},
+			"serverInfo":      map[string]any{"name": "ymbot", "version": "0.2.0"},
 		}}
 	case "notifications/initialized", "initialized":
 		return rpcRes{ID: id, Result: map[string]any{}}
@@ -113,36 +113,40 @@ func mcpTools() []map[string]any {
 	}
 	str := map[string]any{"type": "string"}
 	num := map[string]any{"type": "number"}
-	idKey := map[string]any{"type": "string", "description": "可选 Idempotency-Key；缺省读 YMBOT_IDEMPOTENCY_KEY 或自动生成"}
+	bol := map[string]any{"type": "boolean"}
+	idKey := map[string]any{"type": "string", "description": "幂等 Key"}
+	full := map[string]any{"type": "boolean", "description": "全量含 UUID"}
+	ids := map[string]any{"type": "boolean", "description": "附加裸 id"}
+	issueRef := map[string]any{"type": "string", "description": "YM-n 或 id"}
 	return []map[string]any{
-		{"name": "board_whoami", "description": "当前 Bot 身份（workspace/member）", "inputSchema": obj(map[string]any{})},
-		{"name": "board_issue_list", "description": "列出 Issues（可 leaf_only=1 拉可领叶子池；依赖后端）", "inputSchema": obj(map[string]any{
+		{"name": "board_whoami", "description": "Bot 身份短文本；新会话先调用，再 board_handoff_get", "inputSchema": obj(map[string]any{"full": full, "ids": ids})},
+		{"name": "board_issue_list", "description": "Issue 瘦表 YM-n（无 UUID）；leaf_only=可领池", "inputSchema": obj(map[string]any{
 			"status": str, "assignee_id": str, "project_id": str, "q": str, "cycle_id": str, "label_id": str,
-			"leaf_only": map[string]any{"type": "boolean", "description": "仅叶子 Issue（query leaf_only=1）"},
+			"leaf_only": bol, "full": full, "ids": ids,
 		})},
-		{"name": "board_issue_get", "description": "读取 Issue", "inputSchema": obj(map[string]any{"issue_id": str}, "issue_id")},
-		{"name": "board_issue_create", "description": "在已有父节点下创建叶子 Issue（须 parent_id；禁无父游离；禁 done）", "inputSchema": obj(map[string]any{
-			"project_id": str, "title": str, "parent_id": str, "description": str, "status": str, "priority": str, "assignee_id": str,
-			"idempotency_key": idKey,
+		{"name": "board_issue_get", "description": "Issue 瘦读；默认含 version（乐观锁），无 UUID", "inputSchema": obj(map[string]any{"issue_id": issueRef, "full": full, "ids": ids}, "issue_id")},
+		{"name": "board_issue_create", "description": "父下建叶子（须 parent_id）；禁无父游离", "inputSchema": obj(map[string]any{
+			"project_id": str, "title": str, "parent_id": issueRef, "description": str, "status": str, "priority": str, "assignee_id": str,
+			"idempotency_key": idKey, "full": full, "ids": ids,
 		}, "project_id", "title", "parent_id")},
-		{"name": "board_issue_update", "description": "更新 Issue（需 version；Bot 禁 done）", "inputSchema": obj(map[string]any{
-			"issue_id": str, "version": num, "title": str, "description": str, "status": str, "priority": str, "assignee_id": str,
-			"idempotency_key": idKey,
+		{"name": "board_issue_update", "description": "更新 Issue；version 来自 get 默认输出", "inputSchema": obj(map[string]any{
+			"issue_id": issueRef, "version": num, "title": str, "description": str, "status": str, "priority": str, "assignee_id": str,
+			"idempotency_key": idKey, "full": full, "ids": ids,
 		}, "issue_id", "version")},
-		{"name": "board_issue_claim", "description": "领取叶子 Issue（assignee=me；≠ 角色 board_role_claim；父节点不可领，非叶子 409）", "inputSchema": obj(map[string]any{
-			"issue_id": str, "version": num, "idempotency_key": idKey,
+		{"name": "board_issue_claim", "description": "领叶子；进度写 memory/comment，勿依赖 export", "inputSchema": obj(map[string]any{
+			"issue_id": issueRef, "version": num, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "issue_id")},
-		{"name": "board_comment_list", "description": "列出评论", "inputSchema": obj(map[string]any{"issue_id": str}, "issue_id")},
-		{"name": "board_comment_create", "description": "写评论", "inputSchema": obj(map[string]any{
-			"issue_id": str, "body": str, "idempotency_key": idKey,
+		{"name": "board_comment_list", "description": "评论瘦摘要（YM-n；无 UUID）", "inputSchema": obj(map[string]any{"issue_id": issueRef, "full": full, "ids": ids}, "issue_id")},
+		{"name": "board_comment_create", "description": "写评论到服务端（续命进度）", "inputSchema": obj(map[string]any{
+			"issue_id": issueRef, "body": str, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "issue_id", "body")},
-		{"name": "board_memory_list", "description": "列出/检索记忆（mode=keyword|semantic|hybrid）", "inputSchema": obj(map[string]any{"q": str, "mode": str, "limit": num})},
-		{"name": "board_memory_set", "description": "Upsert 记忆", "inputSchema": obj(map[string]any{
-			"key_name": str, "value_text": str, "tags": str, "idempotency_key": idKey,
+		{"name": "board_memory_list", "description": "记忆瘦摘要 key+截断值", "inputSchema": obj(map[string]any{"q": str, "mode": str, "limit": num, "full": full, "ids": ids})},
+		{"name": "board_memory_set", "description": "Upsert 记忆到服务端；勿攒到 export", "inputSchema": obj(map[string]any{
+			"key_name": str, "value_text": str, "tags": str, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "key_name", "value_text")},
-		{"name": "board_handoff_get", "description": "导出 handoff", "inputSchema": obj(map[string]any{})},
-		{"name": "board_handoff_import", "description": "导入 handoff JSON", "inputSchema": obj(map[string]any{
-			"handoff": map[string]any{"type": "object"}, "idempotency_key": idKey,
+		{"name": "board_handoff_get", "description": "续命权威：服务端摘要无文件；新会话先调", "inputSchema": obj(map[string]any{"full": full, "ids": ids})},
+		{"name": "board_handoff_import", "description": "从备份/外来包救场；非日常续工", "inputSchema": obj(map[string]any{
+			"handoff": map[string]any{"type": "object"}, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "handoff")},
 	}
 }
@@ -154,21 +158,79 @@ func strArg(a map[string]any, k string) string {
 	return ""
 }
 
+func boolArg(a map[string]any, k string) bool {
+	v, ok := a[k]
+	if !ok || v == nil {
+		return false
+	}
+	switch t := v.(type) {
+	case bool:
+		return t
+	case string:
+		return t == "1" || strings.EqualFold(t, "true")
+	default:
+		s := fmt.Sprint(t)
+		return s == "1" || s == "true"
+	}
+}
+
+func viewFromArgs(a map[string]any) botclient.ViewOpts {
+	return botclient.ViewOpts{Full: boolArg(a, "full"), IDs: boolArg(a, "ids")}
+}
+
+func viewDetailFromArgs(a map[string]any) botclient.ViewOpts {
+	o := viewFromArgs(a)
+	o.Detail = true
+	return o
+}
+
 func callTool(c *botclient.Client, name string, args map[string]any) (string, error) {
 	if err := c.Require(); err != nil {
 		return "", err
 	}
-	// 写工具：透传 idempotency_key（否则保留 env / 自动生成）
 	if k := strArg(args, "idempotency_key"); k != "" {
 		c.IdempotencyKey = k
 	} else {
-		c.IdempotencyKey = "" // 让 ResolveIDKey 走 env / UUID
+		c.IdempotencyKey = ""
 	}
-	var raw json.RawMessage
-	var err error
+	opts := viewFromArgs(args)
+	switch name {
+	case "board_issue_get", "board_issue_create", "board_issue_update", "board_issue_claim":
+		opts.Detail = true
+	}
+
+	emitIssue := func(raw json.RawMessage) (string, error) {
+		if opts.Full {
+			var v any
+			_ = json.Unmarshal(raw, &v)
+			return botclient.MarshalView(v), nil
+		}
+		items, err := c.ProjectIssues(raw, opts)
+		if err != nil {
+			return "", err
+		}
+		if name == "board_issue_list" {
+			return botclient.FormatIssueListText(items), nil
+		}
+		if len(items) == 0 {
+			return botclient.FormatIssueGetText(map[string]any{}), nil
+		}
+		return botclient.FormatIssueGetText(items[0]), nil
+	}
+
 	switch name {
 	case "board_whoami":
-		raw, err = c.WhoAmI()
+		raw, err := c.WhoAmI()
+		if err != nil {
+			return "", err
+		}
+		if opts.Full {
+			var v any
+			_ = json.Unmarshal(raw, &v)
+			return botclient.MarshalView(v), nil
+		}
+		v := botclient.ProjectWhoAmI(raw, opts)
+		return botclient.FormatWhoAmIText(v), nil
 	case "board_issue_list":
 		qv := url.Values{}
 		for _, k := range []string{"status", "assignee_id", "project_id", "q", "cycle_id", "label_id"} {
@@ -176,37 +238,48 @@ func callTool(c *botclient.Client, name string, args map[string]any) (string, er
 				qv.Set(k, v)
 			}
 		}
-		if v, ok := args["leaf_only"]; ok && v != nil {
-			switch t := v.(type) {
-			case bool:
-				if t {
-					qv.Set("leaf_only", "1")
-				}
-			case string:
-				if t == "1" || strings.EqualFold(t, "true") {
-					qv.Set("leaf_only", "1")
-				}
-			default:
-				if fmt.Sprint(t) == "1" || fmt.Sprint(t) == "true" {
-					qv.Set("leaf_only", "1")
-				}
-			}
+		if boolArg(args, "leaf_only") {
+			qv.Set("leaf_only", "1")
 		}
-		raw, err = c.IssueList(qv)
+		raw, err := c.IssueList(qv)
+		if err != nil {
+			return "", err
+		}
+		return emitIssue(raw)
 	case "board_issue_get":
-		raw, err = c.IssueGet(strArg(args, "issue_id"))
-	case "board_issue_create":
-		body := map[string]any{"project_id": strArg(args, "project_id"), "title": strArg(args, "title")}
-		if pid := strArg(args, "parent_id"); pid != "" {
-			body["parent_id"] = pid
+		ref := strArg(args, "issue_id")
+		id, err := c.ResolveIssueRef(ref)
+		if err != nil {
+			return "", err
 		}
+		raw, err := c.IssueGet(id)
+		if err != nil {
+			return "", err
+		}
+		return emitIssue(raw)
+	case "board_issue_create":
+		parentRef := strArg(args, "parent_id")
+		parentID, err := c.ResolveIssueRef(parentRef)
+		if err != nil {
+			return "", err
+		}
+		body := map[string]any{"project_id": strArg(args, "project_id"), "title": strArg(args, "title"), "parent_id": parentID}
 		for _, k := range []string{"description", "status", "priority", "assignee_id"} {
 			if v := strArg(args, k); v != "" {
 				body[k] = v
 			}
 		}
-		raw, err = c.IssueCreate(body)
+		raw, err := c.IssueCreate(body)
+		if err != nil {
+			return "", err
+		}
+		return emitIssue(raw)
 	case "board_issue_claim":
+		ref := strArg(args, "issue_id")
+		id, err := c.ResolveIssueRef(ref)
+		if err != nil {
+			return "", err
+		}
 		ver := -1
 		if v, ok := args["version"]; ok && v != nil {
 			switch n := v.(type) {
@@ -216,8 +289,17 @@ func callTool(c *botclient.Client, name string, args map[string]any) (string, er
 				ver = n
 			}
 		}
-		raw, err = c.IssueClaim(strArg(args, "issue_id"), ver)
+		raw, err := c.IssueClaim(id, ver)
+		if err != nil {
+			return "", err
+		}
+		return emitIssue(raw)
 	case "board_issue_update":
+		ref := strArg(args, "issue_id")
+		id, err := c.ResolveIssueRef(ref)
+		if err != nil {
+			return "", err
+		}
 		body := map[string]any{}
 		if v, ok := args["version"]; ok {
 			body["version"] = v
@@ -227,11 +309,55 @@ func callTool(c *botclient.Client, name string, args map[string]any) (string, er
 				body[k] = v
 			}
 		}
-		raw, err = c.IssueUpdate(strArg(args, "issue_id"), body)
+		raw, err := c.IssueUpdate(id, body)
+		if err != nil {
+			return "", err
+		}
+		return emitIssue(raw)
 	case "board_comment_list":
-		raw, err = c.CommentList(strArg(args, "issue_id"))
+		ref := strArg(args, "issue_id")
+		id, err := c.ResolveIssueRef(ref)
+		if err != nil {
+			return "", err
+		}
+		ident := ref
+		if !botclient.LooksLikeIdentifier(ref) {
+			ident = c.CachedIdent(id)
+		}
+		raw, err := c.CommentList(id)
+		if err != nil {
+			return "", err
+		}
+		if opts.Full {
+			var v any
+			_ = json.Unmarshal(raw, &v)
+			return botclient.MarshalView(v), nil
+		}
+		items, err := c.ProjectComments(raw, ident, opts)
+		if err != nil {
+			return "", err
+		}
+		return botclient.FormatCommentListText(items), nil
 	case "board_comment_create":
-		raw, err = c.CommentCreate(strArg(args, "issue_id"), strArg(args, "body"))
+		ref := strArg(args, "issue_id")
+		id, err := c.ResolveIssueRef(ref)
+		if err != nil {
+			return "", err
+		}
+		raw, err := c.CommentCreate(id, strArg(args, "body"))
+		if err != nil {
+			return "", err
+		}
+		if opts.Full {
+			var v any
+			_ = json.Unmarshal(raw, &v)
+			return botclient.MarshalView(v), nil
+		}
+		items, err := c.ProjectComments(raw, ref, opts)
+		if err != nil {
+			return "", err
+		}
+		return botclient.FormatCommentListText(items), nil
 	case "board_memory_list":
 		limit := 0
 		if v, ok := args["limit"]; ok && v != nil {
@@ -242,11 +368,50 @@ func callTool(c *botclient.Client, name string, args map[string]any) (string, er
 				limit = n
 			}
 		}
-		raw, err = c.MemoryList(strArg(args, "q"), strArg(args, "mode"), limit)
+		raw, err := c.MemoryList(strArg(args, "q"), strArg(args, "mode"), limit)
+		if err != nil {
+			return "", err
+		}
+		if opts.Full {
+			var v any
+			_ = json.Unmarshal(raw, &v)
+			return botclient.MarshalView(v), nil
+		}
+		items, err := botclient.ProjectMemories(raw, opts)
+		if err != nil {
+			return "", err
+		}
+		return botclient.FormatMemoryListText(items), nil
 	case "board_memory_set":
-		raw, err = c.MemorySet(strArg(args, "key_name"), strArg(args, "value_text"), strArg(args, "tags"))
+		raw, err := c.MemorySet(strArg(args, "key_name"), strArg(args, "value_text"), strArg(args, "tags"))
+		if err != nil {
+			return "", err
+		}
+		if opts.Full {
+			var v any
+			_ = json.Unmarshal(raw, &v)
+			return botclient.MarshalView(v), nil
+		}
+		items, err := botclient.ProjectMemories(raw, opts)
+		if err != nil {
+			return "", err
+		}
+		return botclient.FormatMemoryListText(items), nil
 	case "board_handoff_get":
-		raw, err = c.HandoffGet()
+		raw, err := c.HandoffGet()
+		if err != nil {
+			return "", err
+		}
+		if opts.Full {
+			var v any
+			_ = json.Unmarshal(raw, &v)
+			return botclient.MarshalView(v), nil
+		}
+		v, err := c.ProjectHandoff(raw, opts)
+		if err != nil {
+			return "", err
+		}
+		return botclient.FormatHandoffText(v), nil
 	case "board_handoff_import":
 		var body any
 		if h, ok := args["handoff"]; ok {
@@ -254,15 +419,17 @@ func callTool(c *botclient.Client, name string, args map[string]any) (string, er
 		} else {
 			body = args
 		}
-		raw, err = c.HandoffImport(body)
+		raw, err := c.HandoffImport(body)
+		if err != nil {
+			return "", err
+		}
+		if opts.Full {
+			var v any
+			_ = json.Unmarshal(raw, &v)
+			return botclient.MarshalView(v), nil
+		}
+		return botclient.MarshalView(botclient.ProjectHandoffImport(raw, opts)), nil
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
-	if err != nil {
-		return "", err
-	}
-	var v any
-	_ = json.Unmarshal(raw, &v)
-	b, _ := json.MarshalIndent(v, "", "  ")
-	return string(b), nil
 }
