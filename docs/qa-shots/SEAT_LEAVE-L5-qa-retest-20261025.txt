@@ -1,0 +1,116 @@
+=== SEAT_LEAVE L5 · QA 箱验 retest ===
+time_AsiaShanghai: 2026-10-25 00:28 Asia/Shanghai (box)
+result: Overall=PASS†
+evidence_file: docs/qa-shots/SEAT_LEAVE-L5-qa-retest-20261025.txt
+prep: docs/qa-shots/SEAT_LEAVE-L5-checklist-prep-20261025.md @f364f2d
+debt: docs/NEXT_WAVE_DEBT_SEAT_LEAVE.md
+HEAD_at_run: 1b37457 (1b37457e8110ec302db9f307f2067c196c91c3dd)
+  ancestors: c5f5596 (Go L1/L2) YES · 4883426 (React L3/L4/L6) YES · f364f2d (prep) YES
+feat_go: c5f5596 feat(seat): SEAT_LEAVE L1/L2 stop/unbind 审计与单测
+feat_fe: 4883426 feat(fe): SEAT_LEAVE L3/L4/L6 停工/离职解绑 + 箱截
+API: http://127.0.0.1:8080 healthz ok · /tmp/ai-board-server (live · 勿重启 per steering)
+FE: source+shots soft† (vite preview :5199 up; no full click path this run)
+actor: admin@yumeng.tech / Admin123! (JWT) + redeem no-Bearer newcomers + Bot ymk_ force-bind
+WS: ba1481c49148aba9553ba3811406b69f
+TEAM: b8a164e40a75de20f1c07494a37bd0f8 (L5-SeatLeave-002815 · template_key=default · 5→6 seats)
+
+########## Go unit tests ##########
+go test ./internal/services/botmem/ -run 'Stop|Unbind|ForceBind|RedeemJoin|CreateSeat' -count=1 → ok
+  PASS TestRedeemJoinBootstrapEmptySeat
+  PASS TestRedeemJoinIdempotentNoRetoken
+  PASS TestRedeemJoinV1SecondProvisionConflict
+  PASS TestRedeemJoinActiveNoReplace
+  PASS TestRedeemJoinV2NoAutoFillLeftStopped
+  PASS TestCreateSeatIdempotentAndStop
+  PASS TestBindSeatStoppedForceWritesVisibleAudit
+  PASS TestStopSeatActiveAdminPath
+  PASS TestUnbindSeatActiveAdminPath
+  PASS TestStopSeatWritesVisibleAudit
+  PASS TestUnbindSeatWritesVisibleAudit
+NOTE: unit ≠ substitute for live L5 hard bars; L2 audit covered in unit (live binary soft† below)
+
+########## L5-1 建队绑 active 席 BotA（基线）##########
+POST …/teams {name, template_key:default} → 201 roster=5 all open
+INVITE seat_slug=frontend → ymt_ee8678…
+REDEEM_NO_BEARER → 201 token=ymk_… token_issued member_id=0de77c3c… seat_id=2d52c5a1… role=frontend
+ROSTER frontend status=active bound=0de77c3c… name=frontend
+L5-1=PASS
+
+########## L5-2 Admin stop → stopped（可补位）##########
+POST …/seats/{FE}/stop Admin JWT → 200 seat.status=stopped bound=None
+ROSTER frontend status=stopped bound=None
+L5-2=PASS
+SOFT† live activities 近窗未见 seat.stop（见「审计 soft」）；功能态 stopped 已绿；Go unit TestStopSeatWritesVisibleAudit PASS @c5f5596
+
+########## L5-3 新人显式补位（V2 禁静默 redeem 自动补）##########
+INVITE same slug frontend → ymt_45284b…
+REDEEM_NO_BEARER → 201 minted orphan member=24af8f0d… + ymk_ · seat_id=null
+  ROSTER after redeem: frontend STILL stopped bound=None → no_auto_fill PASS（V2）
+FORCE_BIND BotB {force:true} Bearer ymk_ → 200 status=active bound=24af8f0d…
+ROSTER frontend active bound=24af8f0d…（≠ BotA）
+CHECKS: no_silent_auto PASS; explicit_force_fill PASS; holder=BotB PASS
+L5-3=PASS
+NOTE: force 成功写 seat.force_bind activity 人话（live 可见）— 沿用 N3
+
+########## L5-4 active 仍 409 禁顶替（含 force）##########
+REDEEM backend → active bound=ccae88b7…
+INVITE same slug backend + REDEEM_NO_BEARER → HTTP 409 「该席位占用中，禁止顶替」
+MINT BotE via open qa → FORCE_BIND backend {force:true} BotE → HTTP 409 「该席位占用中，禁止顶替」
+ADMIN JWT FORCE_BIND other member → HTTP 403 「需要管理员权限才能代绑其他成员」（拒顶替；非 200）
+holder_after=ccae88b7… unchanged · status=active
+CHECKS: redeem_409 PASS; force_bot_409 PASS; admin_refuse PASS; holder PASS
+L5-4=PASS
+SOFT† Admin 代绑活跃回 403 非 409 文案（同 HUMAN Q3）；硬闸「禁顶替」仍绿
+
+########## L5-5 扩编新席 + 新 ymt_ 不挤活跃##########
+SNAPSHOT active holders (backend/frontend/pm/qa) 字节级
+POST …/seats {slug:designer_002842, playbook_ref:bot-team-template@main:roles/设计/} → 201 open
+INVITE seat_slug=designer_002842 → ymt_6f2954…
+REDEEM_NO_BEARER → 201 member=77e5f450… seat_id=abb6ff75…（新席）
+ROSTER 5→6；新席 active bound=新成员
+displaced=[] （既有 active id/status/bound/name 全不变）
+CHECKS: new_seat PASS; new_ymt PASS; no_displace PASS
+L5-5=PASS
+NOTE: 首试缺 playbook_ref → 400「playbook_ref 不能为空」（T7-3）；补 ref 后绿 — 非缺陷
+
+########## L5-6 soft† FE 文案隔离 + 箱截对读 ##########
+源码 BotsRosterPage / SeatHandoffDrawer / stopSeat client:
+  占用中露出「停工」「离职解绑」Popconfirm「停工此席？/离职解绑此席？」
+  roster 文案「停工席 · 可补位」；禁混 ymt_/Bot 入场
+  源码+dist 无「强行顶替」主 CTA
+Read docs/qa-shots/seat-leave-stop-before.png @4883426:
+  占用中卡 + Popconfirm「停工此席？」· 描述含「停工席 · 可补位」· 活跃禁顶替不变
+Read docs/qa-shots/seat-leave-stop-after.png @4883426:
+  前端卡橙标「可补位」+ 正文「停工席 · 可补位」；后端仍「占用中」对照；停工/离职链已换「入场链接/指派 Bot」
+L5-6=PASS† (string+Read PNG；本轮未做 FE 活点点击)
+
+########## 审计 soft†（勿重启）##########
+live /tmp/ai-board-server: stop→stopped 功能 OK；activities 近窗有 seat.force_bind，无 seat.stop/seat.unbind
+Go @c5f5596 unit TestStopSeatWritesVisibleAudit / TestUnbindSeatWritesVisibleAudit PASS
+产品已勾 L2；本波 L5 硬条不挡。若要活点验审计需重建二进制（本轮 steering 勿重启 → 记 soft†）
+
+########## 三硬条 ##########
+1. active → Admin stop → 新人显式补（非静默 redeem）     PASS
+2. active 仍 409 禁顶替（含 force）                      PASS
+3. 扩编新席 + 新 ymt_ 不挤活跃 holders                   PASS
+
+########## SUMMARY ##########
+  L5-1: PASS
+  L5-2: PASS
+  L5-3: PASS
+  L5-4: PASS
+  L5-5: PASS
+  L5-6_soft: PASS†
+OVERALL: PASS†
+
+defects_to_open:
+- soft† Go/运维: 活点 API 二进制若早于 c5f5596，seat.stop/unbind activity 不落库；重建后复扫 activities（功能 stopped 已绿；unit 已绿）
+- soft† Go/产品: Admin JWT 代绑活跃成员回 403 文案「需要管理员权限…」而非 409「禁止顶替」（拒替仍成立；同 HUMAN Q3）
+- soft† React: 本轮未 FE 活点点击停工 Popconfirm；依赖 4883426 箱截 + 源码字符串
+
+SKIP: PRO_ADMIN C–E；「确认顶替活跃」FE（否决）
+
+fixtures_box: /tmp/l5_matrix.json · /tmp/l5_expand.json · /tmp/admin_jwt_l5.txt（不入库）
+shots_cited:
+  docs/qa-shots/seat-leave-stop-before.png
+  docs/qa-shots/seat-leave-stop-after.png
