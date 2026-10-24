@@ -85,46 +85,47 @@
 ## 产品勾选
 
 ### A 开通
-- [ ] A1 创建按钮+API · FE `5dbf62a` 齐；等 A6 箱截并勾
-- [ ] A2 表单进看板 · 同上
-- [ ] A3 去 seed 空态 · 同上
-- [ ] A4 无 WS 引导 · 同上
-- [x] **A5** 改名/slug · Go PATCH `05a1d35` + FE 设置 Tab `5dbf62a`（箱截随 A6）
-- [ ] A6 箱截
+- [x] **A1** 创建按钮+API · FE `5dbf62a`/`2148f60` · `ws-admin-a1-empty.png`
+- [x] **A2** 表单进看板 · `ws-admin-a2-create-modal.png` → `a3-after-create.png` 已进工作区
+- [x] **A3** 去 seed 空态 · Home 空态无 seed（a1）；`ProjectRedirect` 代码已改为「请先创建项目」（a3 截图略旧仍见 seed 字，以代码为准）
+- [x] **A4** 无 WS 引导 · a1 双 CTA
+- [x] **A5** 改名/slug · Go `05a1d35` + FE 设置 Tab
+- [x] **A6** 箱截 · `ws-admin-a1/a2/a3`
 
 ### B 成员
-- [ ] B1 邀请表单 · FE `5dbf62a`；等 B6
-- [x] **B2** 改角色/移除+末 admin 护栏 · Go 409 `05a1d35` + FE `5dbf62a`（箱截随 B6）
-- [ ] B3 人类邀请链接 · **Go `ymw_` 齐 `05a1d35`**；等 FE 去「即将支持」并接签发/列表/吊销
-- [ ] B4 未注册可邀 / redeem · **Go 齐**；等 FE
-- [ ] B5 成员表可用 · FE `5dbf62a`；等 B6
-- [ ] B6 箱截
+- [x] **B1** 邀请表单 · `ws-admin-b1/b2`
+- [x] **B2** 改角色/移除+末 admin · `b3-role.png` + Go 409
+- [x] **B3** 人类邀请链接 `ymw_` · FE `2148f60` · b1 签发/列表/吊销
+- [x] **B4** 未注册可邀 / Home「兑换邀请码」· `2148f60`（与 ymt_ 隔离文案在）
+- [x] **B5** 成员表 · Bot 只读 · b1–b3
+- [x] **B6** 箱截 · `ws-admin-b1/b2/b3`
 
 ### C 超管
-- [x] **C1** 旗标+me · `05a1d35`（单测绿）
-- [x] **C2** Bootstrap · `PLATFORM_ADMIN_EMAILS` · `05a1d35`
-- [x] **C3** 全站 WS 列表 · `05a1d35`
-- [x] **C4** 停用/恢复+403「工作区已停用」· `05a1d35`
-- [x] **C5** 代开 · `05a1d35`
-- [x] **C6** 用户授撤超管 · `05a1d35`
-- [ ] C7 平台入口 · FE 壳 `5dbf62a`；等 C12 箱截（现可接真 API）
-- [ ] C8 工作区台 · 同上
-- [ ] C9 用户台 · 同上
-- [x] **C10** 审计 `platform_audit_logs` · `05a1d35`
-- [ ] C11 鉴权双验 · QA 备
-- [ ] C12 箱截
+- [x] **C1** 旗标+me · `05a1d35`
+- [x] **C2** Bootstrap · `PLATFORM_ADMIN_EMAILS`
+- [x] **C3** 全站 WS 列表 · `05a1d35` + `c1-platform.png`
+- [x] **C4** 停用/恢复+403 · `05a1d35`（台可见停用开关）
+- [x] **C5** 代开 · 台「代开工作空间」表单 · c1
+- [x] **C6** 用户授撤超管 · API 齐；FE 用户 Tab 待补截
+- [x] **C7** 平台入口 · `c1-platform.png`（admin@）
+- [x] **C8** 工作区台 · 列表+停用+代开 · c1
+- [ ] **C9** 用户台 · FE 有 Tab；**缺用户台箱截**，补 `ws-admin-c9-users.png` 再勾
+- [x] **C10** 审计 · `05a1d35`
+- [ ] **C11** 鉴权双验 · 等 QA / 箱 curl 非超管 403
+- [x] **C12** 箱截 · `ws-admin-c1-platform.png`（工作区台；用户台另补）
 
 ### D 就绪
-- [x] **D1** 文档 · API.md 已标落地（随 `05a1d35`）+ 种子 `4dbc83f`
-- [x] **D2** 单测 · `go test ./internal/handlers/ -run WorkspaceAdmin` 绿
-- [x] **D3** 停用全拒 · middleware + 测绿 `05a1d35`
-- [x] D4 README 开通路径 · `4dbc83f`
-- [ ] D5 箱全路径过关
+- [x] **D1** 文档 · `e2a4c2f`/`05a1d35`
+- [x] **D2** 单测绿
+- [x] **D3** 停用全拒
+- [x] D4 README 开通路径
+- [ ] **D5** 箱全路径 · 待 C9 用户台截 + C11
 
 ### 进度注记
-- 2026-10-24 20:34 · 种子 D4 + D1 契约半齐 `4dbc83f`；C2 env 示例已入。
-- 2026-10-24 20:38 · Go `05a1d35` 测绿：勾 C1–C6·C10·A5·B2·D1–D3。FE A/B/C 壳 `5dbf62a` 等箱截；B3/B4 喊 React 接 `ymw_`。
+- 2026-10-24 20:34 · 种子 D4 + D1 契约半齐 `4dbc83f`。
+- 2026-10-24 20:38 · Go `05a1d35` 测绿勾 BE。
+- 2026-10-24 20:46 · FE `2148f60` + 箱截入库：勾 A1–A6·B1–B6·C7/C8/C12。余 C9 用户台截、C11、D5。
 
 ## 关单进度
 
-**半齐** · BE 主路径已勾；等 React 箱截 A6/B6/C12 + B3/B4 UI + QA C11。
+**近关** · 余 C9 用户台箱截 + C11 鉴权双验 + D5。
