@@ -373,6 +373,11 @@ func MountTeams(mux *http.ServeMux, db *sql.DB, wrap func(http.Handler) http.Han
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/invites/{inviteID}/revoke", h.Idempotent(h.RevokeInvite))
 	// G3 redeem：不在 workspace 路径下（Bot 持 ymk_ 定位团队）
 	reg("POST /api/v1/team-invites/redeem", h.RedeemInvite)
+	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}/pins", h.ListPins)
+	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}/pins/{key}", h.GetPin)
+	reg("PUT /api/v1/workspaces/{workspaceID}/teams/{teamID}/pins", h.Idempotent(h.PutPin))
+	reg("PUT /api/v1/workspaces/{workspaceID}/teams/{teamID}/pins/{key}", h.Idempotent(h.PutPin))
+	reg("DELETE /api/v1/workspaces/{workspaceID}/teams/{teamID}/pins/{key}", h.DeletePin)
 }
 
 func (h *TeamHandler) Idempotent(fn http.HandlerFunc) http.HandlerFunc {

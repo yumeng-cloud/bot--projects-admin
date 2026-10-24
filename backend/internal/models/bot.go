@@ -169,3 +169,14 @@ type TeamInviteRedeemResult struct {
 	RoleHint        *string `json:"role_hint,omitempty"`
 	SeatSlug        *string `json:"seat_slug,omitempty"`
 }
+
+// TeamPin 团队共享记忆墙条目（与 bot_memories 分表；UNIQUE(team_id, key)）。
+type TeamPin struct {
+	ID          string  `json:"id"`
+	WorkspaceID string  `json:"workspace_id"`
+	TeamID      string  `json:"team_id"`
+	Key         string  `json:"key"`
+	Value       string  `json:"value"`
+	UpdatedBy   *string `json:"updated_by,omitempty"`
+	UpdatedAt   string  `json:"updated_at"`
+}

@@ -19,7 +19,7 @@ func TestSQLiteTeamsAndTeamSeatsExist(t *testing.T) {
 	}
 	defer b.Close()
 
-	for _, table := range []string{"teams", "team_seats"} {
+	for _, table := range []string{"teams", "team_seats", "team_pins"} {
 		var n int
 		if err := b.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?`, table).Scan(&n); err != nil {
 			t.Fatal(err)
@@ -44,7 +44,7 @@ func TestPostgresTeamsIfDSN(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer sqlDB.Close()
-	for _, table := range []string{"teams", "team_seats"} {
+	for _, table := range []string{"teams", "team_seats", "team_pins"} {
 		var n int
 		err := sqlDB.QueryRow(`SELECT COUNT(*) FROM information_schema.tables WHERE table_name=$1`, table).Scan(&n)
 		if err != nil {

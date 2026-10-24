@@ -395,3 +395,16 @@ CREATE INDEX IF NOT EXISTS idx_team_invites_hash ON team_invites(token_hash);
 ALTER TABLE webhooks ADD COLUMN filter_member_id TEXT;
 ALTER TABLE webhooks ADD COLUMN filter_seat_id TEXT;
 
+
+-- Team pins (shared memory wall per team; isolated from bot_memories)
+CREATE TABLE IF NOT EXISTS team_pins (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  key TEXT NOT NULL,
+  value TEXT NOT NULL DEFAULT '',
+  updated_by TEXT REFERENCES members(id) ON DELETE SET NULL,
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  UNIQUE(team_id, key)
+);
+CREATE INDEX IF NOT EXISTS idx_team_pins_ws_team ON team_pins(workspace_id, team_id);

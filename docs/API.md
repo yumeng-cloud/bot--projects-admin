@@ -108,13 +108,13 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 
 **invite.status**（派生、不落库）：`active` | `revoked` | `expired` | `exhausted`。
 
-**隔离（T6-R 最小）**：roster / seats / bind / expand 均以 path `teamID` 为界，跨 `team_id` 不串 claim；通道切队 = 换 `team_uuid`（见 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.4）。**尚未落地**：Issue 列表按 `team_id` 过滤；**`team_pins` REST/通道契约已写（见下「Team pins」+ [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.5），实现待 SHA 再勾验收**。全文边界：[`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) · 开工单：[`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md)。
+**隔离（T6-R 最小）**：roster / seats / bind / expand 均以 path `teamID` 为界，跨 `team_id` 不串 claim；通道切队 = 换 `team_uuid`（见 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.4）。**尚未落地**：Issue 列表按 `team_id` 过滤。**`team_pins` REST 已落地**（见下「Team pins」）；MCP/CLI 通道见 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.5（可选）。全文边界：[`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) · 开工单：[`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md)。
 
 详见 [`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md) · [`BOT_TEAM_SEAT_P0.md`](./BOT_TEAM_SEAT_P0.md)。
 
-## Team pins（共享记忆墙 · 契约）
+## Team pins（共享记忆墙）
 
-> **状态：契约已齐、实现待 SHA。** 验收勾选见 [`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md) P1–P5；通道见 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.5。  
+> **状态：REST 已实现。** 验收见 [`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md) P1–P3（Go）；P4/P5/MCP 另席。  
 > **不是** 席位私有 `bot_memories`；同名 `key` 分表不串、互不覆盖。
 
 表：`team_pins`，`UNIQUE(team_id, key)`。字段至少：`id, workspace_id, team_id, key, value, updated_by, updated_at`（JSON `snake_case`）。
@@ -124,9 +124,10 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 | Method | Path | 说明 |
 |--------|------|------|
 | GET | `/workspaces/{ws}/teams/{teamID}/pins` | 列**本队** pins → `{pins:[]}` |
-| GET | `/workspaces/{ws}/teams/{teamID}/pins/{key}` | 单条；本队无此 key → **404** |
+| GET | `/workspaces/{ws}/teams/{teamID}/pins/{key}` | 单条；本队无此 key → **404**（`pin 不存在`） |
 | PUT | `/workspaces/{ws}/teams/{teamID}/pins` | upsert by `key`；body `{key, value}` → `{pin}`；`updated_by` = 当前 actor |
-| DELETE | `/workspaces/{ws}/teams/{teamID}/pins/{key}` | 按 key 删；成功 `{ok:true}`；本队无此 key / 错队 → **404** |
+| PUT | `/workspaces/{ws}/teams/{teamID}/pins/{key}` | 同上别名；path `key` 优先于 body |
+| DELETE | `/workspaces/{ws}/teams/{teamID}/pins/{key}` | 按 key 删；成功 `{ok:true}`；本队无此 key → **404**；错队/无队 → **404**（`团队不存在或无权访问`） |
 
 写操作建议支持 Header `Idempotency-Key`（与其它 workspace 写路由一致）。
 
