@@ -1,0 +1,71 @@
+SEED_SAMPLE_DATA one-shot gate · QA harsh retest (Go P0 @e162e41)
+date: 2026-10-24 22:19 Asia/Shanghai (CST, UTC+8)
+actor: QA (育蒙 AI 协作看板)
+HEAD_at_verify: b556e973231c1df088d8d3421432b6abd78e31ff (origin/main)
+fix_under_test: e162e41bd2daeeb41adfdcd1f3a57c0dbe871faa — fix(backend): gate demo seed behind SEED_SAMPLE_DATA; stop empty-issue reseed
+docs_related: 10c78e9a77d33f2793deacaec9b045d008249c8e — docs: 生产 AUTO_SEED=0；演示仅 SEED_SAMPLE_DATA=1
+e162e41_on_origin_main: YES (ancestor of HEAD)
+method: code review + go test ./internal/seed/ (isolated temp sqlite); NO live restart of shared /tmp/ai-board-server :8080 (left running for parallel B1 QA)
+Overall: PASS
+
+## Defaults / production posture
+
+| Check | Result | Evidence |
+|-------|--------|----------|
+| SEED_SAMPLE_DATA unset → false | PASS | config.Load envTruthy; TestConfigSeedSampleDataEnv; TestQAHarsh_EnvDefaults |
+| SEED_SAMPLE_DATA=0 → false | PASS | same |
+| SEED_SAMPLE_DATA=1\|true\|yes → true | PASS | envTruthy + TestConfigSeedSampleDataEnv |
+| AUTO_SEED default off | PASS | main.go autoSeedEnabled; unset/0 skips seed.Run entirely |
+| .env.example AUTO_SEED=0 | PASS | .env.example L5–6 |
+| .env.example SEED_SAMPLE_DATA=0 | PASS | .env.example L56–57 + comment 生产勿开 |
+| README/API/COORDINATION note | PASS | 10c78e9 + COORDINATION.md: 生产两者关闭 |
+
+## Cases A / B / C
+
+| Case | Result | Evidence |
+|------|--------|----------|
+| A — SEED_SAMPLE_DATA unset/0 → no 示例项目 / sample issues / demo labels | PASS | TestSeedDefaultNoSampleData; TestQAHarsh_CaseA projects=0 issues=0 labels=0; structural admin/ws/bot_roles still seed when Run called |
+| B — SEED_SAMPLE_DATA=1 once → sample appears | PASS | TestSeedSampleDataCreatesDemoOnce; TestQAHarsh_CaseB projects=1 name=示例项目 issues=8 labels=3 seed_meta.sample_data_seeded=1 |
+| C — clear sample issues, re-run with SEED_SAMPLE_DATA=1 → must NOT re-seed issues | PASS | TestSeedSampleDataCreatesDemoOnce; TestQAHarsh_CaseC issues=0 after DELETE issues + seed.Run(true); log「sample data already marked seeded; skip issues re-seed」 |
+
+## Unit / integration tests
+
+```
+go test ./internal/seed/ -count=1 -v
+→ TestSeedDefaultNoSampleData PASS
+→ TestSeedSampleDataCreatesDemoOnce PASS
+→ TestSeedSampleDataOffAfterPriorSeed PASS
+→ TestConfigSeedSampleDataEnv PASS
+ok github.com/.../internal/seed
+```
+
+Harsh harness (temp only, not committed): CaseA/B/C/C2/EnvDefaults all PASS; harness file removed after run.
+
+## Code path (reviewed)
+
+- backend/internal/config/config.go: SeedSampleData = envTruthy(SEED_SAMPLE_DATA); default false
+- backend/cmd/server/main.go: AUTO_SEED gate before seed.Run
+- backend/internal/seed/seed.go: sample only if cfg.SeedSampleData; issues gated by seed_meta key sample_data_seeded
+- backend/internal/db/postgres/013_seed_meta.sql + schema*.sql: seed_meta table
+- Makefile seed target: SEED_SAMPLE_DATA=1 go run ./cmd/seed (explicit opt-in)
+
+## Live / shared DB
+
+- Prefer isolated temp sqlite — DONE (all Case A/B/C via go test TempDir DBs)
+- Shared /tmp/ai-board-server pid 966091 still LISTEN *:8080 untouched (no restart, no shared DB mutate)
+- Live Case A/B/C against shared postgres/:8080: SKIPPED by design (would race parallel B1 QA); unit isolation covers product intent
+
+## Observation (non-blocking / not Case C FAIL)
+
+Case C2 (harsh): DELETE projects+labels+issues while seed_meta remains, then seed.Run(SEED_SAMPLE_DATA=1):
+  → projects=1 labels=3 recreate; issues=0 (meta still blocks)
+Product P0 text targets empty-issue re-seed / one-shot issues; issue gate PASS.
+If product later wants project/label also fully one-shot under SEED_SAMPLE_DATA=1, gate those behind seed_meta too — optional follow-up for Go 后端, not a P0 FAIL.
+
+## Defects
+
+None for stated P0 (default off + one-shot issues + docs defaults).
+
+## Verdict
+
+PASS → commit docs(qa): SEED_SAMPLE_DATA one-shot gate PASS
