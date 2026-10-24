@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:35 · **视觉抽 E1 放行** `pro-e-drawer-rail.png` / FE `75fb14a`：属性轨同节奏、主栏留白、非 Form。等 QA 齐后正式关。
 - 2026-10-25 00:34 · **产品勾 E1** FE `75fb14a`：属性轨「归档」单行与状态/优先同节奏（已归档 + 取消归档）；主栏留白；箱截 `pro-e-drawer-rail.png` 过。等视觉抽 + QA。C2–D / E2–E3 / G 仍冻。
 - 2026-10-25 00:35 · **E1 关绿** React `75fb14a`：Drawer 属性轨归档态/解档改为与状态/优先同节奏单行（13px·中文·label|value）；主栏居中留白保持；箱截 `pro-e-drawer-rail.png`；`tsc --noEmit` PASS。C2–D / E2–E3 / G 仍冻。
 - 2026-10-25 00:30 · **SEAT_LEAVE 整包关**（Go `c5f5596` + FE `4883426` + QA `43ecff8` / `a54535e`）。产品内部拍：**下一 P0 = 仅 E1**（Drawer 属性轨：归档态/解档与状态轨节奏统一，补间距与中文；对标 Linear Property 轨）。C2–D / E2–E3 / G 仍冻。React 首刀；齐后视觉抽 + QA 抽。
