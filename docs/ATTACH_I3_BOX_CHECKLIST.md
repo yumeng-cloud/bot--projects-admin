@@ -2,7 +2,9 @@
 
 > 2026-10-24 17:46 Asia/Shanghai · 产品体验  
 > 依据：`ACCEPTANCE_UX_BOT.md` §C F1–F10 代码已齐；`PRODUCT_SUITE_P0` **I3** 仍 `[ ]`  
-> **本单只箱截关单，禁止重写上传业务**
+> **本单只箱截关单，禁止重写上传业务**  
+> **React 入口**：本文件 A1–A5（`docs/qa-shots/I3-*.png`）· 5174 热更自截  
+> QA 备测全表见 `ATTACHMENT_C_CLOSE_CHECKLIST.md`（F1–F10）；产品关 I3 以本五张为准
 
 ## 谁
 

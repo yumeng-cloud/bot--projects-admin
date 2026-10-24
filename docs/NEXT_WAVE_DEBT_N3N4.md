@@ -39,11 +39,11 @@
 
 ---
 
-## 产品勾选（2026-10-24 17:46 Asia/Shanghai）
+## 产品勾选（2026-10-24 17:46 Asia/Shanghai · 17:48 补强）
 
 | 项 | 结果 | 证据 |
 | --- | --- | --- |
-| **N3** | [x] 代码 `3c698b5`（停工/离职 force→人话+开放 Issue comment）；**箱截待补**不挡本勾代码债 | Go 单测绿；产品待箱活动/评论目视 |
-| **N4** | [x] 关 | `c947a76` + `docs/qa-shots/N4-dispatch-push.png`（勾选「立即推送」+ 人话说明） |
+| **N3 / J4 P0.1** | [x] **关** | `3c698b5`：stop→`force` bind → `GET …/activities` `action=seat.force_bind` 人话 comment；开放 Issue `GET …/comments` 同人话（Go 箱证 + 用户放行推 main） |
+| **N4** | [x] **关** | `c947a76` + `b0e4dc0` · `docs/qa-shots/N4-dispatch-push.png`（立即推送已勾 + 说明） |
 
-**清债**：J7「立即推送」P0.5 一刀清。仍欠：巡检例程 P0.5；N3 箱截补强；附件 I3 箱截关单。
+**清债**：J4 P0.1 + J7「立即推送」已清。仍欠：巡检例程 P0.5（`BOT_PATROL_P05`）；附件 I3 箱截（`ATTACH_I3_BOX_CHECKLIST`）。
