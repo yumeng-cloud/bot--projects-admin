@@ -138,7 +138,8 @@
 
 ## 进度注记
 
-- 2026-10-25 00:50 · **C1 改后置**：总指挥拍下一 P0=SEAT_LEAVE；C–E/G 仍冻。见 [`NEXT_WAVE_DEBT_SEAT_LEAVE.md`](./NEXT_WAVE_DEBT_SEAT_LEAVE.md)。
+- 2026-10-25 00:53 · **对齐总指挥**：本波认 **C1 归档显隐**（@`2e328dd`）先关；SEAT_LEAVE 排 C1 关后下一刀（债已落 `71e9b4a`，不丢）。C2–E/G 仍冻。
+- 2026-10-25 00:50 · **C1（曾短暂让路 SEAT_LEAVE，已对齐回先关）**：总指挥拍下一 P0=SEAT_LEAVE；C–E/G 仍冻。见 [`NEXT_WAVE_DEBT_SEAT_LEAVE.md`](./NEXT_WAVE_DEBT_SEAT_LEAVE.md)。
 - 2026-10-25 00:45 · **B2/B3/B4 小包正式关** FE `95974f1` + QA `76824d1`。
 - 2026-10-25 00:45 · **下一 P0 = C1 仅**：「已归档」显隐开关（默认关，`include_archived`）；搜索/状态等既有筛选保持。不并行 C2–C5/D/E/G。React 首刀；齐后 QA 抽 + 产品勾。
 - 2026-10-25 00:40 · **QA 抽验 PASS** `76824d1` / `PRO_ADMIN-B2-B3-qa-spotcheck-20261025.txt`（B2/B3 三条苛刻全过）。**B2/B3/B4 关绿维持**。
@@ -162,4 +163,4 @@
 
 ## 关单进度
 
-**B 空态小包已关** · **C1 后置**（让路 SEAT_LEAVE）；C–E/G 仍冻。
+**B 空态小包已关** · **进行中仅 C1**；SEAT_LEAVE 排 C1 关后；C2–E/G 仍冻。

@@ -3,7 +3,7 @@
 > 2026-10-25 00:50 Asia/Shanghai · 产品体验  
 > **总指挥拍 P0**（人用任用 S3 / HUMAN F2·C·V2）：Admin 对活跃席一键标停工/离职 → 才允许新人补位；活跃继续 409；扩编=新席+新 `ymt_`。  
 > **承接：** API 已有 `POST …/seats/{id}/stop` · `unbind`（[`API.md`](./API.md)）；CLI `seat leave`；HUMAN 冻 `b6614ff`。本包补 **Admin 可见一键 + 审计人话 + FE 空态/文案**，禁填表心智。  
-> **PRO_ADMIN C–E/G 仍冻**（含已派未交的 C1 归档显隐 → **改挂后置**）。
+> **PRO_ADMIN C–E/G 仍冻**（PRO_ADMIN **C1 先关**（本包排其后）；C2–E/G 仍冻）。
 
 ---
 
@@ -48,14 +48,15 @@
 | 角色 | 首刀 |
 | --- | --- |
 | **Go 后端** | L1/L2：核 `StopSeat`/`UnbindSeat` Admin 路径+审计；缺口补齐 |
-| **React 前端** | L3/L4/L6：**停掉 PRO_ADMIN C1**，改本包 |
+| **React 前端** | L3/L4/L6：**C1 关后**再干本包 |
 | **QA** | L5 |
 | **产品体验** | 本裁定；L7 |
 
 ## 进度注记
 
+- 2026-10-25 00:53 · **总指挥对齐**：本波先关 PRO_ADMIN **C1**；本包排 **C1 关后下一刀**。Go/React/QA 已预派可先核底，但勿抢 C1 主航线；产品验收顺序 C1 → SEAT_LEAVE。
 - 2026-10-25 00:50 · 总指挥拍 SEAT_LEAVE 为下一 P0；产品落债并派 Go/React/QA。PRO_ADMIN C1 改后置。
 
 ## 关单进度
 
-**开干** · 等 L1–L6。
+**排队（C1 关后）** · 债已落；等 PRO_ADMIN C1 关后再收 L1–L6。
