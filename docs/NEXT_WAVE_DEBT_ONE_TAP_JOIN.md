@@ -118,7 +118,7 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [x] **A1** join URL 契约 · `1432980` `joinlink.BuildJoinURL` + golden
 - [x] **A2** `/join` 解析页 · `GET /join` HTML；非法 code 中文 400；不 redeem/claim
 - [x] **A3** 默认 API 根可配 · `PUBLIC_API_BASE`=`https://bot.api.sn.cn`；可选 `PUBLIC_BOARD_BASE`
-- [ ] **A4** 签发→URL→join 箱证
+- [x] **A4** 签发→URL→join 箱证 · QA `docs/qa-shots/ONE_TAP_A4-qa-retest-20261024.txt` PASS
 - [ ] **B1** 复制入场链接
 - [ ] **B2** 复制 Bot 提示词
 - [ ] **B3** role 带入
@@ -131,6 +131,8 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [ ] **D2** 产品关单
 
 ## 进度注记
+
+- 2026-10-24 22:09 · QA A4 PASS（箱证 ONE_TAP_A4-qa-retest-20261024.txt）；redeem 仍绿；/join 不 claim。
 
 - 2026-10-24 22:10 · 产品勾 A1–A3（测绿 `joinlink`/`handlers` Join*）；A4 仍 QA。
 

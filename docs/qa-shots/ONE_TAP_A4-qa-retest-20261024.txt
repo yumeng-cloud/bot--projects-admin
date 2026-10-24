@@ -1,0 +1,69 @@
+=== ONE_TAP_JOIN A4 harsh verify — GET /join contract ===
+time_AsiaShanghai: 2026-10-24 22:08 Asia/Shanghai (box)
+authority: docs/NEXT_WAVE_DEBT_ONE_TAP_JOIN.md A4 + docs/API.md §一键入场 GET /join
+delivered: 1432980 feat(join): ONE_TAP_JOIN A1–A3 (ancestor of HEAD)
+HEAD_at_verify: 14d0efd833ea10cad663f45915f827dba516a7ba (14d0efd docs(product): ONE_TAP_JOIN 勾 A1–A3)
+result: PASS
+evidence_file: docs/qa-shots/ONE_TAP_A4-qa-retest-20261024.txt
+
+## Interrupt note (non-blocking)
+Uncommitted React WIP on working tree (NOT committed by QA):
+  - PRO_ADMIN B1-ish: CreateProjectModal.tsx, CreateTeamQuickModal.tsx, ProjectRedirect.tsx, AppLayout, hooks…
+  - ONE_TAP FE helper: frontend/src/utils/oneTapJoin.ts
+No React PRO_ADMIN B1 commit on origin/main yet (latest B1-related: 2fd4e6e checklist / 52601dc product). A4 finished first.
+
+## Tree / rebuild
+- git fetch; merge-base --is-ancestor 1432980 HEAD → yes
+- backend clean vs 1432980; did NOT stash/wipe frontend WIP
+- unit: cd backend && env -u DATABASE_URL go test ./internal/joinlink/... ./internal/handlers/ ./internal/server/ -count=1 -run 'Join|join|BuildJoin'
+  → ok joinlink / handlers / server
+- rebuilt: go build -o /tmp/ai-board-server ./cmd/server (22:07 CST)
+- restarted old pid (pre-A1–A3 binary returned /join 404) → new /tmp/ai-board-server
+- healthz :8080 → 200
+- PUBLIC_API_BASE: unset in .env/.env.postgres; config.go + .env.example default https://bot.api.sn.cn
+  joinlink.DefaultAPIBase = https://bot.api.sn.cn
+
+## Live fixture
+actor: admin@yumeng.tech (seed)
+WS: ba1481c49148aba9553ba3811406b69f (育蒙科技)
+TEAM: ea918de1ac4d8116ed69651116a4acb9
+role/seat_slug: frontend
+issue invite: POST /api/v1/workspaces/{ws}/teams/{team}/invites → 201
+code_redacted: ymt_5b7b…dd96 (len=52; token_prefix=ymt_5b7be885 code_tail=e885)
+invite_id: 5b7e423616a16941e37e2652ce0cc426
+canonical URL shape: https://bot.api.sn.cn/join?code={ymt_}&role=frontend
+local probe host: http://127.0.0.1:8080 (API root, NOT /api/v1)
+
+## Curl matrix
+| step | request | expect | got | note |
+| --- | --- | --- | --- | --- |
+| A4 happy | GET /join?code=ymt_…&role=frontend | 200 text/html | 200 text/html; charset=utf-8 Cache-Control:no-store | title 一键入场; shows API根/入场码/角色; 复制提示词 + CLI; states 本页不会消耗入场码 |
+| A4 missing | GET /join | human CN error | 400 HTML | 「缺少入场码：请在链接中带上 code=ymt_…」 no stack |
+| A4 illegal | GET /join?code=not_a_code&role=frontend | human CN error | 400 HTML | 「须以 ymt_ 开头…」 no stack |
+| A4 api= | GET /join?code=…&role=frontend&api=https://example.test.api | override reflected | 200; API根 + prompt use https://example.test.api | documented optional api= |
+| redeem green | POST /api/v1/team-invites/redeem {code} Bearer admin JWT | 200 workspace+team | 200 {"workspace_id":"ba1481…","team_id":"ea918d…","seat_slug":"frontend","role_hint":"frontend","allow_expand_seat":false} | existing redeem path; no second claim |
+| no-claim proof | GET /join ×N before redeem; then 2× redeem | use_count only from redeem | use_count=2 max_uses=5 status=active after 2 redeems | /join did not increment use_count |
+| post-redeem page | GET /join?code=…&role=frontend after redeem | still 200 page | 200 | page still serves; does not claim |
+
+### Happy body snippets (secrets redacted)
+- API 根: `https://bot.api.sn.cn`
+- 入场码: `ymt_5b7b…dd96`
+- 角色: frontend
+- CLI: `ymbot team join --code ymt_5b7b…dd96 --role frontend`
+- prompt contains: whoami → team join --code … → handoff get; 禁止 mcp.json / YMBOT_* 清单; 禁止回显 ymk_
+- explicit: 「本页不会消耗入场码（兑换仍由 team join / redeem 完成）」
+
+## PASS/FAIL table
+| ID | item | status |
+| --- | --- | --- |
+| A1-cite | joinlink.BuildJoinURL + golden unit (1432980) | PASS |
+| A2 | GET /join parse; illegal CN 400; no redeem/claim | PASS |
+| A3 | PUBLIC_API_BASE default https://bot.api.sn.cn; api= override | PASS |
+| A4 | issue ymt_ → URL/page → redeem still green (箱证) | PASS |
+| redeem-still-green | POST /api/v1/team-invites/redeem same ymt_ | PASS |
+
+## Defects
+none
+
+## Overall
+PASS
