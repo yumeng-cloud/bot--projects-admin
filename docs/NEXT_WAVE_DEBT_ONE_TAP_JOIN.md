@@ -1,4 +1,4 @@
-# 一键入场（ONE_TAP_JOIN）
+# 一键入场（ONE_TAP_JOIN）· **已关**
 
 > 2026-10-24 22:05 Asia/Shanghai · 产品体验  
 > **用户定调（总指挥转·怒）：** 停「教人配一堆 env / MCP」路线。只要看板后台 **一条 URL 或一段可粘贴提示词**，新 Bot 打开/粘贴后该有的都带好——**零心智负担**。  
@@ -153,10 +153,11 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [x] **C2** 提示词航线 join · `ab8b416` + 证 `ONE_TAP-C2-team-join-20261024.txt` PASS
 - [x] **C3** 打开即用箱证 · QA PASS† `ONE_TAP_C3-qa-retest-20261024.txt`（C1@9779f23；C3-4 挂 Q1）
 - [x] **D1** 文档主路径改口 · `518a4b6` BOT.md 主路径=席页复制入场链接/提示词；env/mcp 降附录非推荐；README 轻对齐
-- [ ] **D2** 产品关单
+- [x] **D2** 产品关单 · 2026-10-25（prod E5 DNS 后置不挡）
 
 ## 进度注记
 
+- 2026-10-25 00:20 · **C3 PASS† + D2 关单** QA `d24d563`：打开即用（C1 预填† + redeem 得钥 + 不耗码）；C2 引用 `ab8b416`。prod E5/DNS **后置不挡**。
 - 2026-10-25 00:01 · **C3 PASS†** QA：链接→API/FE 短引导不耗码；登录预填 JoinWizard（string+route+dist）；redeem 无 Bearer→ymk_+席 active+whoami；V3 露钥未回归。E5 prod 仍 BLOCKED 不挡。
 
 - 2026-10-25 00:15 · **产品勾 C1** `9779f23`（登录 `/join`→预填 JoinWizard；未登录短引导不耗码；Go `/join` 未动）。
@@ -191,4 +192,4 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 关单进度
 
-**下一 P0 收口中** · A/B/E(local)/D1/C1/C2 已绿；**只欠 C3 → D2**；prod E5 等运维 redeploy。
+**整单已关** · A/B/C/D/E(local†) 齐；证 C3 `d24d563` · C2 `ab8b416` · C1 `9779f23` · D1 `518a4b6`。prod E5 等运维 redeploy。
