@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Button, Collapse, Drawer, Empty, Space, Spin, Tag, Typography, message } from 'antd'
+import { Alert, Button, Collapse, Drawer, Empty, Popconfirm, Space, Spin, Tag, Typography, message } from 'antd'
 import {
   CopyOutlined,
   ReloadOutlined,
+  StopOutlined,
+  UserDeleteOutlined,
 } from '@ant-design/icons'
 import {
   getHandoff,
@@ -33,6 +35,10 @@ type Props = {
   /** 占用者 member_id（可来自 team seat，非仅 claim） */
   occupantMemberId?: string | null
   occupantLabel?: string | null
+  /** SEAT_LEAVE L3：占用中可停工/离职（需有 team seat） */
+  canLeave?: boolean
+  onStop?: () => void
+  onLeaveUnbind?: () => void
 }
 
 export default function SeatHandoffDrawer({
@@ -45,6 +51,9 @@ export default function SeatHandoffDrawer({
   occupancyKind = null,
   occupantMemberId = null,
   occupantLabel = null,
+  canLeave = false,
+  onStop,
+  onLeaveUnbind,
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [handoff, setHandoff] = useState<BotHandoff | null>(null)
@@ -152,6 +161,33 @@ export default function SeatHandoffDrawer({
               </Tag>
               {keyHint ? <Tag>{keyHint}</Tag> : null}
             </div>
+            {kind === 'active' && canLeave ? (
+              <Space size={8} wrap style={{ marginTop: 10 }}>
+                <Popconfirm
+                  title="停工此席？"
+                  description="原演员解除占用，席位变为「停工席 · 可补位」。"
+                  okText="停工"
+                  cancelText="取消"
+                  onConfirm={() => onStop?.()}
+                >
+                  <Button size="small" icon={<StopOutlined />}>
+                    停工
+                  </Button>
+                </Popconfirm>
+                <Popconfirm
+                  title="离职解绑此席？"
+                  description="原演员解除绑定，席位变为可补位（left）。"
+                  okText="离职解绑"
+                  cancelText="取消"
+                  okButtonProps={{ danger: true }}
+                  onConfirm={() => onLeaveUnbind?.()}
+                >
+                  <Button size="small" danger icon={<UserDeleteOutlined />}>
+                    离职解绑
+                  </Button>
+                </Popconfirm>
+              </Space>
+            ) : null}
             {role.claim?.claimed_at ? (
               <Typography.Paragraph type="secondary" style={{ margin: '6px 0 0', fontSize: 12 }}>
                 认领于 {formatWikiTime(role.claim.claimed_at)}（{formatShanghai(role.claim.claimed_at)}）

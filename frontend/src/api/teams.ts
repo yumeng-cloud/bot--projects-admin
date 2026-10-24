@@ -278,6 +278,20 @@ export function unbindSeat(
   })
 }
 
+/** Admin 停工：清绑 + status=stopped（可补位）；与 unbind→left 对仗 */
+export function stopSeat(
+  workspaceId: string,
+  teamId: string,
+  seatId: string,
+  idempotencyKey?: string,
+) {
+  return api<{ seat: TeamSeat }>(`${ws(workspaceId)}/teams/${teamId}/seats/${seatId}/stop`, {
+    method: 'POST',
+    body: '{}',
+    idempotencyKey,
+  })
+}
+
 /** 签发入场码（Go G3）；404 → 人话由调用方处理 */
 export async function createTeamInvite(
   workspaceId: string,

@@ -50,6 +50,7 @@ import {
   listTeamInvites,
   revokeTeamInvite,
   seatOccupancy,
+  stopSeat,
   unbindSeat,
   type Team,
   type TeamInvite,
@@ -514,44 +515,79 @@ export default function BotsRosterPage() {
   }
 
 
-  const onRelease = async (role: BotRole) => {
+  /** SEAT_LEAVE：乐观清绑为可补位态（stopped|left 均走 seatOccupancy→left →「停工席 · 可补位」） */
+  const applyOptimisticLeave = (role: BotRole, status: 'stopped' | 'left', bound?: TeamSeat | null) => {
+    setRoles((prev) => prev.map((r) => (r.id === role.id ? { ...r, claim: null } : r)))
+    setTeamSeats((prev) => {
+      if (bound) {
+        return prev.map((s) => (s.id === bound.id ? { ...s, ...bound } : s))
+      }
+      return prev.map((s) => {
+        const match =
+          (s.bot_role_id && s.bot_role_id === role.id) ||
+          (s.role_slug && s.role_slug === role.slug) ||
+          (role.id.startsWith('seat:') && s.id === role.id.slice(5))
+        if (!match) return s
+        return {
+          ...s,
+          status,
+          bound_member_id: null,
+          member_id: null,
+          bound_display_name: null,
+          bound_at: null,
+          claim: null,
+        }
+      })
+    })
+  }
+
+  /** L3/L4：停工 → stopped；Toast + roster「停工席 · 可补位」；勿混 ymt_/Bot 入场文案 */
+  const onStop = async (role: BotRole) => {
+    const seat = seatOccForRole(role).seat
+    if (!teamId || !seat?.id) {
+      message.warning('无团队席位，无法停工')
+      return
+    }
     try {
-      const seat = seatOccForRole(role).seat
-      if (teamId && seat?.id) {
+      const { seat: stopped } = await stopSeat(wsId, teamId, seat.id, crypto.randomUUID())
+      applyOptimisticLeave(role, 'stopped', stopped)
+      if (!role.id.startsWith('seat:')) {
         try {
-          const { seat: unbound } = await unbindSeat(wsId, teamId, seat.id, undefined, crypto.randomUUID())
-          setTeamSeats((prev) => prev.map((s) => (s.id === unbound.id ? { ...s, ...unbound } : s)))
+          await releaseBotRole(wsId, role.id, crypto.randomUUID())
         } catch {
-          /* 无 bind API 时仍走 role release */
+          /* stop 已释 claim；release 幂等失败可忽略 */
         }
       }
-      if (!role.id.startsWith('seat:')) {
-        await releaseBotRole(wsId, role.id, crypto.randomUUID())
-      }
-      setRoles((prev) => prev.map((r) => (r.id === role.id ? { ...r, claim: null } : r)))
-      setTeamSeats((prev) =>
-        prev.map((s) => {
-          const match =
-            (s.bot_role_id && s.bot_role_id === role.id) ||
-            (s.role_slug && s.role_slug === role.slug) ||
-            (role.id.startsWith('seat:') && s.id === role.id.slice(5))
-          if (!match) return s
-          return {
-            ...s,
-            status: 'empty',
-            bound_member_id: null,
-            member_id: null,
-            bound_display_name: null,
-            bound_at: null,
-            claim: null,
-          }
-        }),
-      )
-      message.success(`已释放席位「${roleDisplay(role)}」`)
+      message.success(`已将「${roleDisplay(role)}」标为停工 · 可补位`)
       void load()
       void refreshTeamRoster()
-    } catch {
-      /* api client toasts */
+    } catch (e: unknown) {
+      message.error(e instanceof ApiError ? e.message : '停工失败')
+    }
+  }
+
+  /** L3/L4：离职解绑 → left；与 stop 对仗 */
+  const onLeaveUnbind = async (role: BotRole) => {
+    const seat = seatOccForRole(role).seat
+    if (!teamId || !seat?.id) {
+      message.warning('无团队席位，无法离职解绑')
+      return
+    }
+    try {
+      const { seat: unbound } = await unbindSeat(wsId, teamId, seat.id, undefined, crypto.randomUUID())
+      applyOptimisticLeave(role, 'left', unbound)
+      if (!role.id.startsWith('seat:')) {
+        try {
+          await releaseBotRole(wsId, role.id, crypto.randomUUID())
+        } catch {
+          /* unbind 已释 claim */
+        }
+      }
+      message.success(`已将「${roleDisplay(role)}」离职解绑 · 可补位`)
+      void load()
+      void refreshTeamRoster()
+    } catch (e: unknown) {
+      message.error(e instanceof ApiError ? e.message : '离职解绑失败')
     }
   }
 
@@ -1064,10 +1100,43 @@ export default function BotsRosterPage() {
                       下发任务
                     </Button>
                   ) : null}
-                  {busy && role.claim?.member_id ? (
-                    <Button size="small" type="link" danger style={{ padding: 0 }} onClick={() => void onRelease(role)}>
-                      释放
-                    </Button>
+                  {busy && teamId && occ.seat?.id ? (
+                    <>
+                      <Popconfirm
+                        title="停工此席？"
+                        description="原演员解除占用，席位变为「停工席 · 可补位」。活跃禁顶替不变。"
+                        okText="停工"
+                        cancelText="取消"
+                        onConfirm={() => void onStop(role)}
+                      >
+                        <Button
+                          size="small"
+                          type="link"
+                          style={{ padding: 0 }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          停工
+                        </Button>
+                      </Popconfirm>
+                      <Popconfirm
+                        title="离职解绑此席？"
+                        description="原演员解除绑定，席位变为可补位（left）。勿与入场码/Bot 入场混淆。"
+                        okText="离职解绑"
+                        cancelText="取消"
+                        okButtonProps={{ danger: true }}
+                        onConfirm={() => void onLeaveUnbind(role)}
+                      >
+                        <Button
+                          size="small"
+                          type="link"
+                          danger
+                          style={{ padding: 0 }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          离职解绑
+                        </Button>
+                      </Popconfirm>
+                    </>
                   ) : !busy ? (
                     <Select
                       size="small"
@@ -1262,6 +1331,9 @@ export default function BotsRosterPage() {
         occupancyKind={drawerRole ? seatOccForRole(drawerRole).kind : null}
         occupantMemberId={drawerRole ? seatOccForRole(drawerRole).occupantId : null}
         occupantLabel={drawerRole ? seatOccForRole(drawerRole).occupantLabel : null}
+        canLeave={Boolean(drawerRole && teamId && seatOccForRole(drawerRole).seat?.id)}
+        onStop={drawerRole ? () => void onStop(drawerRole) : undefined}
+        onLeaveUnbind={drawerRole ? () => void onLeaveUnbind(drawerRole) : undefined}
       />
 
 
