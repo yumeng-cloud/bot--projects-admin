@@ -87,7 +87,7 @@ make dev                 # API :8080 + Vite UI :5173
 
 ### 本地演示捷径（可选 seed）
 
-想跳过注册、直接进样例数据时：`make seed`（或 `AUTO_SEED=1` 随服务启动）。
+想跳过注册、直接进样例数据时：`SEED_SAMPLE_DATA=1` + `make seed`（或同开 `AUTO_SEED=1` 随服务启动）；生产保持 `AUTO_SEED=0`。
 
 | 字段 | 值 |
 |------|-----|
@@ -95,7 +95,7 @@ make dev                 # API :8080 + Vite UI :5173
 | 密码 | `Admin123!` |
 | 工作空间 | 育蒙科技（slug: `yumeng`） |
 
-生产请关 `AUTO_SEED`、设 `PLATFORM_ADMIN_EMAILS`、换强密码、切 Postgres（见 [`.env.example`](./.env.example)）。
+生产：`AUTO_SEED=0`（勿开 `SEED_SAMPLE_DATA`）、设 `PLATFORM_ADMIN_EMAILS`、换强密码、切 Postgres（见 [`.env.example`](./.env.example)）。
 
 ### 数据库
 
