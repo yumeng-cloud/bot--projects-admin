@@ -1,0 +1,40 @@
+FULL_COVER · 新 WS→项目→列表→顶栏→看板 · QA harsh
+date: 2026-10-24 22:17 Asia/Shanghai (CST, UTC+8)
+actor: admin@yumeng.tech / Admin123! (seed)
+HEAD: e6c5d60 (origin/main; shot from ancestor 640fd6e)
+authority: docs/qa-shots/FULL_COVER_WS_PROJECT_HARSH_CHECKLIST.md F1–F7 (+ T1–T5 wait admin SHA)
+method: API path + B1 shot/code; NO computerUse — 顶栏 UI / 团队管理面 FE PENDING wait SHA
+Overall full-cover (F1–F7): PASS† (API+shot strong; F5 topbar UI soft/PENDING)
+Overall teams T1–T5: PENDING wait 管理面 SHA（总指挥令）
+
+## F1–F7
+
+| # | Result | Evidence |
+|---|--------|----------|
+| F1 | PASS | POST /workspaces → WS 05706ecc60065bcfe65e1dbb879078ed QA-B1-retest2-1792851423; GET projects=[] — AUTO_SEED not stuffing demo into new WS. |
+| F2 | PASS | Shot pro-b-empty-no-project.png valid:「还没有项目」+ primary「创建项目」+ secondary「去设置」; code ProjectRedirect CreateProjectModal. |
+| F3 | PASS† | API POST …/projects 201 project 71e85b60… B1实建项目-1792851423 / B1R; code onCreated→Navigate to /w/{ws}/projects/{id}/board. †Modal live click PENDING. |
+| F4 | PASS | listProjects n=1 shows name+key_prefix B1实建项目 / B1R — NOT 示例项目. |
+| F5 | PASS† partial | API isolation: seed WS ba1481c4… only「示例项目」; new WS HAS_示例=False, projects stay on 05706ecc…. 顶栏 UI 切换轻抽 PENDING (no computerUse / wait admin FE SHA). API isolation counts. |
+| F6 | PASS | POST 2nd project d23080d9… B1第二项目 / B1S → list n=2; ids distinct. |
+| F7 | PASS | POST …/issues 201 issue 2a2c3d78… identifier B1R-1 title「B1-F7轻抽 Issue 1792851423」(team d7a0c247… required). |
+
+## T1–T5 (teams — wait 管理面 SHA)
+| # | Result | Note |
+|---|--------|------|
+| T1–T5 | PENDING | 总指挥: 项目+团队全覆盖仍等管理面 SHA. API incidentally created team QA班底-B1 on new WS (T1/T2 partial API only) — NOT green-closing teams without FE SHA. |
+
+## Forbidden checks
+- Did NOT green on seed-only「示例项目」
+- Primary CTA is 创建项目 not 去设置
+- Shot not blank white (retest#1 FAIL cleared @640fd6e)
+
+## Fixtures
+- WS 05706ecc60065bcfe65e1dbb879078ed
+- P1 71e85b609c59be94ac5cd99dd17b4321 / P2 d23080d9c795016360d22c22e93bc3a6
+- Team d7a0c247473442c2b83ff101c9d08610 / Issue 2a2c3d784c6446e79086d7d0ed617c98
+
+## Notes for parent
+- B1 Overall PASS — yell 产品关 B1
+- Full-cover F API PASS†; FE topbar/team UI PENDING wait SHA — do not block B1
+- Box executor has no computerUse; parent may computerUse for topbar click if desired

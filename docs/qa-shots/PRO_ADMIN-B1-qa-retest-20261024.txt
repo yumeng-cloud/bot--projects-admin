@@ -51,3 +51,49 @@ GAP-1/2/3 addressed in 72e0447 code (Result「无法进入项目视图」+ prima
 Box executor has no computerUse; did not drive Vite UI. Parent may re-shot via computerUse
 using WS fe298ea2… or qaEmpty=1. Functional code+API+modal OCR already strong.
 
+================================================================================
+## Retest #2 @640fd6e (shot gate re-verify)
+date: 2026-10-24 22:17 Asia/Shanghai (CST, UTC+8)
+actor: admin@yumeng.tech / Admin123! (seed)
+HEAD_at_verify: e6c5d60 (origin/main; 640fd6e IS ancestor — shot landed in 640fd6e)
+authority: docs/NEXT_WAVE_DEBT_PRO_ADMIN.md B1 · docs/qa-shots/PRO_ADMIN_B1_HARSH_CHECKLIST.md
+FE live click: PENDING (no computerUse this executor) — 顶栏 UI 轻抽 PENDING
+method: git fetch; Read+pixel inspect committed PNG; code review ProjectRedirect+CreateProjectModal;
+        API create empty WS + POST projects + isolation + issue
+Overall B1: PASS
+
+## Shot gate @640fd6e (MUST — was FAIL on retest #1)
+- path: docs/qa-shots/pro-b-empty-no-project.png
+- bytes: 32310 · dims: 1280×800 RGB · md5: fec35b3008bcabf5daf80d45ca9850fb
+- unique_colors@160×90: 334 (NOT solid white; whiteish_ratio=0.0)
+- Read-tool visible UI: dark theme; sidebar 育蒙科技; Empty「还没有项目」+ sub「创建一个项目后即可打开看板、列表与周期」;
+  primary blue「+ 创建项目」; secondary text link「去设置」; modal CLOSED
+- sibling empty-p0-no-project.png identical blob (same md5)
+- RESULT: PASS (replaces retest#1 blank-white FAIL)
+
+## B1-a..g (retest #2)
+
+| # | Result | Evidence |
+|---|--------|----------|
+| B1-a | PASS† | API POST /workspaces → WS 05706ecc… slug=qa-b1-r2-1792851423; GET projects=[] (AUTO_SEED not stuffing). Prior empty WS fe298ea2… / 9ce151f3… still 0. Shot shows empty board panel. †Live /board click PENDING (no computerUse). |
+| B1-b | PASS | UI「还没有项目」+ calm subcopy; no seed/tech jargon. Shot confirms. |
+| B1-c | PASS | Button type=primary「创建项目」onClick→setModalOpen; CreateProjectModal on-page (ProjectRedirect.tsx L81–102). |
+| B1-d | PASS | 「去设置」=<Link fontSize 12> only — NOT type=primary. Shot shows text link under CTA. |
+| B1-e | PASS | Modal createProject → onCreated → setProjectId → <Navigate to=/w/{ws}/projects/{id}/{tab}>. API: POST …/projects →201 project 71e85b60… name=B1实建项目-1792851423 key_prefix=B1R; list 0→1. |
+| B1-f | PASS | App.tsx board/list/cycles/timeline all <ProjectRedirect tab=…>; shared empty CTA. |
+| B1-g | PASS | if first → Navigate. Seed yumeng still 1 project 示例项目 (isolation OK). |
+
+## API fixtures retest #2
+- WS: 05706ecc60065bcfe65e1dbb879078ed (QA-B1-retest2-1792851423) initial projects=[]
+- P1: 71e85b609c59be94ac5cd99dd17b4321 B1实建项目-1792851423 / B1R
+- P2: d23080d9c795016360d22c22e93bc3a6 B1第二项目-1792851423 / B1S (list n=2)
+- Team: d7a0c247473442c2b83ff101c9d08610 QA班底-B1
+- Issue: 2a2c3d784c6446e79086d7d0ed617c98 B1R-1 「B1-F7轻抽 Issue 1792851423」201
+- Isolation: seed WS ba1481c4… still only「示例项目」; new WS has HAS_示例=False
+
+## Defects
+- None for B1 close. Optional non-blocking: shot topbar still shows seed「YM · 示例项目」chrome while empty panel is for zero-project context (likely localStorage/pool residue) — empty CTA itself valid; product may want clean topbar on true empty WS later.
+- FE topbar live switch PENDING parent computerUse — does NOT block B1 Overall.
+
+## Close
+Product may check off PRO_ADMIN B1. 站立令: push this evidence to origin/main.
