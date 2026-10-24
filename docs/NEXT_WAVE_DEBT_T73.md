@@ -55,3 +55,7 @@ Claim/enter/handoff/CLI 展示与指引：**以席位 `playbook_ref` 为唯一�
 ## 关单进度
 
 **整单关**：E1–E4 全勾 · 2026-10-24 19:52 Asia/Shanghai。升版 T7-4/5 仍后置。
+
+### 下一刀
+
+→ [`NEXT_WAVE_DEBT_TEAM_SWITCH.md`](./NEXT_WAVE_DEBT_TEAM_SWITCH.md)（FE 顶栏当前队；升版/未分队仍后置）
