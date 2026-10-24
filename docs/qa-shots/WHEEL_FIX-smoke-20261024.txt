@@ -1,0 +1,68 @@
+WHEEL_FIX E1 baseline smoke (PARTIAL) · 2026-10-24 21:14 Asia/Shanghai (CST, UTC+8)
+QA: baseline on committed main + running /tmp/ai-board-server — B1/B2 unarchive + B3 Relations + D2 memberships NOT claimed
+API: /tmp/ai-board-server (built ~20:58 Asia/Shanghai, archive-era binary); healthz OK; no rebuild (local WIP for B1/B3 left uncommitted by Issue域 — not mixed into this baseline)
+  healthz OK; DB from .env → 127.0.0.1:5432/ai_collab
+  actor: admin@yumeng.tech / Admin123!
+  WS ba1481c49148aba9553ba3811406b69f (育蒙科技) · project b1e996fb8ba9c350e249f7a862425a67 (示例项目)
+  team 加速班底 ea918de1ac4d8116ed69651116a4acb9 · T6-TeamA d8427941… · T6-TeamB d78f2a33…
+
+SHAs
+  HEAD at evidence write: 03d8aef docs(product): WHEEL_FIX 勾 C3（Bot 席入场 PASS）
+  debt: 8af223e docs(product): 开 NEXT_WAVE 全链路车轮修复债包
+  track: 77adc7b docs(qa): WHEEL_FIX E1–E2 smoke track (segment-ready)
+  archive BE: dc529f9 + mount 4f80f74 (running binary)
+
+Overall: BASELINE / PARTIAL
+  Do NOT claim E1 PASS until unarchive (B1/B2) + admin D2 memberships land (and B3 Relations).
+  D1 search q= already behaves on main (filtered) — noted PASS below; D2 still PENDING.
+  Counts: PASS=18 FAIL=0 PENDING=4
+
+================================================================================
+Chain table
+================================================================================
+SEG                                  STATUS     DETAIL
+--------------------------------------------------------------------------------
+healthz                              PASS       status=ok db=true
+login                                PASS       HTTP 200 email=admin@yumeng.tech is_platform_admin=true
+auth/me                              PASS       HTTP 200 id=87397a02… is_platform_admin=true
+WS list                              PASS       GET /api/v1/workspaces HTTP 200 n=3 (育蒙科技, QA Invite WS, A3空项目)
+WS current/get                       PASS       GET …/workspaces/{id} HTTP 200 name=育蒙科技 slug=yumeng role=admin
+projects                             PASS       HTTP 200 n=1 示例项目 b1e996fb…
+teams list                           PASS       HTTP 200 n=25; usable team_id=ea918de1…(加速班底)
+issues list team_id                  PASS       GET …/issues?project_id&team_id HTTP 200; null_team=0 wrong_team=0
+team switch context                  PASS       listTeams OK; current team usable for issues/roster
+archive non-done→409                 PASS       POST …/issues/archive on todo → HTTP 409 「仅完成(done)状态的 Issue 可归档」
+archive done                         PASS       fixture YM-29 57e1da8f… PATCH status=done (version) → archive 200 ok archived_at=2026-10-24T13:14:03Z
+default list hides archived          PASS       default list absent archived id; n default without it
+include_archived=1                   PASS       found YM-29 with archived_at set
+archived=only                        PASS       n≥1 all have archived_at; YM-29 present
+pack/list counts (regress)           PASS       default list archived_leak=0 (ISSUE_ARCHIVE regress)
+unarchive API                        PENDING    B1/B2 — running binary POST …/issues/unarchive → HTTP 405 (route not in binary; local WIP uncommitted — not baseline)
+Relations filter archived            PENDING    B3 — not landed on committed main for this pass
+Bot seats team filter (light)        PASS       GET …/teams/{id}/roster: 加速班底 n=14 · T6-TeamA n=7 · T6-TeamB n=8 (team-scoped; differs)
+admin GET /admin/users               PASS       HTTP 200 n=5 as platform admin
+admin GET /admin/workspaces          PASS       HTTP 200 n=6 as platform admin
+admin 403 non-admin                  PASS       register ephemeral → GET /admin/users HTTP 403 「需要平台超级管理员权限」(C11 light)
+admin users search q=                PASS       GET /admin/users?q=admin filtered 5→2 (D1-shaped behavior already on main)
+admin users memberships              PENDING    D2 — user row keys=[id,email,name,is_platform_admin,created_at]; no workspaces/memberships
+
+================================================================================
+PENDING (blocked on land / not in running binary)
+================================================================================
+  unarchive API/UI .............. B1/B2 — HTTP 405 on running server; do not claim until rebuild+commit of B1 and FE B2
+  Relations filter archived ..... B3
+  admin user memberships/WS ..... D2
+  (D1 search) ................... already PASS on main this baseline; still recheck when D2 lands
+
+================================================================================
+Defects
+================================================================================
+无阻塞 Defect（本 baseline 已验段均为 PASS；先前假 FAIL 为 fixture 未带 version 把 Issue 置 done，已用 PATCH+version 复测纠正）。
+
+软注：
+  - ListRelations 仍可指归档 id → 债包 B3；非本 baseline 假绿。
+  - WS 级 GET …/bot-roles 扁平 n=120（忽略 team_id）— harsh gaps 已记软债；队席以 /teams/{id}/roster 为准（本刀轻抽 PASS）。
+  - 箱上有未提交 B1/B3 WIP（issue.go / archive.go / relation.go / router.go）；本证据故意不编进 binary、不混入 commit。
+
+关报：Overall BASELINE/PARTIAL · PASS=18 FAIL=0 PENDING=4 · 证据本文件 · HEAD 见 push。
+Parent resume when B1/D land → rebuild server → re-run full chain → then Overall E1 PASS if green.
