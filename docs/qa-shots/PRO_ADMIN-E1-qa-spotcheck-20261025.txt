@@ -1,0 +1,50 @@
+PRO_ADMIN E1 QA spotcheck · 2026-10-25 ~00:35 Asia/Shanghai
+Repo: ai-collab-board · feature SHA 75fb14a · HEAD at verify 1d36677 (docs tick atop feat)
+Method: git pull + git show 75fb14a + Read(IssuePropertyRail.tsx / IssuePropertyRow / issue-detail.css) + Read(PNG)
+Harsh independent (not product checkbox rubber-stamp)
+Soft† live FE: skipped (箱截+源码对读；未另起 Vite)
+
+=== E1 Drawer 属性轨：归档态/解档与状态轨同节奏 ===
+Verdict: PASS
+
+Debt asked:
+- 归档态/解档按钮与状态轨节奏统一（补间距与中文）
+- 非 Form 栅格；对标 Linear Property 轨
+- Shot: docs/qa-shots/pro-e-drawer-rail.png
+
+Source (IssuePropertyRail.tsx @75fb14a):
+- archived 分支：IssuePropertyRow label="归档" → .acb-property-archive
+  内联 <span.acb-property-archive__state>已归档</span> + link Button「取消归档」
+- 前态（diff）：纵向 flex column + Typography.Text 12px 堆叠 → 收口为单行
+- 未走 Form.Item / Form 栅格布局放归档；Form 仅包轨内其它控件（status 等 noStyle）
+- live（!archived）：不渲染归档行；同 PropertyRail / IssuePropertyRow 模式，节奏一致
+- 中文：归档 / 已归档 / 取消归档（非 English-only）
+
+CSS (issue-detail.css @75fb14a):
+- .acb-property-archive：flex row · align center · gap 8px · min-height 26px
+- __state：13px / line-height 26px / secondary（对齐 select value 13px·26px）
+- __action：height/line-height 26px · 13px · primary link
+- 与 .acb-property-row（min-height 36px · gap 8px · label|value）同轨节奏
+
+Shot: docs/qa-shots/pro-e-drawer-rail.png
+- 右轨首行「归档 | 已归档 取消归档」单行 label|value，与下方 状态/优先级/负责人… 同节奏
+- 中文完整；非 dense Form 栅格
+- 主栏：标题「PRO_ADMIN E1 · 属性轨归档态节奏」+ 描述/评论占位可见；非半屏死白
+- 顶 banner「此 Issue 已归档…」+ 轨内解档并存（轨内解档为 E1 焦点）
+- 水印自述：单行 · 13px · 中文 · 非 Form 栅格 — 与源码一致
+
+FAIL redlines checked → none hit:
+- archive buried in Form grid → no
+- English-only → no
+- half-screen dead → no
+- breaks main content center layout → no
+
+Defects: none
+
+=== Overall ===
+PASS
+Feature SHA: 75fb14afa4fbd3be3489e14093706c43c7329e73 (75fb14a)
+Verify HEAD (pre-report): 1d3667728c32d1d78cc54c55c0da6f7e837ed247
+Live: FE soft† 箱截+源码；未点解档交互
+
+→ 产品 + React + 总指挥：PRO_ADMIN E1 PASS @75fb14a
