@@ -36,7 +36,8 @@ func printHelp() {
   MCP:  board_team_pull → board_seat_enter → board_handoff_get
   空手上场: team join --code <ymt_…>（= redeem→pull→enter→handoff；封装非第二航线）
   MCP 封装: board_team_join · board_team_templates · board_team_create_from_template
-  说明书: bot-team-template/playbook/看板席位迁绑.md · templates/ymbot/
+  作业手册入口: 席位 playbook_ref（唯一；空/非法一行中文，不回落硬编码）
+  迁绑说明: bot-team-template/playbook/看板席位迁绑.md · templates/ymbot/
   契约:   docs/BOT_TEAM_SEAT_P0.md · docs/BOT_TEAM_JOIN_KEY_P0.md
 whoami 可前置自检；migrate enter = seat enter（别名，非第二条主航线）。
 进度写 memory/todo/comment（服务端真相源）。export/import 仅换机备份/救场。

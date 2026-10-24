@@ -67,6 +67,8 @@ type BotHandoff struct {
 	MemberID    string         `json:"member_id"`
 	GeneratedAt string         `json:"generated_at"`
 	ClaimedRole *BotRole       `json:"claimed_role"`
+	// PlaybookRef 当前绑定席位的作业手册入口（T7-3；空则省略，通道警示不回落硬编码）
+	PlaybookRef *string        `json:"playbook_ref,omitempty"`
 	Memories    []BotMemory    `json:"memories"`
 	Todos       []BotTodo      `json:"todos"`
 	Issues      []HandoffIssue `json:"issues"`

@@ -203,13 +203,13 @@ func (s *Service) EnsureRoster(workspaceID, teamID string, in EnsureRosterInput)
 			return nil, err
 		}
 	}
-	// 校验显式席位的 playbook_ref（若非空须合法 JSON）
-	for _, seat := range seats {
-		if pref := strings.TrimSpace(seat.PlaybookRef); pref != "" {
-			if _, err := ParsePlaybookRef(pref); err != nil {
-				return nil, err
-			}
+	// T7-3：写入席位须带合法 playbook_ref；空/非法 → 4xx，禁止默默换硬编码手册
+	for i := range seats {
+		canon, err := CanonicalPlaybookRefString(seats[i].PlaybookRef)
+		if err != nil {
+			return nil, err
 		}
+		seats[i].PlaybookRef = canon
 	}
 	if len(seats) == 0 {
 		return s.GetRoster(workspaceID, teamID)
@@ -228,16 +228,11 @@ func (s *Service) EnsureRoster(workspaceID, teamID string, in EnsureRosterInput)
 		if err != nil {
 			return nil, err
 		}
-		var playbook any
-		if strings.TrimSpace(seat.PlaybookRef) == "" {
-			playbook = nil
-		} else {
-			playbook = strings.TrimSpace(seat.PlaybookRef)
-		}
+		playbook := strings.TrimSpace(seat.PlaybookRef)
 		var existingID string
 		err = s.DB.QueryRow(`SELECT id FROM team_seats WHERE team_id = ? AND role_slug = ?`, teamID, slug).Scan(&existingID)
 		if err == nil {
-			_, err = s.DB.Exec(`UPDATE team_seats SET display_name = ?, playbook_ref = COALESCE(?, playbook_ref),
+			_, err = s.DB.Exec(`UPDATE team_seats SET display_name = ?, playbook_ref = ?,
 				bot_role_id = ?, updated_at = ? WHERE id = ?`,
 				name, playbook, role.ID, now, existingID)
 			if err != nil {
@@ -363,6 +358,18 @@ func scanRosterRow(row interface{ Scan(dest ...any) error }) (models.TeamSeat, e
 	return seat, nil
 }
 
+// seatPlaybookRefOrErr 读出席位可读 playbook_ref；空/非法 → 4xx（T7-3）。
+func seatPlaybookRefOrErr(seat *models.TeamSeat) (string, error) {
+	if seat == nil {
+		return "", apperr.BadRequest("playbook_ref 不能为空")
+	}
+	raw := ""
+	if seat.PlaybookRef != nil {
+		raw = *seat.PlaybookRef
+	}
+	return CanonicalPlaybookRefString(raw)
+}
+
 func normalizeSeatStatus(st string) string {
 	st = strings.ToLower(strings.TrimSpace(st))
 	switch st {
@@ -416,6 +423,10 @@ func (s *Service) BindSeat(workspaceID, teamID, seatID, memberID string, force b
 	}
 	seat, err := s.getSeat(workspaceID, teamID, seatID)
 	if err != nil {
+		return nil, err
+	}
+	// T7-3 enter/bind：席位须有可读 playbook_ref；空/非法 → 4xx，不回落硬编码
+	if _, err := seatPlaybookRefOrErr(seat); err != nil {
 		return nil, err
 	}
 	prevStatus := normalizeSeatStatus(seat.Status)
@@ -635,15 +646,13 @@ func (s *Service) CreateSeat(workspaceID, teamID string, in EnsureSeatInput) (*m
 	if err != sql.ErrNoRows {
 		return nil, err
 	}
-	role, err := s.ensureTeamRole(workspaceID, teamID, slug, name)
+	playbook, err := CanonicalPlaybookRefString(in.PlaybookRef)
 	if err != nil {
 		return nil, err
 	}
-	var playbook any
-	if strings.TrimSpace(in.PlaybookRef) == "" {
-		playbook = nil
-	} else {
-		playbook = strings.TrimSpace(in.PlaybookRef)
+	role, err := s.ensureTeamRole(workspaceID, teamID, slug, name)
+	if err != nil {
+		return nil, err
 	}
 	now := nowUTC()
 	sid := idgen.New()

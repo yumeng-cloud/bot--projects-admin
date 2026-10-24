@@ -242,14 +242,14 @@ func TestCreateSeatIdempotentAndStop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops", Name: "运维"})
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops", Name: "运维", PlaybookRef: "bot-team-template@main:playbook/ops.md"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if s1.Status != "open" {
 		t.Fatalf("status=%s want open", s1.Status)
 	}
-	s2, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops", Name: "运维改名忽略"})
+	s2, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops", Name: "运维改名忽略", PlaybookRef: "bot-team-template@main:playbook/ops.md"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -417,7 +417,7 @@ func TestBindSeatLeftForceActive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "fe", Name: "前端"})
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "fe", Name: "前端", PlaybookRef: "bot-team-template@main:playbook/fe.md"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -475,7 +475,7 @@ func TestBindSeatStoppedForceWritesVisibleAudit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops", Name: "运维"})
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops", Name: "运维", PlaybookRef: "bot-team-template@main:playbook/ops.md"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -543,7 +543,7 @@ func TestBindSeatLeftForceWritesVisibleAudit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "qa", Name: "QA"})
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "qa", Name: "QA", PlaybookRef: "bot-team-template@main:playbook/qa.md"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -593,7 +593,7 @@ func TestBindSeatActiveForceNoVisibleAudit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "fe2", Name: "前端2"})
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "fe2", Name: "前端2", PlaybookRef: "bot-team-template@main:playbook/fe2.md"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -636,7 +636,7 @@ func TestClaimSyncsLinkedSeatActive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops2", Name: "运维2"})
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops2", Name: "运维2", PlaybookRef: "bot-team-template@main:playbook/ops2.md"})
 	if err != nil {
 		t.Fatal(err)
 	}

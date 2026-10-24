@@ -166,6 +166,19 @@ func ParsePlaybookRef(raw string) (PlaybookRef, error) {
 	return PlaybookRef{Path: raw}, nil
 }
 
+// CanonicalPlaybookRefString 解析并规范为落库/出口字符串；空或非法 → 4xx 中文（T7-3）。
+// 禁止调用方在失败时默默换成别的硬编码 playbook。
+func CanonicalPlaybookRefString(raw string) (string, error) {
+	p, err := ParsePlaybookRef(raw)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(p.Repo) != "" && strings.TrimSpace(p.Ref) != "" {
+		return FormatPlaybookRef(p), nil
+	}
+	return strings.TrimSpace(p.Path), nil
+}
+
 // ListTeamTemplates 返回内置模板清单（只读）。
 func ListTeamTemplates() ([]TeamTemplate, error) {
 	loadTemplates()

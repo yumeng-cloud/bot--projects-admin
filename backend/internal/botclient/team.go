@@ -317,6 +317,7 @@ func (c *Client) SeatEnter(roleSlug string, opts SeatEnterOpts) (map[string]any,
 				return nil, err
 			}
 		}
+		AttachPlaybookRef(out, strField(seat, "playbook_ref"))
 		seatID := strField(seat, "id")
 		bindRaw, err := c.TeamSeatBind(teamID, seatID, opts.Force)
 		if err != nil {
@@ -325,12 +326,13 @@ func (c *Client) SeatEnter(roleSlug string, opts SeatEnterOpts) (map[string]any,
 			}
 			return nil, err
 		}
-		out["bind"] = projectSeatSlim(bindRaw, roleSlug)
+		out["bind"] = projectSeatSlim(bindRaw, roleSlug, strField(seat, "playbook_ref"))
 		out["claim"] = map[string]any{"ok": true, "via": "bind"}
 		return out, nil
 	}
 
 	out["step"] = "whoami→handoff get→role claim"
+	out["playbook_warn"] = PlaybookRefNoSeatWarn
 	claimRaw, err := c.RoleClaimBySlug(roleSlug)
 	if err != nil {
 		return nil, err
@@ -399,7 +401,7 @@ func (c *Client) SeatLeave(roleSlug string, opts SeatLeaveOpts) (map[string]any,
 	return out, nil
 }
 
-func projectSeatSlim(raw json.RawMessage, slug string) map[string]any {
+func projectSeatSlim(raw json.RawMessage, slug string, playbookRaw ...string) map[string]any {
 	var top map[string]any
 	_ = json.Unmarshal(raw, &top)
 	out := map[string]any{"slug": slug, "ok": true}
@@ -418,6 +420,11 @@ func projectSeatSlim(raw json.RawMessage, slug string) map[string]any {
 			out["claimed_at"] = shortTime(v)
 		}
 	}
+	pref := strField(seat, "playbook_ref")
+	if pref == "" && len(playbookRaw) > 0 {
+		pref = playbookRaw[0]
+	}
+	AttachPlaybookRef(out, pref)
 	return out
 }
 
@@ -453,6 +460,12 @@ func FormatSeatEnterText(v map[string]any) string {
 	}
 	if claim, ok := v["claim"].(map[string]any); ok {
 		fmt.Fprintf(&b, "claim ok=%v  at=%s  via=%s\n", claim["ok"], dash(strField(claim, "claimed_at")), dash(strField(claim, "via")))
+	}
+	if p := strField(v, "playbook_ref"); p != "" {
+		fmt.Fprintf(&b, "手册 playbook_ref=%s\n", p)
+	}
+	if w := strField(v, "playbook_warn"); w != "" {
+		fmt.Fprintf(&b, "%s\n", w)
 	}
 	if hint := strField(v, "memory_key_hint"); hint != "" {
 		fmt.Fprintf(&b, "memory_key=%s（席位隔离）\n", hint)
@@ -570,9 +583,7 @@ func ProjectTeamRoster(raw json.RawMessage, opts ViewOpts) ([]map[string]any, er
 		if holder != "" {
 			item["holder"] = holder
 		}
-		if pref := strField(m, "playbook_ref"); pref != "" {
-			item["playbook"] = trunc(pref, 48)
-		}
+		AttachPlaybookRef(item, strField(m, "playbook_ref"))
 		if opts.IDs {
 			if id := strField(m, "id"); id != "" {
 				item["id"] = id
@@ -602,8 +613,10 @@ func FormatTeamRosterText(items []map[string]any) string {
 		if h := strField(it, "holder"); h != "" {
 			fmt.Fprintf(&b, "\t%s", h)
 		}
-		if p := strField(it, "playbook"); p != "" {
+		if p := strField(it, "playbook_ref"); p != "" {
 			fmt.Fprintf(&b, "\t%s", p)
+		} else if w := strField(it, "playbook_warn"); w != "" {
+			fmt.Fprintf(&b, "\t%s", w)
 		}
 		if id := strField(it, "id"); id != "" {
 			fmt.Fprintf(&b, "\tid=%s", id)

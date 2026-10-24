@@ -629,6 +629,19 @@ func (s *Service) Handoff(workspaceID, memberID string) (*models.BotHandoff, err
 		}
 	}
 
+	// T7-3：绑定席位的 playbook_ref 为唯一手册入口（优先匹配 claimed bot_role_id）
+	var pref sql.NullString
+	errPref := s.DB.QueryRow(`SELECT ts.playbook_ref FROM team_seats ts
+		WHERE ts.workspace_id = ? AND ts.bound_member_id = ?
+		ORDER BY CASE WHEN ? != '' AND ts.bot_role_id = ? THEN 0 ELSE 1 END, ts.bound_at DESC
+		LIMIT 1`, workspaceID, memberID, roleID, roleID).Scan(&pref)
+	if errPref == nil && pref.Valid {
+		p := strings.TrimSpace(pref.String)
+		if p != "" {
+			h.PlaybookRef = &p
+		}
+	}
+
 	mems, err := s.ListMemories(workspaceID, memberID, "")
 	if err != nil {
 		return nil, err

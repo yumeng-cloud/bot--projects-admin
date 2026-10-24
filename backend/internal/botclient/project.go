@@ -536,6 +536,7 @@ func (c *Client) ProjectHandoff(raw json.RawMessage, opts ViewOpts) (any, error)
 		"issue_count":  len(issues),
 		"issues":       issues,
 	}
+	AttachPlaybookRef(out, strField(hdo, "playbook_ref"))
 	if opts.IDs {
 		if mid := strField(hdo, "member_id"); mid != "" {
 			out["member_id"] = mid
@@ -562,6 +563,12 @@ func FormatHandoffText(v any) string {
 		dash(strField(m, "claimed_role")), m["memory_count"], m["todo_count"], m["issue_count"])
 	if member := strField(m, "member"); member != "" {
 		fmt.Fprintf(&b, "member=%s\n", member)
+	}
+	if p := strField(m, "playbook_ref"); p != "" {
+		fmt.Fprintf(&b, "手册 playbook_ref=%s\n", p)
+	}
+	if w := strField(m, "playbook_warn"); w != "" {
+		fmt.Fprintf(&b, "%s\n", w)
 	}
 	if arr, ok := m["issues"].([]map[string]any); ok {
 		for _, it := range arr {
