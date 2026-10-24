@@ -1,0 +1,124 @@
+=== T2 QA harsh independent retest V1–V3 ===
+time_AsiaShanghai: 2026-10-24 18:03 Asia/Shanghai (box)
+retester: independent (do NOT trust Bot记忆 prior PASS)
+result: V1=PASS V2=PASS V3=PASS  OVERALL=PASS
+evidence_file: /workspace/qa-shots/T2-qa-retest-20261024.txt
+prior_evidence_read: /workspace/ai-collab-board/docs/qa-shots/T2-handoff-migrate-20261024.txt (markers only; not trusted)
+WS: ba1481c49148aba9553ba3811406b69f
+TEAM: ea918de1ac4d8116ed69651116a4acb9
+SEAT_SLUG: frontend
+MEMBER (Key1=Key2 same): 094acad4a3f0aaef2ee6370e790912b4
+KEY1_file: /tmp/ymbot_t2_key1.txt  prefix=ymk_19330f80
+KEY2_file: /tmp/ymbot_t2_key2.txt  prefix=ymk_91a528d9
+YMBOT_API_URL: http://127.0.0.1:8080
+YMBOT binary: go build -o /tmp/ymbot ./cmd/ymbot  (rebuilt this retest)
+FOCUS_VALUE (fresh): QA-T2-retest-1792836183
+CLAIMED_ISSUE (this retest): YM-12  (assignee=Grok Bot after claim)
+NO_force: true (leave → empty seat → migrate enter without --force)
+NO_import: true (V3 only handoff get / get --full; never ran handoff import)
+
+## Verdicts
+V1=PASS  Key1 team pull → seat enter → memory set last_focus=QA-T2-retest-1792836183 → claim YM-12
+V2=PASS  Key1 leave; frontend empty; Key2 migrate enter --role frontend --team TEAM (no --force); exit=0 bind.ok claim.ok via=bind; no 409
+V3=PASS  Key2 handoff get + handoff get --full contain marker in memories[].value_text and YM-12 in open issues; NO handoff import
+OVERALL=PASS
+defects: none
+owner_if_fail: n/a (Bot记忆/Go path verified)
+
+## Key quotes from Key2 handoff get --full
+marker: key_name=frontend:last_focus value_text=QA-T2-retest-1792836183
+claimed: identifier=YM-12 title="N4 立即推送演示" status=todo
+member_id=094acad4a3f0aaef2ee6370e790912b4
+open_issues=[YM-12, YM-11, YM-18, YM-17, YM-13, YM-9]
+
+## Key2 handoff get (default text excerpt)
+role=前端  memories=1  todos=0  open_issues=6
+member=Grok Bot
+  YM-12  N4 立即推送演示  todo
+  YM-11  N4 smoke  todo
+  YM-18  N4 c947a76 立即推送 spot-check  todo
+  YM-17  N3 readable force audit target  todo
+  YM-13  N3 force bind audit target  todo
+  YM-9  QA webhook match BOT_A updated  todo
+
+## Key2 handoff get --full (memories + claimed issue excerpt)
+memories: [
+  {
+    "created_at": "2026-10-24T10:01:22.193842302Z",
+    "id": "454dcc1a5de49d7431ff2b99912ac629",
+    "key_name": "frontend:last_focus",
+    "member_id": "094acad4a3f0aaef2ee6370e790912b4",
+    "role_id": null,
+    "tags": "[]",
+    "updated_at": "2026-10-24T10:03:03.587405741Z",
+    "value_text": "QA-T2-retest-1792836183",
+    "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+  }
+]
+claimed issue: [
+  {
+    "cycle_id": null,
+    "id": "fd06ed3e47cbf500417b97cdd7675f0c",
+    "identifier": "YM-12",
+    "priority": "none",
+    "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+    "status": "todo",
+    "title": "N4 立即推送演示",
+    "updated_at": "2026-10-24T10:03:17.067452929Z"
+  }
+]
+all_idents: ['YM-12', 'YM-11', 'YM-18', 'YM-17', 'YM-13', 'YM-9']
+generated_at: 2026-10-24T10:03:23.539276488Z
+
+===== RAW LOG (redacted) =====
+
+===== V0 leave frontend Key1 (cleanup) =====
+left role=frontend via=unbind
+
+===== V0 leave frontend Key2 (cleanup) =====
+left role=frontend via=unbind
+
+########## V1: Key1 enter + last_focus + claim YM-12 ##########
+FOCUS_VALUE=QA-T2-retest-1792836183
+seat enter: bind.ok=true claim.via=bind slug=frontend
+memory set: frontend:last_focus → QA-T2-retest-1792836183
+issue claim YM-12 --version 1 → assignee=Grok Bot version=2
+V1 handoff --full: MARKER_MATCH=True CLAIMED_PRESENT=True
+V1_PASS=True
+
+########## V2: Key1 leave; Key2 migrate enter (no force) ##########
+Key1 leave: left role=frontend via=unbind exit=0
+team pull: frontend claim=empty
+Key2 migrate enter (NO --force): exit=0 bind.ok=true claim.ok=true via=bind
+memory_count=1 issue_count=6
+NO force / NO 409 on empty seat
+V2_PASS=True
+
+########## V3: Key2 handoff get ONLY (no import) ##########
+--- handoff get ---
+role=前端  memories=1  todos=0  open_issues=6
+member=Grok Bot
+  YM-12  N4 立即推送演示  todo
+  YM-11  N4 smoke  todo
+  YM-18  N4 c947a76 立即推送 spot-check  todo
+  YM-17  N3 readable force audit target  todo
+  YM-13  N3 force bind audit target  todo
+  YM-9  QA webhook match BOT_A updated  todo
+--- handoff get --full (assert) ---
+FOCUS_EXPECTED QA-T2-retest-1792836183
+V3_focus_in_handoff_full True
+V3_YM-12_in_open_issues True
+V3_default_contains_YM-12 True
+V3_memory_keys ['frontend:last_focus']
+V3_issue_idents ['YM-12', 'YM-11', 'YM-18', 'YM-17', 'YM-13', 'YM-9']
+V3_NO_import_used True
+V1_PASS=True
+V2_PASS=True
+V3_PASS=True
+
+===== FINAL =====
+V1_PASS=True
+V2_PASS=True
+V3_PASS=True
+OVERALL=PASS
+defects=none
