@@ -13,12 +13,12 @@ type Props = {
   placeholder?: string
 }
 
-/** Wiki 正文编辑 — ByteMD，class 挂 acb-wiki-md 供 UI 视觉主题 */
+/** Wiki 正文编辑 — ByteMD；挂 acb-wiki-md 供 UI 视觉主题 */
 export function WikiBodyEditor({
   value,
   onChange,
   onBlur,
-  placeholder = '开始写作…',
+  placeholder = '开始写点什么…',
 }: Props) {
   const plugins = useMemo(() => [gfm({ locale: gfmZhHans })], [])
   const empty = !value?.trim()
@@ -31,7 +31,7 @@ export function WikiBodyEditor({
 
   return (
     <div
-      className={empty ? 'acb-wiki-md is-empty is-editing' : 'acb-wiki-md is-editing'}
+      className={empty ? 'acb-wiki-md is-empty' : 'acb-wiki-md'}
       onBlur={handleBlur}
     >
       <Editor

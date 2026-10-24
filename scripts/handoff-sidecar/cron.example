@@ -1,0 +1,9 @@
+# 示例 cron（建议 ≥15min；仓库外跑，密钥文件权限 600）
+# */15 * * * * cd /path/to/ai-collab-board && \
+#   BOT_KEYS_FILE=/etc/ymbot/bot-keys.local \
+#   YMBOT_API_URL=http://127.0.0.1:8080 \
+#   YMBOT_WORKSPACE_ID=REPLACE_WORKSPACE_ID \
+#   MIRROR_DIR=/var/ymbot/handoff-mirror \
+#   KEEP_N=24 \
+#   LOG_FILE=/var/log/ymbot/handoff-mirror.log \
+#   ./scripts/handoff-mirror.sh --once

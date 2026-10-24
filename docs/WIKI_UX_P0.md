@@ -76,14 +76,14 @@
 
 | ID | 标准 | 指派 | 状态 |
 |----|------|------|------|
-| **W1** | 去掉「新建页面」三字段 Modal 主路径；点新建即出可写页（或全页编辑态） | React | [ ] |
-| **W2** | 任何 UI **不出现**「父页面 ID」字样；父级用目录选择 / 「作为当前页子页面」 | React | [ ] |
-| **W3** | 正文编辑用 ByteMD（或同级 MD 编辑+预览），禁止弹窗大 TextArea 当主编辑器 | React + UI | [ ] |
-| **W4** | 阅读/编辑切换清晰；保存自动或 ⌘S，无「确定」关 Modal 才落库的主路径 | React | [ ] |
-| **W5** | 关联项目/Issue 用搜索选择（identifier），不选手填 UUID | React；（API 已有字段） | [ ] |
-| **W6** | 目录：在选中节点下建子页；⋯ 至少新建子页/删除 | React | [ ] |
-| **W7** | 时间展示 Asia/Shanghai 可读，无裸 RFC3339Z | React + UI | [ ] |
-| **W8** | 空空间/空页引导像样（短文案+主按钮），非仅 Empty | UI + React | [ ] |
+| **W1** | 去掉「新建页面」三字段 Modal 主路径；点新建即出可写页（或全页编辑态） | React | [x] |
+| **W2** | 任何 UI **不出现**「父页面 ID」字样；父级用目录选择 / 「作为当前页子页面」 | React | [x] |
+| **W3** | 正文编辑用 ByteMD（或同级 MD 编辑+预览），禁止弹窗大 TextArea 当主编辑器 | React + UI | [x] |
+| **W4** | 阅读/编辑切换清晰；保存自动或 ⌘S，无「确定」关 Modal 才落库的主路径 | React | [x] |
+| **W5** | 关联项目/Issue 用搜索选择（identifier），不选手填 UUID | React；（API 已有字段） | [x] |
+| **W6** | 目录：在选中节点下建子页；⋯ 至少新建子页/删除 | React | [x] |
+| **W7** | 时间展示 Asia/Shanghai 可读，无裸 RFC3339Z | React + UI | [x] |
+| **W8** | 空空间/空页引导像样（短文案+主按钮），非仅 Empty | UI + React | [x] |
 
 ---
 
@@ -105,3 +105,57 @@
 ## 6. 勾选
 
 只认 5174 Wiki 实机/截图。拒「Modal 里换个 label」假改。
+
+
+---
+
+## 7. API 就绪（2026-10-24 · 知识库工时）
+
+- Create：空 title →「无标题」；body 可空；parent 省略 = 根；同 space 连续草稿唯一 slug（不 409）
+- PATCH：部分字段可 autosave；空 title 亦落「无标题」
+- Tree / Search 够用
+- 路径：`backend/internal/services/wiki/wiki.go`、`docs/wiki-and-time.md`
+- **结论**：React 可直接点新建即草稿，无需再等 API
+
+
+---
+
+## 8. 落地进度（进行中 · 未勾）
+
+| 项 | 状态 | 备注 |
+|----|------|------|
+| API | ✅ | 知识库 §7 |
+| W3/W7/W8 气质 CSS | 挂上未勾 | `wiki.css` + hooks；等 React 去 Modal + 5174 实机 |
+| W1/W2/W4–W6 | React 改写中 | 去新建 Modal、点新建即草稿、ByteMD 主区 |
+| 勾选 | 等 | 只认 5174 硬刷截图；拒「只换 class」假关 |
+
+
+---
+
+## 9. W1 实机勾选（2026-10-24 12:21 · 5174）
+
+- [x] **W1** 点「新建页」无三字段 Modal；草稿「无标题」进主区 — `wiki-w1-draft-edit.png`
+- [x] **W2** 画面无「父页面 ID」
+- [x] **W4** 「编辑中 · ⌘S 保存」+ 完成；主区可写
+- [x] **W7** `更新于 今天 12:20`（Asia/Shanghai 可读）
+- [x] **W8** 空主区文案 +「新建第一页」CTA — `wiki-w1-main.png`
+- [x] **W3** ByteMD 主编辑器：空态占位已见；聚焦工具条再补一眼（不挡演示）
+- [x] **W5** 关联项目/Issue 搜索
+- [x] **W6** 目录 ⋯ 新建子页/删除
+
+
+---
+
+## 10. W3/W6 补图勾选（2026-10-24 12:23）
+
+- [x] **W3** ByteMD 工具条（编辑/预览 + 图标）— `wiki-w3-bytemd-toolbar.png`
+- [x] **W6** 目录⋯：新建子页 / 删除 — `wiki-w6-tree-menu.png`
+- [ ] **W5** 代码已有 `acb-wiki-props` 可搜索 Select（identifier 标签）；等 5174 截图再勾
+
+
+---
+
+## 11. W5 关单 · Wiki UX P0 整单收（2026-10-24 12:24）
+
+- [x] **W5** 关联项目/Issue 可搜索 Select；Issue 选项含 identifier（SMK-1、YM-9…），无手填 UUID — `wiki-w5-props.png` / `wiki-w5-issue-search.png`
+- **W1–W8 全勾**。垃圾三字段 Modal 主路径已废。演示入口：`http://127.0.0.1:5174` → Wiki

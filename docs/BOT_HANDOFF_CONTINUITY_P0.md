@@ -4,7 +4,7 @@
 > 痛点：导入/导出麻烦，怕中途挂掉丢上下文。  
 > 原则：**续命以服务端 `handoff get` 为准**；干活过程中**自动**写 memory / todo / comment；**`export` 仅可选备份**，不是续工主路径。  
 > 仓库：`/workspace/ai-collab-board`  
-> 对照：[`BOT.md`](./BOT.md) · [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) · [`BOT_CHANNEL_DX_P0.md`](./BOT_CHANNEL_DX_P0.md) · 短原则 [`BOT_CONTINUITY_P0.md`](./BOT_CONTINUITY_P0.md)  
+> 对照：[`BOT.md`](./BOT.md) · [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) · [`BOT_CHANNEL_DX_P0.md`](./BOT_CHANNEL_DX_P0.md) · 短原则 [`BOT_CONTINUITY_P0.md`](./BOT_CONTINUITY_P0.md)  · 备份旁路（≠主路径）[`BOT_HANDOFF_MIRROR_P0.md`](./BOT_HANDOFF_MIRROR_P0.md)  
 > **落地：Bot 记忆角色**（通道指引 + 文档/示例 + 可选 MCP/CLI 文案）；**产品体验**按 §4 **H1–H5** 勾选。不改 Issue 业务 handler 语义；handoff 仍无独立表（实时组装）。
 
 ---
@@ -68,6 +68,7 @@
 - 强制前端设置页大改（文案提示可做）  
 - 取消 import/export 能力（保留，降级为备份）  
 - 自动把每次 tool call 无差别全量打进 memory（要**有意义**的焦点/卡点/进展，避免刷屏）
+- 把定时磁盘镜像当成日常续命（镜像是**备份旁路**，见 [`BOT_HANDOFF_MIRROR_P0.md`](./BOT_HANDOFF_MIRROR_P0.md)；进场才读）
 
 ---
 

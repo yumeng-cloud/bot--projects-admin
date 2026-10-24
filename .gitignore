@@ -19,3 +19,8 @@ scripts/local-embed/.venv/
 
 backend/server
 backend/ymbot
+
+# handoff-mirror secrets & local mirror (never commit keys)
+scripts/handoff-sidecar/bot-keys.local
+scripts/handoff-sidecar/*.local
+**/handoff-mirror/

@@ -173,13 +173,38 @@
   font-size: 12px !important;
   line-height: 1.4;
   color: var(--acb-text-tertiary) !important;
-  margin: 0 0 20px !important;
+  margin: 0 0 8px !important;
   padding-inline-start: 2px;
   font-weight: 400;
 }
 
 .acb-wiki-meta.ant-typography {
-  margin-bottom: 20px !important;
+  margin-bottom: 8px !important;
+}
+
+/* —— Linked project / issue props (W5) —— */
+.acb-wiki-props {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin: 0 0 20px;
+  padding-inline-start: 2px;
+}
+
+.acb-wiki-props-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.acb-wiki-props-label {
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--acb-text-tertiary);
+  white-space: nowrap;
 }
 
 /* —— Body surface (read) —— */

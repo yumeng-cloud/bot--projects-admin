@@ -12,3 +12,7 @@
 ## 可选提醒
 
 `--autosave` 或 `YMBOT_AUTOSAVE=1`：claim / comment / memory set **成功后** stderr 提示「已写服务端」。语义是**约定干活中写服务端**，**不是**后台守护进程，也**不是**另写本地文件。
+
+## 旁路（≠主路径）
+
+定时只读磁盘镜像见 [`BOT_HANDOFF_MIRROR_P0.md`](./BOT_HANDOFF_MIRROR_P0.md)：备份旁路，进场才读；**不**替代 `handoff get`，定时动作**禁止**写 memory。

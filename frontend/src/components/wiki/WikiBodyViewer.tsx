@@ -8,18 +8,20 @@ type Props = {
   value: string
 }
 
-/** Wiki 正文阅读 — ByteMD Viewer，class 挂 acb-wiki-md */
+/** Wiki 正文阅读 — ByteMD Viewer；挂 acb-wiki-md */
 export function WikiBodyViewer({ value }: Props) {
   const plugins = useMemo(() => [gfm({ locale: gfmZhHans })], [])
   const empty = !value?.trim()
 
+  if (empty) {
+    return (
+      <div className="acb-wiki-body is-empty acb-wiki-md is-empty">还没有正文…</div>
+    )
+  }
+
   return (
-    <div className={empty ? 'acb-wiki-md is-empty is-reading' : 'acb-wiki-md is-reading'}>
-      {empty ? (
-        <div className="acb-wiki-md-empty-hint">还没有正文…</div>
-      ) : (
-        <Viewer value={value} plugins={plugins} />
-      )}
+    <div className="acb-wiki-body acb-wiki-md">
+      <Viewer value={value} plugins={plugins} />
     </div>
   )
 }
