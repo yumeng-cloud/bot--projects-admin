@@ -16,9 +16,10 @@ import {
   Alert,
   Card,
   Modal,
-  Divider,
+  Dropdown,
+  type MenuProps,
 } from 'antd'
-import { CopyOutlined, PlusOutlined } from '@ant-design/icons'
+import { CopyOutlined, MoreOutlined, PlusOutlined } from '@ant-design/icons'
 import { useParams, useSearchParams } from 'react-router-dom'
 import SettingsProjectsPanel from './SettingsProjectsPanel'
 import SettingsTeamsPanel from './SettingsTeamsPanel'
@@ -58,6 +59,30 @@ function keyTail(prefix?: string | null): string {
 
 function isBotMember(m: Member): boolean {
   return m.is_bot === true || m.is_bot === 1 || m.role === 'bot'
+}
+
+/** D1：角色中文芯片（管理员/成员/机器人）；owner 视同管理员 */
+function memberRoleChip(m: Member) {
+  if (isBotMember(m)) {
+    return (
+      <Tag color="purple" style={{ marginInlineEnd: 0 }}>
+        机器人
+      </Tag>
+    )
+  }
+  const r = m.role === 'owner' ? 'admin' : m.role
+  if (r === 'admin') {
+    return (
+      <Tag color="processing" style={{ marginInlineEnd: 0 }}>
+        管理员
+      </Tag>
+    )
+  }
+  return (
+    <Tag style={{ marginInlineEnd: 0 }}>
+      成员
+    </Tag>
+  )
 }
 
 function expiresPresetToRfc3339(preset: string): string | undefined {
@@ -475,16 +500,7 @@ export default function SettingsPage() {
     {
       title: '名称',
       dataIndex: 'display_name',
-      render: (v: string, row: Member) => (
-        <span>
-          {v || '未命名'}
-          {isBotMember(row) ? (
-            <Tag color="purple" style={{ marginLeft: 8 }}>
-              机器人
-            </Tag>
-          ) : null}
-        </span>
-      ),
+      render: (v: string) => v || '未命名',
     },
     {
       title: '邮箱',
@@ -495,32 +511,16 @@ export default function SettingsPage() {
     {
       title: '角色',
       dataIndex: 'role',
-      width: isAdmin ? 140 : 110,
-      render: (v: string, row: Member) => {
-        if (!isAdmin || isBotMember(row)) return roleLabel(v)
-        const soleAdmin = adminCount <= 1 && (row.role === 'admin' || row.role === 'owner')
-        return (
-          <Select
-            size="small"
-            style={{ width: 112 }}
-            value={v === 'owner' ? 'admin' : v}
-            options={[
-              { value: 'admin', label: '管理员' },
-              { value: 'member', label: '成员' },
-            ]}
-            onChange={(next) => void onChangeRole(row, next)}
-            disabled={soleAdmin}
-            title={soleAdmin ? '不能将唯一管理员降级' : undefined}
-          />
-        )
-      },
+      width: 100,
+      render: (_: string, row: Member) => memberRoleChip(row),
     },
     ...(isAdmin
       ? [
           {
             title: '操作',
             key: 'actions',
-            width: 88,
+            width: 56,
+            align: 'right' as const,
             render: (_: unknown, row: Member) => {
               if (isBotMember(row)) {
                 return (
@@ -531,18 +531,51 @@ export default function SettingsPage() {
               }
               const soleAdmin =
                 adminCount <= 1 && (row.role === 'admin' || row.role === 'owner')
+              const cur = row.role === 'owner' ? 'admin' : row.role
+              const items: MenuProps['items'] = [
+                {
+                  key: 'to-admin',
+                  label: '设为管理员',
+                  disabled: cur === 'admin',
+                  onClick: () => void onChangeRole(row, 'admin'),
+                },
+                {
+                  key: 'to-member',
+                  label: '设为成员',
+                  disabled: cur === 'member' || soleAdmin,
+                  title: soleAdmin ? '不能将唯一管理员降级' : undefined,
+                  onClick: () => void onChangeRole(row, 'member'),
+                },
+                { type: 'divider' },
+                {
+                  key: 'remove',
+                  label: '移除',
+                  danger: true,
+                  disabled: soleAdmin,
+                  onClick: () => {
+                    if (soleAdmin) {
+                      message.warning('不能移除唯一管理员')
+                      return
+                    }
+                    Modal.confirm({
+                      title: '确认移除此成员？',
+                      okText: '移除',
+                      okButtonProps: { danger: true },
+                      cancelText: '取消',
+                      onOk: () => onRemove(row),
+                    })
+                  },
+                },
+              ]
               return (
-                <Popconfirm
-                  title="确认移除此成员？"
-                  okText="移除"
-                  cancelText="取消"
-                  disabled={soleAdmin}
-                  onConfirm={() => void onRemove(row)}
-                >
-                  <Button type="link" size="small" danger disabled={soleAdmin}>
-                    移除
-                  </Button>
-                </Popconfirm>
+                <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<MoreOutlined />}
+                    aria-label="更多"
+                  />
+                </Dropdown>
               )
             },
           },
@@ -662,11 +695,14 @@ export default function SettingsPage() {
               children: (
                 <>
                   {isAdmin ? (
-                    <div>
+                    <div className="acb-settings-section">
+                      <div className="acb-settings-section-head">
+                        <span className="acb-settings-section-title">邀请</span>
+                      </div>
                       <Typography.Text
                         id="acb-invite-email"
-                        strong
-                        style={{ display: 'block', marginBottom: 8 }}
+                        type="secondary"
+                        style={{ display: 'block', marginBottom: 8, fontSize: 12 }}
                       >
                         邀请已注册成员
                       </Typography.Text>
@@ -703,8 +739,8 @@ export default function SettingsPage() {
 
                       <Typography.Text
                         id="acb-invite-ymw"
-                        strong
-                        style={{ display: 'block', marginBottom: 8, marginTop: 16 }}
+                        type="secondary"
+                        style={{ display: 'block', marginBottom: 8, marginTop: 16, fontSize: 12 }}
                       >
                         人类邀请链接
                       </Typography.Text>
@@ -825,78 +861,82 @@ export default function SettingsPage() {
                     </div>
                   ) : null}
 
-                  {isAdmin ? <Divider className="acb-settings-divider" style={{ margin: '20px 0' }} /> : null}
-
-                  {membersEmpty ? (
-                    <div
-                      className="acb-empty-panel"
-                      style={{ minHeight: 120, padding: '20px 16px', textAlign: 'center' }}
-                    >
-                      <Empty
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description={
-                          <span>
-                            <Typography.Text
-                              strong
-                              style={{ display: 'block', fontSize: 15, marginBottom: 4 }}
-                            >
-                              还没有成员
-                            </Typography.Text>
-                            <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-                              {isAdmin
-                                ? '邀请同事加入，或签发人类邀请码（ymw_ 开头）'
-                                : '请联系管理员邀请成员加入'}
-                            </Typography.Text>
-                          </span>
-                        }
-                      >
-                        {isAdmin ? (
-                          <Space wrap>
-                            <Button
-                              type="primary"
-                              onClick={() =>
-                                document.getElementById('acb-invite-email')?.scrollIntoView({
-                                  behavior: 'smooth',
-                                  block: 'center',
-                                })
-                              }
-                            >
-                              邀请成员
-                            </Button>
-                            <Button
-                              onClick={() =>
-                                document.getElementById('acb-invite-ymw')?.scrollIntoView({
-                                  behavior: 'smooth',
-                                  block: 'center',
-                                })
-                              }
-                            >
-                              签发人类邀请
-                            </Button>
-                          </Space>
-                        ) : null}
-                      </Empty>
+                  <div className="acb-settings-section">
+                    <div className="acb-settings-section-head">
+                      <span className="acb-settings-section-title">成员</span>
                     </div>
-                  ) : null}
 
-                  {humanMembers.length || botMembers.length ? (
-                    <Table
-                      className="acb-list-table"
-                      size="small"
-                      rowKey="id"
-                      dataSource={[...humanMembers, ...botMembers]}
-                      pagination={false}
-                      columns={memberColumns}
-                      style={membersEmpty ? { marginTop: 16 } : undefined}
-                    />
-                  ) : null}
-                  {/* Bot 席脚注与上方人类邀请空态隔离：不写入空态主文案 */}
-                  <div className="acb-settings-tab-foot">
-                    兑换人类邀请码可在首页「兑换邀请码」。
-                    {!isAdmin ? ' 你当前不是管理员，成员表只读。' : ''}
-                    {botMembers.length > 0 || !membersEmpty
-                      ? ' 机器人席位请到侧栏「Bot」管理（与人类邀请 ymw_ 分家）。'
-                      : ''}
+                    {membersEmpty ? (
+                      <div
+                        className="acb-empty-panel"
+                        style={{ minHeight: 120, padding: '20px 16px', textAlign: 'center' }}
+                      >
+                        <Empty
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          description={
+                            <span>
+                              <Typography.Text
+                                strong
+                                style={{ display: 'block', fontSize: 15, marginBottom: 4 }}
+                              >
+                                还没有成员
+                              </Typography.Text>
+                              <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                                {isAdmin
+                                  ? '邀请同事加入，或签发人类邀请码（ymw_ 开头）'
+                                  : '请联系管理员邀请成员加入'}
+                              </Typography.Text>
+                            </span>
+                          }
+                        >
+                          {isAdmin ? (
+                            <Space wrap>
+                              <Button
+                                type="primary"
+                                onClick={() =>
+                                  document.getElementById('acb-invite-email')?.scrollIntoView({
+                                    behavior: 'smooth',
+                                    block: 'center',
+                                  })
+                                }
+                              >
+                                邀请成员
+                              </Button>
+                              <Button
+                                onClick={() =>
+                                  document.getElementById('acb-invite-ymw')?.scrollIntoView({
+                                    behavior: 'smooth',
+                                    block: 'center',
+                                  })
+                                }
+                              >
+                                签发人类邀请
+                              </Button>
+                            </Space>
+                          ) : null}
+                        </Empty>
+                      </div>
+                    ) : null}
+
+                    {humanMembers.length || botMembers.length ? (
+                      <Table
+                        className="acb-list-table"
+                        size="small"
+                        rowKey="id"
+                        dataSource={[...humanMembers, ...botMembers]}
+                        pagination={false}
+                        columns={memberColumns}
+                        style={membersEmpty ? { marginTop: 16 } : undefined}
+                      />
+                    ) : null}
+                    {/* Bot 席脚注与上方人类邀请空态隔离：不写入空态主文案 */}
+                    <div className="acb-settings-tab-foot">
+                      兑换人类邀请码可在首页「兑换邀请码」。
+                      {!isAdmin ? ' 你当前不是管理员，成员表只读。' : ''}
+                      {botMembers.length > 0 || !membersEmpty
+                        ? ' 机器人席位请到侧栏「Bot」管理（与人类邀请 ymw_ 分家）。'
+                        : ''}
+                    </div>
                   </div>
                 </>
               ),
