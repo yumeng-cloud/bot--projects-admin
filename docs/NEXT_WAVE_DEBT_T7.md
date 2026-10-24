@@ -65,6 +65,10 @@
 
 **整单关**：R1–R5 全勾 · 2026-10-24 19:44 Asia/Shanghai。升版 T7-4/5 仍后置。
 
+### 下一刀
+
+→ [`NEXT_WAVE_DEBT_T73.md`](./NEXT_WAVE_DEBT_T73.md)（T7-3 执行源；升版仍后置）
+
 ### 旁路抽核（不挡本单）
 
 同批 `bebe847`：[`t6i-side-cycles-team.png`](./qa-shots/t6i-side-cycles-team.png) / [`t6i-side-timeline-team.png`](./qa-shots/t6i-side-timeline-team.png) / [`t6i-side-wiki-team.png`](./qa-shots/t6i-side-wiki-team.png) / [`t6i-side-time-team.png`](./qa-shots/t6i-side-time-team.png) · 周期/排期/Wiki/工时在队上下文可开，无「未分队」大入口；wiki/time `75d49eb` · cycles/timeline `5a178b1`。
