@@ -30,9 +30,9 @@
 
 ## 产品勾选
 
-- [ ] **C3-1** 列设置
-- [ ] **C3-2** 持久化
-- [ ] **C3-3** 箱截
+- [x] **C3-1** 列设置 · FE `990586a`
+- [x] **C3-2** 持久化 · `acb.list.columns.<ws>` · FE `990586a`
+- [x] **C3-3** 箱截 · `pro-c-columns.png` · FE `990586a`
 - [ ] **C3-4** QA
 - [ ] **C3-5** 关单
 
@@ -47,7 +47,8 @@
 ## 进度注记
 
 - 2026-10-25 01:18 · C2 关后产品拍开本刀；C4–D/E2/G 仍冻。
+- 2026-10-25 01:22 Asia/Shanghai · React 交 C3-1～C3-3：滤镜「显示列」Popover 勾次要列（标签/开始/截止/估时）；默认专业子集全隐；`acb.list.columns.<ws>` localStorage；箱截 `pro-c-columns.png`；`tsc --noEmit` PASS。C4–D/E2/G 仍冻。
 
 ## 关单进度
 
-**开干** · 等 React C3-1。
+**React 已交** · 等 QA C3-4 → 产品 C3-5。

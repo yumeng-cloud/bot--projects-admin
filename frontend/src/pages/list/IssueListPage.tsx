@@ -12,9 +12,11 @@ import {
   Spin,
   message,
   Checkbox,
+  Popover,
 } from 'antd'
 import type { Key } from 'react'
-import { PlusOutlined, ReloadOutlined, CloseOutlined } from '@ant-design/icons'
+import type { ColumnsType } from 'antd/es/table'
+import { PlusOutlined, ReloadOutlined, CloseOutlined, SettingOutlined } from '@ant-design/icons'
 import {
   archiveIssues,
   batchUpdateIssueStatus,
@@ -46,6 +48,14 @@ import {
   selectIssuesWithAncestors,
   type IssueTreeRow,
 } from '../../utils/issueTree'
+import {
+  DEFAULT_LIST_COLUMN_VISIBILITY,
+  SECONDARY_COLUMN_OPTIONS,
+  readListColumnVisibility,
+  writeListColumnVisibility,
+  type ListColumnVisibility,
+  type SecondaryColumnKey,
+} from '../../utils/listColumns'
 
 export type IssueListPageProps = {
   workspaceId: string
@@ -63,6 +73,8 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
   const forceEmpty = searchParams.get('qaEmpty') === '1'
   /** C2：qaBulk=1 自动勾选前几条供箱截（操作条可见） */
   const forceBulk = searchParams.get('qaBulk') === '1'
+  /** C3：qaColumns=1 打开列设置 Popover 供箱截 */
+  const forceColumns = searchParams.get('qaColumns') === '1'
   const { teamId, loading: teamLoading } = useCurrentTeam(workspaceId)
 
   const [loading, setLoading] = useState(true)
@@ -86,6 +98,32 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
   const [bulkStatus, setBulkStatus] = useState<IssueStatus | undefined>()
   const [bulkBusy, setBulkBusy] = useState(false)
+  /** C3：次要列显隐（默认专业子集全隐） */
+  const [colVis, setColVis] = useState<ListColumnVisibility>(() =>
+    readListColumnVisibility(workspaceId),
+  )
+  const [columnsOpen, setColumnsOpen] = useState(false)
+
+  // ws 切换时重读列偏好
+  useEffect(() => {
+    setColVis(readListColumnVisibility(workspaceId))
+  }, [workspaceId])
+
+  // C3 箱截：qaColumns=1 自动打开列设置
+  useEffect(() => {
+    if (forceColumns) setColumnsOpen(true)
+  }, [forceColumns])
+
+  const setSecondaryColumn = useCallback(
+    (key: SecondaryColumnKey, on: boolean) => {
+      setColVis((prev) => {
+        const next = { ...prev, [key]: on }
+        writeListColumnVisibility(workspaceId, next)
+        return next
+      })
+    },
+    [workspaceId],
+  )
 
   const setFlag = (key: 'blocked' | 'overdue', on: boolean) => {
     setSearchParams(
@@ -400,6 +438,85 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
     }
   }
 
+  const tableColumns = useMemo((): ColumnsType<IssueTreeRow> => {
+    const cols: ColumnsType<IssueTreeRow> = [
+      { title: '标识', dataIndex: 'identifier', width: 110 },
+      {
+        title: '标题',
+        dataIndex: 'title',
+        render: (title: string, record: IssueTreeRow) => (
+          <span className="acb-list-title-cell">
+            {isOrphanSubitem(record, visibleIds) ? (
+              <Tag className="acb-list-subitem-hint">子项</Tag>
+            ) : null}
+            <span className="acb-list-title-text">{title}</span>
+            {isIssueArchived(record) ? (
+              <Tag className="acb-list-archived-tag">已归档</Tag>
+            ) : null}
+          </span>
+        ),
+      },
+      {
+        title: '状态',
+        dataIndex: 'status',
+        width: 110,
+        render: (s: IssueStatus) => STATUS_LABELS[s],
+      },
+      {
+        title: '优先级',
+        dataIndex: 'priority',
+        width: 90,
+        render: (p: IssuePriority) => PRIORITY_LABELS[p],
+      },
+      {
+        title: '负责人',
+        dataIndex: 'assignee_id',
+        width: 100,
+        render: (id: string | null) => memberName(id),
+      },
+    ]
+    if (colVis.labels) {
+      cols.push({
+        title: '标签',
+        dataIndex: 'labels',
+        render: (ls: Label[] | undefined) => (
+          <Space size={4} wrap>
+            {(ls || []).map((l) => (
+              <Tag key={l.id} color={l.color}>
+                {l.name}
+              </Tag>
+            ))}
+          </Space>
+        ),
+      })
+    }
+    if (colVis.start_at) {
+      cols.push({
+        title: '开始',
+        dataIndex: 'start_at',
+        width: 100,
+        render: (v: string | null | undefined) => v || '—',
+      })
+    }
+    if (colVis.due_at) {
+      cols.push({
+        title: '截止',
+        dataIndex: 'due_at',
+        width: 100,
+        render: (v: string | null | undefined) => v || '—',
+      })
+    }
+    if (colVis.estimate) {
+      cols.push({
+        title: '估时',
+        dataIndex: 'estimate',
+        width: 70,
+        render: (v: number | null) => v ?? '—',
+      })
+    }
+    return cols
+  }, [colVis, memberName, visibleIds])
+
   return (
     <div className="acb-page">
       <MockBanner />
@@ -506,6 +623,57 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
             { value: 'only', label: '仅已归档' },
           ]}
         />
+        <Popover
+          open={columnsOpen}
+          onOpenChange={setColumnsOpen}
+          trigger="click"
+          placement="bottomRight"
+          arrow={false}
+          overlayClassName="acb-list-columns-popover"
+          content={
+            <div className="acb-list-columns-panel" role="group" aria-label="显示列">
+              <Typography.Text className="acb-list-columns-title" strong>
+                显示列
+              </Typography.Text>
+              <Typography.Text type="secondary" className="acb-list-columns-hint">
+                默认：标识 · 标题 · 状态 · 优先 · 负责人
+              </Typography.Text>
+              <div className="acb-list-columns-checks">
+                {SECONDARY_COLUMN_OPTIONS.map((opt) => (
+                  <Checkbox
+                    key={opt.key}
+                    checked={colVis[opt.key]}
+                    onChange={(e) => setSecondaryColumn(opt.key, e.target.checked)}
+                  >
+                    {opt.label}
+                  </Checkbox>
+                ))}
+              </div>
+              <Button
+                type="link"
+                size="small"
+                className="acb-list-columns-reset"
+                onClick={() => {
+                  const next = { ...DEFAULT_LIST_COLUMN_VISIBILITY }
+                  writeListColumnVisibility(workspaceId, next)
+                  setColVis(next)
+                }}
+              >
+                恢复默认
+              </Button>
+            </div>
+          }
+        >
+          <Button
+            type="text"
+            size="small"
+            className="acb-list-columns-btn"
+            icon={<SettingOutlined />}
+            aria-label="显示列"
+          >
+            显示列
+          </Button>
+        </Popover>
       </Space>
       {selectedRowKeys.length > 0 ? (
         <div className="acb-list-bulk-bar" role="toolbar" aria-label="批量操作">
@@ -665,73 +833,7 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
               className: classes || undefined,
             }
           }}
-          columns={[
-            { title: '标识', dataIndex: 'identifier', width: 110 },
-            {
-              title: '标题',
-              dataIndex: 'title',
-              render: (title: string, record: IssueTreeRow) => (
-                <span className="acb-list-title-cell">
-                  {isOrphanSubitem(record, visibleIds) ? (
-                    <Tag className="acb-list-subitem-hint">子项</Tag>
-                  ) : null}
-                  <span className="acb-list-title-text">{title}</span>
-                  {isIssueArchived(record) ? (
-                    <Tag className="acb-list-archived-tag">已归档</Tag>
-                  ) : null}
-                </span>
-              ),
-            },
-            {
-              title: '状态',
-              dataIndex: 'status',
-              width: 110,
-              render: (s: IssueStatus) => STATUS_LABELS[s],
-            },
-            {
-              title: '优先级',
-              dataIndex: 'priority',
-              width: 90,
-              render: (p: IssuePriority) => PRIORITY_LABELS[p],
-            },
-            {
-              title: '负责人',
-              dataIndex: 'assignee_id',
-              width: 100,
-              render: (id: string | null) => memberName(id),
-            },
-            {
-              title: '标签',
-              dataIndex: 'labels',
-              render: (ls: Label[] | undefined) => (
-                <Space size={4} wrap>
-                  {(ls || []).map((l) => (
-                    <Tag key={l.id} color={l.color}>
-                      {l.name}
-                    </Tag>
-                  ))}
-                </Space>
-              ),
-            },
-            {
-              title: '开始',
-              dataIndex: 'start_at',
-              width: 100,
-              render: (v: string | null | undefined) => v || '—',
-            },
-            {
-              title: '截止',
-              dataIndex: 'due_at',
-              width: 100,
-              render: (v: string | null | undefined) => v || '—',
-            },
-            {
-              title: '估时',
-              dataIndex: 'estimate',
-              width: 70,
-              render: (v: number | null) => v ?? '—',
-            },
-          ]}
+          columns={tableColumns}
           pagination={{ pageSize: 20 }}
         />
       )}

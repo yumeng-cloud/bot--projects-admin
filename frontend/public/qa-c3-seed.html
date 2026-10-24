@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>C3 seed</title></head>
+<body style="font:14px sans-serif;padding:24px">
+<p id="s">正在进入列表列设置箱截…</p>
+<script>
+try {
+  localStorage.setItem('token', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI4NzM5N2EwMmJkZmVhMThjY2ZkNzVkMTlhNGJjZTJlOSIsImVtYWlsIjoiYWRtaW5AeXVtZW5nLnRlY2giLCJpc3MiOiJhaS1jb2xsYWItYm9hcmQiLCJleHAiOjE3OTM0NjY1MTEsImlhdCI6MTc5Mjg2MTcxMX0.jTLVrNEeZLe9T0EX1FIsD4Fms23di72zXjA62yMLxR8");
+  localStorage.setItem('ai-collab-board:projectId', "b1e996fb8ba9c350e249f7a862425a67");
+  localStorage.removeItem('ai-collab-board:force-mock');
+  // 箱截：打开列设置；顺带勾一次「估时」示意次要列可开
+  localStorage.setItem('acb.list.columns.ba1481c49148aba9553ba3811406b69f', JSON.stringify({
+    labels: false, start_at: false, due_at: true, estimate: true
+  }));
+  document.getElementById('s').textContent = 'token ok → redirect';
+  location.replace("/w/ba1481c49148aba9553ba3811406b69f/projects/b1e996fb8ba9c350e249f7a862425a67/issues?qaColumns=1");
+} catch (e) {
+  document.getElementById('s').textContent = String(e);
+}
+</script>
+</body></html>
