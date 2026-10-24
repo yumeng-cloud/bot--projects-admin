@@ -7,12 +7,13 @@
 
 | 刀 | 姿态 |
 | --- | --- |
-| **PRO_ADMIN C2** | **开** · 列表多选+批量改状态/归档 · [`PRO_ADMIN_C2`](./NEXT_WAVE_DEBT_PRO_ADMIN_C2.md) |
+| **PRO_ADMIN C2** | **已关** · [`PRO_ADMIN_C2`](./NEXT_WAVE_DEBT_PRO_ADMIN_C2.md) |
+| **PRO_ADMIN C3** | **开** · 列显示配置 · [`PRO_ADMIN_C3`](./NEXT_WAVE_DEBT_PRO_ADMIN_C3.md) |
 | **SEAT_REFILL_SHOT** | **开** soft† · Toast 箱截对齐 B3 · [`SEAT_REFILL_SHOT`](./NEXT_WAVE_DEBT_SEAT_REFILL_SHOT.md) · **不挡 C2** |
 
 ## 仍冻
 
-**C3–D / E2 / G**。解冻：C2 关后产品另拍，或人用刚需反对短票。
+**C4–D / E2 / G**。解冻：C3 关后产品另拍，或人用刚需反对短票。
 
 ## 软债裁定（一次拍死）
 

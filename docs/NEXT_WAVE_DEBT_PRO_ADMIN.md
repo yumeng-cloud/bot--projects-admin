@@ -116,7 +116,7 @@
 - [x] **B3** 无 Issue 引导 · `95974f1` · QA PASS `76824d1`
 - [x] **B4** 空态箱截 · `95974f1`（无成员/无 Issue；无项目复用 B1 `pro-b-empty-no-project.png`）
 - [x] **C1** 归档显隐 · FE `8c0fe5a` + QA `0e76217` / `pro-c-archived-toggle.png`
-- [ ] **C2** 多选批量
+- [x] **C2** 多选批量 · FE `a33651d` + Issue `3b8a0d6` + QA `99795f9` · 正式关
 - [ ] **C3** 列显示配置
 - [ ] **C4** 超管 WS 筛选
 - [ ] **C5** 列表箱截
@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 01:18 · **C2 正式关**后产品拍：**仅解冻 C3**（列表列显示/隐藏次要列，本地持久；默认专业子集）为下一 P0；**C4–D / E2 / G 仍冻**。见 [`PRO_ADMIN_C3`](./NEXT_WAVE_DEBT_PRO_ADMIN_C3.md)。
 - 2026-10-25 01:06 · 软债一次拍死 [`SOFT_RULING`](./NEXT_WAVE_DEBT_SOFT_RULING_20261025.md)：仅 SHOT 与 C2 并行开；V2 orphan/V6/revoke/focus/LEAVE soft/Q5 **搁置**；禁通码静默补。
 - 2026-10-25 01:05 · **产品统一短票（总指挥反对 `8a722ae`）**：用户令不停/不堵/能干跑完/好用优先。**SHOT ∥ C2 并行**；截图不挡多选批量。**C3–D / E2 / G 仍冻**；解冻条件：C2 关后另拍 / 或人用刚需反对短票。已重派 React（C2+SHOT）+ Issue 域（C2-2 待命）。
 - 2026-10-25 01:04 · （已被 01:05 统一短票取代）曾收回 C2 只开 SHOT；总指挥反对后改 **SHOT∥C2**。
@@ -182,4 +183,4 @@
 
 ## 关单进度
 
-**B/C1/SEAT_LEAVE/E1/E3 + SEAT_REFILL/BIND 正式关** · **开 C2（∥ SHOT）**；**C3–D / E2 / G 仍冻**（解冻条件见注记）。
+**B/C1/C2/SEAT_LEAVE/E1/E3 + SEAT_REFILL/BIND/SHOT 正式关** · **下一刀仅 C3**；**C4–D / E2 / G 仍冻**。
