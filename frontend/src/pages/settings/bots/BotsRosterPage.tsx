@@ -185,9 +185,10 @@ export default function BotsRosterPage() {
   /** TEAM_SWITCH S2：有当前队时席网格只展示该队 roster 对应 roles，勿用 WS 全量 bot_roles */
   const visibleRoles = useMemo(() => {
     if (!teamId) return roles
-    const ids = new Set(teamSeats.map((s) => s.bot_role_id).filter(Boolean))
-    const slugs = new Set(teamSeats.map((s) => s.role_slug).filter(Boolean))
-    return roles.filter((r) => ids.has(r.id) || (r.slug && slugs.has(r.slug)))
+    const ids = new Set(
+      teamSeats.map((s) => s.bot_role_id).filter((id): id is string => Boolean(id)),
+    )
+    return roles.filter((r) => ids.has(r.id))
   }, [teamId, teamSeats, roles])
   const hasAnyBinding = useMemo(() => {
     if (forceEmpty) return false
