@@ -114,3 +114,23 @@ func TestRejectNonPositiveHours(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
+
+func TestListGetEnrichLabels(t *testing.T) {
+	svc, wsID, memID, issueID := setup(t)
+	e, err := svc.CreateEntry(wsID, timetrack.CreateEntryInput{
+		IssueID: issueID, MemberID: memID, Hours: 1.5, WorkedAt: "2026-10-22",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e.IssueIdent != "CORE-1" || e.IssueTitle != "做工时" || e.MemberName != "Dev" {
+		t.Fatalf("create enrich: ident=%q title=%q name=%q", e.IssueIdent, e.IssueTitle, e.MemberName)
+	}
+	list, err := svc.ListEntries(wsID, timetrack.ListFilter{})
+	if err != nil || len(list) != 1 {
+		t.Fatalf("list: %v %+v", err, list)
+	}
+	if list[0].IssueIdent != "CORE-1" || list[0].MemberName != "Dev" || list[0].IssueTitle != "做工时" {
+		t.Fatalf("list enrich: %+v", list[0])
+	}
+}

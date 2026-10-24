@@ -39,6 +39,81 @@ func scanEntry(row interface{ Scan(dest ...any) error }) (models.TimeEntry, erro
 
 const entryCols = `id, workspace_id, issue_id, member_id, hours, note, billable, rate, worked_at, created_at, updated_at`
 
+
+// enrichEntries fills issue_identifier / issue_title / member_name (S7: no raw id as primary label).
+func (s *Service) enrichEntries(entries []models.TimeEntry) {
+	if len(entries) == 0 {
+		return
+	}
+	issueIDs := make([]string, 0, len(entries))
+	memberIDs := make([]string, 0, len(entries))
+	seenI, seenM := map[string]struct{}{}, map[string]struct{}{}
+	for _, e := range entries {
+		if e.IssueID != "" {
+			if _, ok := seenI[e.IssueID]; !ok {
+				seenI[e.IssueID] = struct{}{}
+				issueIDs = append(issueIDs, e.IssueID)
+			}
+		}
+		if e.MemberID != "" {
+			if _, ok := seenM[e.MemberID]; !ok {
+				seenM[e.MemberID] = struct{}{}
+				memberIDs = append(memberIDs, e.MemberID)
+			}
+		}
+	}
+	idents, titles := map[string]string{}, map[string]string{}
+	if len(issueIDs) > 0 {
+		ph, args := inPlaceholders(issueIDs)
+		rows, err := s.DB.Query(`SELECT id, identifier, title FROM issues WHERE id IN (`+ph+`)`, args...)
+		if err == nil {
+			for rows.Next() {
+				var id, ident, title string
+				if rows.Scan(&id, &ident, &title) == nil {
+					idents[id] = ident
+					titles[id] = title
+				}
+			}
+			_ = rows.Close()
+		}
+	}
+	names := map[string]string{}
+	if len(memberIDs) > 0 {
+		ph, args := inPlaceholders(memberIDs)
+		rows, err := s.DB.Query(`SELECT id, display_name FROM members WHERE id IN (`+ph+`)`, args...)
+		if err == nil {
+			for rows.Next() {
+				var id, name string
+				if rows.Scan(&id, &name) == nil {
+					names[id] = name
+				}
+			}
+			_ = rows.Close()
+		}
+	}
+	for i := range entries {
+		if v, ok := idents[entries[i].IssueID]; ok {
+			entries[i].IssueIdent = v
+		}
+		if v, ok := titles[entries[i].IssueID]; ok {
+			entries[i].IssueTitle = v
+		}
+		if v, ok := names[entries[i].MemberID]; ok {
+			entries[i].MemberName = v
+		}
+	}
+}
+
+func inPlaceholders(ids []string) (string, []any) {
+	ph := make([]string, len(ids))
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		ph[i] = "?"
+		args[i] = id
+	}
+	return strings.Join(ph, ","), args
+}
+
 type CreateEntryInput struct {
 	IssueID  string
 	MemberID string
@@ -103,7 +178,9 @@ func (s *Service) GetEntry(workspaceID, entryID string) (*models.TimeEntry, erro
 	if err != nil {
 		return nil, err
 	}
-	return &e, nil
+	out := []models.TimeEntry{e}
+	s.enrichEntries(out)
+	return &out[0], nil
 }
 
 type ListFilter struct {
@@ -155,7 +232,11 @@ func (s *Service) ListEntries(workspaceID string, f ListFilter) ([]models.TimeEn
 		}
 		out = append(out, e)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	s.enrichEntries(out)
+	return out, nil
 }
 
 type UpdateEntryInput struct {

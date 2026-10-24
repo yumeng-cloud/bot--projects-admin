@@ -64,7 +64,7 @@ export default function TimePage() {
 
   const resolveIssue = (r: TimeEntry) => {
     const iss = issueById.get(r.issue_id)
-    return issueReadable(r.issue_identifier || iss?.identifier, iss?.title, r.issue_id)
+    return issueReadable(r.issue_identifier || iss?.identifier, r.issue_title || iss?.title, r.issue_id)
   }
 
   const resolveMember = (memberId: string | null | undefined, name?: string | null) => {

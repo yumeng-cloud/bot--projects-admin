@@ -66,7 +66,7 @@
 
 ## 已知缺口（不挡本轮）
 
-- **S7 工时 Issue 列 raw id**：截图见单元格显示 issue id 而非标题；总指挥记真缺口，有空小单。
+- **S7 工时 Issue 列 raw id**：API List/Get 已 enrich `issue_identifier`/`issue_title`/`member_name`（2026-10-24 · 知识库工时）；待 QA 苛刻复测 `/time` 再改 PASS。
 
 ## 苛刻验收标准（总指挥 · 2026-10-24 对齐）
 

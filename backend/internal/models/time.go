@@ -16,6 +16,7 @@ type TimeEntry struct {
 	// 汇总扩展（可选）
 	ProjectID   string `json:"project_id,omitempty"`
 	IssueIdent  string `json:"issue_identifier,omitempty"`
+	IssueTitle  string `json:"issue_title,omitempty"`
 	MemberName  string `json:"member_name,omitempty"`
 }
 

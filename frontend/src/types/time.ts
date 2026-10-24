@@ -12,6 +12,7 @@ export type TimeEntry = {
   updated_at?: string
   project_id?: string
   issue_identifier?: string
+  issue_title?: string
   member_name?: string
 }
 
