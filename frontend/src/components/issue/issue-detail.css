@@ -74,15 +74,18 @@
   /* P1: first glyph must never clip */
   padding-inline-start: 4px;
   overflow: visible;
+  letter-spacing: 0;
 }
 
 .acb-issue-title-input.ant-input,
 .acb-issue-title-input.ant-input:hover,
-.acb-issue-title-input.ant-input:focus {
+.acb-issue-title-input.ant-input:focus,
+.acb-issue-title-input.ant-input:focus-within {
   font-size: 25px !important;
   font-weight: 600;
   line-height: 1.28;
-  letter-spacing: 0;
+  /* P1 防复现：禁止负字距吃掉首字 */
+  letter-spacing: 0 !important;
   color: var(--acb-text);
   padding: 2px 2px 2px 0 !important;
   border: none !important;
