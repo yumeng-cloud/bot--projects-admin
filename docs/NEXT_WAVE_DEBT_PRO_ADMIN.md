@@ -127,7 +127,7 @@
 - [x] **E1** 属性轨节奏 · FE `75fb14a` + QA `5fd8775` · 正式关 / `pro-e-drawer-rail.png`
 - [x] **E2** 看板归档入口 · FE `11ac139` + QA `d2ff642` · 正式关
 - [x] **E3** 仅归档视图入口 · FE `41c6e88` + QA `a8e0635` · 正式关 / `pro-e-archived-only.png`
-- [ ] **E4** Issue 箱截
+- [x] **E4** Issue 箱截 · `pro-e-drawer-rail.png` + `pro-e2-board-archive.png` · 并关
 - [x] **F1** 工作区表单文案 · 短说明 +「用于 URL」· `pro-a-settings.png`
 - [x] **F2** 标签/Key 表空态 · 成员分块邀请+表密度见 `pro-f-settings-density.png`（标签/接入同壳）
 - [x] **F3** 角色中文人话 · 管理员/成员/机器人 · `pro-f-settings-density.png`
@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 02:21 · **BATCH_STATUS_405 Soft† 正式关**（`c11a7e6`）+ **E4 并关**。PRO_ADMIN 功能+箱截+软†405 齐。**新人用摩擦另听拍**。
 - 2026-10-25 02:17 · 本波关后下一刀：**软† live batch-status 405** · [`BATCH_STATUS_405`](./NEXT_WAVE_DEBT_BATCH_STATUS_405.md)。E4 箱截并关 / 新人摩擦另听拍。
 - 2026-10-25 02:17 · **G3 关 · PRO_ADMIN 本波正式关**（G1+G2 `4153f73`）。C1–C5 / D1–D4 Soft† / E1–E3 齐。软† live batch-status 405 与其他 Soft† 另票，不挡本波。
 - 2026-10-25 02:14 · **D3 Soft† + D4 正式关**后产品拍：**仅开 G**（G1 QA 苛刻抽 + G2 证据齐 + G3 产品关）；**不开新功能刀**。见 [`PRO_ADMIN_G`](./NEXT_WAVE_DEBT_PRO_ADMIN_G.md)。

@@ -35,8 +35,8 @@
 
 - [x] **B405-1** live 真通 · Issue 箱重启对齐 `a732ab4` · curl 200 · 产品勾
 - [x] **B405-2** FE 405 fallback · `c20724e` · 产品勾
-- [ ] **B405-3** QA
-- [ ] **B405-4** 关单
+- [x] **B405-3** QA · PASS† Soft† `c11a7e6` · 产品勾
+- [x] **B405-4** 关单 · 2026-10-25
 
 ## 派工
 
@@ -50,10 +50,11 @@
 
 ## 进度注记
 
+- 2026-10-25 02:21 · **B405-3 PASS† Soft† → B405-4 关单** QA `c11a7e6` @ FE `c20724e` / live 200。整包 **BATCH_STATUS_405 关**。并关 **E4**（`pro-e-drawer-rail.png` + `pro-e2-board-archive.png`）。新人摩擦另听拍。
 - 2026-10-25 02:20 · **B405-1+B405-2 产品勾**：live 箱重启后 POST batch-status **200**（Issue 报）；FE `c20724e` fallback 认 405。开 **QA B405-3**。
 - 2026-10-25 02:17 · PRO_ADMIN 关后产品拍本刀（总指挥建议①）。
 - 2026-10-25 · React B405-2 交：batch-status fallback 认 405（与 404/501 同走串行）；勾选留给产品。
 
 ## 关单进度
 
-**等 QA B405-3** · B405-1～B405-2 已勾。
+**整包关 Soft†** · B405-1～B405-4 齐（live 200 + FE `c20724e` + QA `c11a7e6`）。
