@@ -38,3 +38,69 @@ Overall teams T1–T5: PENDING wait 管理面 SHA（总指挥令）
 - B1 Overall PASS — yell 产品关 B1
 - Full-cover F API PASS†; FE topbar/team UI PENDING wait SHA — do not block B1
 - Box executor has no computerUse; parent may computerUse for topbar click if desired
+
+---
+## @37c2f4b · PROJECT+TEAM_ADMIN UI harsh retest
+date: 2026-10-24 22:22 Asia/Shanghai (CST, UTC+8)
+actor: admin@yumeng.tech / Admin123!
+HEAD_at_verify: 7ba2d26 (contains 37c2f4b feat PROJECT+TEAM_ADMIN)
+FE_base: 37c2f4b
+method: shot Read+pixel · code review Settings*/PoolSelect/AppLayout · live API new empty WS
+Overall F1–F7: PASS
+Overall T1–T5: PASS
+Overall FULL_COVER: PASS
+Also maps → PROJECT_ADMIN C2–C4 (see docs/qa-shots/PROJECT_ADMIN-qa-retest-20261024.txt)
+ONE_TAP 包 B @b556e97: soft PASS (buttons+shots exist; C3 deep PENDING for parent — not blocking)
+
+### Shot verdicts
+| shot | size | white% | verdict |
+|------|------|--------|---------|
+| proj-admin-settings.png | 40061 B · 1100x640 | 95.3 (UI chrome) | PASS — 设置·项目 Tab + 新建项目 + 表 产品协作/移动端 |
+| proj-admin-topbar.png | 22550 B · 1000x400 | 94.0 | PASS† — 顶栏开下拉：PRJ/APP 列表 +「+ 新建项目」「管理项目」 |
+| proj-entry-dropdown.png | 19833 B · 1000x400 | 94.2 | PASS — 同顶栏项目入口下拉 |
+| team-admin-settings.png | 41575 B · 1100x640 | 95.3 | PASS — 设置·团队 Tab + 新建团队 + 产品一组/增长小队 |
+| team-admin-topbar.png | 20628 B · 1000x400 | 95.4 | PASS† — 0 队顶栏「暂无团队」+「创建团队」「管理团队」禁死胡同 |
+
+### Code review (37c2f4b)
+- SettingsProjectsPanel: listProjects + 新建→CreateProjectModal + 编辑/归档 + 空态主 CTA 新建；onCreated→board Navigate
+- SettingsTeamsPanel: listTeams + CreateTeamQuickModal + 设为当前/成员/Bot席；空态主 CTA 新建团队
+- ProjectPoolSelect: 真实未归档 options + 底「新建项目」「管理项目」→?tab=projects；非 seed-only
+- TeamPoolSelect: 0 队主 CTA 创建/管理；≥1 Select 可切 + 底创建/管理
+- AppLayout: 顶栏挂 ProjectPoolSelect + TeamPoolSelect；onCreated 刷新池并进板
+- SettingsPage: tab=projects|teams 路由面板
+
+### Live API (新空 WS，禁示例/加速班底 sole path)
+- WS f43a8b6aa95974eb07191d03aea747c4 QA-FULLCOVER-PT-1792851674 · projects=[] at create
+- P1 96b445ab… 增长看板-1792851674 / GRO · P2 f551112f… 移动端改版-1792851674 / MOB · list 0→1→2
+- T1 a98ad326… 增长小队-1792851674 · T2 5c1f65d8… 产品一组-1792851674 · list 0→1→2
+- Issue 6e1a9609… GRO-1 「FC-PT轻抽 Issue 1792851674」201
+- Isolation: seed WS ba1481c4… 育蒙科技 HAS_示例=True；new P/T ids NOT leaked (LEAK=False)
+- Roster GET …/bots?team_id=T1 → 200 bots=[]（席可用/空席 OK）
+
+### F1–F7 @37c2f4b
+| # | Result | Evidence |
+|---|--------|----------|
+| F1 | PASS | POST WS 201 → projects=[]；AUTO_SEED 未塞示例 |
+| F2 | PASS | prior B1 shot + SettingsProjectsPanel/ProjectRedirect 空态主 CTA 创建项目 |
+| F3 | PASS† | API 201 + CreateProjectModal onCreated→Navigate board；Modal live click soft |
+| F4 | PASS | list name/prefix 增长看板/GRO — 非「示例项目」 |
+| F5 | PASS† | API isolation OK；顶栏 UI 箱截 proj-admin-topbar / proj-entry-dropdown 见列表+新建+管理 |
+| F6 | PASS | 第二项目 MOB · list n=2 distinct ids |
+| F7 | PASS | Issue GRO-1 201 可见 |
+
+### T1–T5 @37c2f4b
+| # | Result | Evidence |
+|---|--------|----------|
+| T1 | PASS | API 建队 增长小队 + SettingsTeamsPanel「新建团队」+ shot team-admin-settings |
+| T2 | PASS | list 见刚建队名；表行可见 |
+| T3 | PASS† | API 不串 seed；顶栏 shot team-admin-topbar 0队 CTA + code TeamPoolSelect 可切 |
+| T4 | PASS | 第二队 产品一组 · list n=2 |
+| T5 | PASS | bots?team_id 200；设置行「Bot席」链 /settings/bots?team= |
+
+### Forbidden
+- 未仅靠 seed「示例项目」「加速班底」关绿
+- 主 CTA 新建/创建 非「去设置」迷宫
+- 箱截非纯白（Read 可见文案/表/下拉）
+
+### Defects
+(none blocking)

@@ -105,12 +105,14 @@
 - [x] **T5** 团队箱截
 - [x] **C1** 与 B1 同一套
 - [x] **S1** 默认不灌演示 · Go `e162e41`（`SEED_SAMPLE_DATA` / `AUTO_SEED` 默认关）
-- [ ] **C2** 无示例可活
-- [ ] **C3** 0 队可建可切
-- [ ] **C4** QA 项目+团队闭环
+- [x] **C2** 无示例可活 · QA PASS @37c2f4b · `PROJECT_ADMIN-qa-retest-20261024.txt`
+- [x] **C3** 0 队可建可切 · QA PASS（team-admin-topbar + API 建/切）
+- [x] **C4** QA 项目+团队闭环 · `PROJECT_ADMIN-qa-retest-20261024.txt` + FULL_COVER §@37c2f4b
 - [ ] **D1** 产品关单
 
 ## 进度注记
+
+- 2026-10-24 22:22 · **QA C2–C4 PASS** @`37c2f4b`（verify HEAD `7ba2d26`）：新空 WS 建项目/团队闭环；顶栏箱截非死胡同；证 `docs/qa-shots/PROJECT_ADMIN-qa-retest-20261024.txt` + FULL_COVER §@37c2f4b。**D1 请产品关**。
 
 - 2026-10-24 22:20 · **产品目视 PASS** React `37c2f4b`：设置「项目」「团队」Tab + 顶栏新建/管理；箱截 `proj-admin-settings/topbar` · `team-admin-settings/topbar`。A1–A5 / B1–B4 / T1–T5 / C1 勾。B3：归档出顶栏池，`useWorkspaceProject` 重载落未归档或空态。待 QA C2–C4 → D1。
 
@@ -122,4 +124,4 @@
 
 ## 关单进度
 
-**进行中** · A/B/T/C1 产品勾（`37c2f4b`）；待 QA C2–C4 → D1。
+**待 D1** · A/B/T/C1 产品勾；**C2–C4 QA PASS**（`PROJECT_ADMIN-qa-retest-20261024.txt` · HEAD含 `37c2f4b`）→ 请产品 D1 关单。

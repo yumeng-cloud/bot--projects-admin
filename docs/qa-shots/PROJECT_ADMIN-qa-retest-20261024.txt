@@ -1,0 +1,54 @@
+PROJECT_ADMIN · QA C2–C4 retest (maps FULL_COVER F/T)
+date: 2026-10-24 22:22 Asia/Shanghai (CST, UTC+8)
+actor: admin@yumeng.tech / Admin123!
+authority: docs/NEXT_WAVE_DEBT_PROJECT_ADMIN.md C2–C4
+FE_base: 37c2f4b (A/B/T/C1 product勾 @7ba2d26)
+HEAD_at_verify: 7ba2d26 (contains 37c2f4b)
+Overall C2–C4: PASS
+D1: PENDING 产品关（QA C2–C4 已绿）
+
+## C2 · 新 WS 0 项目：空态可建；建后顶栏有项（不依赖示例 seed） — PASS
+- API: POST /workspaces → WS f43a8b6a… QA-FULLCOVER-PT-1792851674；GET projects=[]（F1）
+- Create P1 增长看板-1792851674 / GRO → 201；list n=1 非「示例项目」（F3/F4）
+- FE: SettingsProjectsPanel + ProjectPoolSelect 共用 CreateProjectModal；空态/顶栏「新建项目」同 API（C1 产品已勾）
+- 建后顶栏池：AppLayout onCreated 把 project 插入 projects state + setProjectId + Navigate board；shot proj-admin-topbar / proj-entry-dropdown 见多项目+「+ 新建项目」
+- Seed: seed WS ba1481c4… 仍仅「示例项目」；新 WS 无泄漏、无依赖 seed（F5 isolation）
+- Maps: F1 + F3 + F4 + F5 + F6
+
+## C3 · 0 队：可建队并切换；不困「暂无团队」 — PASS
+- API: POST teams 增长小队-1792851674 → 201；再建 产品一组-1792851674；list n=2（T1/T2/T4）
+- FE TeamPoolSelect 0 队：主 CTA「创建团队」+「管理团队」（禁只灰字）；≥1 Select 可切 + 底创建/管理
+- Shot team-admin-topbar.png：顶栏「暂无团队」旁明确「创建团队」「管理团队」
+- Shot team-admin-settings.png：设置·团队 Tab「新建团队」+ 表行「设为当前」
+- Isolation: new team ids 不进 seed WS（T3 API）
+- Maps: T1 + T2 + T3 + T4
+
+## C4 · QA 项目+团队闭环 — PASS
+- 项目闭环: 空 WS → 建 P1 → list → 建 P2 → list n=2 → Issue GRO-1 201（F1–F7）
+- 团队闭环: 建 T1 → list → 建 T2 → list n=2 → bots?team_id 200（T1–T5）
+- 管理面箱截（产品已收）:
+  - docs/qa-shots/proj-admin-settings.png
+  - docs/qa-shots/proj-admin-topbar.png
+  - docs/qa-shots/proj-entry-dropdown.png
+  - docs/qa-shots/team-admin-settings.png
+  - docs/qa-shots/team-admin-topbar.png
+- 全覆盖证据: docs/qa-shots/FULL_COVER-ws-project-20261024.txt §@37c2f4b
+- 清单: docs/qa-shots/FULL_COVER_WS_PROJECT_HARSH_CHECKLIST.md F1–F7/T1–T5 PASS
+
+## Fixtures
+- WS f43a8b6aa95974eb07191d03aea747c4
+- P1 96b445ab72b117eb598e748ad3d99c1e / P2 f551112f7eac6e7c723710f0efb7f1b9
+- T1 a98ad326bff73fd7369582ff8cc3a0dc / T2 5c1f65d857d90e2c695c3fb1ec15bb4e
+- Issue 6e1a96094c9139c337c6a268fe4e5661 (GRO-1)
+- seed WS ba1481c49148aba9553ba3811406b69f（对照隔离）
+
+## ONE_TAP 包 B @b556e97（轻抽，不挡 C2–C4）
+- soft PASS: BotsRosterPage 「复制入场链接」「复制 Bot 提示词」+ oneTapJoin.ts buildJoinUrl/buildBotJoinPrompt
+- shots one-tap-copy-link.png (55582B) / one-tap-copy-prompt.png (97463B) 非空白
+- 产品已勾 @7ba2d26；深度 C3（真点复制/redeem）PENDING parent — 不堵 PROJECT_ADMIN D1
+
+## Defects
+(none)
+
+## 关报
+短报产品+总指挥：PROJECT_ADMIN **C2–C4 PASS** · FULL_COVER F1–F7/T1–T5 **PASS** · 证 PROJECT_ADMIN-qa-retest-20261024.txt + 箱截 · HEAD含 37c2f4b · **D1 请产品关**。
