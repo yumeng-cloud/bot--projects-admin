@@ -101,6 +101,7 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 			ws.Get("/issues/{issueID}", issueH.Get)
 			ws.Patch("/issues/{issueID}", issueH.Patch)
 			ws.Delete("/issues/{issueID}", issueH.Delete)
+			ws.Post("/issues/{issueID}/notify", hookH.NotifyIssue)
 
 			ws.Get("/cycles", cycleH.List)
 			ws.Get("/projects/{projectID}/cycles", cycleH.List)

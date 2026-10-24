@@ -72,6 +72,7 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 | GET/POST | `/workspaces/{ws}/webhooks` | 创建返回一次 `secret` |
 | PATCH/DELETE | `/workspaces/{ws}/webhooks/{id}` | |
 | GET | `/workspaces/{ws}/webhooks/{id}/deliveries` | 投递日志 |
+| POST | `/workspaces/{ws}/issues/{issueID}/notify` | 同步扇出 `issue.assigned`（N4 立即推送）；返回 delivered/failed |
 
 投递头：`X-Signature-256: sha256=<hmac hex>`，`X-Webhook-Event`。
 

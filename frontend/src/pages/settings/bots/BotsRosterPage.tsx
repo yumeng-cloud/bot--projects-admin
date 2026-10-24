@@ -7,6 +7,7 @@ import {
   Collapse,
   Drawer,
   Empty,
+  Checkbox,
   Input,
   Modal,
   Popconfirm,
@@ -43,7 +44,7 @@ import {
   type TeamInvite,
   type TeamSeat,
 } from '../../../api/teams'
-import { createIssue } from '../../../api/issues'
+import { createIssue, notifyIssue } from '../../../api/issues'
 import { listProjects } from '../../../api/projects'
 import { formatWikiTime } from '../../../utils/time'
 import JoinTeamWizard from './JoinTeamWizard'
@@ -95,6 +96,8 @@ export default function BotsRosterPage() {
   const [dispatchOpen, setDispatchOpen] = useState(false)
   const [dispatchTitle, setDispatchTitle] = useState('')
   const [dispatchBusy, setDispatchBusy] = useState(false)
+  /** N4：立即推送（默认关） */
+  const [dispatchPush, setDispatchPush] = useState(false)
   const [dispatchTarget, setDispatchTarget] = useState<{
     memberId: string
     seatName: string
@@ -202,6 +205,7 @@ export default function BotsRosterPage() {
       botName: occ.occupantLabel || botName(memberId) || 'Bot',
     })
     setDispatchTitle('')
+    setDispatchPush(false)
     setDispatchOpen(true)
   }
 
@@ -216,15 +220,38 @@ export default function BotsRosterPage() {
         message.error('暂无项目，无法建 Issue')
         return
       }
+      const push = dispatchPush
       const { issue } = await createIssue(wsId, {
         project_id: projectId,
         title,
         status: 'todo',
         assignee_id: dispatchTarget.memberId,
+        skip_notify: true,
       })
       message.success(`已下发 ${issue.identifier} → ${dispatchTarget.botName}`)
+      if (push) {
+        try {
+          const res = await notifyIssue(wsId, issue.id)
+          if ((res.failed ?? 0) > 0) {
+            message.warning(
+              `推送部分失败（成功 ${res.delivered ?? 0} / 失败 ${res.failed}），Issue 已创建`,
+            )
+          } else if ((res.delivered ?? 0) === 0) {
+            message.info('暂无可用 Webhook 接收推送（Issue 已创建）')
+          } else {
+            message.success(`已立即推送（${res.delivered} 路）`)
+          }
+        } catch (pe: unknown) {
+          message.warning(
+            pe instanceof ApiError
+              ? `推送失败：${pe.message}（Issue 已创建）`
+              : '推送失败（Issue 已创建）',
+          )
+        }
+      }
       setDispatchOpen(false)
       setDispatchTarget(null)
+      setDispatchPush(false)
     } catch (e: unknown) {
       message.error(e instanceof ApiError ? e.message : '下发失败')
     } finally {
@@ -711,6 +738,12 @@ export default function BotsRosterPage() {
               onPressEnter={() => void onDispatchCreate()}
               autoFocus
             />
+            <Checkbox checked={dispatchPush} onChange={(e) => setDispatchPush(e.target.checked)}>
+              立即推送
+            </Checkbox>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              勾选后经现有 Webhook 扇出；失败仅提示，不撤销建单。默认关闭。
+            </Typography.Text>
           </Space>
         ) : null}
       </Modal>

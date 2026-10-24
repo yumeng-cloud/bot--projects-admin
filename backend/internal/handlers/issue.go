@@ -60,6 +60,7 @@ func (h *IssueHandler) Create(w http.ResponseWriter, r *http.Request) {
 		DueAt       *string  `json:"due_at"`
 		BoardOrder  *float64 `json:"board_order"`
 		LabelIDs    []string `json:"label_ids"`
+		SkipNotify  bool     `json:"skip_notify"`
 	}
 	if err := middleware.DecodeJSON(r, &req); err != nil {
 		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
@@ -72,6 +73,7 @@ func (h *IssueHandler) Create(w http.ResponseWriter, r *http.Request) {
 		StartAt: req.StartAt, DueAt: req.DueAt,
 		BoardOrder: req.BoardOrder, LabelIDs: req.LabelIDs,
 		ActorID: mid, ActorKind: actorKind(r),
+		SkipNotify: req.SkipNotify,
 	})
 	if err != nil {
 		middleware.HandleError(w, err)

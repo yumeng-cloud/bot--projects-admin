@@ -322,7 +322,49 @@ func (h *WebhookHandler) DispatchEvent(workspaceID, event string, payload any) {
 	go h.dispatchSync(workspaceID, event, payload)
 }
 
+// NotifyIssue 同步扇出 issue.assigned（N4 立即推送）；不挡建单，由调用方先 Create。
+func (h *WebhookHandler) NotifyIssue(w http.ResponseWriter, r *http.Request) {
+	ws, _, ok := requireWorkspaceMember(h.DB, w, r)
+	if !ok {
+		return
+	}
+	issueID := r.PathValue("issueID")
+	if issueID == "" {
+		middleware.HandleError(w, apperr.BadRequest("缺少 issueID"))
+		return
+	}
+	// 轻量读 assignee，拼 payload
+	var assignee sql.NullString
+	var title, identifier string
+	err := h.DB.QueryRow(`SELECT title, identifier, assignee_id FROM issues WHERE id=? AND workspace_id=?`,
+		issueID, ws).Scan(&title, &identifier, &assignee)
+	if err != nil {
+		middleware.HandleError(w, apperr.NotFound("Issue 不存在"))
+		return
+	}
+	payload := map[string]any{
+		"id":         issueID,
+		"title":      title,
+		"identifier": identifier,
+	}
+	if assignee.Valid && assignee.String != "" {
+		payload["assignee_id"] = assignee.String
+	}
+	delivered, failed := h.dispatchSyncCounted(ws, "issue.assigned", payload)
+	middleware.JSON(w, http.StatusOK, map[string]any{
+		"delivered": delivered,
+		"failed":    failed,
+		"event":     "issue.assigned",
+	})
+}
+
+
 func (h *WebhookHandler) dispatchSync(workspaceID, event string, payload any) {
+	_, _ = h.dispatchSyncCounted(workspaceID, event, payload)
+}
+
+// dispatchSyncCounted 同步投递并返回成功/失败数。
+func (h *WebhookHandler) dispatchSyncCounted(workspaceID, event string, payload any) (delivered, failed int) {
 	enriched := enrichWebhookPayload(h.DB, workspaceID, payload)
 	body, err := json.Marshal(map[string]any{
 		"event":        event,
@@ -331,12 +373,12 @@ func (h *WebhookHandler) dispatchSync(workspaceID, event string, payload any) {
 		"data":         enriched,
 	})
 	if err != nil {
-		return
+		return 0, 0
 	}
 	assigneeID, seatID := extractAssigneeSeat(enriched)
 	rows, err := h.DB.Query(`SELECT id, url, secret, events, filter_member_id, filter_seat_id FROM webhooks WHERE workspace_id=? AND enabled=1`, workspaceID)
 	if err != nil {
-		return
+		return 0, 0
 	}
 	type target struct{ id, url, secret string }
 	var targets []target
@@ -363,8 +405,13 @@ func (h *WebhookHandler) dispatchSync(workspaceID, event string, payload any) {
 	}
 	_ = rows.Close() // 必须先关游标再 Exec（SQLite 单连接，否则 deliver/logDelivery 会死锁）
 	for _, t := range targets {
-		h.deliverOne(t.id, t.url, t.secret, event, body)
+		if h.deliverOne(t.id, t.url, t.secret, event, body) {
+			delivered++
+		} else {
+			failed++
+		}
 	}
+	return delivered, failed
 }
 
 // enrichWebhookPayload 尽量附带 assignee / team_id / seat_id（G6a）。
@@ -440,11 +487,11 @@ func eventMatch(eventsJSON, event string) bool {
 	return false
 }
 
-func (h *WebhookHandler) deliverOne(webhookID, url, secret, event string, body []byte) {
+func (h *WebhookHandler) deliverOne(webhookID, url, secret, event string, body []byte) bool {
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		h.logDelivery(webhookID, event, string(body), nil, "", false)
-		return
+		return false
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Signature-256", SignPayload(secret, body))
@@ -453,13 +500,14 @@ func (h *WebhookHandler) deliverOne(webhookID, url, secret, event string, body [
 	if err != nil {
 		msg := err.Error()
 		h.logDelivery(webhookID, event, string(body), nil, msg, false)
-		return
+		return false
 	}
 	defer resp.Body.Close()
 	rb, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	code := resp.StatusCode
 	ok := code >= 200 && code < 300
 	h.logDelivery(webhookID, event, string(body), &code, string(rb), ok)
+	return ok
 }
 
 func (h *WebhookHandler) logDelivery(webhookID, event, payload string, status *int, respBody string, success bool) {

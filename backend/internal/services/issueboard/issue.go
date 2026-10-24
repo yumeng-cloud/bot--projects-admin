@@ -98,6 +98,8 @@ type CreateIssueInput struct {
 	LabelIDs    []string
 	ActorID     string
 	ActorKind   string
+	// SkipNotify 为 true 时不扇出 Webhook（下发 Modal 未勾「立即推送」）
+	SkipNotify bool
 }
 
 func (s *Service) CreateIssue(workspaceID string, in CreateIssueInput) (*models.Issue, error) {
@@ -225,9 +227,11 @@ func (s *Service) CreateIssue(workspaceID string, in CreateIssueInput) (*models.
 	if err != nil {
 		return nil, err
 	}
-	s.emit(workspaceID, "issue.created", iss)
-	if iss.AssigneeID != nil && strings.TrimSpace(*iss.AssigneeID) != "" {
-		s.emit(workspaceID, "issue.assigned", iss)
+	if !in.SkipNotify {
+		s.emit(workspaceID, "issue.created", iss)
+		if iss.AssigneeID != nil && strings.TrimSpace(*iss.AssigneeID) != "" {
+			s.emit(workspaceID, "issue.assigned", iss)
+		}
 	}
 	return iss, nil
 }

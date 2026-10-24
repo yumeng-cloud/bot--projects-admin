@@ -41,6 +41,8 @@ export type IssueCreate = {
   description?: string
   estimate?: number | null
   assignee_id?: string | null
+  /** true：建单不扇出 Webhook（下发 Modal 未勾立即推送） */
+  skip_notify?: boolean
   cycle_id?: string | null
   parent_id?: string | null
   /** YYYY-MM-DD 日历日 */
@@ -224,4 +226,13 @@ export async function listProjectMembers(
   if (preferMock()) return { members: [...mockMembers], mock: true }
   const data = await api<{ members: MemberRef[] }>(`/workspaces/${workspaceId}/members`)
   return { members: data.members || [], mock: false }
+}
+
+
+/** N4：同步扇出 issue.assigned；失败由调用方 Toast，不回滚建单 */
+export function notifyIssue(workspaceId: string, issueId: string) {
+  return api<{ delivered: number; failed: number; event: string }>(
+    `/workspaces/${workspaceId}/issues/${issueId}/notify`,
+    { method: 'POST', body: JSON.stringify({}), skipToast: true },
+  )
 }
