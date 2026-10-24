@@ -111,11 +111,12 @@ POST …/bots  → 201 { member, token }   // 事务：成员 + mint；或 api-k
 - [x] **F4** 设置新建 Key 挡层消费 token · IdentityKeyRevealModal
 - [x] **F3** 启动提示词嵌钥 · `buildFirstRunPrompt`
 - [x] **F5** 入场零二次索钥 + 文案分家 · 席页仍只 ymt_；弹层文案两码分家
-- [ ] **F1** （按需）一键建 Bot API
-- [ ] **F6** 箱证 whoami 串联
+- [~] **F1** （按需）一键建 Bot API · **本波不挡关**（后置；现 api-keys+挡层已满足露钥）
+- [x] **F6** 箱证 whoami 串联 · QA PASS† `a5299f5` / `FOOLPROOF-F6-qa-retest-20261024.txt`
 
 ## 进度注记
 
+- 2026-10-24 23:28 · **P0 关单** QA F6 PASS† `a5299f5`（创建→启动提示词嵌钥→CLI→whoami=同 Bot；Modal 实地点击 soft†）。F1 仍后置不挡关。
 - 2026-10-24 23:22 · **产品勾 F2–F5** React `681de29`：挡层露 ymk_+复制+启动提示词；席页入场仍只 ymt_。F1 仍后置；**F6 待 QA**。
 - 2026-10-24 23:14 · 并行另开 [`NEXT_WAVE_DEBT_SEAT_VISIBILITY.md`](./NEXT_WAVE_DEBT_SEAT_VISIBILITY.md)：建队 Toast 有 N 空席但页仍「尚未绑定席位」——空席必须可见。
 
@@ -124,4 +125,4 @@ POST …/bots  → 201 { member, token }   // 事务：成员 + mint；或 api-k
 
 ## 关单进度
 
-**进行中** · F2–F5 产品勾 `681de29`；F1 后置；**待 F6 QA**。
+**已关（P0）** · React `681de29` + QA F6 PASS† `a5299f5`；F1 后置不挡。
