@@ -116,13 +116,13 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 | **Q8 分布式派发** | 席已绑 Bot+webhook | 指派 Issue 到该席 | **仅该席**唤醒；left 不喊 | 挂 Webhook/下发旧证；抽测 |
 | **Q9 换机续命** | 同 ymk_ 新机 | handoff get / pull | 得 focus/todos/开放 Issue；**不必 Admin 再发钥** | 挂记忆 handoff；抽测 |
 | **Q10 入场包≠身份** | 公开 `/join` 与可转发提示词 | 抽检正文/URL | **无可复制 ymk_**；自动身份只在**私密成功响应**/FOOLPROOF 单把 | 包侧 COVERED†；自动身份待 Q1 |
-| **Q11 吊销** | 码已吊销 | redeem | 失败；旧 ymk_ 不随码自动废（认场景 F） | 挂 J1 |
-| **Q12 无钥重复 join** | 同 ymt_ 已 bootstrap 过 | 再无 Bearer redeem | 认 **V1** 票（推荐：拒造第二人，人话贴旧钥） | GAP |
-| **Q13 救场/双机** | 同 member 双机 | leave→migrate；或 export/import 救场 | 主航线非 import；双机须 leave | 挂 T2 |
+| **Q11（V1）拒造第二人** | 同 ymt_ 已 bootstrap 过 | 再无 Bearer redeem / 假装新人再造 | **拒造第二人**；人话贴旧钥；member 不 +1 | **GAP**（随 Q1） |
+| **Q12（F）吊销** | 码/钥可吊销 | revoke ymt_ 再 join；revoke ymk_ 再 whoami | ymt_ 入场失败；ymk_ 鉴权失败；旧 ymk_ **不**随码吊销自动废 | **COVERED†** ymt_ N1；ymk_ 子条 GAP |
+| **Q13（K·J）救场双机** | 同 member 双机 / 脏绑 | leave→migrate；handoff；产品救场 | 换机不强迫全班吐钥；禁非法双绑；救场可恢复留痕 | **GAP**（Q9 局部可挂） |
 
 **横切：** 两码永不合并；任用=活跃禁顶替+新人新席/空席+停工才补位。  
 **旁路：** FOOLPROOF 设置单把 `a5299f5` 不挡主航线。  
-**箱证文件（认）：** [`docs/qa-shots/HUMAN_ONBOARD-QA-CASES.md`](./qa-shots/HUMAN_ONBOARD-QA-CASES.md) @ QA `bf8bd8f`（Q1–Q10 补严；债内 Q11–Q13 投票后补进该文件）。
+**箱证文件（认 · H3）：** [`docs/qa-shots/HUMAN_ONBOARD-QA-CASES.md`](./qa-shots/HUMAN_ONBOARD-QA-CASES.md) @ **`7ec3c52`**（Q1–Q13；Q11=V1 拒造第二人 · Q12=F 吊销 · Q13=K·J 救场双机）。编号以该文件为准。
 
 ## 6. 产品勾选（总指挥投票结果回写）
 
@@ -175,6 +175,7 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 
 ## 8. 进度
 
+- 2026-10-24 23:47 · **H3 挂 Q11–Q13** 用例文件 `7ec3c52`；债表编号与 QA 对齐（Q11=V1 / Q12=F / Q13=K·J）。
 - 2026-10-24 23:46 · **QA V5 文案抽测 PASS†**（源码硬证 Toast/入场包导语；`frontend/src` 无「未绑 Key」）。活点 Toast soft†。Q1 仍等 Go。
 - 2026-10-24 23:45 · **种子 H4 已收** `15880b8`（三前缀表；人=注册建WS；Bot=`ymt_`→自动`ymk_`；设置签钥旁路；`/join` 说明页；无免责腔）。产品过。
 - 2026-10-24 23:44 · **React V5 文案热修合入** `e761305`（去「未绑 Key」；入场包主文案；设置签 Key=旁路）。V3/V4 等 Go。种子 H4 `15880b8` 已见 main。
