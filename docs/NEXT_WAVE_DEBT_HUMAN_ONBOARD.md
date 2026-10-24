@@ -144,7 +144,7 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 - [x] **V2** 补位是否自动 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
 - [x] **V3** Web Join 只贴 ymt_ · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
 - [x] **V4** 入场提示词两态 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
-- [x] **V5** 建队文案热修（可先于 API） · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
+- [x] **V5** 建队文案热修（可先于 API） · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED` · **FE 已合** `e761305`
 - [x] **V6** 并发同码策略 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
 - [x] **V7** B1 开干门禁 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
 
@@ -175,6 +175,7 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 
 ## 8. 进度
 
+- 2026-10-24 23:44 · **React V5 文案热修合入** `e761305`（去「未绑 Key」；入场包主文案；设置签 Key=旁路）。V3/V4 等 Go。种子 H4 `15880b8` 已见 main。
 - 2026-10-24 23:42 · **用户票通过** `VOTE_ACCEPT_ALL_RECOMMENDED`：A–K+V1–V7 全认推荐默认；H0/H1 冻；派 Go/React/记忆/QA/种子开刀。
 - 2026-10-24 23:49 · H3 挂 QA 用例文件 `bf8bd8f`；用户票仍等 H0/H1。
 - 2026-10-24 23:48 · 并 QA 加严 Q1–Q13、种子 H4 锚点、§0.1 用户票 H0/H1；待用户拍板。
