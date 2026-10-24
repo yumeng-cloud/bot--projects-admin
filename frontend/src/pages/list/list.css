@@ -91,3 +91,25 @@
 .acb-list-table .ant-table-tbody > tr.acb-list-row-archived .acb-list-title-text {
   color: var(--acb-text-secondary, #8b8b8b);
 }
+
+/* C2：多选批量操作条 — 夹在滤镜与表之间，不挡表头 */
+.acb-list-bulk-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--acb-border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--acb-primary) 5%, var(--acb-bg-elevated, var(--acb-bg-container)));
+}
+.acb-list-bulk-count {
+  font-size: 12px;
+  color: var(--acb-text-secondary);
+  margin-inline-end: 4px;
+}
+.acb-list-table .ant-table-selection-column {
+  width: 40px !important;
+  min-width: 40px !important;
+}

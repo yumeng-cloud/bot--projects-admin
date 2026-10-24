@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>C2 seed</title></head>
+<body style="font:14px sans-serif;padding:24px">
+<p id="s">正在进入列表多选箱截…</p>
+<script>
+try {
+  localStorage.setItem('token', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI4NzM5N2EwMmJkZmVhMThjY2ZkNzVkMTlhNGJjZTJlOSIsImVtYWlsIjoiYWRtaW5AeXVtZW5nLnRlY2giLCJpc3MiOiJhaS1jb2xsYWItYm9hcmQiLCJleHAiOjE3OTM0NjY1MTEsImlhdCI6MTc5Mjg2MTcxMX0.jTLVrNEeZLe9T0EX1FIsD4Fms23di72zXjA62yMLxR8");
+  localStorage.setItem('ai-collab-board:projectId', "b1e996fb8ba9c350e249f7a862425a67");
+  localStorage.removeItem('ai-collab-board:force-mock');
+  document.getElementById('s').textContent = 'token ok → redirect';
+  location.replace("/w/ba1481c49148aba9553ba3811406b69f/projects/b1e996fb8ba9c350e249f7a862425a67/issues?qaBulk=1");
+} catch (e) {
+  document.getElementById('s').textContent = String(e);
+}
+</script>
+</body></html>

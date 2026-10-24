@@ -30,9 +30,9 @@
 
 ## 产品勾选
 
-- [ ] **C2-1** 多选操作条
-- [ ] **C2-2** API（若需）
-- [ ] **C2-3** 箱截
+- [x] **C2-1** 多选操作条 · FE @4534e4c（串行 `patchIssue`；无 batch status API）
+- [ ] **C2-2** API（若需）· **缺口**：无 `PATCH …/issues/batch-status`；FE 已串行 `patchIssue`，Issue 域可后补真批量
+- [x] **C2-3** 箱截 · `docs/qa-shots/pro-c-bulk.png` @4534e4c
 - [ ] **C2-4** QA
 - [ ] **C2-5** 关单
 
@@ -47,10 +47,11 @@
 
 ## 进度注记
 
+- 2026-10-25 01:20 Asia/Shanghai · React 交 C2-1+C2-3：`IssueListPage` rowSelection + 操作条（改状态/归档 done-only/解档/清空）；`qaBulk=1` 箱截；archive 复用既有 API；改状态串行 PATCH（C2-2 留给 Issue 域）。
 - 2026-10-25 01:06 · **一次拍死**：软债表见 [`SOFT_RULING`](./NEXT_WAVE_DEBT_SOFT_RULING_20261025.md)；React 必须 C2∥SHOT，禁只截图。
 - 2026-10-25 01:05 · 短票统一：重开本刀；与 SHOT 并行。Issue 域：archive 已有；batch status 待喊。
 - 2026-10-25 01:04 · 曾撤回；01:05 总指挥反对后恢复。
 
 ## 关单进度
 
-**开干** · 等 React C2-1（∥ SHOT）。
+**FE 已交 C2-1+C2-3** · 等 C2-2（可选）/ QA C2-4 / 产品 C2-5。未碰 seat-refill 截图。
