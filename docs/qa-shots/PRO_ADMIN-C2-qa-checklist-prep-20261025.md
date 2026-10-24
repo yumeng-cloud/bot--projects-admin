@@ -58,3 +58,8 @@
 
 - 等 React 交 C2 FE SHA + `pro-c-bulk.png`（或等价箱截）
 - HUMAN 软债 / Toast 抽验：对齐会开则另接，不堵 C2
+
+
+## VOID
+
+2026-10-25 01:04 Asia/Shanghai · **作废勿验**。总指挥重申 C2–D 仍冻；产品撤回 C2 开刀。下一刀见 `docs/NEXT_WAVE_DEBT_SEAT_REFILL_SHOT.md`。
