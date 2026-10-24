@@ -36,6 +36,7 @@
   - 证据 `docs/qa-shots/T6R-roster-isolate-20261024.txt` · `97ca3b4` + Go `96df495`
   - 双队 seat_id/role_id 不同；A=Grok Bot / B=BotB J2 同 slug frontend claim 不串
   - **pins 另单**；Issue 无 team_id 池隔离另单
+  - QA 苛刻复测 PASS · `docs/qa-shots/T6R-qa-retest-20261024.txt`（unit + 双队 claim/pull）
 
 
 ## 交件注（Bot 记忆 · 2026-10-24 18:06 Asia/Shanghai）

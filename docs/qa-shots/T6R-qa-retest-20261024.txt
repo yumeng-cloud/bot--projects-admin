@@ -1,0 +1,81 @@
+=== T6-R QA RETEST (independent harsh) ===
+time_AsiaShanghai: 2026-10-24 18:09 Asia/Shanghai
+box_local_time: 2026-10-24 18:09:39 CST
+HEAD: 58311b22d9ece243adb01fb2a96f3a14727949a3
+ancestor_96df495: OK (git merge-base --is-ancestor)
+API: http://127.0.0.1:8080 healthz=ok (service ai-collab-board)
+server_bin: /tmp/ai-board-server
+WS: ba1481c49148aba9553ba3811406b69f
+pins: NOT ATTEMPTED
+Issue-pool / T7: NOT IN SCOPE
+keys: NEVER committed (KEYA=/tmp/ymbot_t2_key1.txt → Grok Bot; KEYB=/tmp/ymbot_j2_botb_api_key.txt → BotB J2; prefixes ymk_1933… / ymk_e9dd… only)
+
+## Overall
+RESULT: PASS
+V1_seats: PASS
+V2_claims: PASS
+V3_pull: PASS
+unit_test: PASS
+old_seat_reensure: PASS (single pre-fix frontend seat; OLDB N/A)
+
+## Teams (fresh this run)
+TEAMA: 83d0f56de57ba8b78b4019e554d34062  name=QA-T6R-A-20261024180814
+TEAMB: 1500af180a490698a86df66c551000d2  name=QA-T6R-B-20261024180814
+
+## V1 — seat / role isolation (same outward slug frontend)
+SEAT_A: 1a611d16dd976eb2fcc1b5dd80add857
+SEAT_B: 5e5d6e4aaf2263e61f80acfa0b2a4574
+ROLE_A: 9d7f070a3f78490bc91231c7f56e93bf  bot_roles.slug=team:83d0f56de57ba8b78b4019e554d34062:frontend
+ROLE_B: 7dee4d0e9a3618ad91c4cd483bd46da0  bot_roles.slug=team:1500af180a490698a86df66c551000d2:frontend
+SEAT_IDS_DIFFER: True
+ROLE_IDS_DIFFER: True
+ensure body: {"seats":[{"slug":"frontend","name":"前端"},{"slug":"ops","name":"运维"}]}
+V1: PASS
+
+## V2 — GET roster claim member isolation
+After ymbot seat enter --role frontend --team TEAMA (KEYA) / TEAMB (KEYB):
+GET A frontend: bound_member_id=094acad4a3f0aaef2ee6370e790912b4 (Grok Bot) status=active
+GET B frontend: bound_member_id=e317fc48c926870ab009ff4aa8287eb0 (BotB J2) status=active
+MEMBER_IDS_DIFFER: True
+claim rows (role_id→member): 
+  team:…TEAMA…:frontend → Grok Bot
+  team:…TEAMB…:frontend → BotB J2
+V2: PASS
+
+## V3 — ymbot team pull claim isolation
+PULL A (KEYA --uuid TEAMA) frontend: claim=claimed holder=Grok Bot
+PULL B (KEYB --uuid TEAMB) frontend: claim=claimed holder=BotB J2
+CROSS KEYA pull TEAMB frontend holder=BotB J2 (shows B's claim, not A's)
+CROSS KEYB pull TEAMA frontend holder=Grok Bot
+LEAK_A_HAS_BOTB: False
+LEAK_B_HAS_GROK: False
+V3: PASS
+
+## Step 6 — old-seat re-ensure
+Found 1 pre-fix frontend seat (workspace-level bot_roles.slug=frontend):
+  OLDA team=ea918de1ac4d8116ed69651116a4acb9 (加速班底)
+  seat=066d8528b04f223556373eb36cfa9db9
+  BEFORE bot_role_id=91dc54d2953e3857816cb370441e3826 slug=frontend
+  AFTER  bot_role_id=6c4687de23abdf54ea3ffcc650a6f280 slug=team:ea918de1ac4d8116ed69651116a4acb9:frontend
+ROLE_CHANGED: True  TEAM_SCOPED: True
+OLDB: N/A (only one remaining pre-fix frontend seat at retest time)
+NOTE: leftover active claim still exists on workspace-level slug=frontend (Grok Bot); fresh dual-team claims are on team-scoped roles and do not cross-read. Not a V1–V3 fail.
+old_seat: PASS
+
+## Step 7 — unit test
+cmd: cd backend && env -u DATABASE_URL go test ./internal/services/botmem/ -count=1 -run TestTwoTeamsRosterClaimIsolation
+output:
+=== RUN   TestTwoTeamsRosterClaimIsolation
+--- PASS: TestTwoTeamsRosterClaimIsolation (0.07s)
+PASS
+ok  	github.com/yumeng-tech/ai-collab-board/backend/internal/services/botmem	0.070s
+
+## Method notes
+- Admin JWT: /tmp/acb_admin_token.txt valid (admin_jwt_fresh.txt was 401); also refreshed via POST /api/v1/auth/login → /tmp/admin_jwt_qa.txt
+- Bind via: YMBOT_API_KEY=… /tmp/ymbot seat enter --role frontend --team <uuid>
+- Pull via: /tmp/ymbot team pull --uuid <uuid> --json
+- No pin APIs called; no Issue-pool/T7 work
+- Independent retest; prior docs/qa-shots/T6R-roster-isolate-20261024.txt not trusted as evidence
+
+## Failures
+none
