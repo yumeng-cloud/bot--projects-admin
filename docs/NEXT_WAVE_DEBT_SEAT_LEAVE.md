@@ -54,6 +54,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:30 · **整包已关**；产品拍下一 P0 = **PRO_ADMIN E1**（Drawer 属性轨归档/解档节奏）。见 [`NEXT_WAVE_DEBT_PRO_ADMIN.md`](./NEXT_WAVE_DEBT_PRO_ADMIN.md)。
 - 2026-10-25 00:29 · **L5 PASS† → L7 关单** QA `43ecff8`：三硬条全过；箱截对读 PASS。soft†搁置：活点未扫到 seat.stop（单测绿）；Admin 代绑活跃 403≠409（拒替仍成立）。整包 **SEAT_LEAVE 关**。
 - 2026-10-25 00:26 · **产品勾 L3/L4/L6** FE `4883426`：席卡 Popconfirm 停工/离职；after 截「停工席 · 可补位」过；禁 Form。等 QA L5。
 - 2026-10-25 00:25 · **React 交 L3/L4/L6** FE `4883426`：对齐 Go `c5f5596` `POST …/seats/{id}/stop|unbind`；席卡+交接抽屉 Popconfirm「停工此席？/离职解绑此席？」；`stopSeat` client + roster 乐观「停工席 · 可补位」；箱截 before/after；`tsc --noEmit` PASS。等 QA L5 → 产品 L7。
