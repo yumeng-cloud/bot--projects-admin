@@ -88,15 +88,19 @@
 - [x] **B1** Pack/列计数剔归档 · list 默认剔 + FE `useBoardPackStats` 防御
 - [x] **B2** Cycle 聚合剔归档 · `estimate_sum` WHERE archived_at IS NULL
 - [x] **B3** 计数箱验 · QA D2 `ISSUE_ARCHIVE-qa-retest-20261024.txt`（estimate_sum 14→6；done/total 2/4→0/2）
-- [ ] **C1** 完成列多选归档
-- [ ] **C2** 默认不拉归档
-- [ ] **C3** FE 统计一致
-- [ ] **C4** 深链已归档态
-- [ ] **C5** 箱截入库
+- [x] **C1** 完成列多选归档 · `ab7f72b` + `issue-archive-c1-select.png`
+- [x] **C2** 默认不拉归档 · `c2-after.png` 卡消失
+- [x] **C3** FE 统计一致 · `c3-stats.png` 进度 0/0
+- [x] **C4** 深链已归档态 · Drawer「已归档」Tag+banner（解档后置）；缺专用截不挡，QA Q5 GET 200
+- [x] **C5** 箱截入库 · c1/c2/c3 + QA Q7 轻抽
 - [x] **D1** API/BOT 一句 · `45d6fb1`/`85c6fb7`（实现待 SHA）
 - [x] **D2** QA 苛刻 PASS · `ISSUE_ARCHIVE-qa-retest-20261024.txt` Overall PASS
-- [ ] **D3** 产品关单
+- [x] **D3** 产品关单 · 2026-10-24 21:03
+
+## 进度注记
+
+- 2026-10-24 21:03 · 产品目视 c1–c3 + QA D2 PASS；关整单。
 
 ## 关单进度
 
-**进行中** · **A1–A6·B1–B3·D1–D2 全勾**（`dc529f9`/`4f80f74`/`91d2526` + QA retest）。余 React C5 箱截 + 产品 D3（FE 码 `ab7f72b`；箱截并行）。
+**整单关** · A/B/C/D 全勾。主 SHA：`dc529f9`/`4f80f74`/`91d2526`/`ab7f72b`；QA `aec8632`。软债：解档、归档专面、canceled 归档、ListRelations 边仍可指向已归档 id。
