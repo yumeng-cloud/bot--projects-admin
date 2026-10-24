@@ -94,6 +94,9 @@ cd frontend && npm run build
 - [COORDINATION.md](./COORDINATION.md) — 多 Bot 目录归属与约定
 - [docs/API.md](./docs/API.md) — 已挂载路由 / 鉴权 / 错误格式
 - [docs/BOT.md](./docs/BOT.md) — Bot API Key、幂等、角色记忆（含待实现）
+- [docs/BOT_TEAM_TEMPLATE_INDEX.md](./docs/BOT_TEAM_TEMPLATE_INDEX.md) — 班底手册索引（T7-R · `template_key` / `playbook_ref`）
+- [docs/BOT_TEAM_TEMPLATE_T6_T7.md](./docs/BOT_TEAM_TEMPLATE_T6_T7.md) — T6/T7 验收边界；本波 T7-R
+- [docs/bot-team-templates/](./docs/bot-team-templates/) — 内置 `default` 模板可读副本
 - [docs/ACCEPTANCE.md](./docs/ACCEPTANCE.md) — QA 验收
 - [docs/database.md](./docs/database.md) — SQLite↔Postgres 切换与迁移
 - [docs/embed.md](./docs/embed.md) — pgvector / embedding_chunks

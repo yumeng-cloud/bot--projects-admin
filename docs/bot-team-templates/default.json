@@ -1,0 +1,54 @@
+{
+  "id": "default",
+  "key": "default",
+  "name": "默认班底",
+  "description": "五席最小班底：前端 / 产品经理 / QA / 后端 / 知识库；空席未绑 Key",
+  "version": 1,
+  "seats": [
+    {
+      "slug": "frontend",
+      "display_name": "前端",
+      "playbook_ref": {
+        "repo": "bot-team-template",
+        "ref": "main",
+        "path": "roles/前端研发/"
+      }
+    },
+    {
+      "slug": "pm",
+      "display_name": "产品经理",
+      "playbook_ref": {
+        "repo": "bot-team-template",
+        "ref": "main",
+        "path": "roles/项目经理/"
+      }
+    },
+    {
+      "slug": "qa",
+      "display_name": "QA",
+      "playbook_ref": {
+        "repo": "bot-team-template",
+        "ref": "main",
+        "path": "roles/QA/"
+      }
+    },
+    {
+      "slug": "backend",
+      "display_name": "后端",
+      "playbook_ref": {
+        "repo": "bot-team-template",
+        "ref": "main",
+        "path": "roles/平台后端/"
+      }
+    },
+    {
+      "slug": "wiki",
+      "display_name": "知识库",
+      "playbook_ref": {
+        "repo": "bot-team-template",
+        "ref": "main",
+        "path": "playbook/班底与补位.md"
+      }
+    }
+  ]
+}

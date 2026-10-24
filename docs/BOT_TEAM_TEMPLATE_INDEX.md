@@ -2,7 +2,8 @@
 
 > 2026-10-24 · 种子与文档 · 对齐 [`NEXT_WAVE_DEBT_T7.md`](./NEXT_WAVE_DEBT_T7.md)（`95e27c6`）  
 > **本波只服务「选模板 → 空席 + playbook_ref」**。升版 diff/apply（T7-4/5）**后置**，见 [`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md)。  
-> 手册本体在兄弟仓 **`bot-team-template`**（与本看板仓并列）；下表路径相对该仓根，**非**本仓 `docs/`。
+> 手册本体在兄弟仓 **`bot-team-template`**（与本看板仓并列）；下表「最小示例路径」相对该仓根。
+> 本仓另有内置 JSON **可读副本**：[`bot-team-templates/`](./bot-team-templates/)（`default.json` + README；与 `template_key=default` 对齐）。
 
 ## 内置 / 约定 `template_key`
 
@@ -21,6 +22,26 @@
 | 名册 JSON 样例 | `playbook/templates/班底/roster.example.json` |
 | 席位人设目录（slug≠中文名） | `roles/README.md` · 如 `roles/前端研发/` → slug `frontend` |
 | ymbot 配手样例 | `playbook/templates/ymbot/` |
+
+
+## 本仓内置副本（`template_key=default`）
+
+| 本仓路径 | 说明 |
+|----------|------|
+| [`bot-team-templates/README.md`](./bot-team-templates/README.md) | 内置键说明 · REST 回链（`team-templates` / `template_key`） |
+| [`bot-team-templates/default.json`](./bot-team-templates/default.json) | 五席 + 每席 `playbook_ref`（path 须存在于兄弟仓） |
+
+### `default` 席位 → 兄弟仓 path（须存在）
+
+| slug | `playbook_ref.path`（相对 `bot-team-template/`） |
+|------|--------------------------------------------------|
+| `frontend` | `roles/前端研发/` |
+| `pm` | `roles/项目经理/` |
+| `qa` | `roles/QA/` |
+| `backend` | `roles/平台后端/`（场馆向可改 `roles/场馆后端/`） |
+| `wiki` | `playbook/班底与补位.md`（MCP：文档席可无 `roles/` 目录） |
+
+> 勿写不存在的 `playbook/frontend.md` 一类占位；slug↔`roles/` 对照以兄弟仓 `playbook/看板MCP与CLI.md` §4 为准。
 
 ## `playbook_ref` 约定（契约）
 
