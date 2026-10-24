@@ -1,0 +1,72 @@
+PRO_ADMIN E2-4 QA spotcheck · 2026-10-25 02:08 Asia/Shanghai
+Overall: PASS†
+Feature SHA: 11ac139f395b4d76a5f3836b01e0f11fcf163371 (ancestor of HEAD 660d594 / local main)
+Debt: docs/NEXT_WAVE_DEBT_PRO_ADMIN_E2.md (parent PRO_ADMIN; D3–D4/G FROZEN)
+Shot: docs/qa-shots/pro-e2-board-archive.png (63385 B @11ac139)
+Scope: E2 only. D3–D4 / G FROZEN — not verified. Do not reopen E1/E3.
+
+Product accept补强（并入本验，不重开范围）:
+1) 已完成列轻链「归档本列」；确认 Modal 含条数；归档后 Toast+列刷新
+2) 空完成列隐藏入口
+3) 箱截对照 pro-e2-board-archive.png
+
+Method
+- git log; confirm 11ac139 ancestor of HEAD; git show 11ac139 (BoardColumn/KanbanBoard/debt/shot)
+- Inspect BoardColumn.tsx: isDoneCol && issues.length > 0 → archive bar; 文案「归档本列」; disabled guard
+- Inspect KanbanBoard.tsx: onArchiveColumn → colIds from byStatus['done']; early return if empty; Modal.confirm content with ${colIds.length} 条; archiveIds → onArchiveIssues
+- Inspect BoardPage.tsx handleArchiveIssues: optimistic filter 去卡 + archiveIssues API + message.success Toast + fail rollback
+- Inspect api/issues.ts archiveIssues POST …/issues/archive
+- Read docs/qa-shots/pro-e2-board-archive.png as image
+- Soft† live FE Vite skipped (箱截+源码 suffice)
+- Spot E1 drawer rail / E3 archived-only 源码仍在（入口仅完成列 isDoneCol）
+
+Accept checklist
+1. 看板完成/Done 列有清晰中文「归档本列」入口（轻操作，非密密 Form） …… PASS
+   - BoardColumn: isDoneCol (status==='done') 才渲 .acb-col-archive-bar
+   - Button type="link" size="small" className="acb-col-archive-btn" 文案「归档本列」（11ac139 由「归档本列已完成」对齐债）
+   - 非 Form；轻链并列「归档（N）」勾选入口
+   - Shot: 已完成列头下可见「归档本列」；非完成列无此入口
+
+2. 点击 → 二次确认含条数（如「… N 条…」）→ 调既有归档/批量 archive API …… PASS
+   - KanbanBoard onArchiveColumn: Modal.confirm title「归档本列」
+   - content: `确认将完成列中的 ${colIds.length} 条已完成 Issue 归档？归档后默认列表与看板不再显示。` — 含条数
+   - okText「归档」/ cancelText「取消」; onOk → archiveIds(colIds)
+   - archiveIds → onArchiveIssues(doneIds) → BoardPage handleArchiveIssues → archiveIssues(workspaceId, ids)
+   - API: POST /workspaces/{ws}/issues/archive body { ids }（既有 C1）
+
+3. 空完成列：入口禁用或隐藏（勿空操作） …… PASS
+   - 隐藏：`{isDoneCol && issues.length > 0 ? (…archive bar…) : null}` — 空列整条入口不渲
+   - 按钮 disabled={archiving || issues.length === 0}（双保险）
+   - onArchiveColumn: if (colIds.length === 0) return — 三保险勿空操作
+
+4. 成功 Toast + 列刷新（本地去卡或 reload） …… PASS
+   - BoardPage handleArchiveIssues: 乐观 setIssues filter 去卡 → await archiveIssues → message.success(`已归档` / `已归档 ${n} 条`)
+   - fail: setIssues(prev) 回滚 + message.error
+   - KanbanBoard useEffect 清失效 selectedIds；列随 issues 刷新
+
+5. 箱截 pro-e2-board-archive.png：完成列有卡 + 入口可见；中文；禁挤叠/死白/技术口吻 …… PASS
+   - Exists 63385 B @11ac139；中文主 UI（育蒙科技 / YM·示例项目 / 看板列名）
+   - 已完成列：绿点 +「已完成」+「归档」+「归档本列」轻链可见；列内有卡（QA-WHEEL…）
+   - 非完成列无「归档本列」；无挤叠/死白/英文露脸/技术口吻
+
+6. 不破坏 E1 drawer rail / E3 archived-only 已关能力（源码 spot：入口仅完成列） …… PASS
+   - 入口门控 isDoneCol === status==='done'；其他列不渲 archive bar
+   - IssuePropertyRail.tsx 仍在；IssueListPage archiveView hide|include|only「仅已归档」仍在
+   - 本刀仅 BoardColumn 文案 + KanbanBoard Modal 文案轻改；未触 E1/E3
+
+FAIL redlines hit? NONE
+- no entry — NO（Done 列「归档本列」）
+- no confirm count — NO（${colIds.length} 条）
+- empty column still clickable empty-op — NO（hide + disabled + early return）
+- no refresh/Toast path — NO（乐观去卡 + message.success）
+- English/shot wrong/crush — NO
+
+Soft† notes
+- Live FE Vite skipped (standing Soft† optional; source+shot suffice — same as D2/E1/E3)
+- D3–D4 / G not opened
+- E1/E3 not re-verified end-to-end; source spot only
+
+Defects: (none blocking)
+
+Verdict: PASS† @11ac139
+One-line → 产品+React+总指挥: E2-4 PASS†；完成列轻链「归档本列」+ Modal 含 N 条 + archiveIssues Toast+乐观去卡；空列隐藏入口；箱截 pro-e2-board-archive.png 有卡+入口可见中文无挤叠；入口仅 done；E1/E3 源码未破；Soft† 活 FE 略；D3–D4/G 未验。
