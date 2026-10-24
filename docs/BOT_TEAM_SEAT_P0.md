@@ -154,10 +154,10 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 | **T5** | 换机引导文案：主路径 = 绑席位 → get；export/import 标为可选备份/救场 | [ ] |
 | **T6** | （P0.5）团队切换后 Issue 池与席位组隔离；共享 pins 与席位私有 memory 不串 | [ ] |
 | **T7** | （P1）从模板创建团队：空席位形状与 playbook_ref 挂上；升版 diff 可选更新、默认不覆盖 memory | [ ] |
-| **T8** | 硬规矩：关键路径箱内自测 / CLI 记录；禁半成品甩用户本机当小白鼠；**禁 fan-out 吵用户** | [ ] |
-| **T9** | **团队 UUID 拉班底**：给定 `team_id`（UUID）ensure/pull roster → 完整角色席位（slug/名/claim 态）；重复调用**幂等**、不双建 role、**不清空** memory/todos | [ ] |
-| **T10** | **补位 / 扩工不抢 claim、不抢 in-progress**：① 空席可 claim；② 他席已有 `released_at IS NULL` 的 claim → 默认 **409**，禁止静默顶替；③ 他人 assignee 且进行中（in-progress / doing）的 Issue → 补位者**不得**自动 claim/改派抢走；④ 显式接管须留 comment/审计；⑤ 兼岗记忆按 member/seat 隔离 | [ ] |
-| **T11** | **席位迁绑续命**：新 Key/新机绑到原 role 后仅 `handoff get` 能续；第二路抢绑同 T3 单活 | [ ] |
+| **T8** | 硬规矩：关键路径箱内自测 / CLI 记录；禁半成品甩用户本机当小白鼠；**禁 fan-out 吵用户** | [x] 2026-10-24 CLI `/tmp/ymbot_t9_t10_evidence.txt` |
+| **T9** | **团队 UUID 拉班底**：给定 `team_id`（UUID）ensure/pull roster → 完整角色席位（slug/名/claim 态）；重复调用**幂等**、不双建 role、**不清空** memory/todos | [x] pull×2 五席同 id；`t9_probe` 保留 · HEAD `0968a9a` |
+| **T10** | **补位 / 扩工不抢 claim、不抢 in-progress**：① 空席可 claim；② 他席已有 `released_at IS NULL` 的 claim → 默认 **409**，禁止静默顶替；③ 他人 assignee 且进行中（in-progress / doing）的 Issue → 补位者**不得**自动 claim/改派抢走；④ 显式接管须留 comment/审计；⑤ 兼岗记忆按 member/seat 隔离 | [x] 二绑/migrate→409；expand 不偷 YM-1/8/10/15；force 显式接管 OK；④ comment 留痕标 P0.1 补强 |
+| **T11** | **席位迁绑续命**：新 Key/新机绑到原 role 后仅 `handoff get` 能续；第二路抢绑同 T3 单活 | [x] 空席可进；占用无 force→409；`--force` 接管；`frontend:`/`qa:last_focus` 隔离；enter 带回 handoff（与 T2 全文换机剧本可另补 FE） |
 
 ### 5.1 通道 P0 必验小节（总指挥点名）
 
@@ -167,6 +167,8 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 **关单条件（API/通道 P0）**：**T9 + T10 + T8**（建议连带 T2/T3/T11）全勾即可先关后端通道单。  
 **关单条件（含 FE）**：另加 **T1、T4、T5**。T6/T7 另开子单；§3 挂载点已写清。
 
+> **2026-10-24 通道 P0 已关**：T8–T11 勾选。残余：④ force 后 comment 审计 → P0.1；T1/T4/T5 FE；T2 完整换机叙事随 FE。
+
 ---
 
 ## 6. 状态
@@ -174,10 +176,11 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 - [x] 产品体验脑暴 → 本文落库  
 - [x] Bot 记忆角色技术脑暴已到（附录对齐）  
 - [x] 总指挥：**用户睡了·直接开干** — 产品定稿并放行实现  
-- [x] Bot 记忆角色：通道 CLI/MCP 已按精确契约接线（§7）；**未**双写 Go handler/迁移
-- [ ] T9/T10 真服务 CLI 证据（本机/合入后）  
-- [ ] FE 席位 UI（T1/T4/T5）  
-- [ ] 产品体验按验收勾选关单  
+- [x] Bot 记忆角色：通道 CLI/MCP 已按精确契约接线（§7）  
+- [x] Go teams API 合入 main `0968a9a`  
+- [x] **通道 P0 关单**：T8–T11 已勾（证据 `/tmp/ymbot_t9_t10_evidence.txt` · 2026-10-24）  
+- [ ] FE 席位 UI（T1/T4/T5）· T2 换机一天完整剧本可随 FE  
+- [ ] T6/T7 另开  
 
 **已定稿可开发。** 实现中勿刷屏用户；进度回总指挥 / 产品体验即可。  
 **口径**：模板仓 = 班底作业手册；`ymbot` = 手册里的手（与模板 README 同步）。
@@ -195,6 +198,6 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 | MCP `board_team_pull` / `board_seat_enter` / `board_seat_leave` / `board_seat_expand` | 已接线 | 描述短、默认无 UUID |
 | botclient `TeamPull` / `SeatEnter` / `SeatLeave` / `TeamSeatBind` / `TeamSeatExpand` | 已落地 | 记忆键 `SeatMemoryKey(slug,key)`；**未**双写 REST handler |
 | Go `teams` / `team_seats` handler + 迁移 | **Go 同事** | 通道已按精确契约接线 |
-| T9/T10 真服务证据 | 通道单测已绿；真服务待 Go 合入 models+mount | PR: bot/team-seat-p0 · 单测：roster key / expand / GuardExpandNoSteal / help |
+| T9–T11 真服务证据 | **PASS** · 2026-10-24 · HEAD `0968a9a` · `/tmp/ymbot_t9_t10_evidence.txt` | 产品体验已勾；通道 P0 关单 |
 
 回链：[`BOT_SEAT_BIND_TECH_P0.md`](./BOT_SEAT_BIND_TECH_P0.md) · [`BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md`](./BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md) · 模板 `playbook/看板席位迁绑.md`

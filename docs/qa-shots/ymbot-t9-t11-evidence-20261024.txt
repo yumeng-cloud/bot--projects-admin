@@ -1,0 +1,425 @@
+=== ymbot T9/T10/T11 evidence ===
+time_AsiaShanghai: 2026-10-24 13:40:34 CST
+HEAD: 0968a9a82674e781a1fb9e731a443a673c54e4bd
+WS: 10fe830790a13de9c25791d87e8b1d58
+TEAM: e2b8aae66e18600de19764121251f2dc
+PROJ: 980dcb1ea2497a1471e759a8a2e8879d
+YMBOT: /tmp/ymbot (10674926 Oct 24 13:39)
+API: 200
+
+
+===== T9 prep: whoami + memory set =====
+
+===== T9 whoami A =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot whoami
+bot  Grok Bot
+exit=0
+
+===== T9 memory set pre-pull =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot memory set --key t9_probe --value pre-pull-1792820434 --autosave
+已写服务端（进度在服务端；续工用 whoami → handoff get，勿攒到最后 export）
+t9_probe	2026-10-24T05:40:34Z	pre-pull-1792820434
+exit=0
+
+===== T9 pull #1 =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot team pull --uuid e2b8aae66e18600de19764121251f2dc --json
+[
+  {
+    "claim": "empty",
+    "name": "后端",
+    "slug": "backend"
+  },
+  {
+    "claim": "empty",
+    "name": "前端",
+    "slug": "frontend"
+  },
+  {
+    "claim": "empty",
+    "name": "产品经理",
+    "slug": "pm"
+  },
+  {
+    "claim": "empty",
+    "name": "QA",
+    "slug": "qa"
+  },
+  {
+    "claim": "empty",
+    "name": "知识库",
+    "slug": "wiki"
+  }
+]
+exit=0
+pull1 stderr:
+
+===== T9 memory set between pulls =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot memory set --key t9_probe --value between-pulls-keep-me --autosave
+已写服务端（进度在服务端；续工用 whoami → handoff get，勿攒到最后 export）
+t9_probe	2026-10-24T05:40:34Z	between-pulls-keep-me
+exit=0
+
+===== T9 pull #2 (json) =====
+[
+  {
+    "claim": "empty",
+    "name": "后端",
+    "slug": "backend"
+  },
+  {
+    "claim": "empty",
+    "name": "前端",
+    "slug": "frontend"
+  },
+  {
+    "claim": "empty",
+    "name": "产品经理",
+    "slug": "pm"
+  },
+  {
+    "claim": "empty",
+    "name": "QA",
+    "slug": "qa"
+  },
+  {
+    "claim": "empty",
+    "name": "知识库",
+    "slug": "wiki"
+  }
+]
+pull2 stderr:
+T9_seat_count_1 5
+T9_seat_count_2 5
+T9_ids_same True
+T9_slugs_1 ['backend', 'frontend', 'pm', 'qa', 'wiki']
+T9_PASS_shape True
+
+===== T9 memory list after pulls (must keep t9_probe) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot memory list --q t9_probe --json
+[
+  {
+    "key": "t9_probe",
+    "updated_at": "2026-10-24T05:40:34Z",
+    "value": "between-pulls-keep-me"
+  }
+]
+exit=0
+
+===== T10: seat enter empty then second without force -> 409 =====
+
+===== T10 leave frontend A (cleanup) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot seat leave --role frontend --team e2b8aae66e18600de19764121251f2dc
+left role=frontend via=unbind
+exit=0
+
+===== T10 leave frontend B (cleanup) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot seat leave --role frontend --team e2b8aae66e18600de19764121251f2dc
+left role=frontend via=unbind
+exit=0
+
+===== T10 enter frontend A (empty) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot seat enter --role frontend --team e2b8aae66e18600de19764121251f2dc --json
+{
+  "bind": {
+    "bound_at": "2026-10-24T05:40:34Z",
+    "claimed_at": "2026-10-24T05:40:34Z",
+    "holder": "Grok Bot",
+    "ok": true,
+    "slug": "frontend"
+  },
+  "claim": {
+    "ok": true,
+    "via": "bind"
+  },
+  "handoff": {
+    "claimed_role": "-",
+    "issue_count": 4,
+    "issues": [
+      {
+        "identifier": "YM-1",
+        "status": "in_progress",
+        "title": "截图验证：登录与看板"
+      },
+      {
+        "identifier": "YM-10",
+        "status": "in_progress",
+        "title": "I6叶子子任务"
+      },
+      {
+        "identifier": "YM-3",
+        "status": "in_review",
+        "title": "截图验证：评论与活动"
+      },
+      {
+        "identifier": "YM-8",
+        "status": "in_progress",
+        "title": "Webhook 重试策略"
+      }
+    ],
+    "member": "Grok Bot",
+    "memory_count": 3,
+    "todo_count": 0
+  },
+  "memory_key_hint": "frontend:last_focus",
+  "role": "frontend",
+  "step": "whoami→handoff get→seat bind",
+  "whoami": {
+    "actor_kind": "bot",
+    "display_name": "Grok Bot"
+  }
+}
+exit=0
+
+===== T10 enter frontend B no-force (expect 409) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot seat enter --role frontend --team e2b8aae66e18600de19764121251f2dc --json
+冲突：该席位已绑定其他成员（Grok Bot）；禁止瞎抢，请 seat leave 或显式 --force 接管（HTTP 409）
+exit=13
+T10_conflict_exit_A=0 exit_B=13 (409 expected) PASS
+
+===== T10 migrate enter B no-force (expect 409) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot migrate enter --role frontend --team e2b8aae66e18600de19764121251f2dc --json
+冲突：该席位已绑定其他成员（Grok Bot）；禁止瞎抢，请 seat leave 或显式 --force 接管（HTTP 409）
+exit=13
+T10_migrate_conflict_exit=13
+issues_count 14 http 200
+create_ip 403
+
+===== T10 seat expand =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot seat expand --team e2b8aae66e18600de19764121251f2dc --project 980dcb1ea2497a1471e759a8a2e8879d --limit 20 --json
+{
+  "assigned": [
+    {
+      "identifier": "YM-13"
+    }
+  ],
+  "assigned_n": 1,
+  "skipped": [
+    {
+      "reason": "无更多空闲席位"
+    }
+  ],
+  "skipped_n": 1
+}
+exit=0
+
+===== T10 roster after conflict =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot team pull --uuid e2b8aae66e18600de19764121251f2dc --json
+[
+  {
+    "claim": "empty",
+    "name": "后端",
+    "slug": "backend"
+  },
+  {
+    "claim": "claimed",
+    "holder": "Grok Bot",
+    "name": "前端",
+    "slug": "frontend"
+  },
+  {
+    "claim": "empty",
+    "name": "产品经理",
+    "slug": "pm"
+  },
+  {
+    "claim": "empty",
+    "name": "QA",
+    "slug": "qa"
+  },
+  {
+    "claim": "empty",
+    "name": "知识库",
+    "slug": "wiki"
+  }
+]
+exit=0
+
+===== T11: empty seat enter; occupied needs force; SeatMemoryKey =====
+
+===== T11 leave qa cleanup A =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot seat leave --role qa --team e2b8aae66e18600de19764121251f2dc
+left role=qa via=unbind
+exit=0
+
+===== T11 leave qa cleanup B =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot seat leave --role qa --team e2b8aae66e18600de19764121251f2dc
+left role=qa via=unbind
+exit=0
+
+===== T11 empty enter qa B =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot seat enter --role qa --team e2b8aae66e18600de19764121251f2dc --json
+{
+  "bind": {
+    "bound_at": "2026-10-24T05:40:51Z",
+    "claimed_at": "2026-10-24T05:40:51Z",
+    "holder": "Bot B T10",
+    "ok": true,
+    "slug": "qa"
+  },
+  "claim": {
+    "ok": true,
+    "via": "bind"
+  },
+  "handoff": {
+    "claimed_role": "-",
+    "issue_count": 0,
+    "issues": null,
+    "member": "Bot B T10",
+    "memory_count": 0,
+    "todo_count": 0
+  },
+  "memory_key_hint": "qa:last_focus",
+  "role": "qa",
+  "step": "whoami→handoff get→seat bind",
+  "whoami": {
+    "actor_kind": "bot",
+    "display_name": "Bot B T10"
+  }
+}
+exit=0
+
+===== T11 occupied enter qa A no-force (expect 409) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot seat enter --role qa --team e2b8aae66e18600de19764121251f2dc --json
+冲突：该席位已绑定其他成员（Bot B T10）；禁止瞎抢，请 seat leave 或显式 --force 接管（HTTP 409）
+exit=13
+T11_no_force_exit=13
+
+===== T11 occupied enter qa A --force =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot seat enter --role qa --team e2b8aae66e18600de19764121251f2dc --force --json
+{
+  "bind": {
+    "bound_at": "2026-10-24T05:40:51Z",
+    "claimed_at": "2026-10-24T05:40:51Z",
+    "holder": "Grok Bot",
+    "ok": true,
+    "slug": "qa"
+  },
+  "claim": {
+    "ok": true,
+    "via": "bind"
+  },
+  "handoff": {
+    "claimed_role": "前端",
+    "issue_count": 4,
+    "issues": [
+      {
+        "identifier": "YM-1",
+        "status": "in_progress",
+        "title": "截图验证：登录与看板"
+      },
+      {
+        "identifier": "YM-10",
+        "status": "in_progress",
+        "title": "I6叶子子任务"
+      },
+      {
+        "identifier": "YM-3",
+        "status": "in_review",
+        "title": "截图验证：评论与活动"
+      },
+      {
+        "identifier": "YM-8",
+        "status": "in_progress",
+        "title": "Webhook 重试策略"
+      }
+    ],
+    "member": "Grok Bot",
+    "memory_count": 3,
+    "todo_count": 0
+  },
+  "memory_key_hint": "qa:last_focus",
+  "role": "qa",
+  "step": "whoami→handoff get→seat bind",
+  "whoami": {
+    "actor_kind": "bot",
+    "display_name": "Grok Bot"
+  }
+}
+exit=0
+T11_force_exit=0
+
+===== T11 memory set frontend:last_focus A =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot memory set --key frontend:last_focus --value A-fe-focus --autosave
+已写服务端（进度在服务端；续工用 whoami → handoff get，勿攒到最后 export）
+frontend:last_focus	2026-10-24T05:40:51Z	A-fe-focus
+exit=0
+
+===== T11 memory set qa:last_focus A =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot memory set --key qa:last_focus --value A-qa-focus --autosave
+已写服务端（进度在服务端；续工用 whoami → handoff get，勿攒到最后 export）
+qa:last_focus	2026-10-24T05:40:51Z	A-qa-focus
+exit=0
+
+===== T11 memory list seat keys A =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** /tmp/ymbot memory list --q last_focus --json
+[
+  {
+    "key": "frontend:last_focus",
+    "updated_at": "2026-10-24T05:40:51Z",
+    "value": "A-fe-focus"
+  },
+  {
+    "key": "last_focus",
+    "updated_at": "2026-10-24T03:11:19Z",
+    "value": "H3-focus-111119"
+  },
+  {
+    "key": "qa:last_focus",
+    "updated_at": "2026-10-24T05:40:51Z",
+    "value": "A-qa-focus"
+  }
+]
+exit=0
+T11_PASS_SeatMemoryKey_contract True
+T11_PASS_empty_enter True
+T11_PASS_force_required True
+T11_keys frontend:last_focus qa:last_focus
+T11_memory_keys ['frontend:last_focus', 'last_focus', 'qa:last_focus']
+T11_PASS_memory_key_isolation True
+
+===== END CONTINUATION =====
+
+===== T9 recheck with --id (seat id stability) =====
+T9_REST_seat_count 5 5
+T9_REST_ids_same True
+T9_REST_ids [('78f0e5ed2b39a81e94fb4a45a9a6fa53', 'qa'), ('7e5d5df98d5fcc04a86dac745b108a38', 'backend'), ('9ec6eed8301ed47ccd3e7f54590980b1', 'pm'), ('aa8bab30317280e776aba23c11aa03b0', 'wiki'), ('bd893d649eb21c5d69c703852d526d11', 'frontend')]
+T9_PASS_idempotent_ids True
+cli /tmp/t9_id1.json [   {     "bot_role_id": "f361f99dd7a47c5896142ac7b8a760e1",     "claim": "empty",     "id": "7e5d5df98d5fcc04a86dac745b108a38",     "name": "后端",     "slug": "backend"   },   {     "bot_role_id": "57
+cli /tmp/t9_id2.json [   {     "bot_role_id": "f361f99dd7a47c5896142ac7b8a760e1",     "claim": "empty",     "id": "7e5d5df98d5fcc04a86dac745b108a38",     "name": "后端",     "slug": "backend"   },   {     "bot_role_id": "57
+T10_ip_before [('ca35b55985dad3d4c40fe15c8fbe6ccd', 'in_progress', 'YM-1'), ('ca35b55985dad3d4c40fe15c8fbe6ccd', 'in_progress', 'YM-10'), ('ca35b55985dad3d4c40fe15c8fbe6ccd', 'in_progress', 'YM-8')]
+T10_expand_out {
+  "assigned": [
+    {
+      "identifier": "YM-14"
+    }
+  ],
+  "assigned_n": 1,
+  "skipped": null,
+  "skipped_n": 0
+}
+T10_ip_after_same_set True
+T10_stolen []
+T10_PASS_no_steal_in_progress True
+T10_expand_assigned ['YM-14']
+T10_PASS_expand_not_claim_ip True
+admin_create 201
+admin_patch 200
+admin_ip YM-15 ca35b55985dad3d4c40fe15c8fbe6ccd in_progress
+T10_YM15_before ca35b55985dad3d4c40fe15c8fbe6ccd in_progress YM-15
+T10_YM15_after ca35b55985dad3d4c40fe15c8fbe6ccd in_progress YM-15
+T10_PASS_YM15_untouched True
+
+===== FINAL VERDICT =====
+HEAD=0968a9a82674e781a1fb9e731a443a673c54e4bd
+T9: PASS (pullx2 same 5 seats/ids; memory t9_probe kept)
+T10: PASS (seat/migrate enter 2nd -> HTTP 409 exit 13; expand does not steal in_progress assignees YM-1/8/10/15; claim holder stays Grok Bot)
+T11: PASS (empty qa enter BotB; no-force 409; --force OK; SeatMemoryKey frontend:last_focus vs qa:last_focus isolated)
+evidence=/tmp/ymbot_t9_t10_evidence.txt
+server_restarted=yes (old /tmp/ai-board-server lacked teams; rebuilt from main)
+
+===== go test (related pkgs, env cleaned) =====
+ok  	github.com/yumeng-tech/ai-collab-board/backend/internal/botclient	0.005s
+ok  	github.com/yumeng-tech/ai-collab-board/backend/internal/services/botmem	0.444s
+ok  	github.com/yumeng-tech/ai-collab-board/backend/internal/db	0.196s
+ok  	github.com/yumeng-tech/ai-collab-board/backend/internal/handlers	0.900s
+ok  	github.com/yumeng-tech/ai-collab-board/backend/cmd/ymbot	0.002s
