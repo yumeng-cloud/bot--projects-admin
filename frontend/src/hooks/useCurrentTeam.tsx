@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
 import { listTeams, type Team } from '../api/teams'
 import {
   readStoredTeamId,
@@ -14,11 +22,20 @@ export type UseCurrentTeamResult = {
   loading: boolean
 }
 
+const CurrentTeamContext = createContext<UseCurrentTeamResult | null>(null)
+
 /**
- * Minimal workspace current-team context (T6I I4).
- * localStorage key: acb.team.<wsId> — same as Bot roster page.
+ * Workspace-scoped current team (T6I I4 / TEAM_SWITCH).
+ * One provider under AppLayout so header + list/board/cycles/… share state.
+ * localStorage key: acb.team.<wsId>
  */
-export function useCurrentTeam(workspaceId: string): UseCurrentTeamResult {
+export function CurrentTeamProvider({
+  workspaceId,
+  children,
+}: {
+  workspaceId: string
+  children: ReactNode
+}) {
   const [teams, setTeams] = useState<Team[]>([])
   const [teamId, setTeamIdState] = useState<string | null>(() =>
     readStoredTeamId(workspaceId),
@@ -36,7 +53,6 @@ export function useCurrentTeam(workspaceId: string): UseCurrentTeamResult {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    // Re-hydrate from storage when ws changes
     const saved = readStoredTeamId(workspaceId)
     setTeamIdState(saved)
     ;(async () => {
@@ -62,5 +78,24 @@ export function useCurrentTeam(workspaceId: string): UseCurrentTeamResult {
     }
   }, [workspaceId])
 
-  return { teams, teamId, setTeamId, loading }
+  const value = useMemo(
+    () => ({ teams, teamId, setTeamId, loading }),
+    [teams, teamId, setTeamId, loading],
+  )
+
+  return (
+    <CurrentTeamContext.Provider value={value}>{children}</CurrentTeamContext.Provider>
+  )
+}
+
+/**
+ * Read current team from nearest CurrentTeamProvider (AppLayout).
+ * `workspaceId` kept for call-site clarity; provider is the source of truth.
+ */
+export function useCurrentTeam(_workspaceId: string): UseCurrentTeamResult {
+  const ctx = useContext(CurrentTeamContext)
+  if (!ctx) {
+    throw new Error('useCurrentTeam must be used within CurrentTeamProvider')
+  }
+  return ctx
 }

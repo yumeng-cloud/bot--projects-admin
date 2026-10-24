@@ -23,7 +23,6 @@ import {
 } from '../../api/issues'
 import { IssueDrawer } from '../../components/issue'
 import { MockBanner } from '../../components/common/MockBanner'
-import { TeamPoolSelect } from '../../components/common/TeamPoolSelect'
 import { useCurrentTeam } from '../../hooks/useCurrentTeam'
 import type { Issue, IssuePriority, IssueStatus, Label, MemberRef } from '../../types/issue'
 import '../../components/board/board.css'
@@ -51,7 +50,7 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
   const [searchParams, setSearchParams] = useSearchParams()
   const blocked = searchParams.get('blocked') === '1'
   const overdue = searchParams.get('overdue') === '1'
-  const { teams, teamId, setTeamId, loading: teamLoading } = useCurrentTeam(workspaceId)
+  const { teamId, loading: teamLoading } = useCurrentTeam(workspaceId)
 
   const [loading, setLoading] = useState(true)
   /** Full project list (unfiltered) so tree filters can keep ancestor context. */
@@ -118,13 +117,6 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
     if (teamLoading) return
     void load()
   }, [load, teamLoading])
-
-  const onTeamChange = (tid: string) => {
-    setIssues([])
-    setCurrent(null)
-    setOpen(false)
-    setTeamId(tid)
-  }
 
   const memberName = useMemo(() => {
     const map = new Map(members.map((m) => [m.id, memberLabel(m)]))
@@ -193,12 +185,6 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
       <div className="acb-page-bar">
         <Typography.Title level={4}>列表</Typography.Title>
         <Space size={8} wrap>
-          <TeamPoolSelect
-            teams={teams}
-            teamId={teamId}
-            onChange={onTeamChange}
-            disabled={teamLoading}
-          />
           <Input
             size="small"
             placeholder="新建 Issue，回车创建"

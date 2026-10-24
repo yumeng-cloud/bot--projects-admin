@@ -18,10 +18,27 @@ import { listMyWorkspaces, type Workspace } from '../api/workspaces'
 import { listProjects, type Project } from '../api/projects'
 import type { User } from '../api/auth'
 import { THEME_MODE_STORAGE_KEY, resolveThemeMode, type ThemeMode } from '../theme'
+import { TeamPoolSelect } from '../components/common/TeamPoolSelect'
+import { CurrentTeamProvider, useCurrentTeam } from '../hooks/useCurrentTeam'
 
 const { Header, Sider, Content } = Layout
 
-export default function AppLayout({ user, onLogout }: { user: User | null; onLogout: () => void }) {
+function AppHeaderTeam() {
+  const { wsId } = useParams()
+  const { teams, teamId, setTeamId, loading } = useCurrentTeam(wsId || '')
+  return (
+    <span className="acb-header-team">
+      <TeamPoolSelect
+        teams={teams}
+        teamId={teamId}
+        onChange={(id) => setTeamId(id)}
+        disabled={loading || !wsId}
+      />
+    </span>
+  )
+}
+
+function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () => void }) {
   const { wsId, projectId: routeProjectId } = useParams()
   const nav = useNavigate()
   const loc = useLocation()
@@ -132,26 +149,29 @@ export default function AppLayout({ user, onLogout }: { user: User | null; onLog
             flexShrink: 0,
           }}
         >
-          <Select
-            size="small"
-            variant="borderless"
-            style={{ minWidth: 160 }}
-            placeholder="项目"
-            value={projectId}
-            options={projects.map((p) => ({ value: p.id, label: `${p.key_prefix} · ${p.name}` }))}
-            onChange={(id) => {
-              setProjectId(id)
-              const tab =
-                selected[0] === 'list'
-                  ? 'issues'
-                  : selected[0] === 'cycles'
-                    ? 'cycles'
-                    : selected[0] === 'timeline'
-                      ? 'timeline'
-                      : 'board'
-              nav(`/w/${wsId}/projects/${id}/${tab}`)
-            }}
-          />
+          <Space className="acb-header-context" size={10} align="center">
+            <Select
+              size="small"
+              variant="borderless"
+              style={{ minWidth: 160 }}
+              placeholder="项目"
+              value={projectId}
+              options={projects.map((p) => ({ value: p.id, label: `${p.key_prefix} · ${p.name}` }))}
+              onChange={(id) => {
+                setProjectId(id)
+                const tab =
+                  selected[0] === 'list'
+                    ? 'issues'
+                    : selected[0] === 'cycles'
+                      ? 'cycles'
+                      : selected[0] === 'timeline'
+                        ? 'timeline'
+                        : 'board'
+                nav(`/w/${wsId}/projects/${id}/${tab}`)
+              }}
+            />
+            <AppHeaderTeam />
+          </Space>
           <Space size={2}>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               {user?.name || user?.email}
@@ -182,5 +202,21 @@ export default function AppLayout({ user, onLogout }: { user: User | null; onLog
         </Content>
       </Layout>
     </Layout>
+  )
+}
+
+export default function AppLayout({ user, onLogout }: { user: User | null; onLogout: () => void }) {
+  const { wsId } = useParams()
+  if (!wsId) {
+    return (
+      <div style={{ height: '100%', display: 'grid', placeItems: 'center' }}>
+        <Spin size="small" />
+      </div>
+    )
+  }
+  return (
+    <CurrentTeamProvider workspaceId={wsId}>
+      <AppLayoutShell user={user} onLogout={onLogout} />
+    </CurrentTeamProvider>
   )
 }

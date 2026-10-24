@@ -22,7 +22,6 @@ import {
 } from '../../components/board/boardTemplates'
 import { IssueDrawer } from '../../components/issue'
 import { MockBanner } from '../../components/common/MockBanner'
-import { TeamPoolSelect } from '../../components/common/TeamPoolSelect'
 import { useCurrentTeam } from '../../hooks/useCurrentTeam'
 import { useBoardPackStats } from '../../hooks/useBoardPackStats'
 import type { Issue } from '../../types/issue'
@@ -35,7 +34,7 @@ export type BoardPageProps = {
 
 export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
   const navigate = useNavigate()
-  const { teams, teamId, setTeamId, loading: teamLoading } = useCurrentTeam(workspaceId)
+  const { teamId, loading: teamLoading } = useCurrentTeam(workspaceId)
   const pack = useBoardPackStats({
     workspaceId,
     projectId,
@@ -69,13 +68,6 @@ export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
       cancelled = true
     }
   }, [workspaceId, projectId])
-
-  const onTeamChange = (tid: string) => {
-    setIssues([])
-    setCurrent(null)
-    setOpen(false)
-    setTeamId(tid)
-  }
 
   const handleCreate = async () => {
     const title = newTitle.trim()
@@ -127,12 +119,6 @@ export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
       <div className="acb-page-bar">
         <Typography.Title level={4}>看板</Typography.Title>
         <Space size={8} wrap>
-          <TeamPoolSelect
-            teams={teams}
-            teamId={teamId}
-            onChange={onTeamChange}
-            disabled={teamLoading}
-          />
           <Input
             size="small"
             placeholder="新建 Issue，回车创建"
