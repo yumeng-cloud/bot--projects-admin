@@ -42,4 +42,7 @@
 
 ## 产品勾选
 
-- [ ] V1–V3 交件 · 产品勾 T2 · 关本包
+- [x] V1–V3 交件 · 产品勾 T2 · 关本包（2026-10-24 18:02 Asia/Shanghai）
+  - 证据 `docs/qa-shots/T2-handoff-migrate-20261024.txt` · docs `303fcbb`
+  - 同 member 双 Key：leave → migrate enter → 仅 `handoff get --full` 见 `T2-V1-focus-machineA-…` + YM-11；禁 force/import
+  - `BOT_TEAM_SEAT_P0` T2 已 [x]
