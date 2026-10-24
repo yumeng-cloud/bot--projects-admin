@@ -1,6 +1,6 @@
 # 下一小包 · Issue 详情打磨（最小）
 
-> 2026-10-24 20:20 Asia/Shanghai · 产品体验 · TEAM_SWITCH 关后下一刀  
+> 2026-10-24 19:53 Asia/Shanghai · 产品体验 · TEAM_SWITCH 关后下一刀  
 > **本包：抽屉五处安静回归，对标 Linear。升版 / 未分队仍后置。**
 
 ## 裁定
@@ -40,13 +40,15 @@ Issue 抽屉打开即安静：标题首字完整、关联中文且默认一行�
 
 ## 产品勾选
 
-- [ ] **I1** 标题首字
-- [ ] **I2** 关联中文 + 安静添加
-- [ ] **I3** 空描述无工具栏
-- [ ] **I4** 评论删 hover
-- [ ] **I5** 活动默认折
-- [ ] **I6** 箱截齐
+- [x] **I1** 标题首字 · 箱截 `issue-detail-min-title.png`（全文可见）
+- [x] **I2** 关联中文 + 安静添加 · `issue-detail-min-relations.png`（仅「添加关联」）
+- [x] **I3** 空描述无工具栏 · FE `f74efc6` + `issue-detail-min-empty-desc.png`
+- [x] **I4** 评论删 hover · `issue-detail-min-comment.png`（default 隐 / hover 显）
+- [x] **I5** 活动默认折 · `issue-detail-min-activity.png`（「活动 (n)」折叠）
+- [x] **I6** 箱截齐 · 上五图入库
+
+> 2026-10-24 20:33 · 产品勾选关整单。下一刀优先：`NEXT_WAVE_DEBT_WORKSPACE_ADMIN` 完整生产包。
 
 ## 关单进度
 
-**开单** · 等 React 箱证。
+**整单关** · I1–I6 全勾。
