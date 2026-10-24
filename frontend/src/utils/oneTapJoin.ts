@@ -2,6 +2,7 @@
  * ONE_TAP_JOIN · 入场链接 + Bot 提示词拼装（与 docs/NEXT_WAVE_DEBT_ONE_TAP_JOIN、
  * backend/internal/joinlink 契约对齐）。禁止把 ymk_ 写入 URL 或默认可转发提示词。
  * E4：与 Go BuildBotPrompt（4cdaa04）同构——第 0 步安装；禁假设已装 ymbot。
+ * FOOLPROOF：仅 buildFirstRunPrompt（创建成功私贴）可嵌当次 ymk_；席页仍禁。
  */
 
 /** 生产默认 API 根；自托管用 VITE_PUBLIC_API_BASE 覆盖（对齐 Go PUBLIC_API_BASE） */
@@ -164,4 +165,86 @@ export function buildBotJoinPrompt(params: BotJoinPromptParams): string {
     cli,
     '```',
   ].join('\n')
+}
+
+export type FirstRunPromptParams = {
+  /** 当次明文身份钥匙 ymk_…（仅首跑启动提示词可嵌） */
+  token: string
+  apiBase?: string | null
+  /** 可选：已签发入场码；无则提示另发入场链接 */
+  inviteCode?: string | null
+  role?: string | null
+}
+
+/**
+ * 首跑启动提示词（FOOLPROOF F3）：可嵌当次 ymk_，仅 Admin→本机 Agent 私贴。
+ * 与席页 buildBotJoinPrompt 分家——后者禁嵌 ymk_。
+ */
+export function buildFirstRunPrompt(params: FirstRunPromptParams): string {
+  const token = (params.token || '').trim()
+  if (!token) throw new Error('缺少身份钥匙')
+  if (!token.startsWith('ymk_')) {
+    throw new Error('身份钥匙无效：须以 ymk_ 开头')
+  }
+  const apiBase = ((params.apiBase || '').trim() || getPublicApiBase()).replace(/\/+$/, '')
+  const installCurl = installCurlLine(apiBase)
+  const invite = (params.inviteCode || '').trim()
+  const role = (params.role || '').trim()
+
+  const lines: string[] = [
+    installCurl,
+    '',
+    '你是育蒙协作看板（AI Collab Board）的首跑启动助手。本提示含**身份钥匙**，仅私贴本机 Agent；**禁止转发公开群**。',
+    '',
+    '## 0. 一键安装（若本机还没有 ymbot）',
+    '主路径：',
+    '```',
+    installCurl,
+    '```',
+    '备路径（已装 Go）：',
+    '```',
+    GO_INSTALL_CMD,
+    '```',
+    '装完自检：`ymbot -h`（或 `ymbot version`）。',
+    '',
+    '## 1. API 根',
+    `\`${apiBase}\``,
+    `可用：\`export YMBOT_API_URL=${apiBase}\``,
+    '',
+    '## 2. 身份钥匙（仅此一次·勿转发）',
+    '```',
+    `export YMBOT_API_KEY=${token}`,
+    '```',
+    '',
+    '## 3. 确认身份',
+    '`ymbot whoami`（或 MCP `board_whoami`）',
+    '',
+  ]
+
+  if (invite && invite.startsWith(INVITE_CODE_PREFIX)) {
+    const cli = cliJoinLine({ code: invite, role: role || null })
+    lines.push(
+      '## 4. 入队（可选·本提示已附入场码）',
+      `- 入场码：\`${invite}\``,
+      '```',
+      cli,
+      '```',
+      '',
+    )
+  } else {
+    lines.push(
+      '## 4. 入队',
+      '本提示**未**附入场码。入队另发「入场链接 / 入场提示词」（含 `ymt_`）；身份钥匙与入场码两套，勿混用。',
+      '',
+    )
+  }
+
+  lines.push(
+    '## 警告',
+    '- **含密钥，勿发公开群 / 勿写入可转发入场 URL**',
+    '- 日常席页「复制入场链接/提示词」只含 `ymt_`，不含本钥',
+    '- 列表此后只留末四；丢钥请重新签发身份钥匙',
+  )
+
+  return lines.join('\n')
 }

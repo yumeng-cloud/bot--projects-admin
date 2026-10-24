@@ -596,7 +596,7 @@ export default function BotsRosterPage() {
     }
   }
 
-  /** B2：同码同 role 完整 Bot 提示词 */
+  /** B2 / F5：同码同 role 入场提示词（仅 ymt_；禁嵌 ymk_） */
   const onCopyBotPrompt = async (roleCtx?: InviteRoleCtx) => {
     setInviteBusy(true)
     try {
@@ -615,12 +615,12 @@ export default function BotsRosterPage() {
       rememberPlainBriefly(plain)
       const tail = inviteCodeTail(plain)
       const roleHint = role ? ` · 席 ${role}` : ' · 通用码（未绑席）'
-      message.success(`已复制 Bot 提示词（末四 ·${tail}${roleHint}）。勿发公开群`)
+      message.success(`已复制入场提示词（末四 ·${tail}${roleHint}；仅含入场码 ymt_）。勿发公开群`)
     } catch (e: unknown) {
       if (isInviteServiceMissing(e)) {
         message.warning('入场码服务尚未开通')
       } else {
-        message.error(e instanceof ApiError ? e.message : e instanceof Error ? e.message : '复制提示词失败')
+        message.error(e instanceof ApiError ? e.message : e instanceof Error ? e.message : '复制入场提示词失败')
       }
     } finally {
       setInviteBusy(false)
@@ -689,7 +689,7 @@ export default function BotsRosterPage() {
               入场链接
             </Button>
           </Tooltip>
-          <Tooltip title={`复制 Bot 提示词 · ${tipRole}`}>
+          <Tooltip title={`复制入场提示词（含入场码 ymt_，不含身份钥匙）· ${tipRole}`}>
             <Button
               size="small"
               type="link"
@@ -698,7 +698,7 @@ export default function BotsRosterPage() {
               loading={inviteBusy}
               onClick={() => void onCopyBotPrompt(roleCtx)}
             >
-              Bot 提示词
+              入场提示词
             </Button>
           </Tooltip>
           <Dropdown menu={inviteMoreMenu(roleCtx)} trigger={['click']}>
@@ -719,14 +719,14 @@ export default function BotsRosterPage() {
             复制入场链接
           </Button>
         </Tooltip>
-        <Tooltip title={`Admin 一键 Bot 提示词 · ${tipRole}；勿发公开群`}>
+        <Tooltip title={`复制入场提示词（含入场码 ymt_，不含身份钥匙）· ${tipRole}；勿发公开群`}>
           <Button
             size={size}
             icon={<FileTextOutlined />}
             loading={inviteBusy}
             onClick={() => void onCopyBotPrompt(roleCtx)}
           >
-            复制 Bot 提示词
+            复制入场提示词
           </Button>
         </Tooltip>
         <Dropdown menu={inviteMoreMenu(roleCtx)} trigger={['click']}>
@@ -874,7 +874,7 @@ export default function BotsRosterPage() {
         </Space>
       </div>
       <Typography.Paragraph type="secondary" className="acb-bots-lead">
-        席位 = 角色坑。新 Bot 入场：点「复制入场链接」或「复制 Bot 提示词」（含码与席位）；勿发公开群。换机只换演员；续命靠服务端交接。
+        席位 = 角色坑。新 Bot 入场：点「复制入场链接」或「复制入场提示词」（只含入场码 ymt_ 与席位，不含身份钥匙 ymk_）；勿发公开群。身份钥匙在设置·接入新建。换机只换演员；续命靠服务端交接。
       </Typography.Paragraph>
 
       {migrateCollapse}
@@ -1099,7 +1099,7 @@ export default function BotsRosterPage() {
                           render: (_, row) => row.claimed_role?.name || '—',
                         },
                         {
-                          title: 'Key',
+                          title: '身份钥匙',
                           width: 100,
                           render: (_, row) => keyHintForMember(row.member_id) || '—',
                         },

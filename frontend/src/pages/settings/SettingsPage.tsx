@@ -40,6 +40,7 @@ import {
   type WorkspaceInvite,
 } from '../../api/workspaceInvites'
 import { createApiKey, listApiKeys } from '../../api/apiKeys'
+import IdentityKeyRevealModal from '../../components/common/IdentityKeyRevealModal'
 import { roleLabel } from '../../utils/labels'
 import { formatShanghai } from '../../utils/time'
 
@@ -406,11 +407,16 @@ export default function SettingsPage() {
       const values = await keyForm.validateFields()
       setKeyBusy(true)
       const res = await createApiKey(wsId, { name: values.name.trim() }, crypto.randomUUID())
-      setLastKeyToken(res.token || null)
-      message.success('已新建 API Key')
+      const token = (res.token || '').trim()
       setKeyOpen(false)
       keyForm.resetFields()
       await reloadKeys()
+      if (!token) {
+        message.error('已创建但服务未返回身份钥匙明文，请重试或联系管理员')
+        return
+      }
+      // FOOLPROOF F2/F4：挡层 Modal 露钥，禁只 Toast / 埋 Alert
+      setLastKeyToken(token)
     } catch (e) {
       if (e && typeof e === 'object' && 'errorFields' in e) return
       message.error(e instanceof ApiError || e instanceof Error ? e.message : '新建失败')
@@ -888,7 +894,7 @@ export default function SettingsPage() {
                 <>
                   <div className="acb-settings-section">
                     <div className="acb-settings-section-head">
-                      <span className="acb-settings-section-title">API Key</span>
+                      <span className="acb-settings-section-title">身份钥匙</span>
                       {isAdmin ? (
                         <Button
                           type="primary"
@@ -899,25 +905,16 @@ export default function SettingsPage() {
                             setKeyOpen(true)
                           }}
                         >
-                          新建
+                          新建身份钥匙
                         </Button>
                       ) : null}
                     </div>
-                    {lastKeyToken ? (
-                      <Alert
-                        type="success"
-                        showIcon
-                        style={{ marginBottom: 12 }}
-                        closable
-                        onClose={() => setLastKeyToken(null)}
-                        message="密钥明文仅此一次，请妥善保存"
-                        description={
-                          <Typography.Text code copyable={{ text: lastKeyToken }}>
-                            {lastKeyToken}
-                          </Typography.Text>
-                        }
-                      />
-                    ) : null}
+                    <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}>
+                      身份钥匙（<Typography.Text code>ymk_</Typography.Text>
+                      ）证明 Bot 是谁；与席页入场码（
+                      <Typography.Text code>ymt_</Typography.Text>
+                      ）分家。明文仅创建成功挡层展示一次，列表只留末四。
+                    </Typography.Paragraph>
                     {keys.length ? (
                       <Table
                         className="acb-list-table"
@@ -928,7 +925,7 @@ export default function SettingsPage() {
                         columns={[
                           { title: '名称', dataIndex: 'name' },
                           {
-                            title: '密钥',
+                            title: '身份钥匙',
                             dataIndex: 'key_prefix',
                             width: 120,
                             render: (v: string) => keyTail(v),
@@ -942,7 +939,7 @@ export default function SettingsPage() {
                         ]}
                       />
                     ) : (
-                      empty('还没有 API Key')
+                      empty('还没有身份钥匙')
                     )}
                   </div>
 
@@ -1014,7 +1011,7 @@ export default function SettingsPage() {
       </Modal>
 
       <Modal
-        title="新建 API Key"
+        title="新建身份钥匙"
         open={keyOpen}
         onCancel={() => setKeyOpen(false)}
         onOk={() => void onCreateKey()}
@@ -1025,10 +1022,20 @@ export default function SettingsPage() {
       >
         <Form form={keyForm} layout="vertical" style={{ marginTop: 8 }}>
           <Form.Item name="name" label="名称" rules={[{ required: true, message: '请填写名称' }]}>
-            <Input placeholder="例如：自动化脚本" maxLength={80} />
+            <Input placeholder="例如：本机 Agent / 自动化脚本" maxLength={80} />
           </Form.Item>
+          <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 0 }}>
+            创建成功后会弹出挡层展示完整 <Typography.Text code>ymk_</Typography.Text>
+            身份钥匙（仅此一次），并可复制启动提示词。
+          </Typography.Paragraph>
         </Form>
       </Modal>
+
+      <IdentityKeyRevealModal
+        open={Boolean(lastKeyToken)}
+        token={lastKeyToken}
+        onClose={() => setLastKeyToken(null)}
+      />
 
       <Modal
         title="新建 Webhook"
