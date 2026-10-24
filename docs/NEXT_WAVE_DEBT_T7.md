@@ -44,7 +44,7 @@
 ## 产品勾选
 
 - [x] R1–R2 API · Go **`716c3d0`**（清单 + 从模板空席 + `playbook_ref` + 4xx）
-- [ ] R3–R4 箱验/证据 · 产品勾
+- [x] R3 箱验/证据 · 记忆 `docs/qa-shots/T7R-template-create-20261024.txt`（R1 顺带；R4 产品勾另开）
 - [ ] R5 FE（可后；主线另有 `8cf4e59` 预览+创建，产品另勾）
 
 ## 文档回链

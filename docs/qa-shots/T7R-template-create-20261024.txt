@@ -1,0 +1,49 @@
+=== NEXT_WAVE_DEBT_T7 · T7-R 箱验（R1 + R3）===
+time_AsiaShanghai: 2026-10-24 19:18 Asia/Shanghai
+result: R1=PASS R3=PASS (T7-1/2/6/7)
+evidence_file: docs/qa-shots/T7R-template-create-20261024.txt
+HEAD_at_run: 248ff97 (248ff97cfba461c7e5992b49f9ddda91dabcef0c)
+Go_API_SHA: 716c3d0 (feat(t7): builtin team templates → create empty seats with playbook_ref)
+binary: /tmp/ai-board-server-t7r rebuilt containing Go API 716c3d0；:8080 已对齐（run HEAD 248ff97）
+YMBOT_API_URL: http://127.0.0.1:8080
+WS: ba1481c49148aba9553ba3811406b69f
+TEAMA: 8e8f3dd5c6259241acf8fa0389532922  name=T7R-TeamA-*  template_key=default
+TEAMB: c062fd8c376b7c1c53698d6d38f92fcd  name=T7R-TeamB-*  template_key=default
+KEYA: Grok Bot (ymk_ from /tmp/ymbot_t2_key1.txt)
+KEYB: BotB J2 (ymk_ from /tmp/ymbot_j2_botb_api_key.txt)
+前置: KEYA seat enter --role frontend --team TEAMA --force；KEYB 同 slug --team TEAMB
+
+## 断言
+- R1 / T7-1: POST …/teams/from-template {template_key=default} → 201；5 空席 slug=backend,frontend,pm,qa,wiki；display_name 对齐；status=open；无 bound_member_id（无自动 Key）
+- R1 / T7-2: 每席 playbook_ref 为 repo@ref:path（frontend→roles/前端研发/；其余→playbook/班底与补位.md）
+- T7-6: 未知模板 ghost-nope → HTTP 400 code=bad_request「未知模板：ghost-nope」
+- R3 / T7-7 形状: 同模板开队 B；slug/playbook_ref 与 A 全同；seat id 集合不交叉
+- R3 / T7-7 pins: 队 A PUT pin decision=t7r-adopt-A → A list 见；B list pins=[]；KEYB 对 TEAMA pin get/put → 404「团队不存在或无权访问」
+- R3 / T7-7 memory: KEYA memory set decision=t7r-private-A-memory → A list 见；KEYB list (无记忆)；队 A pins 仍 t7r-adopt-A（分表不串）
+- 别名: POST …/teams + template_key=default → 201 + roster 5 席（与 from-template 同形）
+- 清单: GET …/team-templates → 200 {templates:[{key:default, seats:5…}]}（Bot Key / admin JWT）
+
+## 原始摘要（Key 勿进 git）
+GET team-templates → HTTP 200 templates=[{key:default,seats=5}]
+POST from-template A → HTTP 201 team=8e8f3dd5c6259241acf8fa0389532922 seats=5 status=open bound=-
+POST from-template B → HTTP 201 team=c062fd8c376b7c1c53698d6d38f92fcd seats=5
+SHAPE slugs_match=True prefs_match=True seat_ids_overlap=False no_auto_key=True
+POST ghost → HTTP 400 未知模板：ghost-nope
+PUT A/pins decision=t7r-adopt-A → HTTP 200
+GET A/pins → pins=[{decision:t7r-adopt-A}]
+GET B/pins → pins=[]
+KEYB PUT/GET A/pins → HTTP 404 not_found
+ymbot memory set A decision → t7r-private-A-memory
+ymbot memory list A → decision…；B → (无记忆)
+ymbot team pull A/B --id → seats=5；seat id 全异；playbook 同形
+POST /teams + template_key → HTTP 201 seats=5 has_roster=True
+
+## 单测
+go test ./internal/services/botmem/ -count=1 → ok（含 TestCreateTeamFromTemplateR1 / DualTeams / UnknownR2）
+
+## 通道
+模板清单 CLI/MCP（§11.6）本包可选，不挡关单；箱验 REST + ymbot seat/pin/memory/pull 已覆盖 R1/R3。
+
+## 关单口径
+可对 docs/NEXT_WAVE_DEBT_T7.md 勾 R1–R3（本波 T7-1/2/6/7）；T7-4/5 升版后置不勾。
+T7-3 执行源=跟 playbook_ref 跑（文档约定；本证据落 ref 字符串）。
