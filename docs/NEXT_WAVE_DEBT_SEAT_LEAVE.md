@@ -39,9 +39,9 @@
 - [x] **L2** 审计留痕 · Go `c5f5596` · 产品勾
 - [x] **L3** 席卡一键停工/离职 · FE `4883426` · 产品勾
 - [x] **L4** FE client + 文案 · FE `4883426` · 产品勾
-- [ ] **L5** QA 箱证
+- [x] **L5** QA 箱证 · PASS† `43ecff8` / `SEAT_LEAVE-L5-qa-retest-20261025.txt`
 - [x] **L6** 箱截 · FE `4883426` · 产品勾
-- [ ] **L7** 产品关单
+- [x] **L7** 产品关单 · 2026-10-25
 
 ## 派工
 
@@ -54,6 +54,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:29 · **L5 PASS† → L7 关单** QA `43ecff8`：三硬条全过；箱截对读 PASS。soft†搁置：活点未扫到 seat.stop（单测绿）；Admin 代绑活跃 403≠409（拒替仍成立）。整包 **SEAT_LEAVE 关**。
 - 2026-10-25 00:26 · **产品勾 L3/L4/L6** FE `4883426`：席卡 Popconfirm 停工/离职；after 截「停工席 · 可补位」过；禁 Form。等 QA L5。
 - 2026-10-25 00:25 · **React 交 L3/L4/L6** FE `4883426`：对齐 Go `c5f5596` `POST …/seats/{id}/stop|unbind`；席卡+交接抽屉 Popconfirm「停工此席？/离职解绑此席？」；`stopSeat` client + roster 乐观「停工席 · 可补位」；箱截 before/after；`tsc --noEmit` PASS。等 QA L5 → 产品 L7。
 - 2026-10-25 00:23 · **产品勾 L1/L2** Go `c5f5596`：单测绿；`seat.stop`/`seat.unbind` activity+comment。软债搁置：无独立 HTTP Admin JWT 集成测；stop 对 open/left 偏宽松（不挡最小包）。等 React L3/L4/L6。
@@ -64,4 +65,4 @@
 
 ## 关单进度
 
-**开干** · L1–L4/L6 已勾；等 QA L5 → 产品 L7。
+**整包关** · L1–L7 齐（Go `c5f5596` + FE `4883426` + QA `43ecff8`）。
