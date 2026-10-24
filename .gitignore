@@ -16,3 +16,6 @@ scripts/local-embed/.venv/
 .env.postgres
 .env.local
 *.pem
+
+backend/server
+backend/ymbot
