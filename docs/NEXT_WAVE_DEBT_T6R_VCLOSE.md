@@ -39,5 +39,9 @@
 
 ## 产品勾选
 
-- [ ] 刀 A V-CLOSE  
+- [x] 刀 A V-CLOSE（2026-10-24 18:06 Asia/Shanghai）
+  - `81-cycles-recheck.png`：侧栏/标题「周期」；列表 hug+脚注，无空罐
+  - `81-workspace-home.png`：入口「周期」；surface hug + 底注
+  - `81-settings-recheck.png`：成员 Tab hug+脚注
+
 - [ ] 刀 B T6-R  
