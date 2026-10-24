@@ -598,16 +598,20 @@ export default function WikiPage() {
     return (
       <div className="acb-fill-page acb-wiki-shell acb-wiki-shell--empty">
         <div className="acb-wiki-topbar">
-          <span className="acb-wiki-topbar-space">知识库</span>
-          <Button
-            type="text"
-            size="small"
-            className="acb-wiki-topbar-admin"
-            icon={<SettingOutlined />}
-            onClick={() => setAdminOpen(true)}
-          >
-            管理
-          </Button>
+          <div className="acb-wiki-topbar-left">
+            <span className="acb-wiki-topbar-space">知识库</span>
+          </div>
+          <div className="acb-wiki-topbar-right">
+            <Button
+              type="text"
+              size="small"
+              className="acb-wiki-topbar-admin acb-wiki-topbar-action"
+              icon={<SettingOutlined />}
+              onClick={() => setAdminOpen(true)}
+            >
+              管理
+            </Button>
+          </div>
         </div>
         <div className="acb-wiki-empty-workspace">
           <p className="acb-wiki-empty-copy">还没有知识库</p>
@@ -638,33 +642,35 @@ export default function WikiPage() {
     <div className="acb-fill-page acb-wiki-shell">
       {/* C1: 知识库顶条 — 当前库名▾ + 管理 */}
       <header className="acb-wiki-topbar">
-        <Dropdown
-          menu={{
-            items: [
-              ...spaceSwitchItems,
-              { type: 'divider' as const },
-              {
-                key: '__manage',
-                label: '管理知识库…',
-                icon: <SettingOutlined />,
-                onClick: () => setAdminOpen(true),
-              },
-            ],
-            selectedKeys: spaceId ? [spaceId] : [],
-          }}
-          trigger={['click']}
-        >
-          <button type="button" className="acb-wiki-topbar-space">
-            <BookOutlined className="acb-wiki-topbar-space-icon" aria-hidden />
-            <span className="acb-wiki-topbar-space-name">{spaceName}</span>
-            <DownOutlined className="acb-wiki-topbar-space-caret" aria-hidden />
-          </button>
-        </Dropdown>
-        <div className="acb-wiki-topbar-actions">
+        <div className="acb-wiki-topbar-left">
+          <Dropdown
+            menu={{
+              items: [
+                ...spaceSwitchItems,
+                { type: 'divider' as const },
+                {
+                  key: '__manage',
+                  label: '管理知识库…',
+                  icon: <SettingOutlined />,
+                  onClick: () => setAdminOpen(true),
+                },
+              ],
+              selectedKeys: spaceId ? [spaceId] : [],
+            }}
+            trigger={['click']}
+          >
+            <Button type="text" className="acb-wiki-topbar-space">
+              <BookOutlined className="acb-wiki-topbar-space-icon" aria-hidden />
+              <span className="acb-wiki-topbar-space-name">{spaceName}</span>
+              <DownOutlined className="acb-wiki-topbar-space-caret" aria-hidden />
+            </Button>
+          </Dropdown>
+        </div>
+        <div className="acb-wiki-topbar-right acb-wiki-topbar-actions">
           <Button
             type="text"
             size="small"
-            className="acb-wiki-topbar-admin"
+            className="acb-wiki-topbar-admin acb-wiki-topbar-action"
             icon={<SettingOutlined />}
             onClick={() => setAdminOpen(true)}
           >

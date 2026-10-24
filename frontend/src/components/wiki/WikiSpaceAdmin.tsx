@@ -180,7 +180,7 @@ export function WikiSpaceAdmin({
       destroyOnHidden
       extra={
         panel === 'list' ? (
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+          <Button type="primary" className="acb-wiki-admin-create" icon={<PlusOutlined />} onClick={openCreate}>
             新建知识库
           </Button>
         ) : (
@@ -198,7 +198,7 @@ export function WikiSpaceAdmin({
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description="还没有知识库"
               />
-              <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+              <Button type="primary" className="acb-wiki-admin-create" icon={<PlusOutlined />} onClick={openCreate}>
                 新建知识库
               </Button>
             </div>
