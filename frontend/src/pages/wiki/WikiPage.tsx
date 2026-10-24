@@ -41,6 +41,7 @@ import {
 } from '../../api/wiki'
 import { listProjects, type Project } from '../../api/projects'
 import { listIssues } from '../../api/issues'
+import { useCurrentTeam } from '../../hooks/useCurrentTeam'
 import type { Issue } from '../../types/issue'
 import type { WikiPage as WikiPageT, WikiSpace, WikiTreeNode } from '../../types/wiki'
 import { formatWikiTime } from '../../utils/time'
@@ -96,6 +97,7 @@ function issueSelectLabel(i: Pick<Issue, 'identifier' | 'title' | 'id'>): string
 
 export default function WikiPage() {
   const { wsId = '' } = useParams()
+  const { teamId, loading: teamLoading } = useCurrentTeam(wsId)
   const { token: themeToken } = theme.useToken()
   const [loading, setLoading] = useState(true)
   const [spaces, setSpaces] = useState<WikiSpace[]>([])
@@ -176,9 +178,13 @@ export default function WikiPage() {
   const selectedProjectId = page?.project_id || undefined
 
   useEffect(() => {
-    if (!wsId) return
+    if (!wsId || teamLoading) return
     let cancelled = false
-    void listIssues(wsId, selectedProjectId ? { project_id: selectedProjectId } : {})
+    setIssues([]) // I4: clear pool before fetch — no cross-team residue
+    void listIssues(wsId, {
+      ...(selectedProjectId ? { project_id: selectedProjectId } : {}),
+      team_id: teamId || undefined,
+    })
       .then((res) => {
         if (!cancelled) setIssues(res.issues || [])
       })
@@ -188,7 +194,7 @@ export default function WikiPage() {
     return () => {
       cancelled = true
     }
-  }, [wsId, selectedProjectId])
+  }, [wsId, selectedProjectId, teamId, teamLoading])
 
   useEffect(() => {
     if (spaceId) {

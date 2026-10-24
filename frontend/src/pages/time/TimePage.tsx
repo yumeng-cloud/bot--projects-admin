@@ -26,6 +26,7 @@ import {
   upsertBillingRate,
 } from '../../api/time'
 import { listIssues, listProjectMembers } from '../../api/issues'
+import { useCurrentTeam } from '../../hooks/useCurrentTeam'
 import type { BillingRate, BillingSummary, TimeEntry } from '../../types/time'
 import type { Issue, MemberRef } from '../../types/issue'
 import { memberLabel } from '../../types/issue'
@@ -37,6 +38,7 @@ const { RangePicker } = DatePicker
 
 export default function TimePage() {
   const { wsId = '' } = useParams()
+  const { teamId, loading: teamLoading } = useCurrentTeam(wsId)
   const [entries, setEntries] = useState<TimeEntry[]>([])
   const [rates, setRates] = useState<BillingRate[]>([])
   const [summary, setSummary] = useState<BillingSummary | null>(null)
@@ -76,10 +78,13 @@ export default function TimePage() {
   }
 
   const loadMeta = useCallback(async () => {
-    if (!wsId) return
+    if (!wsId || teamLoading) return
+    setIssues([]) // I4: clear pool before fetch — no cross-team residue
     try {
       const [i, m] = await Promise.all([
-        listIssues(wsId, {}).catch(() => ({ issues: [] as Issue[] })),
+        listIssues(wsId, { team_id: teamId || undefined }).catch(() => ({
+          issues: [] as Issue[],
+        })),
         listProjectMembers(wsId).catch(() => ({ members: [] as MemberRef[] })),
       ])
       setIssues(i.issues || [])
@@ -87,7 +92,7 @@ export default function TimePage() {
     } catch {
       /* ignore */
     }
-  }, [wsId])
+  }, [wsId, teamId, teamLoading])
 
   const loadEntries = useCallback(async () => {
     if (!wsId) return
