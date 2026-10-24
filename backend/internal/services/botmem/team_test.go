@@ -268,7 +268,7 @@ func TestCreateSeatIdempotentAndStop(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected 409")
 	}
-	stopped, err := svc.StopSeat(ws, team.ID, s1.ID)
+	stopped, err := svc.StopSeat(ws, team.ID, s1.ID, m1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -493,7 +493,7 @@ func TestBindSeatStoppedForceWritesVisibleAudit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.StopSeat(ws, team.ID, s1.ID); err != nil {
+	if _, err := svc.StopSeat(ws, team.ID, s1.ID, m1); err != nil {
 		t.Fatal(err)
 	}
 	beforeAct := countForceBindActivities(t, svc, ws)
@@ -789,5 +789,229 @@ func TestTwoTeamsRosterClaimIsolation(t *testing.T) {
 	}
 	if len(ra3) != len(ra) {
 		t.Fatalf("A roster grew on re-ensure: %d -> %d", len(ra), len(ra3))
+	}
+}
+
+func countActionActivities(t *testing.T, svc *botmem.Service, ws, action string) int {
+	t.Helper()
+	var n int
+	if err := svc.DB.QueryRow(`SELECT COUNT(*) FROM activities WHERE workspace_id=? AND action=?`, ws, action).Scan(&n); err != nil {
+		t.Fatalf("count %s: %v", action, err)
+	}
+	return n
+}
+
+func countBodyComments(t *testing.T, svc *botmem.Service, issueID, like string) int {
+	t.Helper()
+	var n int
+	if err := svc.DB.QueryRow(`SELECT COUNT(*) FROM comments WHERE issue_id=? AND body LIKE ?`, issueID, like).Scan(&n); err != nil {
+		t.Fatalf("count comments: %v", err)
+	}
+	return n
+}
+
+// TestStopSeatActiveAdminPath L1：Admin 对 active 席 stop → stopped；幂等不重复审计。
+func TestStopSeatActiveAdminPath(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "StopL1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops", Name: "运维", PlaybookRef: "bot-team-template@main:playbook/ops.md"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	before := countActionActivities(t, svc, ws, "seat.stop")
+	stopped, err := svc.StopSeat(ws, team.ID, s1.ID, m2) // m2 = Admin 操作者
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stopped.Status != "stopped" {
+		t.Fatalf("status=%s want stopped", stopped.Status)
+	}
+	if stopped.BoundMemberID != nil {
+		t.Fatalf("bound should clear: %+v", stopped.BoundMemberID)
+	}
+	if countActionActivities(t, svc, ws, "seat.stop") != before+1 {
+		t.Fatal("want +1 seat.stop activity")
+	}
+	// 幂等：再 stop 不报错、不追加审计
+	again, err := svc.StopSeat(ws, team.ID, s1.ID, m2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again.Status != "stopped" {
+		t.Fatalf("idempotent status=%s", again.Status)
+	}
+	if countActionActivities(t, svc, ws, "seat.stop") != before+1 {
+		t.Fatal("idempotent stop must not duplicate audit")
+	}
+	// 活跃顶替硬闸仍在
+	_, err = svc.BindSeat(ws, team.ID, s1.ID, m1, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = svc.BindSeat(ws, team.ID, s1.ID, m2, true)
+	if err == nil {
+		t.Fatal("expected 409 on active force")
+	}
+	ae, ok := err.(*apperr.AppError)
+	if !ok || ae.Code != "conflict" || ae.Message != "该席位占用中，禁止顶替" {
+		t.Fatalf("want 中文 conflict %#v", err)
+	}
+}
+
+// TestUnbindSeatActiveAdminPath L1：Admin asAdmin 对 active 席 unbind → left；错态中文；幂等。
+func TestUnbindSeatActiveAdminPath(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "UnbindL1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "fe", Name: "前端", PlaybookRef: "bot-team-template@main:playbook/fe.md"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	// 非 Admin 解他人 → 中文 Forbidden
+	_, err = svc.UnbindSeat(ws, team.ID, s1.ID, m2, false)
+	if err == nil {
+		t.Fatal("expected forbidden")
+	}
+	ae, ok := err.(*apperr.AppError)
+	if !ok || ae.Code != "forbidden" || ae.Message != "只能解绑自己绑定的席位" {
+		t.Fatalf("want 中文 forbidden %#v", err)
+	}
+	before := countActionActivities(t, svc, ws, "seat.unbind")
+	left, err := svc.UnbindSeat(ws, team.ID, s1.ID, m2, true) // Admin 代解
+	if err != nil {
+		t.Fatal(err)
+	}
+	if left.Status != "left" {
+		t.Fatalf("status=%s want left", left.Status)
+	}
+	if left.BoundMemberID != nil {
+		t.Fatalf("bound should clear: %+v", left.BoundMemberID)
+	}
+	if countActionActivities(t, svc, ws, "seat.unbind") != before+1 {
+		t.Fatal("want +1 seat.unbind activity")
+	}
+	// 幂等：已解绑再解 → OK、不追加审计
+	again, err := svc.UnbindSeat(ws, team.ID, s1.ID, m2, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again.Status != "left" {
+		t.Fatalf("idempotent status=%s", again.Status)
+	}
+	if countActionActivities(t, svc, ws, "seat.unbind") != before+1 {
+		t.Fatal("idempotent unbind must not duplicate audit")
+	}
+}
+
+// TestStopSeatWritesVisibleAudit L2：stop 成功 → seat.stop 人话 activity + Issue comment。
+func TestStopSeatWritesVisibleAudit(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "StopAudit"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "qa", Name: "QA", PlaybookRef: "bot-team-template@main:playbook/qa.md"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	ib := issueboard.New(svc.DB)
+	proj, err := ib.CreateProject(ws, issueboard.CreateProjectInput{Name: "P", KeyPrefix: "SA"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	iss, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{
+		ProjectID: proj.ID, TeamID: team.ID, Title: "停工审计", Status: "todo", ActorKind: "human", AssigneeID: &m1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	beforeAct := countActionActivities(t, svc, ws, "seat.stop")
+	beforeCmt := countBodyComments(t, svc, iss.ID, "%标记停工%")
+
+	if _, err := svc.StopSeat(ws, team.ID, s1.ID, m2); err != nil {
+		t.Fatal(err)
+	}
+	if countActionActivities(t, svc, ws, "seat.stop") != beforeAct+1 {
+		t.Fatal("want +1 seat.stop")
+	}
+	var payload string
+	if err := svc.DB.QueryRow(
+		`SELECT payload FROM activities WHERE workspace_id=? AND action=? ORDER BY created_at DESC LIMIT 1`,
+		ws, "seat.stop",
+	).Scan(&payload); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"标记停工", "QA", "停工", "BotA"} {
+		if !strings.Contains(payload, want) {
+			t.Fatalf("payload missing %q: %s", want, payload)
+		}
+	}
+	if countBodyComments(t, svc, iss.ID, "%标记停工%") != beforeCmt+1 {
+		t.Fatal("want Issue comment 人话审计")
+	}
+}
+
+// TestUnbindSeatWritesVisibleAudit L2：unbind 成功 → seat.unbind 人话 activity + Issue comment。
+func TestUnbindSeatWritesVisibleAudit(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "UnbindAudit"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops", Name: "运维", PlaybookRef: "bot-team-template@main:playbook/ops.md"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	ib := issueboard.New(svc.DB)
+	proj, err := ib.CreateProject(ws, issueboard.CreateProjectInput{Name: "P", KeyPrefix: "UA"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	iss, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{
+		ProjectID: proj.ID, TeamID: team.ID, Title: "离职审计", Status: "in_progress", ActorKind: "human", AssigneeID: &m1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	beforeAct := countActionActivities(t, svc, ws, "seat.unbind")
+	beforeCmt := countBodyComments(t, svc, iss.ID, "%离职解绑%")
+
+	if _, err := svc.UnbindSeat(ws, team.ID, s1.ID, m2, true); err != nil {
+		t.Fatal(err)
+	}
+	if countActionActivities(t, svc, ws, "seat.unbind") != beforeAct+1 {
+		t.Fatal("want +1 seat.unbind")
+	}
+	var payload string
+	if err := svc.DB.QueryRow(
+		`SELECT payload FROM activities WHERE workspace_id=? AND action=? ORDER BY created_at DESC LIMIT 1`,
+		ws, "seat.unbind",
+	).Scan(&payload); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"离职解绑", "运维", "离职", "BotA"} {
+		if !strings.Contains(payload, want) {
+			t.Fatalf("payload missing %q: %s", want, payload)
+		}
+	}
+	if countBodyComments(t, svc, iss.ID, "%离职解绑%") != beforeCmt+1 {
+		t.Fatal("want Issue comment 人话审计")
 	}
 }

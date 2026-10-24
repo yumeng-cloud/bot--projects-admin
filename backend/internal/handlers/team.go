@@ -265,7 +265,7 @@ func (h *TeamHandler) StopSeat(w http.ResponseWriter, r *http.Request) {
 		middleware.HandleError(w, apperr.Forbidden("需要管理员权限才能标记停工"))
 		return
 	}
-	seat, err := h.Svc.StopSeat(ws, r.PathValue("teamID"), r.PathValue("seatID"))
+	seat, err := h.Svc.StopSeat(ws, r.PathValue("teamID"), r.PathValue("seatID"), actor)
 	if err != nil {
 		middleware.HandleError(w, err)
 		return

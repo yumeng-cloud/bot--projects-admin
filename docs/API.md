@@ -211,7 +211,7 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 
 **不做（本波）**：升版 dry-run diff / apply；自动绑 Key；模板写回用户 git；静默覆盖 memory。
 
-**seat.status**：`open` | `active` | `stopped` | `left`（空串读出按 `open`）。`bind`/`claim`/enter 成功后写 **`active`**；活跃席 `bind(force)` 硬拒；force 仅 `stopped|left`（及脏绑）。**force 成功**另写人对人可见审计：`activities.action=seat.force_bind`（payload 人话 `comment`/`summary`）+ 关联开放 Issue **comment**（原/新占用者 assignee）。
+**seat.status**：`open` | `active` | `stopped` | `left`（空串读出按 `open`）。`bind`/`claim`/enter 成功后写 **`active`**；活跃席 `bind(force)` 硬拒；force 仅 `stopped|left`（及脏绑）。**force 成功**另写人对人可见审计：`activities.action=seat.force_bind`（payload 人话 `comment`/`summary`）+ 关联开放 Issue **comment**（原/新占用者 assignee）。**stop / unbind 成功**同口径：`seat.stop` / `seat.unbind` activity 人话 + 关联开放 Issue comment（SEAT_LEAVE L2）。
 
 **invite.status**（派生、不落库）：`active` | `revoked` | `expired` | `exhausted`。
 

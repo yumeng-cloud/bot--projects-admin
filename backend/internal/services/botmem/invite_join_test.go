@@ -183,7 +183,7 @@ func TestRedeemJoinV2NoAutoFillLeftStopped(t *testing.T) {
 	if _, err := svc.BindSeat(ws, tm.ID, seat.ID, m1, false); err != nil {
 		t.Fatal(err)
 	}
-	stopped, err := svc.StopSeat(ws, tm.ID, seat.ID)
+	stopped, err := svc.StopSeat(ws, tm.ID, seat.ID, m1)
 	if err != nil {
 		t.Fatal(err)
 	}

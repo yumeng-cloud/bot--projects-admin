@@ -605,11 +605,16 @@ func (s *Service) UnbindSeat(workspaceID, teamID, seatID, memberID string, asAdm
 	if err != nil {
 		return nil, err
 	}
+	prevStatus := normalizeSeatStatus(seat.Status)
+	// 幂等：已无绑定（含已 left/stopped 清绑）直接返回
 	if seat.BoundMemberID == nil || *seat.BoundMemberID == "" {
 		return seat, nil
 	}
 	if !asAdmin && memberID != "" && *seat.BoundMemberID != memberID {
 		return nil, apperr.Forbidden("只能解绑自己绑定的席位")
+	}
+	if !asAdmin && memberID == "" {
+		return nil, apperr.BadRequest("member_id 不能为空")
 	}
 	bound := *seat.BoundMemberID
 	_, err = s.DB.Exec(`UPDATE team_seats SET bound_member_id = NULL, bound_at = NULL, status = ?, updated_at = ? WHERE id = ?`,
@@ -622,6 +627,11 @@ func (s *Service) UnbindSeat(workspaceID, teamID, seatID, memberID string, asAdm
 			_ = s.Release(workspaceID, *seat.BotRoleID)
 		}
 	}
+	actorID := memberID
+	if actorID == "" {
+		actorID = bound
+	}
+	s.writeSeatLeaveAudit(workspaceID, actorID, "seat.unbind", seat, bound, prevStatus, models.SeatStatusLeft)
 	return s.getSeat(workspaceID, teamID, seatID)
 }
 
@@ -674,10 +684,23 @@ func (s *Service) CreateSeat(workspaceID, teamID string, in EnsureSeatInput) (*m
 }
 
 // StopSeat 标记停工：清绑+释 claim，status=stopped（可 force 补位）。
-func (s *Service) StopSeat(workspaceID, teamID, seatID string) (*models.TeamSeat, error) {
+// actorID 为操作者（Admin JWT / Bot）；成功写人对人可见审计（沿用 N3）。
+func (s *Service) StopSeat(workspaceID, teamID, seatID, actorID string) (*models.TeamSeat, error) {
 	seat, err := s.getSeat(workspaceID, teamID, seatID)
 	if err != nil {
 		return nil, err
+	}
+	prevStatus := normalizeSeatStatus(seat.Status)
+	var fromMember string
+	if seat.BoundMemberID != nil {
+		fromMember = *seat.BoundMemberID
+	}
+	if fromMember == "" {
+		fromMember = s.lastClaimMemberID(seat)
+	}
+	// 幂等：已停工且已清绑
+	if prevStatus == models.SeatStatusStopped && (seat.BoundMemberID == nil || *seat.BoundMemberID == "") {
+		return seat, nil
 	}
 	if seat.BotRoleID != nil && *seat.BotRoleID != "" {
 		if active, aerr := s.activeClaim(*seat.BotRoleID); aerr == nil && active != nil {
@@ -689,7 +712,68 @@ func (s *Service) StopSeat(workspaceID, teamID, seatID string) (*models.TeamSeat
 	if err != nil {
 		return nil, err
 	}
+	if actorID == "" {
+		actorID = fromMember
+	}
+	s.writeSeatLeaveAudit(workspaceID, actorID, "seat.stop", seat, fromMember, prevStatus, models.SeatStatusStopped)
 	return s.getSeat(workspaceID, teamID, seatID)
+}
+
+// writeSeatLeaveAudit stop/unbind 成功后的人对人可见审计（N3 口径）：activities 人话 + 关联开放 Issue comment。
+func (s *Service) writeSeatLeaveAudit(workspaceID, actorID, action string, seat *models.TeamSeat, fromMember, fromStatus, toStatus string) {
+	if seat == nil || action == "" {
+		return
+	}
+	actorName := s.memberDisplayName(workspaceID, actorID)
+	fromName := s.memberDisplayName(workspaceID, fromMember)
+	fromZh := seatStatusZh(fromStatus)
+	toZh := seatStatusZh(toStatus)
+	var verb string
+	switch action {
+	case "seat.stop":
+		verb = "标记停工"
+	case "seat.unbind":
+		verb = "离职解绑"
+	default:
+		verb = action
+	}
+	var comment string
+	if fromMember != "" {
+		comment = fmt.Sprintf("%s %s席位「%s」（%s）：原成员 %s（%s）→ %s",
+			actorName, verb, seat.DisplayName, seat.RoleSlug, fromName, fromZh, toZh)
+	} else {
+		comment = fmt.Sprintf("%s %s席位「%s」（%s）：%s → %s",
+			actorName, verb, seat.DisplayName, seat.RoleSlug, fromZh, toZh)
+	}
+	kind := s.memberActorKind(workspaceID, actorID)
+	payload, _ := json.Marshal(map[string]any{
+		"comment":        comment,
+		"summary":        comment,
+		"seat_id":        seat.ID,
+		"team_id":        seat.TeamID,
+		"role_slug":      seat.RoleSlug,
+		"from_member_id": fromMember,
+		"actor_id":       actorID,
+		"from_status":    fromStatus,
+		"to_status":      toStatus,
+	})
+	_, _ = s.DB.Exec(`INSERT INTO activities
+		(id, workspace_id, issue_id, actor_id, actor_kind, action, payload, created_at)
+		VALUES (?,?,NULL,?,?,?,?,?)`,
+		idgen.New(), workspaceID, actorID, kind, action, string(payload), nowUTC())
+	s.writeSeatForceIssueComments(workspaceID, actorID, fromMember, actorID, comment)
+}
+
+func (s *Service) memberActorKind(workspaceID, memberID string) string {
+	if memberID == "" {
+		return "human"
+	}
+	var isBot int
+	err := s.DB.QueryRow(`SELECT is_bot FROM members WHERE id = ? AND workspace_id = ?`, memberID, workspaceID).Scan(&isBot)
+	if err == nil && isBot == 1 {
+		return "bot"
+	}
+	return "human"
 }
 
 // ExpandInput 补位扩工：把未领叶子派给空闲已绑席位。
