@@ -1,0 +1,61 @@
+PRO_ADMIN C4 QA spotcheck · 2026-10-25 01:35 Asia/Shanghai
+Overall: PASS†
+Feature SHA: 516226dbaa63e95cf72581a4c8312c4e275d07df (ancestor of origin/main HEAD 73ff35a)
+Debt: docs/NEXT_WAVE_DEBT_PRO_ADMIN_C4.md
+Shot: docs/qa-shots/pro-c-admin-ws.png (56086 B @516226d)
+Scope: C4 (+C5 shot portion) only. D / E2 / G FROZEN — not verified.
+
+Method
+- git pull; confirm 516226d ancestor of HEAD; git show 516226d --stat
+- Inspect PlatformAdminPage.tsx C4 filter (wsNameQuery debounce, WsStatusFilter, filteredWorkspaces, Empty)
+- Inspect frontend/src/api/admin.ts listAdminWorkspaces signature
+- Read pro-c-admin-ws.png as image
+- Soft† live FE Vite skipped (箱截+源码 suffice; seed qa-c4-seed.html verified)
+
+Accept checklist
+1. 超管「工作区」表顶：名称搜索（防抖）+ 状态筛选（全部/启用/停用） …… PASS
+   - Input.Search placeholder「搜索工作区名称」; wsQuery → wsQueryDebounced via 300ms timer (wsSearchTimer)
+   - onSearch bypasses debounce (setWsQuery + setWsQueryDebounced)
+   - Select aria-label「状态筛选」 options: 全部 / 启用 / 停用 (WsStatusFilter)
+   - filteredWorkspaces: name includes (lower) + enabled/disabled via isWsDisabled
+   - Shot: search「QA」+ Select「启用」; tab 工作区 (6)
+
+2. 空结果人话：「没有符合条件的工作区」 …… PASS
+   - empty(wsFilterActive ? '没有符合条件的工作区' : '还没有工作区')
+   - 禁技术口吻 / English-only — source Chinese only
+
+3. FE client filter OK when API has no q/status …… PASS
+   - listAdminWorkspaces() → GET /admin/workspaces 无 q/status params (expected)
+   - Comment: 「FE 滤；API 无 q/status」; filter is client-side on workspaces state
+   - (Users listAdminUsers still has optional q — untouched)
+
+4. 箱截 pro-c-admin-ws.png …… PASS
+   - Exists 56086 B @516226d; Chinese UI throughout
+   - Shows search+filter state: Input「QA」+ Select「启用」; 6 QA* rows all 启用
+   - Not crush/stack/dead-white; matches seed intent (qaWsFilter=1 → QA + enabled)
+
+5. Does not break A2 超管台 layout / users tab search chrome …… PASS
+   - Page bar 平台管理 / 全站工作区与用户 / 返回工作区 / 新建工作区 intact
+   - Users tab still Input.Search「搜索邮箱或名称」+ debounce 300ms + listAdminUsers({q})
+   - Shot: tabs 工作区|用户; A2 chrome visible; no layout regression
+
+6. 不挤叠；中文主 UI …… PASS
+   - Space wrap filter bar; table columns 名称/URL标识/成员/创建/状态 clean
+   - Shot: zh throughout; 6 rows readable; no overlap
+
+FAIL redlines hit? NONE
+- Missing search or status filter — NO
+- Empty technical/English — NO
+- Shot missing/wrong/English — NO
+- Crush — NO
+- Filters only on wrong tab without workspace filters — NO
+
+Soft† notes
+- Live FE Vite skipped (standing Soft† optional; source+shot suffice)
+- Seed helper frontend/public/qa-c4-seed.html → /admin?qaWsFilter=1 sets wsQuery=QA + wsStatusFilter=enabled (matches shot)
+- D / E2 / G not opened
+
+Defects: (none blocking)
+
+Verdict: PASS† @516226d
+One-line → 产品+React+总指挥: C4-3 PASS†；工作区表顶名称300ms防抖搜+全部/启用/停用筛/空结果人话/FE客户端滤(API无q·status预期)/中文箱截搜QA筛启用/不挤叠/A2·用户页签未破全绿；Soft† 活 FE 略；D/E2/G 未验。
