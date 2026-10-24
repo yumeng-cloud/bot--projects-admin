@@ -87,6 +87,22 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 
 写操作建议支持 Header `Idempotency-Key`。
 
+### Issue · `team_id`（T6-I · 契约 / 实现待 SHA）
+
+> 权威开工单：[`NEXT_WAVE_DEBT_T6I.md`](./NEXT_WAVE_DEBT_T6I.md)。**现状（只读核对）**：`issues` 表与 List/Create **尚无** `team_id`；下文为契约，落地后补实现 SHA。
+
+| | |
+|--|--|
+| **列** | `issues.team_id` 可空，`REFERENCES teams(id)`；建议索引 `(workspace_id, team_id)` |
+| **JSON** | Issue 对象增可选 `team_id`（`snake_case`；未分队为 `null`/省略） |
+| **新建** | `POST …/issues` body **必填** `team_id`（当前队 UUID）；缺省 / 非本 WS 队 → **4xx** 人话（建议 400） |
+| **列表** | `GET …/issues?team_id=<uuid>`：只返该队单；错/无队 → **404**（不泄露）。等价 path `/workspaces/{ws}/teams/{teamID}/issues` 可选，行为同 query |
+| **NULL 策略（契约）** | 带 `team_id=` 过滤时**默认不含** `team_id IS NULL` 旧单；旧单是否回填默认队或保留全 WS 可见，**实现证据写明**（见 T6I） |
+| **读写隔离** | 错队 `GET` / `PATCH`（含改 `team_id` 跨队）→ **404**；不跨 workspace |
+| **Update** | `PATCH` 可写 `team_id`（本队→本队或产品允许的迁移）；跨队目标 → **404** |
+
+**不做（本包）**：T7；pins 返工；FE 全局切换器大改；历史单批量搬家 UI。
+
 ## Teams / Seats / Invites（Bot 班底）
 
 鉴权同工作区：`AuthJWTOrAPIKey` + 成员；签发/列表入场码需 **Admin**。
@@ -108,7 +124,7 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 
 **invite.status**（派生、不落库）：`active` | `revoked` | `expired` | `exhausted`。
 
-**隔离（T6-R 最小）**：roster / seats / bind / expand 均以 path `teamID` 为界，跨 `team_id` 不串 claim；通道切队 = 换 `team_uuid`（见 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.4）。**尚未落地**：Issue 列表按 `team_id` 过滤。**`team_pins` REST 已落地**（见下「Team pins」· `6915db4`）；MCP/CLI `board_pin_*` 已落地（[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.5 · `63e69c6`）。全文边界：[`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) · 开工单：[`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md)。
+**隔离（T6-R 最小）**：roster / seats / bind / expand 均以 path `teamID` 为界，跨 `team_id` 不串 claim；通道切队 = 换 `team_uuid`（见 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.4）。**尚未落地（契约见上「Issue · team_id」· [`NEXT_WAVE_DEBT_T6I.md`](./NEXT_WAVE_DEBT_T6I.md)）**：Issue 列表/创建按 `team_id` 隔离。**`team_pins` REST 已落地**（见下「Team pins」· `6915db4`）；MCP/CLI `board_pin_*` 已落地（[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.5 · `63e69c6`）。全文边界：[`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) · 开工单：[`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md)。
 
 详见 [`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md) · [`BOT_TEAM_SEAT_P0.md`](./BOT_TEAM_SEAT_P0.md)。
 

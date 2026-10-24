@@ -1,5 +1,8 @@
 # NEXT_WAVE · Issue 池按队（T6 余债）
 
+> **权威债文**：[`NEXT_WAVE_DEBT_T6I.md`](./NEXT_WAVE_DEBT_T6I.md)（T6-I）。本文仅历史草稿，契约以 T6I / `API.md`「Issue · team_id」为准。
+
+
 > 2026-10-24 · 总指挥自定开工（用户禁闲等；pins 整单收口后立刻开）  
 > **本包：Issue 按 `team_id` 隔离可见。不含 T7、不再动 pins。**
 
