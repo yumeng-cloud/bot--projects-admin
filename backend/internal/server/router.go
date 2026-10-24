@@ -118,6 +118,7 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 			// Issue 域由 modules.RegisterIssues 挂载；未挂前 501
 			ws.Get("/issues", issueH.List)
 			ws.Post("/issues", issueH.Create)
+			ws.Post("/issues/archive", issueH.Archive)
 			ws.Get("/issues/{issueID}", issueH.Get)
 			ws.Patch("/issues/{issueID}", issueH.Patch)
 			ws.Delete("/issues/{issueID}", issueH.Delete)
