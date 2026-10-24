@@ -48,6 +48,11 @@ import {
 import { createIssue, notifyIssue } from '../../../api/issues'
 import { listProjects } from '../../../api/projects'
 import { formatWikiTime } from '../../../utils/time'
+import {
+  readStoredTeamId,
+  resolveTeamId,
+  writeStoredTeamId,
+} from '../../../utils/currentTeam'
 import JoinTeamWizard from './JoinTeamWizard'
 import SeatConflictPanel, { type SeatConflictInfo } from './SeatConflictPanel'
 import SeatHandoffDrawer from './SeatHandoffDrawer'
@@ -87,7 +92,9 @@ export default function BotsRosterPage() {
   const [conflictOpen, setConflictOpen] = useState(false)
   const [conflictInfo, setConflictInfo] = useState<SeatConflictInfo | null>(null)
   const [teams, setTeams] = useState<Team[]>([])
-  const [teamId, setTeamId] = useState<string | null>(null)
+  const [teamId, setTeamId] = useState<string | null>(() =>
+    wsId ? readStoredTeamId(wsId) : null,
+  )
   /** 与向导同源的团队席位占用（N4 同步） */
   const [teamSeats, setTeamSeats] = useState<TeamSeat[]>([])
   const [issuedInvites, setIssuedInvites] = useState<TeamInvite[]>([])
@@ -123,12 +130,10 @@ export default function BotsRosterPage() {
       setKeys((k.api_keys || []).filter((x) => !x.revoked_at))
       const teamList = teams.teams || []
       setTeams(teamList)
-      // 保留当前队（若仍在列表）；否则回落首队 — P5 切队由 onTeamChange
-      const tid =
-        (teamId && teamList.some((t) => t.id === teamId) ? teamId : null) ||
-        teamList[0]?.id ||
-        null
+      // 与 list/board 共用 acb.team.<wsId>；保留当前队（若仍在列表）否则回落首队
+      const tid = resolveTeamId(teamList, teamId || readStoredTeamId(wsId))
       setTeamId(tid)
+      writeStoredTeamId(wsId, tid)
       if (tid) {
         try {
           const rost = await getRoster(wsId, tid)
@@ -158,9 +163,10 @@ export default function BotsRosterPage() {
     void load()
   }, [wsId])
 
-  /** 换队：清空席/邀请缓存；记忆墙由 TeamPinsPanel 按 teamId 换池（P5） */
+  /** 换队：写共享 current-team；清空席/邀请缓存；记忆墙由 TeamPinsPanel 按 teamId 换池（P5） */
   const onTeamChange = (tid: string) => {
     setTeamId(tid)
+    writeStoredTeamId(wsId, tid)
     setTeamSeats([])
     setIssuedInvites([])
     void (async () => {
@@ -275,6 +281,7 @@ export default function BotsRosterPage() {
         status: 'todo',
         assignee_id: dispatchTarget.memberId,
         skip_notify: true,
+        team_id: teamId || undefined,
       })
       message.success(`已下发 ${issue.identifier} → ${dispatchTarget.botName}`)
       if (push) {

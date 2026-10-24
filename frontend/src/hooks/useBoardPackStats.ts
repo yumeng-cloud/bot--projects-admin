@@ -12,6 +12,10 @@ import { dayjs, TZ } from '../utils/time'
 export type UseBoardPackStatsArgs = {
   workspaceId: string
   projectId: string
+  /** Current team pool (T6I I4); omit/empty → no team filter */
+  teamId?: string | null
+  /** false while current-team context is still resolving */
+  enabled?: boolean
 }
 
 export type UseBoardPackStatsResult = {
@@ -51,6 +55,8 @@ function todayYmd(): string {
 export function useBoardPackStats({
   workspaceId,
   projectId,
+  teamId,
+  enabled = true,
 }: UseBoardPackStatsArgs): UseBoardPackStatsResult {
   const [loading, setLoading] = useState(true)
   const [issues, setIssues] = useState<Issue[]>([])
@@ -59,10 +65,19 @@ export function useBoardPackStats({
   const [blockedIds, setBlockedIds] = useState<Set<string>>(() => new Set())
 
   const reload = useCallback(async () => {
+    if (!enabled) {
+      setIssues([])
+      setLoading(true)
+      return
+    }
     setLoading(true)
+    setIssues([]) // I4: clear pool before fetch — no cross-team residue
     try {
       const [{ issues: list }, mem, cyclesRes] = await Promise.all([
-        listIssues(workspaceId, { project_id: projectId }),
+        listIssues(workspaceId, {
+          project_id: projectId,
+          team_id: teamId || undefined,
+        }),
         listProjectMembers(workspaceId).catch(() => ({ members: [] as MemberRef[] })),
         listCycles(workspaceId, projectId).catch(() => ({ cycles: [] as Cycle[] })),
       ])
@@ -99,10 +114,14 @@ export function useBoardPackStats({
         })
         setBlockedIds(blocked)
       }
+    } catch {
+      setIssues([])
+      setBlockedIds(new Set())
+      // 4xx toast from client; keep empty pool (no white screen)
     } finally {
       setLoading(false)
     }
-  }, [workspaceId, projectId])
+  }, [workspaceId, projectId, teamId, enabled])
 
   useEffect(() => {
     void reload()

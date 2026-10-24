@@ -22,6 +22,8 @@ import {
 } from '../../components/board/boardTemplates'
 import { IssueDrawer } from '../../components/issue'
 import { MockBanner } from '../../components/common/MockBanner'
+import { TeamPoolSelect } from '../../components/common/TeamPoolSelect'
+import { useCurrentTeam } from '../../hooks/useCurrentTeam'
 import { useBoardPackStats } from '../../hooks/useBoardPackStats'
 import type { Issue } from '../../types/issue'
 import '../../components/board/board.css'
@@ -33,7 +35,13 @@ export type BoardPageProps = {
 
 export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
   const navigate = useNavigate()
-  const pack = useBoardPackStats({ workspaceId, projectId })
+  const { teams, teamId, setTeamId, loading: teamLoading } = useCurrentTeam(workspaceId)
+  const pack = useBoardPackStats({
+    workspaceId,
+    projectId,
+    teamId,
+    enabled: !teamLoading,
+  })
   const { issues, setIssues, loading } = pack
   const [open, setOpen] = useState(false)
   const [current, setCurrent] = useState<Issue | null>(null)
@@ -62,15 +70,27 @@ export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
     }
   }, [workspaceId, projectId])
 
+  const onTeamChange = (tid: string) => {
+    setIssues([])
+    setCurrent(null)
+    setOpen(false)
+    setTeamId(tid)
+  }
+
   const handleCreate = async () => {
     const title = newTitle.trim()
     if (!title || creating) return
+    if (!teamId) {
+      message.warning('请先选择团队后再创建')
+      return
+    }
     setCreating(true)
     try {
       const { issue } = await createIssue(workspaceId, {
         project_id: projectId,
         title,
         status: 'todo',
+        team_id: teamId,
       })
       message.success('已创建')
       setNewTitle('')
@@ -107,6 +127,12 @@ export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
       <div className="acb-page-bar">
         <Typography.Title level={4}>看板</Typography.Title>
         <Space size={8} wrap>
+          <TeamPoolSelect
+            teams={teams}
+            teamId={teamId}
+            onChange={onTeamChange}
+            disabled={teamLoading}
+          />
           <Input
             size="small"
             placeholder="新建 Issue，回车创建"

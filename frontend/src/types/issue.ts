@@ -51,6 +51,8 @@ export interface Issue {
   id: string
   project_id: string
   workspace_id: string
+  /** 所属团队；可空=旧未分队 */
+  team_id?: string | null
   number: number
   identifier: string
   title: string

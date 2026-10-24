@@ -8,6 +8,8 @@ export type IssueListQuery = {
   label_id?: string
   q?: string
   cycle_id?: string
+  /** 当前队池；普通 list 默认传 current team */
+  team_id?: string
   /** 仅叶子（无子节点） */
   leaf_only?: boolean | '1' | 1
   /** 仅被未完成 blocker 挡住的 */
@@ -36,6 +38,8 @@ export type IssuePatch = Partial<
 export type IssueCreate = {
   project_id: string
   title: string
+  /** 新建必填当前队（T6I）；API 未齐时可忽略 */
+  team_id?: string
   status?: IssueStatus
   priority?: Issue['priority']
   description?: string
@@ -59,6 +63,7 @@ function filterMock(list: Issue[], q: IssueListQuery): Issue[] {
       if (!statuses.includes(i.status)) return false
     }
     if (q.assignee_id && i.assignee_id !== q.assignee_id) return false
+    if (q.team_id && i.team_id !== q.team_id) return false
     if (q.cycle_id && i.cycle_id !== q.cycle_id) return false
     if (q.label_id && !(i.labels || []).some((l) => l.id === q.label_id)) return false
     if (q.q) {
@@ -95,6 +100,7 @@ function qs(query: IssueListQuery): string {
   if (query.assignee_id) p.set('assignee_id', query.assignee_id)
   if (query.label_id) p.set('label_id', query.label_id)
   if (query.cycle_id) p.set('cycle_id', query.cycle_id)
+  if (query.team_id) p.set('team_id', query.team_id)
   if (query.q) p.set('q', query.q)
   if (query.leaf_only === true || query.leaf_only === '1' || query.leaf_only === 1) p.set('leaf_only', '1')
   if (query.blocked === true || query.blocked === '1' || query.blocked === 1) p.set('blocked', '1')
@@ -182,6 +188,7 @@ export async function createIssue(
       id: `iss-${n}`,
       project_id: body.project_id,
       workspace_id: workspaceId,
+      team_id: body.team_id ?? null,
       number: n,
       identifier: `DEMO-${n}`,
       title: body.title,

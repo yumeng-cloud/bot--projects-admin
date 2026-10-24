@@ -23,6 +23,8 @@ import {
 } from '../../api/issues'
 import { IssueDrawer } from '../../components/issue'
 import { MockBanner } from '../../components/common/MockBanner'
+import { TeamPoolSelect } from '../../components/common/TeamPoolSelect'
+import { useCurrentTeam } from '../../hooks/useCurrentTeam'
 import type { Issue, IssuePriority, IssueStatus, Label, MemberRef } from '../../types/issue'
 import '../../components/board/board.css'
 import './list.css'
@@ -49,6 +51,7 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
   const [searchParams, setSearchParams] = useSearchParams()
   const blocked = searchParams.get('blocked') === '1'
   const overdue = searchParams.get('overdue') === '1'
+  const { teams, teamId, setTeamId, loading: teamLoading } = useCurrentTeam(workspaceId)
 
   const [loading, setLoading] = useState(true)
   /** Full project list (unfiltered) so tree filters can keep ancestor context. */
@@ -89,26 +92,39 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
 
   const load = useCallback(async () => {
     setLoading(true)
+    setIssues([]) // I4: clear before fetch — no cross-team residue
     try {
-      // Fetch full project issues; status/priority/assignee/label/q/overdue applied client-side
-      // so matching children keep their ancestor chain. `blocked` stays API-side (needs relations).
+      // Fetch team-scoped project issues; other filters applied client-side for tree ancestors.
+      // `blocked` stays API-side (needs relations).
       const { issues: list } = await listIssues(workspaceId, {
         project_id: projectId,
         blocked: blocked || undefined,
+        team_id: teamId || undefined,
       })
       setIssues(list)
+    } catch {
+      setIssues([])
+      // 4xx toast from client; empty pool, no white screen
     } finally {
       setLoading(false)
     }
-  }, [workspaceId, projectId, blocked])
+  }, [workspaceId, projectId, blocked, teamId])
 
   useEffect(() => {
     loadMeta()
   }, [loadMeta])
 
   useEffect(() => {
-    load()
-  }, [load])
+    if (teamLoading) return
+    void load()
+  }, [load, teamLoading])
+
+  const onTeamChange = (tid: string) => {
+    setIssues([])
+    setCurrent(null)
+    setOpen(false)
+    setTeamId(tid)
+  }
 
   const memberName = useMemo(() => {
     const map = new Map(members.map((m) => [m.id, memberLabel(m)]))
@@ -147,12 +163,17 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
   const handleCreate = async () => {
     const title = newTitle.trim()
     if (!title || creating) return
+    if (!teamId) {
+      message.warning('请先选择团队后再创建')
+      return
+    }
     setCreating(true)
     try {
       const { issue } = await createIssue(workspaceId, {
         project_id: projectId,
         title,
         status: 'todo',
+        team_id: teamId,
       })
       message.success('已创建')
       setNewTitle('')
@@ -171,7 +192,13 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
       <MockBanner />
       <div className="acb-page-bar">
         <Typography.Title level={4}>列表</Typography.Title>
-        <Space size={8}>
+        <Space size={8} wrap>
+          <TeamPoolSelect
+            teams={teams}
+            teamId={teamId}
+            onChange={onTeamChange}
+            disabled={teamLoading}
+          />
           <Input
             size="small"
             placeholder="新建 Issue，回车创建"
