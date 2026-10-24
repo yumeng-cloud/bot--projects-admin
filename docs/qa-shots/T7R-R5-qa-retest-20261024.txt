@@ -1,0 +1,56 @@
+=== T7-R R5 Independent QA retest (harsh) · FE 从模板创建向导 ===
+time_AsiaShanghai: 2026-10-24 19:47 Asia/Shanghai
+result: Overall=PASS
+R5_open=PASS R5_preview=PASS R5_created=PASS
+shots_SHA: bebe847
+code_SHA: 8cf4e59
+HEAD_at_review: (see commit after push)
+evidence_file: docs/qa-shots/T7R-R5-qa-retest-20261024.txt
+shots:
+  - docs/qa-shots/t7r-r5-wizard-open.png
+  - docs/qa-shots/t7r-r5-wizard-preview.png
+  - docs/qa-shots/t7r-r5-wizard-created.png
+t6i_side_optional: note only (non-blocking)
+
+## R5 抽核（独立目视 + 对 8cf4e59 代码）
+
+### open = PASS
+- Bot 席位顶栏「+ 从模板创建」入口可见；弹窗标题「从模板创建」完整、中文、无空白破窗。
+- 模板下拉加载「默认班底」（API catalog，非内置 Alert）；空席预览表已出。
+- 五席：frontend/前端 · pm/产品经理 · qa/QA · backend/后端 · wiki/知识库。
+- playbook_ref 与 default.json / R1 证据一致：
+  frontend → bot-team-template@main:roles/前端研发/
+  其余 → bot-team-template@main:playbook/班底与补位.md
+- 队名 placeholder「例如：产品一组」；按钮「取消」「创建」。
+- 对码：CreateTeamFromTemplateModal + BotsRosterPage 入口；listTeamTemplates → GET …/team-templates。
+
+### preview = PASS
+- 选中「默认班底」后描述可见（五席最小班底…空席未绑 Key）。
+- 预览表仅模板席：slug / 显示名 / playbook_ref；无发明席；无 bound 演员。
+- 创建前队名为空（未误填）；无崩溃。
+
+### created = PASS
+- Toast：已创建团队「T7R-R5-1024」· 5 空席（未绑 Key）——对齐 Modal message.success 文案形态。
+- 席位网格可见连续五空席「后端/前端/产品经理/QA/知识库」均「空闲·等待绑定」，形状=模板；无 ghost 演员绑在新空席上。
+- 记忆墙「本队」空 pin（新队）；无错误 Toast/白屏。
+- onTeamCreatedFromTemplate：写 acb.team + setTeamId + load()；createTeam(POST …/teams + template_key) 在 tk 非空时 handler 回 roster（与 from-template 同形）；happy-path 不依赖 ensure 降级。
+- 观察（不挡 PASS）：Bot 席位卡仍按 WS bot_roles 平铺，历史队空席与新队五席混排；核验靠 Toast+五空席行，非队内滤卡。属页级既有，非 R5 向导回归。
+
+### 交叉 = PASS
+- 文案/列名/按钮与 CreateTeamFromTemplateModal.tsx 一致。
+- API：GET team-templates；POST /teams {name, template_key}（handler 挂 roster；服务层同 CreateTeamFromTemplate）。未直调 /teams/from-template，功能等价，不记缺陷。
+- 无错误 team_id 泄露迹象。
+
+## t6i-side（轻扫 · 不挡）
+- t6i-side-cycles-team.png：周期空态，YM·示例项目，无异样池串。
+- t6i-side-time-team.png：工时列表正常一行，时区 Asia/Shanghai。
+- t6i-side-timeline-team.png：排期周视图；未排期 2 条 t6i-* Issue，无未分配池渗入迹象。
+- t6i-side-wiki-team.png：知识库空态「还没有知识库」，队/项目上下文正常。
+结论：team 旁路页目视 sane；非本单 blocker。
+
+## Defect
+(none)
+
+## 备注
+- 不信任产品 019745d 勾选；本报为独立苛刻抽核。
+- R1–R4 既有 PASS 见 T7R-qa-retest-20261024.txt（本报不重跑 API）。
