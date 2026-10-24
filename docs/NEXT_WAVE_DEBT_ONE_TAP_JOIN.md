@@ -115,9 +115,9 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 产品勾选
 
-- [ ] **A1** join URL 契约
-- [ ] **A2** `/join` 解析页
-- [ ] **A3** 默认 API 根可配
+- [x] **A1** join URL 契约 · `1432980` `joinlink.BuildJoinURL` + golden
+- [x] **A2** `/join` 解析页 · `GET /join` HTML；非法 code 中文 400；不 redeem/claim
+- [x] **A3** 默认 API 根可配 · `PUBLIC_API_BASE`=`https://bot.api.sn.cn`；可选 `PUBLIC_BOARD_BASE`
 - [ ] **A4** 签发→URL→join 箱证
 - [ ] **B1** 复制入场链接
 - [ ] **B2** 复制 Bot 提示词
@@ -132,9 +132,11 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 进度注记
 
+- 2026-10-24 22:10 · 产品勾 A1–A3（测绿 `joinlink`/`handlers` Join*）；A4 仍 QA。
+
 - 2026-10-24 22:05 · 债文定稿。首刀：**Go A 契约 + React B 按钮并行**。
 - 2026-10-24 22:10+ · **Go A1–A3 已落地**：`internal/joinlink` + `GET /join`（API 根）+ `PUBLIC_API_BASE`（默认 `https://bot.api.sn.cn`）。A4 箱证留给 QA。
 
 ## 关单进度
 
-**进行中** · Go A1–A3 已推；待 React B + QA A4/C3。
+**进行中** · A1–A3 已勾；待 React B + QA A4/C3。
