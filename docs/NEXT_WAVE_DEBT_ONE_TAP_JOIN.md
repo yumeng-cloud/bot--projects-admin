@@ -157,6 +157,7 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 进度注记
 
+- 2026-10-25 00:10 · **产品拍下一包（HUMAN/BATCH 已关）**：ONE_TAP **收口为下一 P0**。C1=登录态 join→预填 JoinWizard（React，对齐 HUMAN V3）；C2=记忆抽提示词 join；C3=QA 箱证；D1=种子对齐 HUMAN/H4。**公网 E5**：箱侧 DNS 超时 `bot.api.sn.cn`，redeploy/spotcheck **交总指挥运维**，不挡 C/D 代码收口；齐后 D2 关。PRO_ADMIN 整包不并行；建议后置只开 B2/B3 空态。
 - 2026-10-24 22:42 · **E5 PASS† local** QA `e1b3f26`：装→whoami→join 绿；**prod BLOCKED** DNS/未部署。产品勾本地；生产关等重部署 spotcheck。
 
 - 2026-10-24 22:36 · **复制即装产品关（E1–E4）** 总指挥令：FE `b76bfc0` + Go `4cdaa04` 已交付；**E5 后置不挡关**（对齐深 C3 后置口径）。
@@ -180,4 +181,4 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 关单进度
 
-**进行中** · **E 全勾（E5=local†）** Go `4cdaa04` / FE `b76bfc0` / QA `e1b3f26`；**prod install.sh 待部署 spotcheck**；C/D 仍开。
+**下一 P0 收口中** · A/B/E(local) 已绿；**开 C1–C3 + D1 → D2**；prod E5 等运维 redeploy（DNS 现不可达）。

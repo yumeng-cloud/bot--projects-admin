@@ -180,6 +180,7 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 
 ## 8. 进度
 
+- 2026-10-25 00:10 · **主债已关**；三 soft nits **后置不热修**。下一 P0 → ONE_TAP C/D 收口（见该债）。
 - 2026-10-25 00:05 · **H3/Q1 产品关门**：QA 联验 PASS† `29743c3`（Q1/Q2/Q3/Q11/Q12 + Q6/Q10 + FE V3/V4/V5）。Go `c4ae0a5` + FE `662346d` 闭环。软债 V6 签发 / V2 orphan **搁置不挡**。
 - 2026-10-25 00:01 · **产品勾 V3/V4** `662346d`（Join 只贴 ymt_ + IdentityKeyReveal；提示词两态；V5 未回退）。等 QA Q1。
 - 2026-10-25 00:00 · **React V3/V4 产品收** `662346d`：`RedeemInviteResult` 补 `token`/`token_issued`；JoinWizard 主路径只贴 `ymt_`，有 token→IdentityKeyReveal；`buildBotJoinPrompt`+Go `BuildBotPrompt` 身份两态（空手自动得钥/已有钥带 Bearer）。**V5 未回退**。
