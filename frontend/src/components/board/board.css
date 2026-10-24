@@ -628,13 +628,19 @@ html[data-theme='dark'] .acb-col {
 }
 
 
-/* Cycles density — flush panels, no floating dual cards */
+/* Cycles density — flush panels, stretch into Content (pair with styles/page.css) */
 .acb-cycles-panel {
   background: var(--acb-bg-container);
   border: 1px solid var(--acb-border);
   border-radius: 8px;
   padding: 12px;
-  min-height: 280px;
+  min-height: 0;
+  flex: 1 1 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: auto;
 }
 .acb-cycles-row .ant-list-item {
   padding: 6px 8px !important;

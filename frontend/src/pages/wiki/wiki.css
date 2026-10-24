@@ -2,7 +2,7 @@
  * Wiki layout — Linear/Notion reading stage (UI 视觉 · P1-1…P1-6)
  * Contract classes for React:
  *   .acb-wiki-shell   — left tree + main stage
- *   .acb-wiki-sider   — directory / spaces column (≥240, prefer 260–280)
+ *   .acb-wiki-sider   — directory / spaces column (min 280, default 300)
  *   .acb-wiki-main    — reading canvas (#F7F8FA / --acb-bg-layout)
  *   .acb-wiki-main-inner — reading column max ~752, left-aligned + breathing
  *   .acb-wiki-title   — large inline title (~24–28px / 600)
@@ -17,6 +17,8 @@
 /* —— Shell: left tree + main —— */
 .acb-wiki-shell {
   display: flex;
+  flex: 1 1 0;
+  align-self: stretch;
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -26,43 +28,133 @@
 
 .acb-wiki-shell.ant-layout {
   background: var(--acb-bg-layout);
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
+}
+
+.acb-wiki-shell.ant-layout-has-sider {
+  align-items: stretch;
 }
 
 /* —— P1-2 Tree sider —— */
 .acb-wiki-sider {
   flex-shrink: 0;
-  min-width: 240px !important;
-  width: 280px;
+  align-self: stretch;
+  min-width: 280px !important;
+  width: 300px;
   border-right: 1px solid var(--acb-border-secondary) !important;
   background: var(--acb-bg-sider, #F2F4F8) !important;
-  padding: 12px !important;
+  padding: 14px 16px !important;
   overflow: auto;
-  height: 100%;
+  height: 100% !important;
+  min-height: 0;
   box-shadow: none !important;
 }
 
-.acb-wiki-sider.ant-layout-sider {
+.acb-wiki-sider.ant-layout-sider,
+.acb-wiki-sider.ant-layout-sider:not(.ant-layout-sider-collapsed) {
+  align-self: stretch;
+  height: 100% !important;
+  min-height: 0;
   background: var(--acb-bg-sider, #F2F4F8) !important;
+  /* beat AppLayout global 240 sider tokens */
+  flex: 0 0 300px !important;
   max-width: none !important;
+  min-width: 280px !important;
+  width: 300px !important;
 }
 
 .acb-wiki-sider .ant-layout-sider-children {
   height: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Tree row density ~28–32, Linear soft hover/selected */
+/* Directory breathing — Notion-readable (anti-cramped) */
+.acb-wiki-sider .ant-space-vertical {
+  gap: 14px !important;
+}
+.acb-wiki-sider .ant-input-search {
+  margin-block: 2px;
+}
+.acb-wiki-sider .ant-tree {
+  margin-top: 4px;
+}
+
+
+/* Tree row ≥36 — icon + title ONE line (no ghost wrap) */
 .acb-wiki-sider .ant-tree .ant-tree-treenode {
-  padding: 1px 0;
-  min-height: 28px;
-  align-items: center;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  padding: 2px 0;
+  min-height: 36px;
+  max-height: 40px;
 }
 
 .acb-wiki-sider .ant-tree .ant-tree-node-content-wrapper {
-  min-height: 28px;
-  line-height: 28px;
-  padding-inline: 6px;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 6px;
+  min-height: 36px;
+  max-height: 40px;
+  height: 36px;
+  line-height: 22px !important;
+  padding-inline: 8px;
   border-radius: 6px;
   transition: background 0.12s ease;
+  overflow: hidden;
+}
+
+.acb-wiki-sider .ant-tree .ant-tree-iconEle {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  line-height: 1 !important;
+  margin-inline-end: 0 !important;
+}
+
+.acb-wiki-sider .ant-tree .ant-tree-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  line-height: 22px !important;
+}
+
+.acb-wiki-sider .ant-tree .acb-wiki-tree-node {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  gap: 4px;
+  line-height: 22px;
+}
+
+.acb-wiki-sider .ant-tree .acb-wiki-tree-node-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--acb-text-secondary);
+}
+
+.acb-wiki-sider .ant-tree .acb-wiki-tree-node-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .acb-wiki-sider .ant-tree .ant-tree-node-content-wrapper.ant-tree-node-selected,
@@ -85,6 +177,8 @@
 
 .acb-wiki-sider .ant-list-item {
   border-block-end: none !important;
+  min-height: 36px;
+  padding-block: 8px !important;
 }
 
 .acb-wiki-sider .ant-input-search .ant-input-affix-wrapper,
@@ -132,8 +226,10 @@
 /* —— P1-1 Reading column —— */
 .acb-wiki-main {
   flex: 1;
+  align-self: stretch;
   min-width: 0;
   min-height: 0;
+  height: auto;
   overflow-y: auto;
   /* top rhythm ~28–36 — not sparse white sea; title sits with breathing */
   padding: 32px 40px 48px;
@@ -256,6 +352,43 @@
   font-weight: 400;
 }
 
+/* P1-4: ⋯ trigger must be visible — never empty vertical bar */
+.acb-wiki-main-toolbar .acb-wiki-more-btn.ant-btn,
+.acb-wiki-main-toolbar .ant-btn.acb-wiki-more-btn {
+  color: var(--acb-text-secondary) !important;
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  opacity: 1 !important;
+  visibility: visible !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.acb-wiki-main-toolbar .acb-wiki-more-btn .anticon,
+.acb-wiki-main-toolbar .acb-wiki-more-btn .ant-btn-icon,
+.acb-wiki-main-toolbar .acb-wiki-more-btn .anticon svg {
+  display: inline-flex !important;
+  color: var(--acb-text-secondary) !important;
+  font-size: 16px !important;
+  width: 1em !important;
+  height: 1em !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  fill: currentColor !important;
+}
+.acb-wiki-main-toolbar .acb-wiki-more-btn:hover {
+  color: var(--acb-text) !important;
+  background: color-mix(in srgb, var(--acb-text) 5%, transparent) !important;
+}
+.acb-wiki-main-toolbar .acb-wiki-more-btn:hover .anticon {
+  color: var(--acb-text) !important;
+}
+
 /* —— Title: large inline, no form label wall —— */
 .acb-wiki-title {
   margin: 0 0 8px !important;
@@ -318,11 +451,12 @@
 
 /* —— P1-3 Property chips (button chip rail; Select only in popover) —— */
 .acb-wiki-props,
-.acb-wiki-props.acb-wiki-prop-rail {
+.acb-wiki-props.acb-wiki-prop-rail,
+.acb-wiki-prop-rail {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   margin: 0 0 24px;
   padding-inline-start: 0;
 }
@@ -331,11 +465,14 @@
 .acb-wiki-prop-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
   max-width: 100%;
-  padding: 2px 8px;
-  height: 26px;
+  padding: 8px 12px;
+  min-height: 36px;
+  height: auto;
+  letter-spacing: 0.02em;
+  box-sizing: border-box;
   border: 1px solid var(--acb-border-secondary);
   border-radius: 7px;
   background: color-mix(in srgb, var(--acb-bg-container) 80%, transparent);
@@ -400,8 +537,8 @@ button.acb-wiki-prop-chip:focus-visible {
 
 .acb-wiki-props-label {
   flex-shrink: 0;
-  font-size: 12px;
-  line-height: 1.3;
+  font-size: 13px;
+  line-height: 1.35;
   color: var(--acb-text-tertiary);
   white-space: nowrap;
   font-weight: 450;
@@ -409,9 +546,9 @@ button.acb-wiki-prop-chip:focus-visible {
 
 .acb-wiki-prop-chip-value {
   min-width: 0;
-  max-width: 160px;
-  font-size: 12px;
-  line-height: 1.3;
+  max-width: 200px;
+  font-size: 13px;
+  line-height: 1.35;
   color: var(--acb-text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -789,8 +926,12 @@ button.acb-wiki-prop-chip:focus-visible {
     max-width: none;
   }
 
-  .acb-wiki-sider {
-    min-width: 200px !important;
+  .acb-wiki-sider,
+  .acb-wiki-sider.ant-layout-sider,
+  .acb-wiki-sider.ant-layout-sider:not(.ant-layout-sider-collapsed) {
+    min-width: 240px !important;
+    width: 260px !important;
+    flex: 0 0 260px !important;
   }
 
   .acb-wiki-title,

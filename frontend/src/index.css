@@ -42,7 +42,24 @@ html,
 body,
 #root {
   height: 100%;
+  height: 100dvh;
   margin: 0;
+}
+
+/* Ant App wrapper must participate in height chain (#root → .ant-app → Layout).
+ * Login uses minHeight:100% centering — flex child height:100% is fine.
+ * Avoid forcing display:flex on .ant-app > * (HomePage / Login are plain divs).
+ */
+.ant-app {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ant-app > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
 }
 
 body {
@@ -222,7 +239,7 @@ body {
   font-weight: 450;
 }
 
-/* Page shell + Linear empty states (list / cycles / settings) */
+/* Page shell + Linear empty states — density/fill in styles/page.css */
 .acb-page {
   padding: var(--acb-content-padding-y) var(--acb-content-padding-x);
   color: var(--acb-text);
@@ -276,10 +293,25 @@ body {
 
 /* Fill AppLayout Content — own scroll; do not grow body */
 .acb-fill-page {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   height: 100%;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/*
+ * When a fill-page owns the Content slot, Content must not scroll itself —
+ * percentage / flex children need a definite non-scrolling parent.
+ */
+.ant-layout-content:has(> .acb-fill-page),
+.ant-layout-content:has(> .acb-board-page) {
+  /* beat AppLayout Content inline overflow:auto so %/flex children get a definite box */
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
 }

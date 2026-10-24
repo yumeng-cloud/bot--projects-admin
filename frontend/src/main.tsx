@@ -5,6 +5,7 @@ import zhCN from 'antd/locale/zh_CN'
 import App from './App'
 import { getLinearTheme, resolveThemeMode } from './theme'
 import './index.css'
+import './styles/page.css'
 import './utils/time'
 
 // Default product UI is light (Linear). Dark only if user toggled and saved.

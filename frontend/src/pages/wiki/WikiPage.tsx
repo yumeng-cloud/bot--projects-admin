@@ -49,24 +49,34 @@ import './wiki.css'
 
 const { Sider, Content } = Layout
 
+function isRenderableTreeNode(n: WikiTreeNode | null | undefined): n is WikiTreeNode {
+  return !!n?.id && String(n.title ?? '').trim().length > 0
+}
+
 function toTreeData(
   nodes: WikiTreeNode[],
   renderTitle: (n: WikiTreeNode) => ReactNode,
 ): DataNode[] {
-  return (nodes || []).map((n) => ({
-    key: n.id,
-    title: renderTitle(n),
-    icon: <FileTextOutlined />,
-    children: n.children?.length ? toTreeData(n.children, renderTitle) : undefined,
-  }))
+  return (nodes || [])
+    .filter(isRenderableTreeNode)
+    .map((n) => {
+      const kids = toTreeData(n.children || [], renderTitle)
+      return {
+        key: n.id,
+        title: renderTitle(n),
+        // icon lives inside title (horizontal row); leave leaves without children
+        children: kids.length ? kids : undefined,
+      }
+    })
 }
 
 
 /** Depth-first first page id in the directory tree. */
 function firstTreePageId(nodes: WikiTreeNode[]): string | undefined {
   for (const n of nodes || []) {
-    if (n?.id) return n.id
-    const child = firstTreePageId(n.children || [])
+    if (isRenderableTreeNode(n)) return n.id
+    // still walk children of blank-title shells (filtered from render, may hold pages)
+    const child = firstTreePageId((n as WikiTreeNode | undefined)?.children || [])
     if (child) return child
   }
   return undefined
@@ -539,9 +549,10 @@ export default function WikiPage() {
       },
     ]
     return (
-      <span className="acb-wiki-tree-node" style={{ display: 'flex', width: '100%', gap: 4 }}>
-        <span className="acb-wiki-tree-node-title" style={{ flex: 1, minWidth: 0 }}>
-          {n.title}
+      <span className="acb-wiki-tree-node">
+        <FileTextOutlined className="acb-wiki-tree-node-icon" aria-hidden />
+        <span className="acb-wiki-tree-node-title">
+          {n.title?.trim() || '无标题'}
         </span>
         <Dropdown menu={{ items }} trigger={['click']}>
           <Button
@@ -559,16 +570,17 @@ export default function WikiPage() {
   const treeData = useMemo(() => toTreeData(tree, renderTreeTitle), [tree, pages, page, spaceId])
   const flatFallback = useMemo(
     () =>
-      pages.map((p) => ({
-        key: p.id,
-        title: renderTreeTitle({
-          id: p.id,
-          title: p.title,
-          slug: p.slug,
-          parent_id: p.parent_id,
-        }),
-        icon: <FileTextOutlined />,
-      })),
+      pages
+        .filter((p) => !!p?.id && String(p.title ?? '').trim().length > 0)
+        .map((p) => ({
+          key: p.id,
+          title: renderTreeTitle({
+            id: p.id,
+            title: p.title,
+            slug: p.slug,
+            parent_id: p.parent_id,
+          }),
+        })),
     [pages],
   )
 
@@ -588,18 +600,27 @@ export default function WikiPage() {
   return (
     <Layout
       className="acb-fill-page acb-wiki-shell"
-      style={{ background: themeToken.colorBgLayout, height: '100%', overflow: 'hidden' }}
+      style={{
+        background: themeToken.colorBgLayout,
+        flex: '1 1 0',
+        minHeight: 0,
+        height: '100%',
+        alignSelf: 'stretch',
+        overflow: 'hidden',
+      }}
     >
       <Sider
-        width={280}
+        width={300}
         theme="light"
         className="acb-wiki-sider"
         style={{
           borderRight: `1px solid ${themeToken.colorBorderSecondary}`,
           background: themeToken.colorFillSecondary,
-          padding: 12,
+          padding: 14,
           overflow: 'auto',
+          alignSelf: 'stretch',
           height: '100%',
+          minHeight: 0,
         }}
       >
         <Space direction="vertical" style={{ width: '100%' }} size="middle">
@@ -670,7 +691,8 @@ export default function WikiPage() {
               {treeData.length || flatFallback.length ? (
                 <Tree
                   className="acb-wiki-tree"
-                  showIcon
+                  showIcon={false}
+                  blockNode
                   treeData={treeData.length ? treeData : flatFallback}
                   selectedKeys={page ? [page.id] : []}
                   defaultExpandAll
@@ -728,7 +750,13 @@ export default function WikiPage() {
                   </Typography.Text>
                 </Space>
                 <Dropdown menu={{ items: pageMoreItems }} trigger={['click']}>
-                  <Button type="text" size="small" icon={<MoreOutlined />} aria-label="更多" />
+                  <Button
+                    type="text"
+                    size="small"
+                    className="acb-wiki-more-btn"
+                    icon={<MoreOutlined />}
+                    aria-label="更多"
+                  />
                 </Dropdown>
               </div>
               <Input
@@ -774,7 +802,13 @@ export default function WikiPage() {
                     编辑
                   </Button>
                   <Dropdown menu={{ items: pageMoreItems }} trigger={['click']}>
-                    <Button type="text" size="small" icon={<MoreOutlined />} aria-label="更多" />
+                    <Button
+                    type="text"
+                    size="small"
+                    className="acb-wiki-more-btn"
+                    icon={<MoreOutlined />}
+                    aria-label="更多"
+                  />
                   </Dropdown>
                 </Space>
               </div>
