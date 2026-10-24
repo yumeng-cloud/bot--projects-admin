@@ -233,6 +233,44 @@ body {
   height: 28px !important;
 }
 
+/* TEAM_SWITCH — 顶栏左簇：项目 + 当前队（有序密，禁中空/挤叠） */
+.ant-layout-header .acb-header-context {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  flex-shrink: 1;
+  max-width: min(420px, 55vw);
+}
+.ant-layout-header .acb-header-context > .ant-space-item {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.ant-layout-header .acb-header-team {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 160px;
+}
+.ant-layout-header .acb-header-team .ant-select {
+  width: auto;
+  max-width: 160px;
+}
+.ant-layout-header .acb-header-team .ant-select-selection-item,
+.ant-layout-header .acb-header-team .ant-select-selection-placeholder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ant-layout-header .acb-header-team .ant-typography {
+  display: inline-block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 28px;
+  color: var(--acb-text-secondary);
+  vertical-align: middle;
+}
+
 /* Soft ant Tag default — less chrome */
 .ant-tag {
   border-color: transparent;
