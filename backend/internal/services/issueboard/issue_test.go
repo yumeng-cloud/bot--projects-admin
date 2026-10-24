@@ -1109,3 +1109,214 @@ func TestLegacyNullTeamIDExcludedFromTeamLists(t *testing.T) {
 		t.Fatalf("legacy should have nil team_id, got %v", un[0].TeamID)
 	}
 }
+
+func TestIssueArchive_ListFiltersAndStats(t *testing.T) {
+	svc, ws, pid, tid := setup(t)
+	mid := insertMember(t, svc, ws)
+
+	active, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "active", ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	doneIss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "done-arch", ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := "done"
+	doneIss, err = svc.UpdateIssue(ws, doneIss.ID, issueboard.UpdateIssueInput{Version: doneIss.Version, Status: &done, ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+	todoIss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "todo-no", Status: "todo", ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// non-done rejected
+	res, err := svc.ArchiveIssues(ws, issueboard.ArchiveIssuesInput{IDs: []string{todoIss.ID}, ActorID: mid, ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res) != 1 || res[0].OK || res[0].Error == "" {
+		t.Fatalf("want non-done failure, got %+v", res)
+	}
+
+	// archive done
+	res, err = svc.ArchiveIssues(ws, issueboard.ArchiveIssuesInput{IDs: []string{doneIss.ID}, ActorID: mid, ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res) != 1 || !res[0].OK || res[0].ArchivedAt == nil {
+		t.Fatalf("archive done: %+v", res)
+	}
+
+	// idempotent
+	res2, err := svc.ArchiveIssues(ws, issueboard.ArchiveIssuesInput{IDs: []string{doneIss.ID}, ActorID: mid, ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res2) != 1 || !res2[0].OK {
+		t.Fatalf("idempotent: %+v", res2)
+	}
+
+	// default list excludes archived
+	list, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{ProjectID: pid, TeamID: tid})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, iss := range list {
+		if iss.ID == doneIss.ID {
+			t.Fatal("default list should exclude archived")
+		}
+	}
+	if len(list) < 1 {
+		t.Fatal("expected active issues in default list")
+	}
+
+	// include_archived
+	all, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{ProjectID: pid, TeamID: tid, IncludeArchived: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	foundArch := false
+	for _, iss := range all {
+		if iss.ID == doneIss.ID {
+			foundArch = true
+			if iss.ArchivedAt == nil {
+				t.Fatal("archived_at should be set on included archived issue")
+			}
+		}
+	}
+	if !foundArch {
+		t.Fatal("include_archived should return archived")
+	}
+
+	// archived=only
+	only, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{ProjectID: pid, TeamID: tid, ArchivedOnly: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(only) != 1 || only[0].ID != doneIss.ID {
+		t.Fatalf("archived only: %+v", only)
+	}
+	// ArchivedOnly wins over IncludeArchived
+	only2, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{ProjectID: pid, TeamID: tid, IncludeArchived: true, ArchivedOnly: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(only2) != 1 || only2[0].ID != doneIss.ID {
+		t.Fatalf("archived=only wins: %+v", only2)
+	}
+
+	// GET single still works
+	got, err := svc.GetIssue(ws, doneIss.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ArchivedAt == nil {
+		t.Fatal("GET archived should expose archived_at")
+	}
+	if got.Status != "done" {
+		t.Fatalf("archive must not change status, got %s", got.Status)
+	}
+
+	// activity
+	acts, err := svc.ListIssueActivities(ws, doneIss.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	foundAct := false
+	for _, a := range acts {
+		if a.Action == "issue.archived" {
+			foundAct = true
+			break
+		}
+	}
+	if !foundAct {
+		t.Fatal("missing issue.archived activity")
+	}
+
+	_ = active
+}
+
+func TestIssueArchive_TeamIsolationAndCycleStats(t *testing.T) {
+	svc, ws, pid, tidA := setup(t)
+	mid := insertMember(t, svc, ws)
+	tidB := idgen.New()
+	if _, err := svc.DB.Exec(`INSERT INTO teams (id, workspace_id, name, slug) VALUES (?,?,?,?)`,
+		tidB, ws, "TeamB", "tb-"+tidB[:8]); err != nil {
+		t.Fatal(err)
+	}
+
+	issA, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tidA, Title: "A-done", ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := "done"
+	issA, err = svc.UpdateIssue(ws, issA.ID, issueboard.UpdateIssueInput{Version: issA.Version, Status: &done, ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// wrong team → not in pool
+	res, err := svc.ArchiveIssues(ws, issueboard.ArchiveIssuesInput{IDs: []string{issA.ID}, TeamID: tidB, ActorID: mid, ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res) != 1 || res[0].OK || res[0].Error != "Issue 不存在" {
+		t.Fatalf("wrong team: %+v", res)
+	}
+
+	// cycle estimate excludes archived
+	cyc, err := svc.CreateCycle(ws, pid, issueboard.CreateCycleInput{Name: "C1", Capacity: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	est := 5
+	issA, err = svc.UpdateIssue(ws, issA.ID, issueboard.UpdateIssueInput{
+		Version: issA.Version, CycleID: &cyc.ID, Estimate: &est, ActorKind: "human", ActorID: mid,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	activeEst := 3
+	active, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
+		ProjectID: pid, TeamID: tidA, Title: "active-est", ActorKind: "human",
+		CycleID: &cyc.ID, Estimate: &activeEst,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = active
+
+	got, err := svc.GetCycle(ws, cyc.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.EstimateSum != 8 {
+		t.Fatalf("before archive estimate_sum=%d want 8", got.EstimateSum)
+	}
+
+	res, err = svc.ArchiveIssues(ws, issueboard.ArchiveIssuesInput{IDs: []string{issA.ID}, TeamID: tidA, ActorID: mid, ActorKind: "human"})
+	if err != nil || len(res) != 1 || !res[0].OK {
+		t.Fatalf("archive: %v %+v", err, res)
+	}
+
+	got, err = svc.GetCycle(ws, cyc.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.EstimateSum != 3 {
+		t.Fatalf("after archive estimate_sum=%d want 3 (exclude archived)", got.EstimateSum)
+	}
+
+	// default list count unchanged for active pool
+	list, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{ProjectID: pid, TeamID: tidA, CycleID: cyc.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) != 1 || list[0].ID != active.ID {
+		t.Fatalf("cycle list after archive: %+v", list)
+	}
+}
+

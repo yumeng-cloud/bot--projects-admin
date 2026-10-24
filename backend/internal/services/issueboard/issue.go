@@ -14,17 +14,17 @@ import (
 
 // issueCols — parent_id is the tree authority (issue_relations "parent" is NOT).
 const issueCols = `id, project_id, workspace_id, team_id, number, identifier, title, description, status, priority,
-	estimate, assignee_id, reporter_id, cycle_id, parent_id, start_at, due_at, board_order, version, created_at, updated_at`
+	estimate, assignee_id, reporter_id, cycle_id, parent_id, start_at, due_at, board_order, version, archived_at, created_at, updated_at`
 
 func scanIssue(row interface{ Scan(dest ...any) error }) (models.Issue, error) {
 	var iss models.Issue
 	var est sql.NullInt64
-	var teamID, assignee, reporter, cycle, parent, startAt, dueAt sql.NullString
+	var teamID, assignee, reporter, cycle, parent, startAt, dueAt, archivedAt sql.NullString
 	err := row.Scan(
 		&iss.ID, &iss.ProjectID, &iss.WorkspaceID, &teamID, &iss.Number, &iss.Identifier,
 		&iss.Title, &iss.Description, &iss.Status, &iss.Priority,
 		&est, &assignee, &reporter, &cycle, &parent, &startAt, &dueAt,
-		&iss.BoardOrder, &iss.Version, &iss.CreatedAt, &iss.UpdatedAt,
+		&iss.BoardOrder, &iss.Version, &archivedAt, &iss.CreatedAt, &iss.UpdatedAt,
 	)
 	if err != nil {
 		return iss, err
@@ -37,6 +37,7 @@ func scanIssue(row interface{ Scan(dest ...any) error }) (models.Issue, error) {
 	iss.ParentID = strPtr(parent)
 	iss.StartAt = strPtr(startAt)
 	iss.DueAt = strPtr(dueAt)
+	iss.ArchivedAt = strPtr(archivedAt)
 	return iss, nil
 }
 
@@ -246,23 +247,25 @@ func (s *Service) CreateIssue(workspaceID string, in CreateIssueInput) (*models.
 }
 
 type ListIssuesFilter struct {
-	ProjectID      string
-	TeamID         string // 非空：仅本队（默认排除 team_id IS NULL）
-	UnassignedOnly bool   // 仅 team_id IS NULL（Admin「未分队」）
-	Status         string
-	AssigneeID     string
-	LabelID        string
-	CycleID        string
-	Q              string
-	LeafOnly       bool
-	Blocked        bool // PRODUCT_SUITE: has unfinished blocked_by relation
-	Overdue        bool // PRODUCT_SUITE: due_at set and due_at < today (YYYY-MM-DD Asia/Shanghai)
+	ProjectID       string
+	TeamID          string // 非空：仅本队（默认排除 team_id IS NULL）
+	UnassignedOnly  bool   // 仅 team_id IS NULL（Admin「未分队」）
+	Status          string
+	AssigneeID      string
+	LabelID         string
+	CycleID         string
+	Q               string
+	LeafOnly        bool
+	Blocked         bool // PRODUCT_SUITE: has unfinished blocked_by relation
+	Overdue         bool // PRODUCT_SUITE: due_at set and due_at < today (YYYY-MM-DD Asia/Shanghai)
+	IncludeArchived bool // include_archived=1|true → active + archived
+	ArchivedOnly    bool // archived=only → archived only (wins over IncludeArchived)
 }
 
 func (s *Service) ListIssues(workspaceID string, f ListIssuesFilter) ([]models.Issue, error) {
 	q := `SELECT DISTINCT i.id, i.project_id, i.workspace_id, i.team_id, i.number, i.identifier, i.title, i.description,
 		i.status, i.priority, i.estimate, i.assignee_id, i.reporter_id, i.cycle_id, i.parent_id,
-		i.start_at, i.due_at, i.board_order, i.version, i.created_at, i.updated_at
+		i.start_at, i.due_at, i.board_order, i.version, i.archived_at, i.created_at, i.updated_at
 		FROM issues i`
 	args := []any{}
 	conds := []string{`i.workspace_id = ?`}
@@ -302,7 +305,7 @@ func (s *Service) ListIssues(workspaceID string, f ListIssuesFilter) ([]models.I
 	}
 	if f.LeafOnly {
 		// parent_id is tree authority — leaf = no children with this parent_id
-		conds = append(conds, `NOT EXISTS (SELECT 1 FROM issues c WHERE c.parent_id = i.id AND c.workspace_id = i.workspace_id)`)
+		conds = append(conds, `NOT EXISTS (SELECT 1 FROM issues c WHERE c.parent_id = i.id AND c.workspace_id = i.workspace_id AND c.archived_at IS NULL)`)
 	}
 	if f.Blocked {
 		// Issue i is blocked if an unfinished blocker blocks it
@@ -325,6 +328,12 @@ func (s *Service) ListIssues(workspaceID string, f ListIssuesFilter) ([]models.I
 		today := time.Now().In(loc).Format("2006-01-02")
 		conds = append(conds, `i.due_at IS NOT NULL AND i.due_at != '' AND i.due_at < ?`)
 		args = append(args, today)
+	}
+	// ISSUE_ARCHIVE: default exclude archived; archived=only wins over include_archived
+	if f.ArchivedOnly {
+		conds = append(conds, `i.archived_at IS NOT NULL`)
+	} else if !f.IncludeArchived {
+		conds = append(conds, `i.archived_at IS NULL`)
 	}
 	q += ` WHERE ` + strings.Join(conds, " AND ") + ` ORDER BY i.board_order ASC, i.number ASC`
 	rows, err := s.DB.Query(q, args...)
@@ -386,7 +395,7 @@ func (s *Service) attachChildCounts(workspaceID string, list []models.Issue) err
 		args = append(args, id)
 	}
 	q := `SELECT parent_id, COUNT(*) FROM issues
-		WHERE workspace_id = ? AND parent_id IN (` + strings.Join(placeholders, ",") + `)
+		WHERE workspace_id = ? AND archived_at IS NULL AND parent_id IN (` + strings.Join(placeholders, ",") + `)
 		GROUP BY parent_id`
 	rows, err := s.DB.Query(q, args...)
 	if err != nil {
@@ -409,7 +418,7 @@ func (s *Service) attachChildCounts(workspaceID string, list []models.Issue) err
 
 func (s *Service) attachChildCountOne(workspaceID string, iss *models.Issue) error {
 	var n int
-	err := s.DB.QueryRow(`SELECT COUNT(*) FROM issues WHERE workspace_id = ? AND parent_id = ?`,
+	err := s.DB.QueryRow(`SELECT COUNT(*) FROM issues WHERE workspace_id = ? AND parent_id = ? AND archived_at IS NULL`,
 		workspaceID, iss.ID).Scan(&n)
 	if err != nil {
 		return err

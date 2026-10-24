@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS issues (
   due_at TEXT,
   board_order REAL NOT NULL DEFAULT 0,
   version INTEGER NOT NULL DEFAULT 1,
+  archived_at TEXT,
   created_at TEXT NOT NULL DEFAULT (to_char(now() AT TIME ZONE 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
   updated_at TEXT NOT NULL DEFAULT (to_char(now() AT TIME ZONE 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
   UNIQUE(project_id, number),
@@ -193,6 +194,7 @@ CREATE INDEX IF NOT EXISTS idx_issues_assignee ON issues(assignee_id);
 CREATE INDEX IF NOT EXISTS idx_issues_ws_start ON issues(workspace_id, start_at);
 CREATE INDEX IF NOT EXISTS idx_issues_ws_due ON issues(workspace_id, due_at);
 CREATE INDEX IF NOT EXISTS idx_issues_ws_team ON issues(workspace_id, team_id);
+CREATE INDEX IF NOT EXISTS idx_issues_ws_archived ON issues(workspace_id, archived_at);
 CREATE INDEX IF NOT EXISTS idx_activities_issue ON activities(issue_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_members_ws ON members(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_comments_issue ON comments(issue_id);
@@ -459,3 +461,6 @@ CREATE TABLE IF NOT EXISTS platform_audit_logs (
 );
 CREATE INDEX IF NOT EXISTS idx_platform_audit_created ON platform_audit_logs(created_at);
 
+-- ISSUE_ARCHIVE: issues.archived_at for old DBs
+ALTER TABLE issues ADD COLUMN archived_at TEXT;
+CREATE INDEX IF NOT EXISTS idx_issues_ws_archived ON issues(workspace_id, archived_at);

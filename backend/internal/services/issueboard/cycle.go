@@ -25,7 +25,7 @@ func scanCycle(row interface{ Scan(dest ...any) error }) (models.Cycle, error) {
 
 func (s *Service) enrichCycle(c *models.Cycle) error {
 	var sum sql.NullInt64
-	err := s.DB.QueryRow(`SELECT COALESCE(SUM(estimate),0) FROM issues WHERE cycle_id = ?`, c.ID).Scan(&sum)
+	err := s.DB.QueryRow(`SELECT COALESCE(SUM(estimate),0) FROM issues WHERE cycle_id = ? AND archived_at IS NULL`, c.ID).Scan(&sum)
 	if err != nil {
 		return err
 	}

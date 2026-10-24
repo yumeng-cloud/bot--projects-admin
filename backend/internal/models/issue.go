@@ -61,6 +61,7 @@ type Issue struct {
 	ChildCount  int        `json:"child_count"`
 	BoardOrder  float64    `json:"board_order"`
 	Version     int        `json:"version"`
+	ArchivedAt  *string    `json:"archived_at"`
 	LabelIDs    []string   `json:"label_ids,omitempty"`
 	Labels      []Label    `json:"labels,omitempty"`
 	CreatedAt   string     `json:"created_at"`

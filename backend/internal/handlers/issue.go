@@ -24,18 +24,21 @@ func (h *IssueHandler) List(w http.ResponseWriter, r *http.Request) {
 	blocked := q.Get("blocked") == "1" || strings.EqualFold(q.Get("blocked"), "true")
 	overdue := q.Get("overdue") == "1" || strings.EqualFold(q.Get("overdue"), "true")
 	unassigned := q.Get("unassigned") == "1" || strings.EqualFold(q.Get("unassigned"), "true")
+	includeArchived, archivedOnly := parseIssueArchiveQuery(q.Get)
 	list, err := h.Svc.ListIssues(ws, issueboard.ListIssuesFilter{
-		ProjectID:      q.Get("project_id"),
-		TeamID:         q.Get("team_id"),
-		UnassignedOnly: unassigned,
-		Status:         q.Get("status"),
-		AssigneeID:     q.Get("assignee_id"),
-		LabelID:        q.Get("label_id"),
-		CycleID:        q.Get("cycle_id"),
-		Q:              q.Get("q"),
-		LeafOnly:       leafOnly,
-		Blocked:        blocked,
-		Overdue:        overdue,
+		ProjectID:       q.Get("project_id"),
+		TeamID:          q.Get("team_id"),
+		UnassignedOnly:  unassigned,
+		Status:          q.Get("status"),
+		AssigneeID:      q.Get("assignee_id"),
+		LabelID:         q.Get("label_id"),
+		CycleID:         q.Get("cycle_id"),
+		Q:               q.Get("q"),
+		LeafOnly:        leafOnly,
+		Blocked:         blocked,
+		Overdue:         overdue,
+		IncludeArchived: includeArchived,
+		ArchivedOnly:    archivedOnly,
 	})
 	if err != nil {
 		middleware.HandleError(w, err)
@@ -217,4 +220,42 @@ func actorKind(r *http.Request) string {
 		return "human"
 	}
 	return k
+}
+
+// parseIssueArchiveQuery maps list/search/board query params (ISSUE_ARCHIVE).
+// include_archived=1|true → include archived; archived=only → archived only (wins).
+// parseIssueArchiveQuery: include_archived=1|true; archived=only (wins). NOT archived_only.
+func parseIssueArchiveQuery(get func(string) string) (includeArchived, archivedOnly bool) {
+	includeArchived = get("include_archived") == "1" || strings.EqualFold(get("include_archived"), "true")
+	archivedOnly = strings.EqualFold(strings.TrimSpace(get("archived")), "only")
+	return includeArchived, archivedOnly
+}
+
+func (h *IssueHandler) Archive(w http.ResponseWriter, r *http.Request) {
+	ws, mid, ok := requireWorkspaceMember(h.Svc.DB, w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		IDs []string `json:"ids"`
+	}
+	if err := middleware.DecodeJSON(r, &req); err != nil {
+		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
+		return
+	}
+	results, err := h.Svc.ArchiveIssues(ws, issueboard.ArchiveIssuesInput{
+		IDs: req.IDs, TeamID: strings.TrimSpace(r.URL.Query().Get("team_id")),
+		ActorID: mid, ActorKind: actorKind(r),
+	})
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	// Per-id results (200). Non-done / wrong-team carry Chinese error on that id.
+	// Single-id all-non-done → 409 for clear client UX (debt A3 中文 4xx).
+	if len(results) == 1 && !results[0].OK && results[0].Error == "仅完成(done)状态的 Issue 可归档" {
+		middleware.HandleError(w, apperr.Conflict("仅完成(done)状态的 Issue 可归档"))
+		return
+	}
+	middleware.JSON(w, http.StatusOK, map[string]any{"results": results})
 }

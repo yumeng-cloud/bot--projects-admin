@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS issues (
   parent_id TEXT REFERENCES issues(id) ON DELETE SET NULL,
   board_order DOUBLE PRECISION NOT NULL DEFAULT 0,
   version INTEGER NOT NULL DEFAULT 1,
+  archived_at TEXT,
   created_at TEXT NOT NULL DEFAULT (to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
   updated_at TEXT NOT NULL DEFAULT (to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
   UNIQUE(project_id, number),
@@ -183,6 +184,7 @@ CREATE TABLE IF NOT EXISTS idempotency_keys (
 CREATE INDEX IF NOT EXISTS idx_issues_project_status ON issues(project_id, status);
 CREATE INDEX IF NOT EXISTS idx_issues_cycle ON issues(cycle_id);
 CREATE INDEX IF NOT EXISTS idx_issues_assignee ON issues(assignee_id);
+CREATE INDEX IF NOT EXISTS idx_issues_ws_archived ON issues(workspace_id, archived_at);
 CREATE INDEX IF NOT EXISTS idx_activities_issue ON activities(issue_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_members_ws ON members(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_comments_issue ON comments(issue_id);

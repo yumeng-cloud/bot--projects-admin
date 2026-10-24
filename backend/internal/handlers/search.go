@@ -20,9 +20,12 @@ func (h *SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 	}
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	qParams := r.URL.Query()
+	includeArchived, archivedOnly := parseIssueArchiveQuery(qParams.Get)
 	issues, err := h.Svc.ListIssues(ws, issueboard.ListIssuesFilter{
 		Q: q, TeamID: qParams.Get("team_id"),
-		UnassignedOnly: qParams.Get("unassigned") == "1" || strings.EqualFold(qParams.Get("unassigned"), "true"),
+		UnassignedOnly:  qParams.Get("unassigned") == "1" || strings.EqualFold(qParams.Get("unassigned"), "true"),
+		IncludeArchived: includeArchived,
+		ArchivedOnly:    archivedOnly,
 	})
 	if err != nil {
 		middleware.HandleError(w, err)
