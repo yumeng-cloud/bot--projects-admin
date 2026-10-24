@@ -39,6 +39,9 @@ type Props = {
   canLeave?: boolean
   onStop?: () => void
   onLeaveUnbind?: () => void
+  /** SEAT_REFILL：可补位席复制补位入场码（ymt_；非扩编） */
+  onCopyRefill?: () => void
+  refillBusy?: boolean
 }
 
 export default function SeatHandoffDrawer({
@@ -54,6 +57,8 @@ export default function SeatHandoffDrawer({
   canLeave = false,
   onStop,
   onLeaveUnbind,
+  onCopyRefill,
+  refillBusy = false,
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [handoff, setHandoff] = useState<BotHandoff | null>(null)
@@ -205,7 +210,22 @@ export default function SeatHandoffDrawer({
               type="warning"
               showIcon
               message="停工席 · 可补位"
-              description="此席已停工，可从向导或指派重新占用。交接摘要需绑定后才有。"
+              description={
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <span>新人持码入场；活跃席仍禁顶替。补位 ≠ 扩编新席（勿混 ymk_）。也可指派已有 Bot。交接摘要需绑定后才有。</span>
+                  {onCopyRefill ? (
+                    <Button
+                      size="small"
+                      type="primary"
+                      icon={<CopyOutlined />}
+                      loading={refillBusy}
+                      onClick={() => onCopyRefill()}
+                    >
+                      复制补位入场码
+                    </Button>
+                  ) : null}
+                </Space>
+              }
             />
           ) : !memberId ? (
             <Alert

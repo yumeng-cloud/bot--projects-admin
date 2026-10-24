@@ -766,6 +766,61 @@ export default function BotsRosterPage() {
     }
   }
 
+  /** SEAT_REFILL：停工/可补位席签发 ymt_（allow_expand_seat=false）；文案写「补位」禁「扩编/新开席」；禁嵌 ymk_ */
+  const onCopyRefillInvite = async (roleCtx: InviteRoleCtx) => {
+    setInviteBusy(true)
+    try {
+      if (!teamId) {
+        message.warning('尚无团队，请先创建或加入班底')
+        return
+      }
+      const slug = (roleCtx.slug || '').trim()
+      if (!slug) {
+        message.warning('该席无 slug，无法签发补位入场码')
+        return
+      }
+      const { invite } = await createTeamInvite(
+        wsId,
+        teamId,
+        {
+          allow_expand_seat: false,
+          role_hint: slug,
+          seat_slug: slug,
+        },
+        crypto.randomUUID(),
+      )
+      const plain = invite.code || null
+      const tail = inviteTail(invite)
+      setIssuedInvites((prev) => [
+        {
+          ...invite,
+          code: undefined,
+          code_tail: tail,
+          code_prefix: invite.code_prefix || `ymt_····${tail}`,
+        },
+        ...prev.filter((x) => x.id !== invite.id),
+      ])
+      if (!plain) {
+        message.success('已签发补位入场码（服务未返回明文，请查已签发列表末四）')
+        return
+      }
+      await navigator.clipboard.writeText(plain)
+      rememberPlainBriefly(plain)
+      const name = roleCtx.displayName || slug
+      message.success(
+        `已复制补位入场码（末四 ·${inviteCodeTail(plain)} · 席 ${name}）。新人持码入场；非扩编新席。勿发公开群`,
+      )
+    } catch (e: unknown) {
+      if (isInviteServiceMissing(e)) {
+        message.warning('入场码服务尚未开通')
+      } else {
+        message.error(e instanceof ApiError ? e.message : e instanceof Error ? e.message : '复制补位入场码失败')
+      }
+    } finally {
+      setInviteBusy(false)
+    }
+  }
+
   /** 顶栏无席：通用码；席卡带 slug */
   const inviteMoreMenu = (roleCtx?: InviteRoleCtx) => ({
     items: [
@@ -1082,13 +1137,44 @@ export default function BotsRosterPage() {
                   <Button size="small" type="link" style={{ padding: 0 }} onClick={() => openSeat(role)}>
                     查看交接
                   </Button>
-                  {renderOneTapActions({
-                    compact: true,
-                    roleCtx: {
-                      slug: role.slug || undefined,
-                      displayName: roleDisplay(role),
-                    },
-                  })}
+                  {left ? (
+                    <>
+                      <Tooltip title="签发该席 ymt_ 补位入场码（非扩编新席）；禁嵌 ymk_；勿发公开群">
+                        <Button
+                          size="small"
+                          type="link"
+                          style={{ padding: 0 }}
+                          icon={<CopyOutlined />}
+                          loading={inviteBusy}
+                          onClick={() =>
+                            void onCopyRefillInvite({
+                              slug: role.slug || undefined,
+                              displayName: roleDisplay(role),
+                            })
+                          }
+                        >
+                          复制补位入场码
+                        </Button>
+                      </Tooltip>
+                      <Select
+                        size="small"
+                        placeholder="指派 Bot"
+                        style={{ minWidth: 120 }}
+                        loading={claiming === role.id}
+                        options={freeBots.map((b) => ({ value: b.member_id, label: b.display_name }))}
+                        onChange={(v) => void onClaim(role, v)}
+                        popupMatchSelectWidth={false}
+                      />
+                    </>
+                  ) : (
+                    renderOneTapActions({
+                      compact: true,
+                      roleCtx: {
+                        slug: role.slug || undefined,
+                        displayName: roleDisplay(role),
+                      },
+                    })
+                  )}
                   {busy ? (
                     <Button
                       size="small"
@@ -1137,7 +1223,7 @@ export default function BotsRosterPage() {
                         </Button>
                       </Popconfirm>
                     </>
-                  ) : !busy ? (
+                  ) : !busy && !left ? (
                     <Select
                       size="small"
                       placeholder="指派 Bot"
@@ -1149,6 +1235,15 @@ export default function BotsRosterPage() {
                     />
                   ) : null}
                 </div>
+                {left ? (
+                  <Typography.Text
+                    type="secondary"
+                    style={{ display: 'block', marginTop: 6, fontSize: 12 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    新人持码入场；活跃席仍禁顶替。补位 ≠ 扩编新席。
+                  </Typography.Text>
+                ) : null}
               </Card>
             )
           })}
@@ -1334,6 +1429,16 @@ export default function BotsRosterPage() {
         canLeave={Boolean(drawerRole && teamId && seatOccForRole(drawerRole).seat?.id)}
         onStop={drawerRole ? () => void onStop(drawerRole) : undefined}
         onLeaveUnbind={drawerRole ? () => void onLeaveUnbind(drawerRole) : undefined}
+        onCopyRefill={
+          drawerRole
+            ? () =>
+                void onCopyRefillInvite({
+                  slug: drawerRole.slug || undefined,
+                  displayName: roleDisplay(drawerRole),
+                })
+            : undefined
+        }
+        refillBusy={inviteBusy}
       />
 
 
