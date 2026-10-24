@@ -62,3 +62,32 @@ func TestPostgresScheduleColumnsIfDSN(t *testing.T) {
 		t.Fatalf("want 2 schedule cols, got %d", n)
 	}
 }
+
+func TestSQLiteIssuesTeamIDColumn(t *testing.T) {
+	dsn := filepath.Join(t.TempDir(), "team.db")
+	db, err := Open("sqlite", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	rows, err := db.Query(`PRAGMA table_info(issues)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	found := false
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, ctype string
+		var dflt *string
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			t.Fatal(err)
+		}
+		if name == "team_id" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("expected issues.team_id column")
+	}
+}

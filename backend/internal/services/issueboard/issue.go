@@ -13,15 +13,15 @@ import (
 )
 
 // issueCols — parent_id is the tree authority (issue_relations "parent" is NOT).
-const issueCols = `id, project_id, workspace_id, number, identifier, title, description, status, priority,
+const issueCols = `id, project_id, workspace_id, team_id, number, identifier, title, description, status, priority,
 	estimate, assignee_id, reporter_id, cycle_id, parent_id, start_at, due_at, board_order, version, created_at, updated_at`
 
 func scanIssue(row interface{ Scan(dest ...any) error }) (models.Issue, error) {
 	var iss models.Issue
 	var est sql.NullInt64
-	var assignee, reporter, cycle, parent, startAt, dueAt sql.NullString
+	var teamID, assignee, reporter, cycle, parent, startAt, dueAt sql.NullString
 	err := row.Scan(
-		&iss.ID, &iss.ProjectID, &iss.WorkspaceID, &iss.Number, &iss.Identifier,
+		&iss.ID, &iss.ProjectID, &iss.WorkspaceID, &teamID, &iss.Number, &iss.Identifier,
 		&iss.Title, &iss.Description, &iss.Status, &iss.Priority,
 		&est, &assignee, &reporter, &cycle, &parent, &startAt, &dueAt,
 		&iss.BoardOrder, &iss.Version, &iss.CreatedAt, &iss.UpdatedAt,
@@ -29,6 +29,7 @@ func scanIssue(row interface{ Scan(dest ...any) error }) (models.Issue, error) {
 	if err != nil {
 		return iss, err
 	}
+	iss.TeamID = strPtr(teamID)
 	iss.Estimate = intPtr(est)
 	iss.AssigneeID = strPtr(assignee)
 	iss.ReporterID = strPtr(reporter)
@@ -84,6 +85,7 @@ func normalizeOptionalDay(v *string) *string {
 
 type CreateIssueInput struct {
 	ProjectID   string
+	TeamID      string // 新建必填；须属本工作区
 	Title       string
 	Description string
 	Status      string
@@ -109,6 +111,13 @@ func (s *Service) CreateIssue(workspaceID string, in CreateIssueInput) (*models.
 	}
 	if in.ProjectID == "" {
 		return nil, apperr.BadRequest("缺少 project_id")
+	}
+	in.TeamID = strings.TrimSpace(in.TeamID)
+	if in.TeamID == "" {
+		return nil, apperr.BadRequest("创建 Issue 必须指定 team_id（当前团队）")
+	}
+	if err := s.ensureTeamInWorkspace(workspaceID, in.TeamID); err != nil {
+		return nil, err
 	}
 	proj, err := s.GetProject(workspaceID, in.ProjectID)
 	if err != nil {
@@ -200,10 +209,10 @@ func (s *Service) CreateIssue(workspaceID string, in CreateIssueInput) (*models.
 		reporter = in.ActorID
 	}
 	_, err = tx.Exec(`INSERT INTO issues
-		(id, project_id, workspace_id, number, identifier, title, description, status, priority,
+		(id, project_id, workspace_id, team_id, number, identifier, title, description, status, priority,
 		 estimate, assignee_id, reporter_id, cycle_id, parent_id, start_at, due_at, board_order, version, created_at, updated_at)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?)`,
-		id, in.ProjectID, workspaceID, next, identifier, in.Title, in.Description, status, priority,
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?)`,
+		id, in.ProjectID, workspaceID, in.TeamID, next, identifier, in.Title, in.Description, status, priority,
 		nullInt(in.Estimate), nullStr(in.AssigneeID), reporter, nullStr(in.CycleID), nullStr(in.ParentID),
 		nullStr(in.StartAt), nullStr(in.DueAt), boardOrder, now, now)
 	if err != nil {
@@ -237,25 +246,34 @@ func (s *Service) CreateIssue(workspaceID string, in CreateIssueInput) (*models.
 }
 
 type ListIssuesFilter struct {
-	ProjectID  string
-	Status     string
-	AssigneeID string
-	LabelID    string
-	CycleID    string
-	Q          string
-	LeafOnly   bool
-	Blocked    bool // PRODUCT_SUITE: has unfinished blocked_by relation
-	Overdue    bool // PRODUCT_SUITE: due_at set and due_at < today (YYYY-MM-DD Asia/Shanghai)
+	ProjectID      string
+	TeamID         string // 非空：本队 + team_id IS NULL（全 WS 可见旧单）
+	UnassignedOnly bool   // 仅 team_id IS NULL（Admin「未分队」）
+	Status         string
+	AssigneeID     string
+	LabelID        string
+	CycleID        string
+	Q              string
+	LeafOnly       bool
+	Blocked        bool // PRODUCT_SUITE: has unfinished blocked_by relation
+	Overdue        bool // PRODUCT_SUITE: due_at set and due_at < today (YYYY-MM-DD Asia/Shanghai)
 }
 
 func (s *Service) ListIssues(workspaceID string, f ListIssuesFilter) ([]models.Issue, error) {
-	q := `SELECT DISTINCT i.id, i.project_id, i.workspace_id, i.number, i.identifier, i.title, i.description,
+	q := `SELECT DISTINCT i.id, i.project_id, i.workspace_id, i.team_id, i.number, i.identifier, i.title, i.description,
 		i.status, i.priority, i.estimate, i.assignee_id, i.reporter_id, i.cycle_id, i.parent_id,
 		i.start_at, i.due_at, i.board_order, i.version, i.created_at, i.updated_at
 		FROM issues i`
 	args := []any{}
 	conds := []string{`i.workspace_id = ?`}
 	args = append(args, workspaceID)
+	if f.UnassignedOnly {
+		conds = append(conds, `i.team_id IS NULL`)
+	} else if f.TeamID != "" {
+		// T6-I：旧单 NULL = 全工作区可见；队 A 的单不会出现在队 B 的 list
+		conds = append(conds, `(i.team_id = ? OR i.team_id IS NULL)`)
+		args = append(args, f.TeamID)
+	}
 	if f.LabelID != "" {
 		q += ` JOIN issue_labels il ON il.issue_id = i.id`
 		conds = append(conds, `il.label_id = ?`)
@@ -464,11 +482,19 @@ func (s *Service) attachMemberRefs(workspaceID string, list []models.Issue) erro
 }
 
 func (s *Service) GetIssue(workspaceID, issueID string) (*models.Issue, error) {
+	return s.GetIssueInTeam(workspaceID, issueID, "")
+}
+
+// GetIssueInTeam 读取 Issue；teamID 非空时错队（已分队且非本队）→ 404。NULL team_id 全 WS 可见。
+func (s *Service) GetIssueInTeam(workspaceID, issueID, teamID string) (*models.Issue, error) {
 	iss, err := scanIssue(s.DB.QueryRow(`SELECT `+issueCols+` FROM issues WHERE id = ? AND workspace_id = ?`, issueID, workspaceID))
 	if err == sql.ErrNoRows {
 		return nil, apperr.NotFound("Issue 不存在")
 	}
 	if err != nil {
+		return nil, err
+	}
+	if err := s.assertIssueTeamAccess(&iss, teamID); err != nil {
 		return nil, err
 	}
 	if err := s.attachChildCountOne(workspaceID, &iss); err != nil {
@@ -514,6 +540,8 @@ type UpdateIssueInput struct {
 	ClearDueAt    bool
 	BoardOrder    *float64
 	LabelIDs      *[]string
+	TeamID        *string // 可写换队（须属本 WS）
+	RequireTeamID string  // 非空：错队（issue.team_id 属其它队）→ 404
 	ActorID       string
 	ActorKind     string
 	ForceAssignee bool
@@ -525,6 +553,9 @@ func (s *Service) UpdateIssue(workspaceID, issueID string, in UpdateIssueInput) 
 	}
 	cur, err := s.GetIssue(workspaceID, issueID)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.assertIssueTeamAccess(cur, in.RequireTeamID); err != nil {
 		return nil, err
 	}
 	if cur.Version != in.Version {
@@ -546,6 +577,7 @@ func (s *Service) UpdateIssue(workspaceID, issueID string, in UpdateIssueInput) 
 	title, desc, status, priority := cur.Title, cur.Description, cur.Status, cur.Priority
 	estimate := cur.Estimate
 	assignee, cycle, parent := cur.AssigneeID, cur.CycleID, cur.ParentID
+	teamID := cur.TeamID
 	startAt, dueAt := cur.StartAt, cur.DueAt
 	boardOrder := cur.BoardOrder
 	changes := map[string]any{}
@@ -724,6 +756,23 @@ func (s *Service) UpdateIssue(workspaceID, issueID string, in UpdateIssueInput) 
 	if err := validateDateRange(startAt, dueAt); err != nil {
 		return nil, err
 	}
+	if in.TeamID != nil {
+		tid := strings.TrimSpace(*in.TeamID)
+		if tid == "" {
+			return nil, apperr.BadRequest("team_id 不能为空（清空请联系管理员处理未分队旧单）")
+		}
+		if err := s.ensureTeamInWorkspace(workspaceID, tid); err != nil {
+			return nil, err
+		}
+		prev := ""
+		if teamID != nil {
+			prev = *teamID
+		}
+		if prev != tid {
+			changes["team_id"] = map[string]any{"from": teamID, "to": tid}
+			teamID = &tid
+		}
+	}
 	if in.BoardOrder != nil && *in.BoardOrder != boardOrder {
 		changes["board_order"] = map[string]any{"from": boardOrder, "to": *in.BoardOrder}
 		boardOrder = *in.BoardOrder
@@ -744,10 +793,10 @@ func (s *Service) UpdateIssue(workspaceID, issueID string, in UpdateIssueInput) 
 
 	now := nowUTC()
 	res, err := tx.Exec(`UPDATE issues SET title=?, description=?, status=?, priority=?, estimate=?,
-		assignee_id=?, cycle_id=?, parent_id=?, start_at=?, due_at=?, board_order=?, version=version+1, updated_at=?
+		assignee_id=?, cycle_id=?, parent_id=?, team_id=?, start_at=?, due_at=?, board_order=?, version=version+1, updated_at=?
 		WHERE id=? AND workspace_id=? AND version=?`,
 		title, desc, status, priority, nullInt(estimate),
-		nullStr(assignee), nullStr(cycle), nullStr(parent), nullStr(startAt), nullStr(dueAt), boardOrder, now,
+		nullStr(assignee), nullStr(cycle), nullStr(parent), nullStr(teamID), nullStr(startAt), nullStr(dueAt), boardOrder, now,
 		issueID, workspaceID, in.Version)
 	if err != nil {
 		return nil, err
@@ -813,6 +862,31 @@ func (s *Service) DeleteIssue(workspaceID, issueID, actorID, actorKind string) e
 		return apperr.NotFound("Issue 不存在")
 	}
 	return tx.Commit()
+}
+
+// assertIssueTeamAccess：RequireTeamID 非空且 issue 已分到其它队 → 404（不泄露存在性）。
+// team_id IS NULL（旧单）视为全工作区可见。
+func (s *Service) assertIssueTeamAccess(iss *models.Issue, requireTeamID string) error {
+	requireTeamID = strings.TrimSpace(requireTeamID)
+	if requireTeamID == "" || iss == nil {
+		return nil
+	}
+	if iss.TeamID == nil || strings.TrimSpace(*iss.TeamID) == "" {
+		return nil
+	}
+	if *iss.TeamID != requireTeamID {
+		return apperr.NotFound("Issue 不存在")
+	}
+	return nil
+}
+
+func (s *Service) ensureTeamInWorkspace(workspaceID, teamID string) error {
+	var id string
+	err := s.DB.QueryRow(`SELECT id FROM teams WHERE id=? AND workspace_id=?`, teamID, workspaceID).Scan(&id)
+	if err == sql.ErrNoRows {
+		return apperr.BadRequest("team_id 无效或不属于当前工作区")
+	}
+	return err
 }
 
 func (s *Service) ensureMember(workspaceID, memberID string) error {

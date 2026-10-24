@@ -88,6 +88,8 @@ CREATE TABLE IF NOT EXISTS issues (
   reporter_id TEXT REFERENCES members(id) ON DELETE SET NULL,
   cycle_id TEXT REFERENCES cycles(id) ON DELETE SET NULL,
   parent_id TEXT REFERENCES issues(id) ON DELETE SET NULL,
+  -- T6-I: nullable team scope; NULL = 全工作区可见（旧单）
+  team_id TEXT,  -- T6-I nullable; NULL=全 WS 可见。FK via migrate 010 / app check
   -- P0 schedule: calendar day YYYY-MM-DD (Asia/Shanghai schedule day; not a TZ instant)
   start_at TEXT,
   due_at TEXT,
@@ -188,6 +190,7 @@ CREATE INDEX IF NOT EXISTS idx_issues_cycle ON issues(cycle_id);
 CREATE INDEX IF NOT EXISTS idx_issues_assignee ON issues(assignee_id);
 CREATE INDEX IF NOT EXISTS idx_issues_ws_start ON issues(workspace_id, start_at);
 CREATE INDEX IF NOT EXISTS idx_issues_ws_due ON issues(workspace_id, due_at);
+CREATE INDEX IF NOT EXISTS idx_issues_ws_team ON issues(workspace_id, team_id);
 CREATE INDEX IF NOT EXISTS idx_activities_issue ON activities(issue_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_members_ws ON members(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_comments_issue ON comments(issue_id);

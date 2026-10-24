@@ -23,16 +23,19 @@ func (h *IssueHandler) List(w http.ResponseWriter, r *http.Request) {
 	leafOnly := q.Get("leaf_only") == "1" || strings.EqualFold(q.Get("leaf_only"), "true")
 	blocked := q.Get("blocked") == "1" || strings.EqualFold(q.Get("blocked"), "true")
 	overdue := q.Get("overdue") == "1" || strings.EqualFold(q.Get("overdue"), "true")
+	unassigned := q.Get("unassigned") == "1" || strings.EqualFold(q.Get("unassigned"), "true")
 	list, err := h.Svc.ListIssues(ws, issueboard.ListIssuesFilter{
-		ProjectID:  q.Get("project_id"),
-		Status:     q.Get("status"),
-		AssigneeID: q.Get("assignee_id"),
-		LabelID:    q.Get("label_id"),
-		CycleID:    q.Get("cycle_id"),
-		Q:          q.Get("q"),
-		LeafOnly:   leafOnly,
-		Blocked:    blocked,
-		Overdue:    overdue,
+		ProjectID:      q.Get("project_id"),
+		TeamID:         q.Get("team_id"),
+		UnassignedOnly: unassigned,
+		Status:         q.Get("status"),
+		AssigneeID:     q.Get("assignee_id"),
+		LabelID:        q.Get("label_id"),
+		CycleID:        q.Get("cycle_id"),
+		Q:              q.Get("q"),
+		LeafOnly:       leafOnly,
+		Blocked:        blocked,
+		Overdue:        overdue,
 	})
 	if err != nil {
 		middleware.HandleError(w, err)
@@ -48,6 +51,7 @@ func (h *IssueHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	var req struct {
 		ProjectID   string   `json:"project_id"`
+		TeamID      string   `json:"team_id"`
 		Title       string   `json:"title"`
 		Description string   `json:"description"`
 		Status      string   `json:"status"`
@@ -66,8 +70,13 @@ func (h *IssueHandler) Create(w http.ResponseWriter, r *http.Request) {
 		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
 		return
 	}
+	// body 优先；亦可 query ?team_id=
+	teamID := strings.TrimSpace(req.TeamID)
+	if teamID == "" {
+		teamID = strings.TrimSpace(r.URL.Query().Get("team_id"))
+	}
 	iss, err := h.Svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: req.ProjectID, Title: req.Title, Description: req.Description,
+		ProjectID: req.ProjectID, TeamID: teamID, Title: req.Title, Description: req.Description,
 		Status: req.Status, Priority: req.Priority, Estimate: req.Estimate,
 		AssigneeID: req.AssigneeID, CycleID: req.CycleID, ParentID: req.ParentID,
 		StartAt: req.StartAt, DueAt: req.DueAt,
@@ -87,7 +96,8 @@ func (h *IssueHandler) Get(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	iss, err := h.Svc.GetIssue(ws, r.PathValue("issueID"))
+	teamID := strings.TrimSpace(r.URL.Query().Get("team_id"))
+	iss, err := h.Svc.GetIssueInTeam(ws, r.PathValue("issueID"), teamID)
 	if err != nil {
 		middleware.HandleError(w, err)
 		return
@@ -105,7 +115,10 @@ func (h *IssueHandler) Patch(w http.ResponseWriter, r *http.Request) {
 		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
 		return
 	}
-	in := issueboard.UpdateIssueInput{ActorID: mid, ActorKind: actorKind(r)}
+	in := issueboard.UpdateIssueInput{
+		ActorID: mid, ActorKind: actorKind(r),
+		RequireTeamID: strings.TrimSpace(r.URL.Query().Get("team_id")),
+	}
 	if v, ok := raw["version"]; !ok {
 		middleware.HandleError(w, apperr.BadRequest("更新 Issue 必须提供 version（乐观锁）"))
 		return
@@ -167,6 +180,10 @@ func (h *IssueHandler) Patch(w http.ResponseWriter, r *http.Request) {
 	}
 	if v, ok := raw["force_assignee"]; ok {
 		_ = json.Unmarshal(v, &in.ForceAssignee)
+	}
+	if v, ok := raw["team_id"]; ok {
+		decodePtr("team_id", &in.TeamID)
+		_ = v
 	}
 	if v, ok := raw["label_ids"]; ok {
 		var ids []string

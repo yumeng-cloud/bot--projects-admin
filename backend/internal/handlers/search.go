@@ -19,7 +19,11 @@ func (h *SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
-	issues, err := h.Svc.ListIssues(ws, issueboard.ListIssuesFilter{Q: q})
+	qParams := r.URL.Query()
+	issues, err := h.Svc.ListIssues(ws, issueboard.ListIssuesFilter{
+		Q: q, TeamID: qParams.Get("team_id"),
+		UnassignedOnly: qParams.Get("unassigned") == "1" || strings.EqualFold(qParams.Get("unassigned"), "true"),
+	})
 	if err != nil {
 		middleware.HandleError(w, err)
 		return

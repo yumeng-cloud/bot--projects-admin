@@ -100,6 +100,11 @@ func TestIssueUpdateDispatchesWebhookDelivery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	teamID := idgen.New()
+	if _, err := sqlDB.Exec(`INSERT INTO teams (id, workspace_id, name, slug) VALUES (?,?,?,?)`,
+		teamID, wsID, "WH-Team", "wh-"+teamID[:8]); err != nil {
+		t.Fatal(err)
+	}
 	mid := idgen.New()
 	if _, err := sqlDB.Exec(`INSERT INTO members (id, workspace_id, user_id, role, display_name, is_bot, bot_enabled)
 		VALUES (?,?,NULL,'member','M',0,1)`, mid, wsID); err != nil {
@@ -107,7 +112,7 @@ func TestIssueUpdateDispatchesWebhookDelivery(t *testing.T) {
 	}
 
 	iss, err := board.CreateIssue(wsID, issueboard.CreateIssueInput{
-		ProjectID: proj.ID, Title: "t", ActorKind: "human",
+		ProjectID: proj.ID, TeamID: teamID, Title: "t", ActorKind: "human",
 	})
 	if err != nil {
 		t.Fatal(err)

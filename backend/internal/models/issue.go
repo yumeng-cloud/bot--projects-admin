@@ -41,6 +41,7 @@ type Issue struct {
 	ID          string     `json:"id"`
 	ProjectID   string     `json:"project_id"`
 	WorkspaceID string     `json:"workspace_id"`
+	TeamID      *string    `json:"team_id"` // nil = 全工作区可见（旧单）；新建必填
 	Number      int        `json:"number"`
 	Identifier  string     `json:"identifier"`
 	Title       string     `json:"title"`

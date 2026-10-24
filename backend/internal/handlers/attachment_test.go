@@ -94,7 +94,26 @@ func loginAndWS(t *testing.T, h http.Handler) (token, wsID, projectID string) {
 
 func createIssue(t *testing.T, h http.Handler, token, wsID, projectID string) string {
 	t.Helper()
-	body, _ := json.Marshal(map[string]any{"project_id": projectID, "title": "附件测"})
+	tbody, _ := json.Marshal(map[string]any{"name": "附件队", "slug": "attach-team"})
+	trr := httptest.NewRecorder()
+	treq := httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/"+wsID+"/teams", bytes.NewReader(tbody))
+	treq.Header.Set("Authorization", "Bearer "+token)
+	treq.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(trr, treq)
+	if trr.Code != http.StatusCreated && trr.Code != http.StatusOK {
+		t.Fatalf("create team %d %s", trr.Code, trr.Body.String())
+	}
+	var tres map[string]any
+	_ = json.Unmarshal(trr.Body.Bytes(), &tres)
+	team, _ := tres["team"].(map[string]any)
+	teamID, _ := team["id"].(string)
+	if teamID == "" {
+		teamID, _ = tres["id"].(string)
+	}
+	if teamID == "" {
+		t.Fatalf("no team id in %s", trr.Body.String())
+	}
+	body, _ := json.Marshal(map[string]any{"project_id": projectID, "team_id": teamID, "title": "附件测"})
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/"+wsID+"/issues", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+token)

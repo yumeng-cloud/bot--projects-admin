@@ -207,16 +207,16 @@ func TestExpandSeatsAssignsUnassignedLeaves(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	i1, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: proj.ID, Title: "a", Status: "todo", ActorKind: "human"})
+	i1, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: proj.ID, TeamID: team.ID, Title: "a", Status: "todo", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	i2, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: proj.ID, Title: "b", Status: "backlog", ActorKind: "human"})
+	i2, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: proj.ID, TeamID: team.ID, Title: "b", Status: "backlog", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	// already assigned — must skip
-	i3, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: proj.ID, Title: "c", Status: "todo", AssigneeID: &m1, ActorKind: "human"})
+	i3, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: proj.ID, TeamID: team.ID, Title: "c", Status: "todo", AssigneeID: &m1, ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -488,7 +488,7 @@ func TestBindSeatStoppedForceWritesVisibleAudit(t *testing.T) {
 		t.Fatal(err)
 	}
 	iss, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: proj.ID, Title: "停工补位审计", Status: "todo", ActorKind: "human", AssigneeID: &m1,
+		ProjectID: proj.ID, TeamID: team.ID, Title: "停工补位审计", Status: "todo", ActorKind: "human", AssigneeID: &m1,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -556,7 +556,7 @@ func TestBindSeatLeftForceWritesVisibleAudit(t *testing.T) {
 		t.Fatal(err)
 	}
 	iss, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: proj.ID, Title: "离职补位审计", Status: "in_progress", ActorKind: "human", AssigneeID: &m1,
+		ProjectID: proj.ID, TeamID: team.ID, Title: "离职补位审计", Status: "in_progress", ActorKind: "human", AssigneeID: &m1,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -606,7 +606,7 @@ func TestBindSeatActiveForceNoVisibleAudit(t *testing.T) {
 		t.Fatal(err)
 	}
 	iss, err := ib.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: proj.ID, Title: "活跃不可 force", Status: "todo", ActorKind: "human", AssigneeID: &m1,
+		ProjectID: proj.ID, TeamID: team.ID, Title: "活跃不可 force", Status: "todo", ActorKind: "human", AssigneeID: &m1,
 	})
 	if err != nil {
 		t.Fatal(err)

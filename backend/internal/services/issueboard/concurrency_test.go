@@ -12,8 +12,8 @@ import (
 // TestConcurrentBoardOrderOptimisticLock：同 Issue 并发改 board_order/status/version，
 // 至多一人成功，失败者必须 409，禁止静默覆盖。
 func TestConcurrentBoardOrderOptimisticLock(t *testing.T) {
-	svc, ws, pid := setup(t)
-	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "board", ActorKind: "human"})
+	svc, ws, pid, tid := setup(t)
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{TeamID: tid, ProjectID: pid, Title: "board", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,8 +73,8 @@ func TestConcurrentBoardOrderOptimisticLock(t *testing.T) {
 
 // TestStaleVersionBoardMove：跨列移动用旧 version 不得覆盖。
 func TestStaleVersionBoardMove(t *testing.T) {
-	svc, ws, pid := setup(t)
-	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "move", ActorKind: "human"})
+	svc, ws, pid, tid := setup(t)
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{TeamID: tid, ProjectID: pid, Title: "move", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}

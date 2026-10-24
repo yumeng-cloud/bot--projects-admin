@@ -13,7 +13,7 @@ import (
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/services/issueboard"
 )
 
-func setup(t *testing.T) (*issueboard.Service, string, string) {
+func setup(t *testing.T) (*issueboard.Service, string, string, string) {
 	t.Helper()
 	dsn := filepath.Join(t.TempDir(), "t.db")
 	sqlDB, err := db.Open("sqlite", dsn)
@@ -27,15 +27,21 @@ func setup(t *testing.T) (*issueboard.Service, string, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	teamID := idgen.New()
+	_, err = sqlDB.Exec(`INSERT INTO teams (id, workspace_id, name, slug) VALUES (?,?,?,?)`,
+		teamID, wsID, "Team", "team-"+teamID[:8])
+	if err != nil {
+		t.Fatal(err)
+	}
 	proj, err := svc.CreateProject(wsID, issueboard.CreateProjectInput{Name: "P", KeyPrefix: "TST"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	return svc, wsID, proj.ID
+	return svc, wsID, proj.ID, teamID
 }
 
 func TestIdentifierAllocationUnique(t *testing.T) {
-	svc, ws, pid := setup(t)
+	svc, ws, pid, tid := setup(t)
 	var wg sync.WaitGroup
 	n := 20
 	ids := make(chan string, n)
@@ -44,7 +50,7 @@ func TestIdentifierAllocationUnique(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "x", ActorKind: "human"})
+			iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "x", ActorKind: "human"})
 			if err != nil {
 				errs <- err
 				return
@@ -71,8 +77,8 @@ func TestIdentifierAllocationUnique(t *testing.T) {
 }
 
 func TestOptimisticLockConflict(t *testing.T) {
-	svc, ws, pid := setup(t)
-	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "lock", ActorKind: "human"})
+	svc, ws, pid, tid := setup(t)
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "lock", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,9 +96,9 @@ func TestOptimisticLockConflict(t *testing.T) {
 }
 
 func TestBotCannotSetDone(t *testing.T) {
-	svc, ws, pid := setup(t)
+	svc, ws, pid, tid := setup(t)
 	// Bot cannot create orphan issues (A7); create as human then bot tries done.
-	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "bot", ActorKind: "human"})
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "bot", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,16 +126,16 @@ func insertMemberNamed(t *testing.T, svc *issueboard.Service, wsID, displayName 
 }
 
 func TestRelationCycleDetection(t *testing.T) {
-	svc, ws, pid := setup(t)
-	a, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "A", ActorKind: "human"})
+	svc, ws, pid, tid := setup(t)
+	a, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "A", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "B", ActorKind: "human"})
+	b, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "B", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	c, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "C", ActorKind: "human"})
+	c, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "C", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,9 +181,9 @@ func TestRelationCycleDetection(t *testing.T) {
 }
 
 func TestRelationDuplicateConflict(t *testing.T) {
-	svc, ws, pid := setup(t)
-	a, _ := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "A", ActorKind: "human"})
-	b, _ := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "B", ActorKind: "human"})
+	svc, ws, pid, tid := setup(t)
+	a, _ := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "A", ActorKind: "human"})
+	b, _ := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "B", ActorKind: "human"})
 	_, err := svc.CreateRelation(ws, a.ID, issueboard.CreateRelationInput{
 		ToIssueID: b.ID, RelationType: "related", ActorKind: "human",
 	})
@@ -194,9 +200,9 @@ func TestRelationDuplicateConflict(t *testing.T) {
 }
 
 func TestCommentCreate(t *testing.T) {
-	svc, ws, pid := setup(t)
+	svc, ws, pid, tid := setup(t)
 	mid := insertMemberNamed(t, svc, ws, "Alice")
-	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "cmt", ActorKind: "human", ActorID: mid})
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "cmt", ActorKind: "human", ActorID: mid})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,8 +254,8 @@ func TestCommentCreate(t *testing.T) {
 }
 
 func TestOptimisticLockConflictCode(t *testing.T) {
-	svc, ws, pid := setup(t)
-	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "lock2", ActorKind: "human"})
+	svc, ws, pid, tid := setup(t)
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "lock2", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -270,8 +276,8 @@ func TestOptimisticLockConflictCode(t *testing.T) {
 }
 
 func TestConcurrentUpdateIssueSameVersion(t *testing.T) {
-	svc, ws, pid := setup(t)
-	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "race", ActorKind: "human"})
+	svc, ws, pid, tid := setup(t)
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "race", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -309,8 +315,8 @@ func TestConcurrentUpdateIssueSameVersion(t *testing.T) {
 }
 
 func TestStaleBoardOrderAfterStatusChange(t *testing.T) {
-	svc, ws, pid := setup(t)
-	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "board", ActorKind: "human"})
+	svc, ws, pid, tid := setup(t)
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "board", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -336,12 +342,12 @@ func TestStaleBoardOrderAfterStatusChange(t *testing.T) {
 }
 
 func TestConcurrentCreateRelationCycle(t *testing.T) {
-	svc, ws, pid := setup(t)
-	a, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "A", ActorKind: "human"})
+	svc, ws, pid, tid := setup(t)
+	a, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "A", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "B", ActorKind: "human"})
+	b, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "B", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -395,9 +401,9 @@ func TestConcurrentCreateRelationCycle(t *testing.T) {
 }
 
 func TestCommentOptimisticLock(t *testing.T) {
-	svc, ws, pid := setup(t)
+	svc, ws, pid, tid := setup(t)
 	mid := insertMember(t, svc, ws)
-	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "cmt2", ActorKind: "human", ActorID: mid})
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "cmt2", ActorKind: "human", ActorID: mid})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -438,9 +444,9 @@ func TestCommentOptimisticLock(t *testing.T) {
 }
 
 func TestCommentConcurrentEdit(t *testing.T) {
-	svc, ws, pid := setup(t)
+	svc, ws, pid, tid := setup(t)
 	mid := insertMember(t, svc, ws)
-	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "cmt3", ActorKind: "human", ActorID: mid})
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "cmt3", ActorKind: "human", ActorID: mid})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -483,11 +489,11 @@ func TestCommentConcurrentEdit(t *testing.T) {
 }
 
 func TestIssueDatesCreateAndPatch(t *testing.T) {
-	svc, ws, pid := setup(t)
+	svc, ws, pid, tid := setup(t)
 	start := "2026-10-01"
 	due := "2026-10-15"
 	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "dated", ActorKind: "human",
+		ProjectID: pid, TeamID: tid, Title: "dated", ActorKind: "human",
 		StartAt: &start, DueAt: &due,
 	})
 	if err != nil {
@@ -524,10 +530,10 @@ func TestIssueDatesCreateAndPatch(t *testing.T) {
 }
 
 func TestIssueDatesRejectBadFormatAndRange(t *testing.T) {
-	svc, ws, pid := setup(t)
+	svc, ws, pid, tid := setup(t)
 	bad := "2026/10/01"
 	_, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "bad", ActorKind: "human", StartAt: &bad,
+		ProjectID: pid, TeamID: tid, Title: "bad", ActorKind: "human", StartAt: &bad,
 	})
 	ae, ok := err.(*apperr.AppError)
 	if !ok || ae.StatusCode != 400 {
@@ -537,7 +543,7 @@ func TestIssueDatesRejectBadFormatAndRange(t *testing.T) {
 	start := "2026-10-15"
 	due := "2026-10-01"
 	_, err = svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "range", ActorKind: "human", StartAt: &start, DueAt: &due,
+		ProjectID: pid, TeamID: tid, Title: "range", ActorKind: "human", StartAt: &start, DueAt: &due,
 	})
 	ae, ok = err.(*apperr.AppError)
 	if !ok || ae.StatusCode != 400 {
@@ -548,7 +554,7 @@ func TestIssueDatesRejectBadFormatAndRange(t *testing.T) {
 	}
 
 	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "ok", ActorKind: "human", StartAt: &start,
+		ProjectID: pid, TeamID: tid, Title: "ok", ActorKind: "human", StartAt: &start,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -563,8 +569,8 @@ func TestIssueDatesRejectBadFormatAndRange(t *testing.T) {
 }
 
 func TestIsLeafChildCountTwoLevel(t *testing.T) {
-	svc, ws, pid := setup(t)
-	parent, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "P", ActorKind: "human"})
+	svc, ws, pid, tid := setup(t)
+	parent, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "P", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -573,13 +579,13 @@ func TestIsLeafChildCountTwoLevel(t *testing.T) {
 	}
 	pidPtr := parent.ID
 	c1, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "C1", ParentID: &pidPtr, ActorKind: "human",
+		ProjectID: pid, TeamID: tid, Title: "C1", ParentID: &pidPtr, ActorKind: "human",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	c2, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "C2", ParentID: &pidPtr, ActorKind: "human",
+		ProjectID: pid, TeamID: tid, Title: "C2", ParentID: &pidPtr, ActorKind: "human",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -617,15 +623,15 @@ func TestIsLeafChildCountTwoLevel(t *testing.T) {
 }
 
 func TestClaimGateNonLeaf409(t *testing.T) {
-	svc, ws, pid := setup(t)
+	svc, ws, pid, tid := setup(t)
 	mid := insertMember(t, svc, ws)
-	parent, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "P", ActorKind: "human"})
+	parent, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "P", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	pp := parent.ID
 	leaf, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "L", ParentID: &pp, ActorKind: "human",
+		ProjectID: pid, TeamID: tid, Title: "L", ParentID: &pp, ActorKind: "human",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -657,9 +663,9 @@ func TestClaimGateNonLeaf409(t *testing.T) {
 }
 
 func TestBotOrphanCreateRejected(t *testing.T) {
-	svc, ws, pid := setup(t)
+	svc, ws, pid, tid := setup(t)
 	_, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "orphan", ActorKind: "bot",
+		ProjectID: pid, TeamID: tid, Title: "orphan", ActorKind: "bot",
 	})
 	ae, ok := err.(*apperr.AppError)
 	if !ok || (ae.StatusCode != 403 && ae.StatusCode != 400) {
@@ -670,14 +676,14 @@ func TestBotOrphanCreateRejected(t *testing.T) {
 	}
 	// with parent ok
 	parent, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "P", ActorKind: "human",
+		ProjectID: pid, TeamID: tid, Title: "P", ActorKind: "human",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	pp := parent.ID
 	child, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "leaf", ParentID: &pp, ActorKind: "bot",
+		ProjectID: pid, TeamID: tid, Title: "leaf", ParentID: &pp, ActorKind: "bot",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -688,11 +694,11 @@ func TestBotOrphanCreateRejected(t *testing.T) {
 }
 
 func TestLeafOnlyFilter(t *testing.T) {
-	svc, ws, pid := setup(t)
-	parent, _ := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "P", ActorKind: "human"})
+	svc, ws, pid, tid := setup(t)
+	parent, _ := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "P", ActorKind: "human"})
 	pp := parent.ID
-	c1, _ := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "C1", ParentID: &pp, ActorKind: "human"})
-	_, _ = svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "solo", ActorKind: "human"})
+	c1, _ := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "C1", ParentID: &pp, ActorKind: "human"})
+	_, _ = svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "solo", ActorKind: "human"})
 
 	all, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{ProjectID: pid})
 	if err != nil {
@@ -724,21 +730,21 @@ func TestLeafOnlyFilter(t *testing.T) {
 }
 
 func TestBlockedAndOverdueFilters(t *testing.T) {
-	svc, ws, pid := setup(t)
+	svc, ws, pid, tid := setup(t)
 	blocker, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "blocker", Status: "todo", ActorKind: "human",
+		ProjectID: pid, TeamID: tid, Title: "blocker", Status: "todo", ActorKind: "human",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	blocked, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "blocked", ActorKind: "human",
+		ProjectID: pid, TeamID: tid, Title: "blocked", ActorKind: "human",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	free, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "free", ActorKind: "human",
+		ProjectID: pid, TeamID: tid, Title: "free", ActorKind: "human",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -761,13 +767,13 @@ func TestBlockedAndOverdueFilters(t *testing.T) {
 	past := "2020-01-01"
 	future := "2099-12-31"
 	over, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "over", DueAt: &past, ActorKind: "human",
+		ProjectID: pid, TeamID: tid, Title: "over", DueAt: &past, ActorKind: "human",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	_, err = svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "future", DueAt: &future, ActorKind: "human",
+		ProjectID: pid, TeamID: tid, Title: "future", DueAt: &future, ActorKind: "human",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -796,10 +802,10 @@ func TestBlockedAndOverdueFilters(t *testing.T) {
 }
 
 func TestForceAssigneeGate(t *testing.T) {
-	svc, ws, pid := setup(t)
+	svc, ws, pid, tid := setup(t)
 	m1 := insertMember(t, svc, ws)
 	m2 := insertMember(t, svc, ws)
-	leaf, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "L", ActorKind: "human"})
+	leaf, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "L", ActorKind: "human"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -831,7 +837,7 @@ func TestForceAssigneeGate(t *testing.T) {
 }
 
 func TestIssueDispatchEvents(t *testing.T) {
-	svc, ws, pid := setup(t)
+	svc, ws, pid, tid := setup(t)
 	var mu sync.Mutex
 	var events []string
 	svc.DispatchEvent = func(workspaceID, event string, payload any) {
@@ -847,7 +853,7 @@ func TestIssueDispatchEvents(t *testing.T) {
 	}
 	m1 := insertMember(t, svc, ws)
 	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "hook", ActorKind: "human", AssigneeID: &m1,
+		ProjectID: pid, TeamID: tid, Title: "hook", ActorKind: "human", AssigneeID: &m1,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -885,7 +891,7 @@ func TestIssueDispatchEvents(t *testing.T) {
 }
 
 func TestIssueNestedAssigneeReporterDisplayName(t *testing.T) {
-	svc, ws, pid := setup(t)
+	svc, ws, pid, tid := setup(t)
 	assigneeName := "Alice Chen"
 	reporterName := "Bob Reporter"
 	assigneeID := insertMemberNamed(t, svc, ws, assigneeName)
@@ -893,7 +899,7 @@ func TestIssueNestedAssigneeReporterDisplayName(t *testing.T) {
 
 	// Assigned + reporter via ActorID
 	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "with assignee", ActorKind: "human",
+		ProjectID: pid, TeamID: tid, Title: "with assignee", ActorKind: "human",
 		ActorID: reporterID, AssigneeID: &assigneeID,
 	})
 	if err != nil {
@@ -940,7 +946,7 @@ func TestIssueNestedAssigneeReporterDisplayName(t *testing.T) {
 
 	// Unassigned → assignee null
 	unassigned, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
-		ProjectID: pid, Title: "no assignee", ActorKind: "human",
+		ProjectID: pid, TeamID: tid, Title: "no assignee", ActorKind: "human",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -966,4 +972,144 @@ func TestIssueNestedAssigneeReporterDisplayName(t *testing.T) {
 		t.Fatalf("unassigned List want assignee null, got %+v", ulist)
 	}
 
+}
+
+
+// T6-I I1：迁移字段可用；Create 必带 team；双队各建单后按队 list 不串。
+func TestI1TeamPoolIsolation(t *testing.T) {
+	svc, ws, pid, tidA := setup(t)
+	tidB := idgen.New()
+	if _, err := svc.DB.Exec(`INSERT INTO teams (id, workspace_id, name, slug) VALUES (?,?,?,?)`,
+		tidB, ws, "TeamB", "team-b-"+tidB[:8]); err != nil {
+		t.Fatal(err)
+	}
+	a, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tidA, Title: "A-only", ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.TeamID == nil || *a.TeamID != tidA {
+		t.Fatalf("create A team_id=%v want %s", a.TeamID, tidA)
+	}
+	b, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tidB, Title: "B-only", ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	listA, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{ProjectID: pid, TeamID: tidA})
+	if err != nil {
+		t.Fatal(err)
+	}
+	idsA := map[string]bool{}
+	for _, iss := range listA {
+		idsA[iss.ID] = true
+	}
+	if !idsA[a.ID] {
+		t.Fatal("I1: team A list missing A issue")
+	}
+	if idsA[b.ID] {
+		t.Fatal("I1: team A list must not include B issue")
+	}
+	listB, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{ProjectID: pid, TeamID: tidB})
+	if err != nil {
+		t.Fatal(err)
+	}
+	idsB := map[string]bool{}
+	for _, iss := range listB {
+		idsB[iss.ID] = true
+	}
+	if !idsB[b.ID] || idsB[a.ID] {
+		t.Fatalf("I1: team B list ids=%v a=%s b=%s", idsB, a.ID, b.ID)
+	}
+}
+
+// T6-I I2：队 B list 不见队 A 的 team_id=A 单；错队 GET/PATCH → 404。
+// 另：缺/错 team_id 创建 → 4xx 中文。
+func TestI2CrossTeamHiddenAndWrongTeam404(t *testing.T) {
+	svc, ws, pid, tidA := setup(t)
+	tidB := idgen.New()
+	if _, err := svc.DB.Exec(`INSERT INTO teams (id, workspace_id, name, slug) VALUES (?,?,?,?)`,
+		tidB, ws, "TeamB", "team-b-"+tidB[:8]); err != nil {
+		t.Fatal(err)
+	}
+	a, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tidA, Title: "secret-A", ActorKind: "human"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	listB, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{TeamID: tidB})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, iss := range listB {
+		if iss.ID == a.ID {
+			t.Fatal("I2: team B list must not see team_id=A issue")
+		}
+	}
+	_, err = svc.GetIssueInTeam(ws, a.ID, tidB)
+	ae, ok := err.(*apperr.AppError)
+	if !ok || ae.StatusCode != 404 {
+		t.Fatalf("I2: wrong-team GET want 404, got %v", err)
+	}
+	title := "hack"
+	_, err = svc.UpdateIssue(ws, a.ID, issueboard.UpdateIssueInput{
+		Version: a.Version, Title: &title, RequireTeamID: tidB, ActorKind: "human",
+	})
+	ae, ok = err.(*apperr.AppError)
+	if !ok || ae.StatusCode != 404 {
+		t.Fatalf("I2: wrong-team PATCH want 404, got %v", err)
+	}
+	_, err = svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "no-team", ActorKind: "human"})
+	ae, ok = err.(*apperr.AppError)
+	if !ok || ae.StatusCode < 400 || ae.StatusCode >= 500 {
+		t.Fatalf("create without team_id want 4xx, got %v", err)
+	}
+	if !strings.Contains(ae.Message, "team_id") {
+		t.Fatalf("want Chinese team_id message, got %q", ae.Message)
+	}
+	_, err = svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: "not-a-real-team", Title: "bad", ActorKind: "human"})
+	ae, ok = err.(*apperr.AppError)
+	if !ok || ae.StatusCode < 400 || ae.StatusCode >= 500 {
+		t.Fatalf("create bad team_id want 4xx, got %v", err)
+	}
+}
+
+// NULL 策略：旧单 team_id IS NULL = 全工作区可见（出现在任意队 list）。
+func TestLegacyNullTeamIDVisibleInAllTeamLists(t *testing.T) {
+	svc, ws, pid, tidA := setup(t)
+	tidB := idgen.New()
+	if _, err := svc.DB.Exec(`INSERT INTO teams (id, workspace_id, name, slug) VALUES (?,?,?,?)`,
+		tidB, ws, "TeamB", "team-b-"+tidB[:8]); err != nil {
+		t.Fatal(err)
+	}
+	id := idgen.New()
+	_, err := svc.DB.Exec(`INSERT INTO issues
+		(id, project_id, workspace_id, team_id, number, identifier, title, description, status, priority, board_order, version, created_at, updated_at)
+		VALUES (?,?,?,NULL,99,'TST-99','legacy','','backlog','none',0,1,datetime('now'),datetime('now'))`,
+		id, pid, ws)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tid := range []string{tidA, tidB} {
+		list, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{TeamID: tid})
+		if err != nil {
+			t.Fatal(err)
+		}
+		found := false
+		for _, iss := range list {
+			if iss.ID == id {
+				found = true
+				if iss.TeamID != nil {
+					t.Fatalf("legacy should have nil team_id, got %v", iss.TeamID)
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("NULL legacy issue must appear in team %s list (全 WS 可见)", tid)
+		}
+	}
+	un, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{UnassignedOnly: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(un) != 1 || un[0].ID != id {
+		t.Fatalf("unassigned filter: %+v", un)
+	}
 }
