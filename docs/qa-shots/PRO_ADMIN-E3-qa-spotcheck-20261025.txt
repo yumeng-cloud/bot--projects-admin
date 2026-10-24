@@ -1,0 +1,57 @@
+PRO_ADMIN E3 QA spotcheck · 2026-10-25 ~00:46 Asia/Shanghai
+Repo: ai-collab-board · feature SHA 41c6e88 · HEAD at verify 4ae05e7 (docs tick atop feat)
+Method: git pull + git show 41c6e88 + Read(IssueListPage.tsx / list.css / api/issues.ts qs) + Read(PNG) + Soft† curl API :8080
+Harsh independent (not product checkbox rubber-stamp)
+Soft† live FE Vite: skipped (箱截+源码对读；API Soft† 已 curl)
+
+=== E3 列表「仅已归档」三态筛选 ===
+Verdict: PASS
+
+Debt asked:
+- 三态滤含「仅已归档」→ API/query archived=only（或等价仅归档）
+- 「仅已归档」与「显示已归档」互斥 UI
+- Shot: docs/qa-shots/pro-e-archived-only.png（自 Read 图）
+- 中文主标签；不破 C1「显示已归档」默认剔归档语义
+
+Source (IssueListPage.tsx @41c6e88):
+- ArchiveView = 'hide' | 'include' | 'only'；单 Select 三态（互斥 by construction）
+- options 中文：隐藏已归档 / 显示已归档 / 仅已归档
+- load：only → { archived_only: 1 }；include → { include_archived: 1 }；hide → {}
+- 客户端防御滤：only 只留归档；include 原样；hide 剔归档
+- 空态：only →「暂无已归档的 Issue」；drawer onSaved：hide 踢归档行 / only 踢解档行 / include 保留
+- Switch「显示已归档」已移除，升为 Select；C1 include 语义保留在 include 分支
+
+API client (issues.ts qs):
+- archived_only 优先 → p.set('archived','only')；else include_archived=1；默认不传
+- mock filter 同 only优先 / include / 默认剔
+
+CSS (list.css):
+- .acb-list-archived-toggle → .acb-list-archived-view.ant-select（12px secondary）
+
+Shot: docs/qa-shots/pro-e-archived-only.png
+- 列表工具栏 Select 选中「仅已归档」（蓝框 active）
+- 五行 YM-25/26/29/22/19 标题旁均有「已归档」Tag；无非归档行
+- 中文完整（状态/优先级/负责人/标签…）；非 English-only
+- 与 Soft† archived=only 返回的 5 条 identifier 一致
+
+Soft† API (:8080, admin@yumeng.tech, WS 育蒙科技 / 示例项目):
+- DEFAULT：total=27 archived=0 live=27（默认剔归档 ✓）
+- include_archived=1：total=32 archived=5 live=27（C1 显隐 ✓）
+- archived=only：total=5 archived=5 live=0 → YM-25/26/29/22/19（与箱截一致 ✓）
+
+FAIL redlines checked → none hit:
+- 「仅已归档」missing / 未接线 archived=only → no
+- 与「显示已归档」非互斥 → no（单 Select 一值）
+- Shot missing / wrong / English-only → no
+- 回归默认列表剔归档 → no（DEFAULT Soft† 0 archived）
+
+Defects: none
+Frozen: C2–D / E2 / G 未验
+
+=== Overall ===
+PASS
+Feature SHA: 41c6e88c838f21c1d5d927443ef7363f154d4541 (41c6e88)
+Verify HEAD (pre-report): 4ae05e7d6d7aabda0d80f2c55229f4c2c1b3457f
+Live: Soft† API curl archived=only/include/default；FE Vite soft† 箱截+源码
+
+→ 产品 + React + 总指挥：PRO_ADMIN E3 PASS @41c6e88
