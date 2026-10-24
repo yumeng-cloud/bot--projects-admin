@@ -108,13 +108,13 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 
 **invite.status**（派生、不落库）：`active` | `revoked` | `expired` | `exhausted`。
 
-**隔离（T6-R 最小）**：roster / seats / bind / expand 均以 path `teamID` 为界，跨 `team_id` 不串 claim；通道切队 = 换 `team_uuid`（见 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.4）。**尚未落地**：Issue 列表按 `team_id` 过滤。**`team_pins` REST 已落地**（见下「Team pins」）；MCP/CLI 通道见 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.5（可选）。全文边界：[`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) · 开工单：[`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md)。
+**隔离（T6-R 最小）**：roster / seats / bind / expand 均以 path `teamID` 为界，跨 `team_id` 不串 claim；通道切队 = 换 `team_uuid`（见 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.4）。**尚未落地**：Issue 列表按 `team_id` 过滤。**`team_pins` REST 已落地**（见下「Team pins」· `6915db4`）；MCP/CLI `board_pin_*` 已落地（[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.5 · `63e69c6`）。全文边界：[`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) · 开工单：[`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md)。
 
 详见 [`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md) · [`BOT_TEAM_SEAT_P0.md`](./BOT_TEAM_SEAT_P0.md)。
 
 ## Team pins（共享记忆墙）
 
-> **状态：REST 已实现。** 验收见 [`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md) P1–P3（Go）；P4/P5/MCP 另席。  
+> **状态：REST + MCP/CLI 已落地。** REST `6915db4`；通道 `board_pin_*` / `ymbot pin` · `63e69c6`。验收见 [`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md) P1–P3（Go）· P5 已勾；P4 另席。  
 > **不是** 席位私有 `bot_memories`；同名 `key` 分表不串、互不覆盖。
 
 表：`team_pins`，`UNIQUE(team_id, key)`。字段至少：`id, workspace_id, team_id, key, value, updated_by, updated_at`（JSON `snake_case`）。

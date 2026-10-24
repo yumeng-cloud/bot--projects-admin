@@ -14,7 +14,7 @@
 | 表 `team_pins`：`UNIQUE(team_id, key)`；字段至少 `id, workspace_id, team_id, key, value, updated_by, updated_at` | Issue List 按 `team_id` 过滤 |
 | REST：`GET/PUT/DELETE /workspaces/{ws}/teams/{teamID}/pins`（PUT upsert by key；GET 列本队；DELETE by key） | FE 全局团队切换器大改 |
 | 鉴权：须为本队成员（或 Admin）；错队 / 无队 → **404** | 用 pin 替代 handoff |
-| MCP/CLI（可选同期）：`board_pin_list` / `board_pin_get` / `board_pin_set`；瘦输出 | 跨 workspace；共享墙吞私有 memory |
+| MCP/CLI（已落地 `63e69c6`）：`board_pin_list` / `get` / `set` / `delete`；瘦输出 | 跨 workspace；共享墙吞私有 memory |
 | FE 最小：Bot/团队设置页「记忆墙」列表+新增/编辑一行 key/value（当前 team 上下文） | 漂亮大屏墙、评论、附件 |
 
 ## 验收（箱验）
@@ -32,7 +32,7 @@
 | 席 | 职责 |
 |----|------|
 | **Go 后端** | 迁移 + handler + 单测；测绿直接 push main |
-| **Bot 记忆** | MCP/CLI 可选 + 箱验 P1–P3 主跑 |
+| **Bot 记忆** | MCP/CLI 已落地 `63e69c6` + 箱验 P1–P3 主跑 |
 | **React** | FE 最小记忆墙（并行，不挡 API 关单） |
 | **种子** | API.md / BOT_MCP_CLI 补 pins 段 |
 | **产品** | 清单对齐 + 勾关 |
@@ -55,7 +55,7 @@
   - FE `4459d01` + 热修 `8c2097a` · 箱截 `54d5527`
   - [`pins-p5-list.png`](./qa-shots/pins-p5-list.png) / [`pins-p5-upsert.png`](./qa-shots/pins-p5-upsert.png) / [`pins-p5-switch-team.png`](./qa-shots/pins-p5-switch-team.png)
   - 产品目视：本队 list 见 pin；切/换队后墙为空或换池，无跨队残留；upsert 表单可用
-  - 通道可选 `63e69c6` `board_pin_*` 已挂（不挡 FE 勾）
+  - 通道已落地 `63e69c6` `board_pin_*`（不挡 FE 勾）
 
 ## 关单
 

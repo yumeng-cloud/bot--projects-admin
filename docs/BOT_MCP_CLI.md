@@ -284,10 +284,10 @@ ymbot team pull --uuid "$TEAM_B" --json > /tmp/roster-b.json
 MCP 等价：Inspector 对 `board_team_pull` 各传一次不同 `team_uuid`（可加 `ids=true` 看裸 id）。  
 **自检一句**：双 pull 席位组不串 → T6-R 通道文档验收过；**不**因此勾满 `BOT_TEAM_SEAT_P0` T6 全文。
 
-### 11.5 Team pins（`board_pin_*` · 契约）
+### 11.5 Team pins（`board_pin_*` · 已落地 `63e69c6`）
 
-> 对接 T6 余债 **共享记忆墙**。权威开工单：[`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md)。REST 契约：[`API.md`](./API.md)「Team pins」。  
-> **状态：通道已挂载**（botclient + `ymbot pin` + MCP `board_pin_*`；REST 见 `6915db4`）。箱验 P1–P3 证据：[`qa-shots/pins-team-isolate-20261024.txt`](./qa-shots/pins-team-isolate-20261024.txt)。日常续命仍 `handoff get`，**不**用 pin 替代。
+> 对接 T6 余债 **共享记忆墙**。权威开工单：[`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md)。REST：[`API.md`](./API.md)「Team pins」· `6915db4`。  
+> **状态：已落地**——通道实现 SHA **`63e69c6`**（botclient + `ymbot pin` + MCP `board_pin_list`/`get`/`set`/`delete`；REST `6915db4`）。箱验 P1–P3 证据：[`qa-shots/pins-team-isolate-20261024.txt`](./qa-shots/pins-team-isolate-20261024.txt)。日常续命仍 `handoff get`，**不**用 pin 替代。
 
 | | |
 |--|--|
@@ -296,21 +296,22 @@ MCP 等价：Inspector 对 `board_team_pull` 各传一次不同 `team_uuid`（�
 | **环境仍只需** | `YMBOT_API_URL` · `YMBOT_API_KEY` · `YMBOT_WORKSPACE_ID` |
 | **REST** | `GET/PUT/DELETE /workspaces/{ws}/teams/{teamID}/pins`（及 `…/pins/{key}`）；鉴权本队成员或 Admin；错队 → **404** |
 | **瘦输出** | 默认文本友好 / 无裸 UUID；`--full`/`full=true`、`--id`/`ids=true` 同 §6 / DX |
+| **实现 SHA** | 通道 **`63e69c6`** · REST `6915db4` |
 
-| 能力 | MCP tool | CLI（契约） | REST | 入 / 出要点 |
-|------|----------|-------------|------|-------------|
+| 能力 | MCP tool | CLI | REST | 入 / 出要点 |
+|------|----------|-----|------|-------------|
 | 列本队 | `board_pin_list` | `ymbot pin list --team <uuid>` | `GET …/teams/{teamID}/pins` | 入：`team_uuid`；出：`pins[]`（瘦：`key,value` 摘要） |
 | 读一条 | `board_pin_get` | `ymbot pin get --team <uuid> --key <k>` | `GET …/pins/{key}` | 入：`team_uuid, key`；无 → 404 一行中文 |
 | 写入 | `board_pin_set` | `ymbot pin set --team <uuid> --key <k> --value <v>` | `PUT …/pins` `{key,value}` | upsert；可选 `idempotency_key`；出：`pin` |
-
-可选同期（非债务硬门槛）：`board_pin_delete` / `ymbot pin delete` → `DELETE …/pins/{key}`。
+| 删除 | `board_pin_delete` | `ymbot pin delete --team <uuid> --key <k>` | `DELETE …/pins/{key}` | 入：`team_uuid, key`；成功 ok；无 → 404 |
 
 ```bash
 ymbot pin set --team "$TEAM_A" --key decision --value "采用方案 B"
 ymbot pin list --team "$TEAM_A"
 ymbot pin list --team "$TEAM_B"   # 不应出现队 A 的 decision
 ymbot pin get  --team "$TEAM_B" --key decision   # 期望 404
+ymbot pin delete --team "$TEAM_A" --key decision
 ```
 
-MCP：`tools/list` 含 `board_pin_list` / `board_pin_get` / `board_pin_set`（及可选 `board_pin_delete`）。  
-**自检一句**：队 A set → 队 A get 见、队 B list/get 无/404（REST 箱验已 PASS；通道冒烟 list/get/set 不 501）。
+MCP：`tools/list` 含 `board_pin_list` / `board_pin_get` / `board_pin_set` / `board_pin_delete`（实现 `63e69c6`）。  
+**自检一句**：队 A set → 队 A get 见、队 B list/get 无/404（REST 箱验已 PASS；通道冒烟 list/get/set/delete 不 501）。
