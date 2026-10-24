@@ -1481,3 +1481,142 @@ func TestListRelations_FiltersArchivedEnds(t *testing.T) {
 		t.Fatalf("default from archived should hide edges, got %+v", fromBDef)
 	}
 }
+
+func TestBatchStatusIssues_SuccessAndPartial(t *testing.T) {
+	svc, ws, pid, tid := setup(t)
+	mid := insertMember(t, svc, ws)
+
+	a, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "A", Status: "todo", ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "B", Status: "todo", ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := svc.BatchStatusIssues(ws, issueboard.BatchStatusIssuesInput{
+		IDs: []string{a.ID, b.ID}, Status: "in_progress", ActorID: mid, ActorKind: "human",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res) != 2 || !res[0].OK || !res[1].OK {
+		t.Fatalf("want both ok, got %+v", res)
+	}
+	if res[0].Status != "in_progress" || res[1].Status != "in_progress" {
+		t.Fatalf("status: %+v", res)
+	}
+
+	gotA, err := svc.GetIssue(ws, a.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotA.Status != "in_progress" {
+		t.Fatalf("A status %s", gotA.Status)
+	}
+	acts, err := svc.ListIssueActivities(ws, a.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, act := range acts {
+		if act.Action == "issue.status_changed" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("missing issue.status_changed activity")
+	}
+
+	// missing id + valid id → partial
+	res2, err := svc.BatchStatusIssues(ws, issueboard.BatchStatusIssuesInput{
+		IDs: []string{a.ID, "no-such-issue"}, Status: "done", ActorID: mid, ActorKind: "human",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res2) != 2 {
+		t.Fatalf("want 2 results, got %+v", res2)
+	}
+	okN, failN := 0, 0
+	for _, r := range res2 {
+		if r.OK {
+			okN++
+			if r.Status != "done" {
+				t.Fatalf("ok row status: %+v", r)
+			}
+		} else {
+			failN++
+			if r.Error != "Issue 不存在" {
+				t.Fatalf("missing id error: %+v", r)
+			}
+		}
+	}
+	if okN != 1 || failN != 1 {
+		t.Fatalf("partial: %+v", res2)
+	}
+}
+
+func TestBatchStatusIssues_InvalidStatus(t *testing.T) {
+	svc, ws, pid, tid := setup(t)
+	mid := insertMember(t, svc, ws)
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "x", ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = svc.BatchStatusIssues(ws, issueboard.BatchStatusIssuesInput{
+		IDs: []string{iss.ID}, Status: "nope", ActorID: mid, ActorKind: "human",
+	})
+	if err == nil {
+		t.Fatal("want invalid status error")
+	}
+	ae, ok := err.(*apperr.AppError)
+	if !ok || ae.StatusCode != 400 || ae.Message != "无效的状态" {
+		t.Fatalf("want 400 无效的状态, got %v", err)
+	}
+}
+
+func TestBatchStatusIssues_EmptyIDsAndCrossWS(t *testing.T) {
+	svc, ws, pid, tid := setup(t)
+	mid := insertMember(t, svc, ws)
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, TeamID: tid, Title: "local", Status: "todo", ActorKind: "human", ActorID: mid})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = svc.BatchStatusIssues(ws, issueboard.BatchStatusIssuesInput{
+		IDs: nil, Status: "todo", ActorID: mid, ActorKind: "human",
+	})
+	if err == nil {
+		t.Fatal("want empty ids error")
+	}
+	ae, ok := err.(*apperr.AppError)
+	if !ok || ae.StatusCode != 400 || ae.Message != "ids 不能为空" {
+		t.Fatalf("want 400 ids 不能为空, got %v", err)
+	}
+
+	// other workspace
+	ws2 := idgen.New()
+	if _, err := svc.DB.Exec(`INSERT INTO workspaces (id, name, slug) VALUES (?,?,?)`, ws2, "T2", "t2-"+ws2[:8]); err != nil {
+		t.Fatal(err)
+	}
+	res, err := svc.BatchStatusIssues(ws2, issueboard.BatchStatusIssuesInput{
+		IDs: []string{iss.ID}, Status: "done", ActorID: mid, ActorKind: "human",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res) != 1 || res[0].OK || res[0].Error != "Issue 不存在" {
+		t.Fatalf("cross ws: %+v", res)
+	}
+	// original unchanged
+	got, err := svc.GetIssue(ws, iss.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Status != "todo" {
+		t.Fatalf("cross-ws must not mutate, got %s", got.Status)
+	}
+}

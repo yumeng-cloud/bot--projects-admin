@@ -282,3 +282,28 @@ func (h *IssueHandler) Unarchive(w http.ResponseWriter, r *http.Request) {
 	}
 	middleware.JSON(w, http.StatusOK, map[string]any{"results": results})
 }
+
+func (h *IssueHandler) BatchStatus(w http.ResponseWriter, r *http.Request) {
+	ws, mid, ok := requireWorkspaceMember(h.Svc.DB, w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		IDs    []string `json:"ids"`
+		Status string   `json:"status"`
+	}
+	if err := middleware.DecodeJSON(r, &req); err != nil {
+		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
+		return
+	}
+	results, err := h.Svc.BatchStatusIssues(ws, issueboard.BatchStatusIssuesInput{
+		IDs: req.IDs, Status: req.Status,
+		TeamID: strings.TrimSpace(r.URL.Query().Get("team_id")),
+		ActorID: mid, ActorKind: actorKind(r),
+	})
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	middleware.JSON(w, http.StatusOK, map[string]any{"results": results})
+}

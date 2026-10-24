@@ -124,6 +124,7 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 			ws.Post("/issues", issueH.Create)
 			ws.Post("/issues/archive", issueH.Archive)
 			ws.Post("/issues/unarchive", issueH.Unarchive)
+			ws.Post("/issues/batch-status", issueH.BatchStatus)
 			ws.Get("/issues/{issueID}", issueH.Get)
 			ws.Patch("/issues/{issueID}", issueH.Patch)
 			ws.Delete("/issues/{issueID}", issueH.Delete)
