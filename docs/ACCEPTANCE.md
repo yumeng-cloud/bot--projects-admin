@@ -13,7 +13,7 @@
 cd /workspace/ai-collab-board
 cp .env.example .env   # 可选
 make install           # go mod tidy + npm install
-make seed              # 或依赖服务启动 AUTO_SEED=1（默认开；AUTO_SEED=0 可关）
+make seed              # Makefile 会带 SEED_SAMPLE_DATA=1；或 AUTO_SEED=1+SEED_SAMPLE_DATA=1（二者默认关）
 make dev               # API :8080 + Vite :5173
 ```
 
@@ -444,7 +444,7 @@ Bot 路径用 `Authorization: Bearer <api_key>`（前缀约定见实现，如 `y
 
 ## 10. QA 执行顺序建议
 
-1. `make install && make seed && make dev`（或依赖 `AUTO_SEED=1`）。
+1. `make install && make seed && make dev`（演示需 `SEED_SAMPLE_DATA=1`；生产 `AUTO_SEED=0`）。
 2. API smoke：§1 登录 → §2 权限 → §3 看板 → §4 成环 → §5 Wiki → §6 工时 → §7 Bot。
 3. `go test ./...` 与前端 `npm run build` 纳入 CI/发版门禁。
 4. 失败单条记录：编号 + 实际结果 + 归属（TL/BOARD/COLLAB/INTEG/WIKI/TIME/BOT/FE）+ 复现 curl/截图。

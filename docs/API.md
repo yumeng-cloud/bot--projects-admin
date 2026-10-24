@@ -37,7 +37,7 @@ JSON 字段：`snake_case`；时间：UTC ISO8601
 
 也可传 Header `X-Workspace-Id`（与路径二选一，路径优先）。
 
-生产开通主路径：**注册 / 登录 → `POST /workspaces`**（`AUTO_SEED=0`；无需 seed）。本地演示：`SEED_SAMPLE_DATA=1` + `make seed`（或 `AUTO_SEED=1`）。
+生产开通主路径：**注册 / 登录 → `POST /workspaces`**（`AUTO_SEED=0`；无需 seed）。本地演示：`SEED_SAMPLE_DATA=1`（`make seed` 或与 `AUTO_SEED=1` 同开）。
 
 ## Members / Labels
 

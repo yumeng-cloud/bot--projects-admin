@@ -87,7 +87,7 @@ make dev                 # API :8080 + Vite UI :5173
 
 ### 本地演示捷径（可选 seed）
 
-想跳过注册、直接进样例数据时：`SEED_SAMPLE_DATA=1` + `make seed`（或同开 `AUTO_SEED=1` 随服务启动）；生产保持 `AUTO_SEED=0`。
+想跳过注册、直接进样例数据时：`make seed`（带 `SEED_SAMPLE_DATA=1`），或启动前同时设 `AUTO_SEED=1` + `SEED_SAMPLE_DATA=1`；仅 `AUTO_SEED` 只建结构不灌演示。生产保持二者关闭。
 
 | 字段 | 值 |
 |------|-----|
