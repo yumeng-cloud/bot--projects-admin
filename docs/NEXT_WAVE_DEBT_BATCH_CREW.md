@@ -1,4 +1,4 @@
-# 入队/入席自动身份（BATCH_CREW）· P0
+# 入队/入席自动身份（BATCH_CREW）· **已关**
 
 > 2026-10-24 23:35 Asia/Shanghai · 产品体验  
 > **用户否决（总指挥转·Go 停 B1）：** **禁止**「一键吐全班 `ymk_`」——Admin 挡层一次复制 N 把身份钥匙 **不做**。  
@@ -95,10 +95,10 @@ POST …/team-invites/redeem  或  通道等价 ymbot team join
 - [x] **B1** 入队/入席自动身份 API + 单测 · Go · `c4ae0a5`
 - [x] **B2** 建队 CTA=入场包，无全班钥入口 · React · V5 `e761305` + AUTO_CREW
 - [x] **B3** 入队方当次单把 `ymk_` · React/通道 · Join `662346d`（通道 CLI 随 Go）
-- [ ] **B4** 席卡演员 + 幂等/禁顶替 · Go+React
-- [ ] **B5** 入场包无 `ymk_` · QA
-- [ ] **B6** 箱证
-- [ ] **B7** 产品关单
+- [x] **B4** 席卡演员 + 幂等/禁顶替 · Go+React · Q3 PASS† `29743c3`
+- [x] **B5** 入场包无 `ymk_` · QA · PASS† `29743c3`
+- [x] **B6** 箱证 · `29743c3` + Q1 retest txt
+- [x] **B7** 产品关单 · 2026-10-25（软债 V6/V2 orphan 不挡）
 
 ## 进度注记
 
@@ -112,4 +112,4 @@ POST …/team-invites/redeem  或  通道等价 ymbot team join
 
 ## 关单进度
 
-**B0–B3 已合** · 待 QA B5/B6 箱证后 B7 关单。旧吐钥仍废。
+**整单已关** · B0–B7 @`29743c3`。旧吐钥仍废；软债见 HUMAN_ONBOARD。
