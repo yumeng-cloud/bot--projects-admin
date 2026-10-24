@@ -80,7 +80,7 @@ export function BoardColumn({
               disabled={archiving || issues.length === 0}
               onClick={() => onArchiveColumn?.()}
             >
-              归档本列已完成
+              归档本列
             </Button>
           </Space>
         </div>

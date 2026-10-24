@@ -168,8 +168,8 @@ export function KanbanBoard({
     const colIds = (byStatus['done'] || []).map((i) => i.id)
     if (colIds.length === 0) return
     Modal.confirm({
-      title: '归档本列已完成',
-      content: `确认将完成列中的 ${colIds.length} 条 Issue 归档？归档后默认列表与看板不再显示。`,
+      title: '归档本列',
+      content: `确认将完成列中的 ${colIds.length} 条已完成 Issue 归档？归档后默认列表与看板不再显示。`,
       okText: '归档',
       cancelText: '取消',
       onOk: () => archiveIds(colIds),
