@@ -12,6 +12,7 @@ import {
   Spin,
   message,
   Checkbox,
+  Switch,
 } from 'antd'
 import type { Key } from 'react'
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
@@ -65,6 +66,8 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
   const [assigneeId, setAssigneeId] = useState<string | undefined>()
   const [labelId, setLabelId] = useState<string | undefined>()
   const [q, setQ] = useState('')
+  /** C1：默认关；开 → include_archived=1 */
+  const [showArchived, setShowArchived] = useState(false)
   const [open, setOpen] = useState(false)
   const [current, setCurrent] = useState<Issue | null>(null)
   const [newTitle, setNewTitle] = useState('')
@@ -98,20 +101,22 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
     try {
       // Fetch team-scoped project issues; other filters applied client-side for tree ancestors.
       // `blocked` stays API-side (needs relations).
+      // C1：默认不传 include_archived；开开关才传 1。
       const { issues: list } = await listIssues(workspaceId, {
         project_id: projectId,
         blocked: blocked || undefined,
         team_id: teamId || undefined,
+        include_archived: showArchived ? 1 : undefined,
       })
-      // C2：默认不传 include_archived；防御性剔归档，避免主列表虚显
-      setIssues(list.filter((i) => !isIssueArchived(i)))
+      // 关时防御性剔归档，避免主列表虚显；开时保留归档行
+      setIssues(showArchived ? list : list.filter((i) => !isIssueArchived(i)))
     } catch {
       setIssues([])
       // 4xx toast from client; empty pool, no white screen
     } finally {
       setLoading(false)
     }
-  }, [workspaceId, projectId, blocked, teamId])
+  }, [workspaceId, projectId, blocked, teamId, showArchived])
 
   useEffect(() => {
     loadMeta()
@@ -276,6 +281,15 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
         <Checkbox checked={overdue} onChange={(e) => setFlag('overdue', e.target.checked)}>
           已逾期
         </Checkbox>
+        <span className="acb-list-archived-toggle">
+          显示已归档
+          <Switch
+            size="small"
+            checked={showArchived}
+            onChange={setShowArchived}
+            aria-label="显示已归档"
+          />
+        </span>
       </Space>
       {loading ? (
         <div style={{ textAlign: 'center', padding: 48 }}>
@@ -352,14 +366,23 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
               </div>
             ),
           }}
-          onRow={(record) => ({
-            onClick: () => {
-              setCurrent(record)
-              setOpen(true)
-            },
-            style: { cursor: 'pointer' },
-            className: record.parent_id ? 'acb-list-tree-child' : undefined,
-          })}
+          onRow={(record) => {
+            const archived = isIssueArchived(record)
+            const classes = [
+              record.parent_id ? 'acb-list-tree-child' : '',
+              archived ? 'acb-list-row-archived' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')
+            return {
+              onClick: () => {
+                setCurrent(record)
+                setOpen(true)
+              },
+              style: { cursor: 'pointer' },
+              className: classes || undefined,
+            }
+          }}
           columns={[
             { title: '标识', dataIndex: 'identifier', width: 110 },
             {
@@ -371,6 +394,9 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
                     <Tag className="acb-list-subitem-hint">子项</Tag>
                   ) : null}
                   <span className="acb-list-title-text">{title}</span>
+                  {isIssueArchived(record) ? (
+                    <Tag className="acb-list-archived-tag">已归档</Tag>
+                  ) : null}
                 </span>
               ),
             },
@@ -435,9 +461,8 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
         teamId={teamId}
         onClose={() => setOpen(false)}
         onSaved={(saved) => {
-          const archived =
-            saved.archived_at != null && String(saved.archived_at).trim() !== ''
-          if (archived) {
+          const archived = isIssueArchived(saved)
+          if (archived && !showArchived) {
             setIssues((prev) => prev.filter((i) => i.id !== saved.id))
             setCurrent(saved)
             return
