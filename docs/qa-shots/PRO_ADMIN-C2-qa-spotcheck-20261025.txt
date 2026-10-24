@@ -1,0 +1,64 @@
+PRO_ADMIN C2 QA spotcheck · 2026-10-25 01:18 Asia/Shanghai
+Overall: PASS†
+Feature SHA: a33651d6c74116a56959599f878a4162c0ef4652 (on origin/main; HEAD at verify 21560b2)
+Debt: docs/NEXT_WAVE_DEBT_PRO_ADMIN_C2.md
+Checklist: docs/qa-shots/PRO_ADMIN-C2-qa-checklist-prep-20261025.md
+Shot: docs/qa-shots/pro-c-bulk.png (75499 B @a33651d)
+Scope: C2 only. C3–D / E2 / G FROZEN — not verified. SEAT_REFILL_SHOT closed — skipped.
+
+Method
+- git fetch/checkout/pull main; confirm a33651d ancestor; git show a33651d
+- Inspect IssueListPage.tsx + list.css bulk bar (源码)
+- Read pro-c-bulk.png as image
+- Soft† live API :8080 admin@yumeng.tech — serial PATCH + archive/unarchive visibility
+- Soft† live FE Vite skipped (箱截+源码 suffice)
+
+Accept checklist
+1. Multi-select + visible count + one-click clear …… PASS
+   - Table rowSelection checkbox; 「已选 N 条」; 「取消选择」→ clearSelection
+   - Shot: 3 rows checked (YM-24/27/31); bar 「已选 3 条」+「取消选择」
+
+2. Bulk bar: change status + archive done-only + 解档 (when on bar) + clear …… PASS
+   - 「批量改状态」→ serial patchIssue loop (FE @a33651d)
+   - 「批量归档（doneCount）」→ archiveIssues POST …/issues/archive; only done && !archived
+   - 「批量解档」rendered when archiveView !== 'hide'; unarchiveIssues POST …/issues/unarchive
+   - 「取消选择」one-click clear
+   - Shot (hide mode): 进行中 + 批量修改状态 + 批量归档 (1) + 取消选择; 解档 correctly hidden under 隐藏已归档
+
+3. Action bar does NOT occlude header/filters; ordered density …… PASS
+   - CSS .acb-list-bulk-bar: static flex between filter Space and table (margin 6/8, pad 6×10)
+   - Not fixed/absolute overlay; no half-screen dead-white stack on header
+   - Shot: bar between filter row and table header (标识/标题/…); headers fully visible
+
+4. After bulk archive, default hide removes rows (C1 semantics) …… PASS
+   - FE: archiveView==='hide' → filter archived ids out of local issues
+   - Soft† API: POST archive → default list id absent (27→26); include_archived=1 + archived=only visible; unarchive restores
+
+5. Chinese primary UI …… PASS
+   - 已选 / 批量改状态 / 批量归档 / 批量解档 / 取消选择 / 改状态为…; STATUS_LABELS zh
+   - Shot zh throughout
+
+6. Read pro-c-bulk.png fully …… PASS
+   - Matches C2: multi-select, bulk bar, archive count=1 for one done, Chinese, no occlusion
+
+7. Soft† optional API …… PASS† (notes below)
+
+C2-2 Soft† (not FAIL)
+- Standing: FE serial patchIssue accepted Soft† if it works
+- FE @a33651d still serial patchIssue — Soft† live serial PATCH #9+#10 todo→in_progress→todo =200 OK
+- Mid-run: Issue 域 landed POST …/issues/batch-status @3b8a0d6 (product勾 C2-2); FE not yet switched
+- Soft† live :8080 binary POST batch-status →405 (process not yet on 3b8a0d6); source+router present. Not a C2-4 redline.
+
+Soft† notes
+- Login POST /api/v1/auth/login admin@yumeng.tech OK
+- WS 育蒙科技 / project 示例项目 YM
+- Serial patch OK? YES (two issues, restore OK)
+- POST /issues/archive done#31 →200; default hide absent; include/only visible; unarchive → default restored
+- Live FE Vite skipped (shot+source)
+- batch-status live binary 405 Soft†; serial path is what FE uses @a33651d
+
+FAIL redlines hit? NONE
+Defects: (none blocking)
+
+Verdict: PASS† @a33651d
+One-line → 产品+React+总指挥: C2-4 PASS†；多选条/改状态串行 Soft†绿/done-only归档/解档(非hide)/清空/箱截/中文/不挡表头全绿；C2-2 源码已有但 FE 仍串行且 live 二进制未跟，不挡；C3–D/E2/G 未验。
