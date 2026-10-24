@@ -118,14 +118,12 @@ export default function SeatHandoffDrawer({ open, onClose, wsId, role, bots, key
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               席位 = 角色坑；换机换演员，不换席位
             </Typography.Text>
-            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+            <div
+              style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}
+              title={role.slug ? `CLI · ${role.slug}` : undefined}
+            >
               <Tag color={memberId ? 'blue' : 'default'}>{memberId ? `已绑 · ${boundLabel}` : '空闲'}</Tag>
               {keyHint ? <Tag>{keyHint}</Tag> : null}
-              {role.slug ? (
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  slug {role.slug}
-                </Typography.Text>
-              ) : null}
             </div>
             {role.claim?.claimed_at ? (
               <Typography.Paragraph type="secondary" style={{ margin: '6px 0 0', fontSize: 12 }}>
@@ -146,9 +144,14 @@ export default function SeatHandoffDrawer({ open, onClose, wsId, role, bots, key
               message="席位空闲"
               description={
                 <span>
-                  绑定后再看交接。新机：打开同一工作区 → 贴 Key 或{' '}
-                  <Typography.Text code>ymbot seat enter --role {role.slug}</Typography.Text> →{' '}
+                  绑定后再看交接。新机：打开同一工作区 → 贴 Key，或本机 seat enter 绑到席位「
+                  {roleDisplay(role)}」→{' '}
                   <Typography.Text code>ymbot handoff get</Typography.Text>
+                  {role.slug ? (
+                    <Typography.Text type="secondary" style={{ display: 'block', marginTop: 6, fontSize: 12 }} title={`CLI · ${role.slug}`}>
+                      （高级 CLI 见名册「绑定此机」折叠区）
+                    </Typography.Text>
+                  ) : null}
                 </span>
               }
             />
@@ -161,7 +164,7 @@ export default function SeatHandoffDrawer({ open, onClose, wsId, role, bots, key
               <section>
                 <Typography.Text strong>当前焦点</Typography.Text>
                 <div style={{ marginTop: 6, fontSize: 14 }}>
-                  {focus || <Typography.Text type="secondary">暂无 last_focus 记忆</Typography.Text>}
+                  {focus || <Typography.Text type="secondary">暂无焦点记忆</Typography.Text>}
                 </div>
               </section>
 

@@ -178,8 +178,8 @@ export default function BotDetailPage() {
                     <Form.Item name="value_text" rules={[{ required: true }]}>
                       <Input placeholder="内容" style={{ width: 280 }} />
                     </Form.Item>
-                    <Form.Item name="tags">
-                      <Input placeholder='标签 JSON，默认 []' style={{ width: 160 }} />
+                    <Form.Item name="tags" hidden>
+                      <Input />
                     </Form.Item>
                     <Button type="primary" htmlType="submit">
                       保存

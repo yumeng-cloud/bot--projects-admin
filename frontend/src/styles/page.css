@@ -132,3 +132,30 @@
 body > #root .acb-page .acb-list-table .ant-table-tbody > tr > td {
   height: 40px;
 }
+
+/* ── Grounded surface (Home / Settings / Time): anti-floating void ── */
+.acb-page > .acb-surface-panel,
+.acb-page > .acb-settings-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: var(--acb-bg-container);
+  border: 1px solid var(--acb-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow: auto;
+}
+
+.acb-settings-panel .ant-tabs {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.acb-settings-panel .ant-tabs-content-holder {
+  flex: 1 1 auto;
+  min-height: 0;
+}

@@ -239,6 +239,7 @@ export default function TimePage() {
         </Space>
       </div>
 
+      <div className="acb-surface-panel">
       <Tabs
         items={[
           {
@@ -397,6 +398,7 @@ export default function TimePage() {
           },
         ]}
       />
+      </div>
 
       <Modal
         title="记一笔工时"

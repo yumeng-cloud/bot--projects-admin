@@ -144,7 +144,7 @@ export default function BotsRosterPage() {
             <li>新机打开同一工作区</li>
             <li>
               绑定到同一席位（贴 Bot Key，或本机执行{' '}
-              <Typography.Text code>ymbot seat enter --role &lt;slug&gt;</Typography.Text>）
+              <Typography.Text code>ymbot seat enter</Typography.Text> 指定席位）
             </li>
             <li>
               <Typography.Text code>ymbot handoff get</Typography.Text> 拉记忆 / Todo / 开放 Issue
@@ -177,14 +177,13 @@ export default function BotsRosterPage() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
                   <div style={{ minWidth: 0 }}>
-                    <Typography.Text strong style={{ fontSize: 15 }}>
+                    <Typography.Text
+                      strong
+                      style={{ fontSize: 15 }}
+                      title={role.slug ? `CLI · ${role.slug}` : undefined}
+                    >
                       {roleDisplay(role)}
                     </Typography.Text>
-                    {role.slug ? (
-                      <Typography.Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
-                        {role.slug}
-                      </Typography.Text>
-                    ) : null}
                   </div>
                   <Tag color={busy ? 'blue' : 'default'} style={{ margin: 0, flexShrink: 0 }}>
                     {busy ? '已绑' : '空闲'}
@@ -273,7 +272,8 @@ export default function BotsRosterPage() {
                 看板侧没有「本机设备」清单。请在新机 Cursor / Agent 环境：
                 <br />
                 1）打开本工作区；2）配置同一 Bot Key，或执行{' '}
-                <Typography.Text code>ymbot seat enter --role &lt;slug&gt;</Typography.Text>；3）再{' '}
+                <Typography.Text code>ymbot seat enter --role frontend</Typography.Text>
+                （英文代号仅 CLI，界面席位名是「前端」等）；3）再{' '}
                 <Typography.Text code>handoff get</Typography.Text>
                 。上方「指派 Bot 认领」仅供管理员在看板内把已有 Bot 成员挂到空席。
               </Typography.Paragraph>
@@ -345,13 +345,9 @@ export default function BotsRosterPage() {
                       columns={[
                         { title: '名称', dataIndex: 'name' },
                         {
-                          title: '前缀',
+                          title: 'Key',
                           dataIndex: 'key_prefix',
-                          render: (v: string) => (
-                            <Typography.Text code style={{ fontSize: 12 }}>
-                              {v}
-                            </Typography.Text>
-                          ),
+                          render: (v: string) => keyTailHint(v) || '—',
                         },
                         {
                           title: '演员',

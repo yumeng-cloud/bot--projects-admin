@@ -51,54 +51,59 @@ export default function HomePage({ onLogout }: { onLogout: () => void }) {
         <Button onClick={onLogout}>退出登录</Button>
       </div>
 
-      <Table
-        className="acb-list-table"
-        size="small"
-        rowKey="id"
-        pagination={false}
-        dataSource={workspaces}
-        locale={{ emptyText: '暂无工作空间，请运行 seed' }}
-        columns={[
-          {
-            title: '名称',
-            dataIndex: 'name',
-            render: (v: string, w) => (
-              <Button type="link" style={{ padding: 0 }} onClick={() => enter(w, 'board')}>
-                {v}
-              </Button>
-            ),
-          },
-          {
-            title: '角色',
-            dataIndex: 'role',
-            width: 100,
-            render: (v: string) => roleLabel(v),
-          },
-          {
-            title: '进入',
-            key: 'nav',
-            render: (_, w) => (
-              <Space size={4} wrap>
-                <Button size="small" type="link" onClick={() => enter(w, 'board')}>
-                  看板
+      <div className="acb-surface-panel">
+        <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+          我的工作区{workspaces.length ? ` · ${workspaces.length}` : ''}
+        </Typography.Text>
+        <Table
+          className="acb-list-table"
+          size="small"
+          rowKey="id"
+          pagination={false}
+          dataSource={workspaces}
+          locale={{ emptyText: '暂无工作空间，请运行 seed' }}
+          columns={[
+            {
+              title: '名称',
+              dataIndex: 'name',
+              render: (v: string, w) => (
+                <Button type="link" style={{ padding: 0 }} onClick={() => enter(w, 'board')}>
+                  {v}
                 </Button>
-                <Button size="small" type="link" onClick={() => enter(w, 'list')}>
-                  列表
-                </Button>
-                <Button size="small" type="link" onClick={() => enter(w, 'cycles')}>
-                  Cycles
-                </Button>
-                <Button size="small" type="link" onClick={() => enter(w, 'wiki')}>
-                  Wiki
-                </Button>
-                <Button size="small" type="link" onClick={() => enter(w, 'settings')}>
-                  设置
-                </Button>
-              </Space>
-            ),
-          },
-        ]}
-      />
+              ),
+            },
+            {
+              title: '角色',
+              dataIndex: 'role',
+              width: 100,
+              render: (v: string) => roleLabel(v),
+            },
+            {
+              title: '进入',
+              key: 'nav',
+              render: (_, w) => (
+                <Space size={4} wrap>
+                  <Button size="small" type="link" onClick={() => enter(w, 'board')}>
+                    看板
+                  </Button>
+                  <Button size="small" type="link" onClick={() => enter(w, 'list')}>
+                    列表
+                  </Button>
+                  <Button size="small" type="link" onClick={() => enter(w, 'cycles')}>
+                    Cycles
+                  </Button>
+                  <Button size="small" type="link" onClick={() => enter(w, 'wiki')}>
+                    Wiki
+                  </Button>
+                  <Button size="small" type="link" onClick={() => enter(w, 'settings')}>
+                    设置
+                  </Button>
+                </Space>
+              ),
+            },
+          ]}
+        />
+      </div>
     </div>
   )
 }

@@ -49,12 +49,12 @@ export function buildHandoffCardText(opts: {
 }): string {
   const { seat, handoff, focus, todos, issues } = opts
   const lines: string[] = []
-  lines.push(`【席位交接卡】${seat.roleName}${seat.roleSlug ? `（${seat.roleSlug}）` : ''}`)
+  lines.push(`【席位交接卡】${seat.roleName}`)
   lines.push(`绑定：${seat.boundLabel}${seat.keyHint ? ` · Key ${seat.keyHint}` : ''}`)
   if (seat.claimedAt) lines.push(`认领时间：${formatShanghai(seat.claimedAt)}`)
   if (handoff?.generated_at) lines.push(`摘要生成：${formatShanghai(handoff.generated_at)}`)
   lines.push('')
-  lines.push(`当前焦点：${focus || '（暂无 last_focus）'}`)
+  lines.push(`当前焦点：${focus || '（暂无）'}`)
   lines.push('')
   lines.push(`进行中 Todos（${todos.length}）`)
   if (todos.length) {

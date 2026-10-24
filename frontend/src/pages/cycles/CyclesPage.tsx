@@ -74,7 +74,7 @@ export default function CyclesPage({ workspaceId, projectId }: CyclesPageProps) 
     if (!selected) return
     try {
       const { cycle } = await patchCycle(workspaceId, selected.id, { status: 'completed' })
-      message.success(`已结束 ${cycle.name}，未完成项已回待办池（演示）`)
+      message.success(`已结束 ${cycle.name}，未完成项已回待办池`)
       await load()
     } catch (e) {
       message.error((e as Error).message || '结束失败')
