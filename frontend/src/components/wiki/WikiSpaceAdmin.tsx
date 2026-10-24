@@ -179,12 +179,8 @@ export function WikiSpaceAdmin({
       width={420}
       destroyOnHidden
       extra={
-        panel === 'list' ? (
-          <Button type="primary" className="acb-wiki-admin-create" icon={<PlusOutlined />} onClick={openCreate}>
-            新建知识库
-          </Button>
-        ) : (
-          <Button type="link" onClick={resetToList}>
+        panel === 'list' ? null : (
+          <Button type="text" className="acb-wiki-admin-back" onClick={resetToList}>
             返回列表
           </Button>
         )
@@ -192,74 +188,94 @@ export function WikiSpaceAdmin({
     >
       <div className="acb-wiki-admin-body">
         {panel === 'list' ? (
-          spaces.length === 0 ? (
-            <div className="acb-wiki-admin-empty">
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="还没有知识库"
-              />
-              <Button type="primary" className="acb-wiki-admin-create" icon={<PlusOutlined />} onClick={openCreate}>
+          <>
+            <div className="acb-wiki-admin-toolbar">
+              <Button
+                type="primary"
+                block
+                className="acb-wiki-admin-create"
+                icon={<PlusOutlined />}
+                onClick={openCreate}
+              >
                 新建知识库
               </Button>
             </div>
-          ) : (
-            <List
-              className="acb-wiki-admin-list"
-              dataSource={spaces}
-              renderItem={(s) => {
-                const count = pageCountBySpace?.[s.id]
-                const metaParts: string[] = []
-                if (typeof count === 'number') metaParts.push(`${count} 页`)
-                if (s.updated_at) metaParts.push(`更新于 ${formatWikiTime(s.updated_at)}`)
-                return (
-                  <List.Item
-                    className={
-                      s.id === currentSpaceId
-                        ? 'acb-wiki-admin-row acb-wiki-admin-row--active'
-                        : 'acb-wiki-admin-row'
-                    }
-                    actions={[
-                      <Dropdown key="more" menu={{ items: rowMenu(s) }} trigger={['click']}>
+            {spaces.length === 0 ? (
+              <div className="acb-wiki-admin-empty">
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="还没有知识库"
+                />
+              </div>
+            ) : (
+              <List
+                className="acb-wiki-admin-list"
+                dataSource={spaces}
+                renderItem={(s) => {
+                  const count = pageCountBySpace?.[s.id]
+                  const metaParts: string[] = []
+                  if (typeof count === 'number') metaParts.push(`${count} 页`)
+                  if (s.updated_at) metaParts.push(`更新于 ${formatWikiTime(s.updated_at)}`)
+                  return (
+                    <List.Item
+                      className={
+                        s.id === currentSpaceId
+                          ? 'acb-wiki-admin-row acb-wiki-admin-row--active'
+                          : 'acb-wiki-admin-row'
+                      }
+                      actions={[
                         <Button
-                          type="text"
+                          key="settings"
+                          type="link"
                           size="small"
-                          icon={<MoreOutlined />}
-                          aria-label="更多"
-                        />
-                      </Dropdown>,
-                    ]}
-                  >
-                    <List.Item.Meta
-                      title={
-                        <Typography.Link
-                          onClick={() => {
-                            onSelectSpace(s.id)
-                            handleClose()
-                          }}
+                          className="acb-wiki-admin-row-settings"
+                          icon={<SettingOutlined />}
+                          onClick={() => openEdit(s)}
                         >
-                          {s.name}
-                        </Typography.Link>
-                      }
-                      description={
-                        <Space direction="vertical" size={0}>
-                          {s.description ? (
-                            <Typography.Text type="secondary" ellipsis>
-                              {s.description}
-                            </Typography.Text>
-                          ) : null}
-                          {metaParts.length ? (
-                            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                              {metaParts.join(' · ')}
-                            </Typography.Text>
-                          ) : null}
-                        </Space>
-                      }
-                    />
-                  </List.Item>
-                )
-              }}
-            />
-          )
+                          设置
+                        </Button>,
+                        <Dropdown key="more" menu={{ items: rowMenu(s) }} trigger={['click']}>
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<MoreOutlined />}
+                            aria-label="更多"
+                          />
+                        </Dropdown>,
+                      ]}
+                    >
+                      <List.Item.Meta
+                        title={
+                          <Typography.Link
+                            onClick={() => {
+                              onSelectSpace(s.id)
+                              handleClose()
+                            }}
+                          >
+                            {s.name}
+                          </Typography.Link>
+                        }
+                        description={
+                          <Space direction="vertical" size={0}>
+                            {s.description ? (
+                              <Typography.Text type="secondary" ellipsis>
+                                {s.description}
+                              </Typography.Text>
+                            ) : null}
+                            {metaParts.length ? (
+                              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                {metaParts.join(' · ')}
+                              </Typography.Text>
+                            ) : null}
+                          </Space>
+                        }
+                      />
+                    </List.Item>
+                  )
+                }}
+              />
+            )}
+          </>
         ) : (
           <Form form={form} layout="vertical" requiredMark={false}>
             <Form.Item

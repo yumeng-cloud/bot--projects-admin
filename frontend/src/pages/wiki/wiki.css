@@ -1130,3 +1130,14 @@ button.acb-wiki-prop-chip:focus-visible {
   background: color-mix(in srgb, var(--acb-primary, #5b5bd6) 8%, transparent);
   border-radius: 8px;
 }
+
+/* Structure hooks (React admin drawer) — UI 视觉可覆写 */
+.acb-wiki-admin-toolbar {
+  margin-bottom: 12px;
+}
+.acb-wiki-admin-back.ant-btn {
+  color: var(--wiki-text-secondary, #64748B);
+}
+.acb-wiki-admin-row-settings.ant-btn-link {
+  padding-inline: 4px;
+}
