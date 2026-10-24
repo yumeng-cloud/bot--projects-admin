@@ -40,6 +40,7 @@ import {
 } from '../../../api/bots'
 import { ApiError, api } from '../../../api/client'
 import {
+  bindSeat,
   createTeamInvite,
   getRoster,
   inviteStatusCn,
@@ -49,6 +50,7 @@ import {
   listTeamInvites,
   revokeTeamInvite,
   seatOccupancy,
+  unbindSeat,
   type Team,
   type TeamInvite,
   type TeamSeat,
@@ -92,7 +94,7 @@ export default function BotsRosterPage() {
   const { wsId = '' } = useParams()
   const [searchParams] = useSearchParams()
   const forceEmpty = searchParams.get('f1empty') === '1'
-  const { teams, teamId, setTeamId, loading: teamLoading } = useCurrentTeam(wsId)
+  const { teams, teamId, setTeamId, loading: teamLoading, reload } = useCurrentTeam(wsId)
   const [loading, setLoading] = useState(true)
   const [bots, setBots] = useState<BotRosterItem[]>([])
   const [roles, setRoles] = useState<BotRole[]>([])
@@ -105,6 +107,8 @@ export default function BotsRosterPage() {
   const [conflictInfo, setConflictInfo] = useState<SeatConflictInfo | null>(null)
   /** 与向导同源的团队席位占用（N4 同步） */
   const [teamSeats, setTeamSeats] = useState<TeamSeat[]>([])
+  /** 建队瞬间 teams 列表尚未 reload 时顶栏/页眉仍显示新队名 */
+  const [pendingCreatedTeam, setPendingCreatedTeam] = useState<Team | null>(null)
   const [issuedInvites, setIssuedInvites] = useState<TeamInvite[]>([])
   const [inviteBusy, setInviteBusy] = useState(false)
   /** 签发当次明文，只存活到复制成功后的一次 Toast；列表只留末四 */
@@ -146,18 +150,24 @@ export default function BotsRosterPage() {
     void load()
   }, [wsId])
 
-  /** 顶栏 CurrentTeam 换队：清空席/邀请缓存并 refetch；记忆墙由 TeamPinsPanel 按 teamId 换池（P5） */
+  /** 顶栏 CurrentTeam 换队：邀请缓存清空并 refetch；保留同队已 seed 的 roster（建队 onCreated）防闪空 */
   useEffect(() => {
-    setTeamSeats([])
     setIssuedInvites([])
-    if (!wsId || !teamId) return
+    if (!wsId || !teamId) {
+      setTeamSeats([])
+      return
+    }
+    setTeamSeats((prev) => prev.filter((s) => s.team_id === teamId))
     let cancelled = false
     void (async () => {
       try {
         const rost = await getRoster(wsId, teamId)
         if (!cancelled) setTeamSeats(rost.roster || [])
       } catch {
-        if (!cancelled) setTeamSeats([])
+        // 保留 onCreated 已 seed 的本队席，避免 Toast 有席而主区闪「尚未绑定」
+        if (!cancelled) {
+          setTeamSeats((prev) => (prev.some((s) => s.team_id === teamId) ? prev : []))
+        }
       }
       // Go 29f9404+ 已挂 GET invites（无明文）；失败则保留本页签发缓存
       try {
@@ -172,12 +182,18 @@ export default function BotsRosterPage() {
     }
   }, [wsId, teamId])
 
-  const onTeamCreatedFromTemplate = (team: Team, _roster: TeamSeat[]) => {
+  /** SEAT_VISIBILITY：立刻切新队 + 用返回名册 seed，避免只 Toast */
+  const onTeamCreatedFromTemplate = (team: Team, roster: TeamSeat[]) => {
+    setPendingCreatedTeam(team)
+    setTeamSeats(roster || [])
     setTeamId(team.id)
+    void reload().finally(() => setPendingCreatedTeam(null))
     void load()
   }
 
-  const currentTeamName = teams.find((t) => t.id === teamId)?.name
+  const currentTeamName =
+    teams.find((t) => t.id === teamId)?.name ||
+    (pendingCreatedTeam && pendingCreatedTeam.id === teamId ? pendingCreatedTeam.name : undefined)
   const teamLabel = currentTeamName ? (
     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
       当前队 · {currentTeamName}
@@ -196,18 +212,49 @@ export default function BotsRosterPage() {
   }
 
   const freeBots = useMemo(() => bots.filter((b) => b.bot_enabled), [bots])
-  /** TEAM_SWITCH S2：有当前队时席网格只展示该队 roster 对应 roles，勿用 WS 全量 bot_roles */
+  /** TEAM_SWITCH S2 + SEAT_VISIBILITY：按本队 roster 出卡；无匹配 bot_role 时用席合成，保证空席可见 */
   const visibleRoles = useMemo(() => {
     if (!teamId) return roles
-    const ids = new Set(
-      teamSeats.map((s) => s.bot_role_id).filter((id): id is string => Boolean(id)),
-    )
-    return roles.filter((r) => ids.has(r.id))
-  }, [teamId, teamSeats, roles])
+    if (!teamSeats.length) return []
+    const byId = new Map(roles.map((r) => [r.id, r]))
+    const bySlug = new Map(roles.map((r) => [r.slug, r]))
+    const out: BotRole[] = []
+    const seen = new Set<string>()
+    for (const s of teamSeats) {
+      const hit =
+        (s.bot_role_id && byId.get(s.bot_role_id)) ||
+        (s.role_slug && bySlug.get(s.role_slug)) ||
+        null
+      if (hit) {
+        if (seen.has(hit.id)) continue
+        seen.add(hit.id)
+        out.push(hit)
+        continue
+      }
+      const sid = s.bot_role_id || `seat:${s.id}`
+      if (seen.has(sid)) continue
+      seen.add(sid)
+      out.push({
+        id: sid,
+        workspace_id: s.workspace_id || wsId,
+        name: s.display_name || s.role_slug || '未命名席位',
+        slug: s.role_slug || s.id,
+        responsibilities: '',
+        skills: '',
+        default_project_ids: '',
+        created_at: s.created_at,
+        updated_at: s.updated_at,
+        claim: null,
+      })
+    }
+    return out
+  }, [teamId, teamSeats, roles, wsId])
+  /** SEAT_VISIBILITY：roster 非空（含纯空席）即走出空态；禁「有 5 空席仍尚未绑定」 */
   const hasAnyBinding = useMemo(() => {
     if (forceEmpty) return false
+    if (teamSeats.length > 0) return true
     if (roles.some((r) => Boolean(r.claim?.member_id))) return true
-    return teamSeats.some((s) => seatOccupancy(s) === 'active')
+    return false
   }, [roles, teamSeats, forceEmpty])
 
   const openSeat = (role: BotRole) => setDrawerRole(role)
@@ -305,16 +352,21 @@ export default function BotsRosterPage() {
   }
 
 
-  /** D5：与向导同源读 team_seats.status（active/empty/left）；无席时再回落 claim */
+  /** D5 + V7：team_seats 优先；席 empty 但 role.claim 已有人时仍算占用（防只 Toast 卡仍等待绑定） */
   const seatOccForRole = (role: BotRole) => {
     const claimMid = role.claim?.member_id || null
     const seat =
       teamSeats.find((s) => s.bot_role_id && s.bot_role_id === role.id) ||
-      teamSeats.find((s) => s.role_slug && s.role_slug === role.slug)
+      teamSeats.find((s) => s.role_slug && s.role_slug === role.slug) ||
+      (role.id.startsWith('seat:')
+        ? teamSeats.find((s) => s.id === role.id.slice(5))
+        : undefined)
     const occ: 'active' | 'empty' | 'left' | null = seat ? seatOccupancy(seat) : null
     let kind: 'active' | 'empty' | 'left'
-    if (occ) kind = occ
-    else kind = claimMid ? 'active' : 'empty'
+    if (occ === 'left') kind = 'left'
+    else if (occ === 'active' || claimMid) kind = 'active'
+    else if (occ === 'empty') kind = 'empty'
+    else kind = 'empty'
     const occupantId =
       (kind === 'active'
         ? claimMid ||
@@ -329,23 +381,140 @@ export default function BotsRosterPage() {
     return { kind, occupied: kind === 'active', occupantId, occupantLabel, seat }
   }
 
+  const refreshTeamRoster = async () => {
+    if (!wsId || !teamId) return
+    try {
+      const rost = await getRoster(wsId, teamId)
+      setTeamSeats(rost.roster || [])
+    } catch {
+      /* 保留乐观态 */
+    }
+  }
+
+  const applyOptimisticBind = (role: BotRole, memberId: string, bound?: TeamSeat | null) => {
+    const label = botName(memberId) || '已绑定'
+    const now = new Date().toISOString()
+    setRoles((prev) =>
+      prev.map((r) =>
+        r.id === role.id
+          ? {
+              ...r,
+              claim: {
+                id: r.claim?.id || `optimistic:${r.id}`,
+                workspace_id: r.workspace_id,
+                role_id: r.id,
+                member_id: memberId,
+                claimed_at: r.claim?.claimed_at || now,
+              },
+            }
+          : r,
+      ),
+    )
+    setTeamSeats((prev) => {
+      if (bound) {
+        return prev.map((s) => (s.id === bound.id ? { ...s, ...bound } : s))
+      }
+      return prev.map((s) => {
+        const match =
+          (s.bot_role_id && s.bot_role_id === role.id) ||
+          (s.role_slug && s.role_slug === role.slug) ||
+          (role.id.startsWith('seat:') && s.id === role.id.slice(5))
+        if (!match) return s
+        return {
+          ...s,
+          status: 'active',
+          bound_member_id: memberId,
+          member_id: memberId,
+          bound_display_name: label,
+          bound_at: now,
+          claim: { member_id: memberId, claimed_at: now },
+        }
+      })
+    })
+  }
+
 
   const onRelease = async (role: BotRole) => {
     try {
-      await releaseBotRole(wsId, role.id, crypto.randomUUID())
+      const seat = seatOccForRole(role).seat
+      if (teamId && seat?.id) {
+        try {
+          const { seat: unbound } = await unbindSeat(wsId, teamId, seat.id, undefined, crypto.randomUUID())
+          setTeamSeats((prev) => prev.map((s) => (s.id === unbound.id ? { ...s, ...unbound } : s)))
+        } catch {
+          /* 无 bind API 时仍走 role release */
+        }
+      }
+      if (!role.id.startsWith('seat:')) {
+        await releaseBotRole(wsId, role.id, crypto.randomUUID())
+      }
+      setRoles((prev) => prev.map((r) => (r.id === role.id ? { ...r, claim: null } : r)))
+      setTeamSeats((prev) =>
+        prev.map((s) => {
+          const match =
+            (s.bot_role_id && s.bot_role_id === role.id) ||
+            (s.role_slug && s.role_slug === role.slug) ||
+            (role.id.startsWith('seat:') && s.id === role.id.slice(5))
+          if (!match) return s
+          return {
+            ...s,
+            status: 'empty',
+            bound_member_id: null,
+            member_id: null,
+            bound_display_name: null,
+            bound_at: null,
+            claim: null,
+          }
+        }),
+      )
       message.success(`已释放席位「${roleDisplay(role)}」`)
       void load()
+      void refreshTeamRoster()
     } catch {
       /* api client toasts */
     }
   }
 
+  /** V7：绑成功同帧更新席卡；team 下优先 bindSeat，并乐观刷新 roles+teamSeats */
   const onClaim = async (role: BotRole, memberId: string) => {
     setClaiming(role.id)
     try {
-      await claimBotRole(wsId, role.id, memberId, crypto.randomUUID(), { skipToast: true })
+      const seat = seatOccForRole(role).seat
+      let bound: TeamSeat | null = null
+      if (teamId && seat?.id) {
+        try {
+          const res = await bindSeat(
+            wsId,
+            teamId,
+            seat.id,
+            { member_id: memberId },
+            crypto.randomUUID(),
+          )
+          bound = res.seat
+        } catch (e: unknown) {
+          if (isSeatConflict(e) || (e instanceof ApiError && e.status === 409)) {
+            throw e
+          }
+          /* bind 未开通则回落 claimBotRole */
+        }
+      }
+      if (!role.id.startsWith('seat:')) {
+        try {
+          await claimBotRole(wsId, role.id, memberId, crypto.randomUUID(), { skipToast: true })
+        } catch (e: unknown) {
+          if (!bound && (isSeatConflict(e) || (e instanceof ApiError && e.status === 409))) {
+            throw e
+          }
+          if (!bound) throw e
+        }
+      } else if (!bound) {
+        message.error('无法绑到合成席，请刷新后重试')
+        return
+      }
+      applyOptimisticBind(role, memberId, bound)
       message.success(`已将「${botName(memberId)}」绑到席位「${roleDisplay(role)}」`)
       void load()
+      void refreshTeamRoster()
     } catch (e: unknown) {
       if (isSeatConflict(e) || (e instanceof ApiError && e.status === 409)) {
         setConflictInfo({
@@ -641,14 +810,20 @@ export default function BotsRosterPage() {
           open={joinOpen}
           onClose={() => setJoinOpen(false)}
           wsId={wsId}
-          onEntered={({ memberId }) => {
+          onEntered={({ memberId, roleId }) => {
             void load()
-            const role = roles.find((r) => r.claim?.member_id === memberId) || null
+            void refreshTeamRoster()
+            const role =
+              (roleId ? roles.find((r) => r.id === roleId) : null) ||
+              roles.find((r) => r.claim?.member_id === memberId) ||
+              null
             if (role) setDrawerRole(role)
             else {
-              // 刷新后再开交接：按 member 找
               void listBotRoles(wsId).then((r) => {
-                const hit = (r.bot_roles || []).find((x) => x.claim?.member_id === memberId)
+                const list = r.bot_roles || []
+                const hit =
+                  (roleId ? list.find((x) => x.id === roleId) : null) ||
+                  list.find((x) => x.claim?.member_id === memberId)
                 if (hit) setDrawerRole(hit)
               })
             }
@@ -1000,12 +1175,15 @@ export default function BotsRosterPage() {
         open={joinOpen}
         onClose={() => setJoinOpen(false)}
         wsId={wsId}
-        onEntered={({ memberId }) => {
-          void load().then(() => {
-            void listBotRoles(wsId).then((r) => {
-              const hit = (r.bot_roles || []).find((x) => x.claim?.member_id === memberId)
-              if (hit) setDrawerRole(hit)
-            })
+        onEntered={({ memberId, roleId }) => {
+          void load()
+          void refreshTeamRoster()
+          void listBotRoles(wsId).then((r) => {
+            const list = r.bot_roles || []
+            const hit =
+              (roleId ? list.find((x) => x.id === roleId) : null) ||
+              list.find((x) => x.claim?.member_id === memberId)
+            if (hit) setDrawerRole(hit)
           })
         }}
       />

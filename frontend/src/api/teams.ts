@@ -18,7 +18,7 @@ export type TeamSeatClaim = {
 }
 
 /** 席位态：有 claim/绑定且活跃 → active；无绑 → empty；产品 left/stopped 可显式标 */
-export type TeamSeatStatus = 'active' | 'empty' | 'left' | 'stopped' | 'departed'
+export type TeamSeatStatus = 'active' | 'empty' | 'open' | 'left' | 'stopped' | 'departed'
 
 export type TeamSeat = {
   id: string
@@ -363,7 +363,7 @@ export function seatOccupancy(seat: TeamSeat): 'active' | 'empty' | 'left' {
   const st = (seat.status || '').toLowerCase()
   if (st === 'left' || st === 'stopped' || st === 'departed') return 'left'
   if (st === 'active') return 'active'
-  if (st === 'empty') return 'empty'
+  if (st === 'empty' || st === 'open') return 'empty'
   if (seat.claim?.member_id) return 'active'
   if (seat.bound_member_id) return 'active'
   return 'empty'
