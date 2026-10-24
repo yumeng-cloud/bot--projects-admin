@@ -8,6 +8,7 @@ import {
   Drawer,
   Empty,
   Checkbox,
+  Dropdown,
   Input,
   Modal,
   Popconfirm,
@@ -20,7 +21,15 @@ import {
   Typography,
   message,
 } from 'antd'
-import { CopyOutlined, PlusOutlined, SendOutlined, UserAddOutlined } from '@ant-design/icons'
+import {
+  CopyOutlined,
+  FileTextOutlined,
+  LinkOutlined,
+  MoreOutlined,
+  PlusOutlined,
+  SendOutlined,
+  UserAddOutlined,
+} from '@ant-design/icons'
 import {
   claimBotRole,
   listBotRoles,
@@ -54,6 +63,11 @@ import SeatConflictPanel, { type SeatConflictInfo } from './SeatConflictPanel'
 import SeatHandoffDrawer from './SeatHandoffDrawer'
 import TeamPinsPanel from './TeamPinsPanel'
 import { roleDisplay } from './seatHandoffText'
+import {
+  buildBotJoinPrompt,
+  buildJoinUrl,
+  inviteCodeTail,
+} from '../../../utils/oneTapJoin'
 import './bots.css'
 
 type ApiKeyRow = {
@@ -349,50 +363,212 @@ export default function BotsRosterPage() {
     }
   }
 
-  const onCopyInvite = async () => {
+  type InviteRoleCtx = { slug?: string | null; displayName?: string | null }
+
+  /** 签发入场码并缓存末四；明文仅返回一次。role 写入 role_hint（可选）。 */
+  const issueInvitePlain = async (roleCtx?: InviteRoleCtx): Promise<string | null> => {
     if (!teamId) {
       message.warning('尚无团队，请先创建或加入班底')
-      return
+      return null
     }
+    const slug = (roleCtx?.slug || '').trim()
+    const { invite } = await createTeamInvite(
+      wsId,
+      teamId,
+      {
+        allow_expand_seat: true,
+        ...(slug ? { role_hint: slug, seat_slug: slug } : {}),
+      },
+      crypto.randomUUID(),
+    )
+    const plain = invite.code || null
+    const tail = inviteTail(invite)
+    setIssuedInvites((prev) => [
+      {
+        ...invite,
+        code: undefined,
+        code_tail: tail,
+        code_prefix: invite.code_prefix || `ymt_····${tail}`,
+      },
+      ...prev.filter((x) => x.id !== invite.id),
+    ])
+    return plain
+  }
+
+  const rememberPlainBriefly = (plain: string) => {
+    setLastPlainInvite(plain)
+    window.setTimeout(() => setLastPlainInvite(null), 0)
+  }
+
+  /** B1：签发 + 剪贴板完整入场链接；Toast 含末四；提示勿发公开群 */
+  const onCopyJoinLink = async (roleCtx?: InviteRoleCtx) => {
     setInviteBusy(true)
     try {
-      const { invite } = await createTeamInvite(
-        wsId,
-        teamId,
-        { allow_expand_seat: true },
-        crypto.randomUUID(),
-      )
-      const plain = invite.code
-      if (plain) {
-        await navigator.clipboard.writeText(plain)
-        setLastPlainInvite(plain)
-        message.success(`已复制入场码（末四 ·${inviteTail(invite)}），请妥善转发`)
-        // 之后列表只留末四：剥明文
-        setIssuedInvites((prev) => [
-          {
-            ...invite,
-            code: undefined,
-            code_tail: inviteTail(invite),
-            code_prefix: invite.code_prefix || `ymt_····${inviteTail(invite)}`,
-          },
-          ...prev.filter((x) => x.id !== invite.id),
-        ])
-        // 明文仅 Toast 一次；状态里不长期存
-        window.setTimeout(() => setLastPlainInvite(null), 0)
-      } else {
+      const plain = await issueInvitePlain(roleCtx)
+      if (!plain) {
         message.success('已签发入场码（服务未返回明文，请查已签发列表末四）')
-        setIssuedInvites((prev) => [invite, ...prev])
+        return
       }
+      const role = (roleCtx?.slug || '').trim() || undefined
+      const url = buildJoinUrl({ code: plain, role })
+      await navigator.clipboard.writeText(url)
+      rememberPlainBriefly(plain)
+      const tail = inviteCodeTail(plain)
+      const roleHint = role ? ` · 席 ${role}` : ' · 通用码（未绑席）'
+      message.success(`已复制入场链接（末四 ·${tail}${roleHint}）。勿发公开群`)
     } catch (e: unknown) {
       if (isInviteServiceMissing(e)) {
         message.warning('入场码服务尚未开通')
       } else {
-        message.error(e instanceof ApiError ? e.message : '签发失败')
+        message.error(e instanceof ApiError ? e.message : e instanceof Error ? e.message : '复制入场链接失败')
       }
     } finally {
       setInviteBusy(false)
     }
   }
+
+  /** B2：同码同 role 完整 Bot 提示词 */
+  const onCopyBotPrompt = async (roleCtx?: InviteRoleCtx) => {
+    setInviteBusy(true)
+    try {
+      const plain = await issueInvitePlain(roleCtx)
+      if (!plain) {
+        message.success('已签发入场码（服务未返回明文，请查已签发列表末四）')
+        return
+      }
+      const role = (roleCtx?.slug || '').trim() || undefined
+      const prompt = buildBotJoinPrompt({
+        code: plain,
+        role,
+        roleDisplayName: roleCtx?.displayName || undefined,
+      })
+      await navigator.clipboard.writeText(prompt)
+      rememberPlainBriefly(plain)
+      const tail = inviteCodeTail(plain)
+      const roleHint = role ? ` · 席 ${role}` : ' · 通用码（未绑席）'
+      message.success(`已复制 Bot 提示词（末四 ·${tail}${roleHint}）。勿发公开群`)
+    } catch (e: unknown) {
+      if (isInviteServiceMissing(e)) {
+        message.warning('入场码服务尚未开通')
+      } else {
+        message.error(e instanceof ApiError ? e.message : e instanceof Error ? e.message : '复制提示词失败')
+      }
+    } finally {
+      setInviteBusy(false)
+    }
+  }
+
+  /** B4：裸 ymt_ 降次要 */
+  const onCopyBareInvite = async (roleCtx?: InviteRoleCtx) => {
+    setInviteBusy(true)
+    try {
+      const plain = await issueInvitePlain(roleCtx)
+      if (!plain) {
+        message.success('已签发入场码（服务未返回明文，请查已签发列表末四）')
+        return
+      }
+      await navigator.clipboard.writeText(plain)
+      rememberPlainBriefly(plain)
+      message.success(`已复制裸入场码（末四 ·${inviteCodeTail(plain)}）。建议改用入场链接/提示词；勿发公开群`)
+    } catch (e: unknown) {
+      if (isInviteServiceMissing(e)) {
+        message.warning('入场码服务尚未开通')
+      } else {
+        message.error(e instanceof ApiError ? e.message : e instanceof Error ? e.message : '签发失败')
+      }
+    } finally {
+      setInviteBusy(false)
+    }
+  }
+
+  /** 顶栏无席：通用码；席卡带 slug */
+  const inviteMoreMenu = (roleCtx?: InviteRoleCtx) => ({
+    items: [
+      {
+        key: 'bare',
+        label: '仅复制裸入场码（次要）',
+        icon: <CopyOutlined />,
+        onClick: () => void onCopyBareInvite(roleCtx),
+      },
+    ],
+  })
+
+  const renderOneTapActions = (opts?: {
+    roleCtx?: InviteRoleCtx
+    size?: 'small' | 'middle'
+    primary?: boolean
+    /** 席卡内紧凑链接按钮 */
+    compact?: boolean
+  }) => {
+    const size = opts?.size || 'small'
+    const roleCtx = opts?.roleCtx
+    const tipRole = roleCtx?.slug
+      ? `带席位 ${roleCtx.slug}`
+      : '通用码（未选席；Bot 入场时自动选空席）。也可先点席卡上的一键按钮'
+    if (opts?.compact) {
+      return (
+        <Space size={4} wrap onClick={(e) => e.stopPropagation()}>
+          <Tooltip title={`复制入场链接 · ${tipRole}；勿发公开群`}>
+            <Button
+              size="small"
+              type="link"
+              style={{ padding: 0 }}
+              icon={<LinkOutlined />}
+              loading={inviteBusy}
+              onClick={() => void onCopyJoinLink(roleCtx)}
+            >
+              入场链接
+            </Button>
+          </Tooltip>
+          <Tooltip title={`复制 Bot 提示词 · ${tipRole}`}>
+            <Button
+              size="small"
+              type="link"
+              style={{ padding: 0 }}
+              icon={<FileTextOutlined />}
+              loading={inviteBusy}
+              onClick={() => void onCopyBotPrompt(roleCtx)}
+            >
+              Bot 提示词
+            </Button>
+          </Tooltip>
+          <Dropdown menu={inviteMoreMenu(roleCtx)} trigger={['click']}>
+            <Button size="small" type="link" style={{ padding: 0 }} icon={<MoreOutlined />} aria-label="更多入场选项" />
+          </Dropdown>
+        </Space>
+      )
+    }
+    return (
+      <Space size={8} wrap>
+        <Tooltip title={`Admin 一键入场链接 · ${tipRole}；勿发公开群`}>
+          <Button
+            size={size}
+            icon={<LinkOutlined />}
+            loading={inviteBusy}
+            onClick={() => void onCopyJoinLink(roleCtx)}
+          >
+            复制入场链接
+          </Button>
+        </Tooltip>
+        <Tooltip title={`Admin 一键 Bot 提示词 · ${tipRole}；勿发公开群`}>
+          <Button
+            size={size}
+            icon={<FileTextOutlined />}
+            loading={inviteBusy}
+            onClick={() => void onCopyBotPrompt(roleCtx)}
+          >
+            复制 Bot 提示词
+          </Button>
+        </Tooltip>
+        <Dropdown menu={inviteMoreMenu(roleCtx)} trigger={['click']}>
+          <Tooltip title="次要：仅复制裸 ymt_ 码">
+            <Button size={size} icon={<MoreOutlined />} aria-label="更多入场选项" />
+          </Tooltip>
+        </Dropdown>
+      </Space>
+    )
+  }
+
 
   if (loading || teamLoading) {
     return (
@@ -436,11 +612,7 @@ export default function BotsRosterPage() {
             <Button size="small" icon={<PlusOutlined />} onClick={() => setCreateFromTplOpen(true)}>
               从模板创建
             </Button>
-            <Tooltip title="Admin 签发团队入场码（ymt_）">
-              <Button size="small" icon={<CopyOutlined />} loading={inviteBusy} onClick={() => void onCopyInvite()}>
-                复制入场码
-              </Button>
-            </Tooltip>
+            {renderOneTapActions()}
           </Space>
         </div>
         <Typography.Paragraph type="secondary" className="acb-bots-lead">
@@ -523,15 +695,11 @@ export default function BotsRosterPage() {
           <Button size="small" type="primary" icon={<UserAddOutlined />} onClick={() => setJoinOpen(true)}>
             加入班底
           </Button>
-          <Tooltip title="Admin：一次明文 + Toast，之后只见末四">
-            <Button size="small" icon={<CopyOutlined />} loading={inviteBusy} onClick={() => void onCopyInvite()}>
-              复制入场码
-            </Button>
-          </Tooltip>
+          {renderOneTapActions()}
         </Space>
       </div>
       <Typography.Paragraph type="secondary" className="acb-bots-lead">
-        席位 = 角色坑。换机只换演员；续命靠服务端交接摘要，不靠本机文件。
+        席位 = 角色坑。新 Bot 入场：点「复制入场链接」或「复制 Bot 提示词」（含码与席位）；勿发公开群。换机只换演员；续命靠服务端交接。
       </Typography.Paragraph>
 
       {migrateCollapse}
@@ -604,6 +772,13 @@ export default function BotsRosterPage() {
                   <Button size="small" type="link" style={{ padding: 0 }} onClick={() => openSeat(role)}>
                     查看交接
                   </Button>
+                  {renderOneTapActions({
+                    compact: true,
+                    roleCtx: {
+                      slug: role.slug || undefined,
+                      displayName: roleDisplay(role),
+                    },
+                  })}
                   {busy ? (
                     <Button
                       size="small"

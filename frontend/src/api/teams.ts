@@ -274,7 +274,14 @@ export function unbindSeat(
 export async function createTeamInvite(
   workspaceId: string,
   teamId: string,
-  body?: { allow_expand_seat?: boolean; max_uses?: number; expires_at?: string },
+  body?: {
+    allow_expand_seat?: boolean
+    max_uses?: number
+    expires_at?: string
+    /** 席位 slug 提示（ONE_TAP；URL/提示词仍以 FE 拼装为准） */
+    role_hint?: string
+    seat_slug?: string
+  },
   idempotencyKey?: string,
 ) {
   const res = await api<{ invite: TeamInvite; code?: string }>(
