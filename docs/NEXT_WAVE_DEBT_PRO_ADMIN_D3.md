@@ -29,9 +29,9 @@
 
 ## 产品勾选
 
-- [ ] **D3-1** WS 筛
-- [ ] **D3-2** 空结果/清空
-- [ ] **D3-3** 箱截
+- [ ] **D3-1** WS 筛 · React 已交 Soft† FE（等产品勾）
+- [ ] **D3-2** 空结果/清空 · React 已交（等产品勾）
+- [ ] **D3-3** 箱截 · React 已交（等产品勾）
 - [ ] **D3-4** QA
 - [ ] **D3-5** 关单
 
@@ -47,7 +47,8 @@
 ## 进度注记
 
 - 2026-10-25 02:08 · E2 关后产品拍开本刀；D4/G 仍冻。
+- 2026-10-25 · React D3-1～D3-3：用户台顶 **所属 WS 筛**（Select 可搜 + allowClear）与邮箱/名称防抖 `q` 叠加；**API `GET /admin/users` 无 `workspace_id` → Soft† FE 按 `row.workspaces[].id` 滤**（用户行已有 workspaces 列表，可靠）；清空筛恢复全部 + 空结果人话；箱截 `docs/qa-shots/pro-d-users.png`（WS 筛可见）。**不喊 Go**。等 QA D3-4 / 产品 D3-5。**D4/G 仍冻**。
 
 ## 关单进度
 
-**开干** · 等 React D3-1。
+**开干** · React D3-1～D3-3 已交 Soft†；等 QA D3-4。

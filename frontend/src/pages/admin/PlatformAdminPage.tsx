@@ -41,6 +41,7 @@ type WsStatusFilter = 'all' | 'enabled' | 'disabled'
  * 平台超管台（PRO_ADMIN A2）：顶栏标题+副文+主操作一排；工作区|用户对等；表区 hug。
  * C4：工作区表顶名称搜索 + 状态筛（FE 滤）。
  * D2：用户台所属 WS 芯片可点（有成员权进 WS / 否则复制名）；搜索防抖 + 空搜人话提示。
+ * D3：用户台所属 WS 筛（Select 可搜；API 无 workspace_id → Soft† FE 按 row.workspaces[].id 滤，与 q 叠加）。
  */
 export default function PlatformAdminPage() {
   const nav = useNavigate()
@@ -58,6 +59,8 @@ export default function PlatformAdminPage() {
   const [userQuery, setUserQuery] = useState('')
   const [userQueryDebounced, setUserQueryDebounced] = useState('')
   const userSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** D3 Soft†：所属工作区筛（FE 按 row.workspaces[].id；API 暂无 workspace_id） */
+  const [userWsFilter, setUserWsFilter] = useState<string | undefined>(undefined)
   /** D2：当前超管本人可进入的 WS（listMine）；用于芯片优先跳转 vs 复制 */
   const [myWsIds, setMyWsIds] = useState<Set<string>>(() => new Set())
   /** C4：工作区名称搜索 + 状态筛（FE 滤；API 无 q/status） */
@@ -245,6 +248,12 @@ export default function PlatformAdminPage() {
 
   const wsFilterActive = !!(wsQueryDebounced.trim() || wsStatusFilter !== 'all')
 
+  /** D3 Soft†：在 API ?q= 结果上再按所属 WS 客户端滤 */
+  const filteredUsers = userWsFilter
+    ? users.filter((row) => (row.workspaces || []).some((w) => w.id === userWsFilter))
+    : users
+  const userFilterActive = !!(userQueryDebounced.trim() || userWsFilter)
+
   const empty = (desc: string) => (
     <div className="acb-empty-panel" style={{ padding: 24, minHeight: 120 }}>
       <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={desc} />
@@ -409,28 +418,63 @@ export default function PlatformAdminPage() {
             },
             {
               key: 'users',
-              label: `用户${users.length ? ` (${users.length})` : ''}`,
+              label: `用户${filteredUsers.length ? ` (${filteredUsers.length})` : ''}`,
               children: (
                 <>
-                  <Input.Search
-                    allowClear
-                    placeholder="输入邮箱或名称筛选用户"
-                    value={userQuery}
-                    onChange={(e) => setUserQuery(e.target.value)}
-                    onSearch={(v) => {
-                      setUserQuery(v)
-                      setUserQueryDebounced(v)
-                    }}
-                    style={{ maxWidth: 320, marginBottom: 8 }}
-                    aria-label="输入邮箱或名称筛选用户"
-                  />
-                  {!userQueryDebounced.trim() ? (
+                  <Space wrap style={{ marginBottom: 8 }} size={8}>
+                    <Input.Search
+                      allowClear
+                      placeholder="输入邮箱或名称筛选用户"
+                      value={userQuery}
+                      onChange={(e) => setUserQuery(e.target.value)}
+                      onSearch={(v) => {
+                        setUserQuery(v)
+                        setUserQueryDebounced(v)
+                      }}
+                      style={{ width: 280 }}
+                      aria-label="输入邮箱或名称筛选用户"
+                    />
+                    <Select
+                      allowClear
+                      showSearch
+                      optionFilterProp="label"
+                      placeholder="按所属工作区筛选"
+                      value={userWsFilter}
+                      onChange={(v: string | undefined) => setUserWsFilter(v)}
+                      style={{ width: 240 }}
+                      aria-label="按所属工作区筛选"
+                      options={workspaces.map((w) => ({
+                        value: w.id,
+                        label: w.name || w.slug || w.id,
+                      }))}
+                      notFoundContent="无匹配工作区"
+                    />
+                  </Space>
+                  {!userFilterActive ? (
                     <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 0, marginBottom: 12 }}>
-                      输入邮箱或名称筛选用户；留空显示全部
+                      输入邮箱或名称，或按所属工作区筛选；清空筛选项即恢复全部
                     </Typography.Paragraph>
                   ) : (
                     <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 0, marginBottom: 12 }}>
-                      正在筛选「{userQueryDebounced.trim()}」
+                      {userQueryDebounced.trim()
+                        ? `正在筛选「${userQueryDebounced.trim()}」`
+                        : '正在按所属工作区筛选'}
+                      {userWsFilter
+                        ? ` · 工作区「${workspaces.find((w) => w.id === userWsFilter)?.name || userWsFilter}」`
+                        : ''}
+                      {' · '}
+                      <Button
+                        type="link"
+                        size="small"
+                        style={{ padding: 0, height: 'auto', fontSize: 12 }}
+                        onClick={() => {
+                          setUserQuery('')
+                          setUserQueryDebounced('')
+                          setUserWsFilter(undefined)
+                        }}
+                      >
+                        清空筛选
+                      </Button>
                     </Typography.Paragraph>
                   )}
                   {userErr ? (
@@ -447,13 +491,13 @@ export default function PlatformAdminPage() {
                     />
                   ) : null}
                   <Spin spinning={userLoading}>
-                    {users.length ? (
+                    {filteredUsers.length ? (
                       <Table
                         className="acb-list-table"
                         size="small"
                         rowKey="id"
                         pagination={false}
-                        dataSource={users}
+                        dataSource={filteredUsers}
                         columns={[
                           { title: '名称', dataIndex: 'name' },
                           { title: '邮箱', dataIndex: 'email', ellipsis: true },
@@ -525,8 +569,10 @@ export default function PlatformAdminPage() {
                     ) : (
                       empty(
                         userErr ||
-                          (userQueryDebounced.trim()
-                            ? '无匹配用户，试试其他邮箱或名称'
+                          (userFilterActive
+                            ? userWsFilter && !userQueryDebounced.trim()
+                              ? '该工作区下暂无用户，试试其他工作区或清空筛选'
+                              : '无匹配用户，试试其他邮箱/名称或工作区，或清空筛选'
                             : '还没有用户 · 输入邮箱或名称筛选用户'),
                       )
                     )}

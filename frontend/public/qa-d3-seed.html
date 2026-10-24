@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>D3 seed</title></head>
+<body style="font:14px sans-serif;padding:24px">
+<p id="s">正在进入超管用户台（D3 WS 筛）箱截…</p>
+<script>
+try {
+  localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI4NzM5N2EwMmJkZmVhMThjY2ZkNzVkMTlhNGJjZTJlOSIsImVtYWlsIjoiYWRtaW5AeXVtZW5nLnRlY2giLCJpc3MiOiJhaS1jb2xsYWItYm9hcmQiLCJleHAiOjE3OTM0NjkyMDQsImlhdCI6MTc5Mjg2NDQwNH0.9EPWX4RaNWa2gX3hsDd05wvzOcAcBOwPsYrvjsIMsH8');
+  localStorage.removeItem('ai-collab-board:force-mock');
+  document.getElementById('s').textContent = 'token ok → redirect';
+  location.replace('/admin?tab=users');
+} catch (e) {
+  document.getElementById('s').textContent = String(e);
+}
+</script>
+</body></html>

@@ -54,10 +54,19 @@ export function createAdminWorkspace(body: {
   })
 }
 
-/** D1：可选 q 按邮箱/名过滤 → GET /admin/users?q= */
-export function listAdminUsers(opts?: { q?: string }) {
+/**
+ * D1：可选 q 按邮箱/名过滤 → GET /admin/users?q=
+ * D3：API 暂无 workspace_id；所属 WS 筛由 FE Soft†（row.workspaces[].id）完成。
+ * 预留 workspace_id 参数：若后端日后支持则透传；当前调用方勿依赖服务端滤。
+ */
+export function listAdminUsers(opts?: { q?: string; workspace_id?: string }) {
+  const params = new URLSearchParams()
   const q = opts?.q?.trim()
-  const path = q ? `/admin/users?q=${encodeURIComponent(q)}` : '/admin/users'
+  if (q) params.set('q', q)
+  // Soft†：不向 API 发 workspace_id（后端未实现）；保留签名供日后切换
+  void opts?.workspace_id
+  const qs = params.toString()
+  const path = qs ? `/admin/users?${qs}` : '/admin/users'
   return api<{ users: AdminUser[] }>(path, { skipToast: true })
 }
 
