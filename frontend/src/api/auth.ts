@@ -5,6 +5,8 @@ export type User = {
   email: string
   name: string
   created_at?: string
+  /** C1：平台超管旗标；Go 未齐时缺省视为 false */
+  is_platform_admin?: boolean
 }
 
 export type AuthResp = { token: string; user: User }

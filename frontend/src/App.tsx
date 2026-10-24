@@ -11,6 +11,7 @@ import { getToken, setToken } from './api/client'
 import { logout, me, type User } from './api/auth'
 import SettingsPage from './pages/settings/SettingsPage'
 import { BotsRosterPage, BotDetailPage } from './pages/settings/bots'
+import PlatformAdminPage from './pages/admin/PlatformAdminPage'
 
 export default function App() {
   const [token, setTok] = useState(() => getToken())
@@ -44,6 +45,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage onLogout={onLogout} />} />
+        <Route path="/admin" element={<PlatformAdminPage />} />
+        <Route path="/admin/*" element={<PlatformAdminPage />} />
         <Route path="/w/:wsId" element={<AppLayout user={user} onLogout={onLogout} />}>
           <Route index element={<Navigate to="board" replace />} />
           {/* 短路径 → 首个项目 */}
