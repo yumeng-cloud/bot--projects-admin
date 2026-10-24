@@ -77,15 +77,16 @@
 - [x] **C4** 箱截 · `auto-crew-pack-after-create.png`
 - [ ] **C5** （可选）一键指派闲 Bot · **本波未做，不挡关**
 - [ ] **C6** （按需）batch API
-- [ ] **C7** QA
-- [ ] **C8** 产品关单
+- [x] **C7** QA PASS† `37b2228` · 证 `AUTO_CREW-qa-retest-20261024.txt`（5×ymt_+role，禁包内 ymk_）
+- [x] **C8** 产品关单
 
 ## 进度注记
 
+- 2026-10-24 23:33 · **关单** QA C7 PASS† `37b2228`（证 `AUTO_CREW-qa-retest-20261024.txt`）；勾 C7/C8。造班升档见 BATCH_CREW。
 - 2026-10-24 23:31 · **原 P1 升档** → [`BATCH_CREW`](./NEXT_WAVE_DEBT_BATCH_CREW.md) P0（造人+ymk_包）；本债 C7 仍在验，不挡 BATCH 开工。
 - 2026-10-24 23:30 · **产品勾 C1–C4** React `fef5914`；C5 未做不挡；**待 C7 QA**。
 - 2026-10-24 23:23 · 定稿。P0=入场包一次带走；自动 mint Bot+ymk_ 后置 P1。首刀 React C1–C4。
 
 ## 关单进度
 
-**进行中** · C1–C4 产品勾 `fef5914`；**待 C7 QA**；C5/C6 不挡。造人+ymk_ 见 [`BATCH_CREW`](./NEXT_WAVE_DEBT_BATCH_CREW.md)。
+**已关** · C1–C4+C7+C8 @ FE `fef5914` / QA `37b2228`；C5/C6 未做不挡。造人+ymk_ → [`BATCH_CREW`](./NEXT_WAVE_DEBT_BATCH_CREW.md)。
