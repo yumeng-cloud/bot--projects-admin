@@ -101,3 +101,22 @@
 .acb-page.acb-bots .acb-empty-panel {
   min-height: 120px;
 }
+
+/* P5 记忆墙 — 紧凑对齐席位密度 */
+.acb-page.acb-bots .acb-bots-pins.ant-card {
+  border-color: var(--acb-border);
+}
+
+.acb-page.acb-bots .acb-bots-pins .ant-card-body {
+  padding: var(--acb-bots-card-pad) !important;
+}
+
+.acb-page.acb-bots .acb-bots-pins .ant-card-head {
+  min-height: 36px;
+  padding: 0 12px;
+}
+
+.acb-page.acb-bots .acb-bots-pins .ant-card-head-title {
+  font-size: 13px;
+  padding: 8px 0;
+}

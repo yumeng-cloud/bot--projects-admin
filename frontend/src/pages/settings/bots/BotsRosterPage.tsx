@@ -41,6 +41,7 @@ import {
   listTeams,
   revokeTeamInvite,
   seatOccupancy,
+  type Team,
   type TeamInvite,
   type TeamSeat,
 } from '../../../api/teams'
@@ -50,6 +51,7 @@ import { formatWikiTime } from '../../../utils/time'
 import JoinTeamWizard from './JoinTeamWizard'
 import SeatConflictPanel, { type SeatConflictInfo } from './SeatConflictPanel'
 import SeatHandoffDrawer from './SeatHandoffDrawer'
+import TeamPinsPanel from './TeamPinsPanel'
 import { roleDisplay } from './seatHandoffText'
 import './bots.css'
 
@@ -84,6 +86,7 @@ export default function BotsRosterPage() {
   const [joinOpen, setJoinOpen] = useState(false)
   const [conflictOpen, setConflictOpen] = useState(false)
   const [conflictInfo, setConflictInfo] = useState<SeatConflictInfo | null>(null)
+  const [teams, setTeams] = useState<Team[]>([])
   const [teamId, setTeamId] = useState<string | null>(null)
   /** 与向导同源的团队席位占用（N4 同步） */
   const [teamSeats, setTeamSeats] = useState<TeamSeat[]>([])
@@ -118,7 +121,13 @@ export default function BotsRosterPage() {
       setBots(b.bots || [])
       setRoles(r.bot_roles || [])
       setKeys((k.api_keys || []).filter((x) => !x.revoked_at))
-      const tid = teams.teams?.[0]?.id || null
+      const teamList = teams.teams || []
+      setTeams(teamList)
+      // 保留当前队（若仍在列表）；否则回落首队 — P5 切队由 onTeamChange
+      const tid =
+        (teamId && teamList.some((t) => t.id === teamId) ? teamId : null) ||
+        teamList[0]?.id ||
+        null
       setTeamId(tid)
       if (tid) {
         try {
@@ -136,6 +145,7 @@ export default function BotsRosterPage() {
         }
       } else {
         setTeamSeats([])
+        setIssuedInvites([])
       }
     } catch (e: unknown) {
       message.error(e instanceof Error ? e.message : '加载失败')
@@ -147,6 +157,44 @@ export default function BotsRosterPage() {
   useEffect(() => {
     void load()
   }, [wsId])
+
+  /** 换队：清空席/邀请缓存；记忆墙由 TeamPinsPanel 按 teamId 换池（P5） */
+  const onTeamChange = (tid: string) => {
+    setTeamId(tid)
+    setTeamSeats([])
+    setIssuedInvites([])
+    void (async () => {
+      try {
+        const rost = await getRoster(wsId, tid)
+        setTeamSeats(rost.roster || [])
+      } catch {
+        setTeamSeats([])
+      }
+      try {
+        const inv = await listTeamInvites(wsId, tid)
+        setIssuedInvites(inv.invites || [])
+      } catch {
+        /* keep */
+      }
+    })()
+  }
+
+  const teamSelect =
+    teams.length > 1 ? (
+      <Select
+        size="small"
+        value={teamId || undefined}
+        placeholder="选择团队"
+        style={{ minWidth: 140 }}
+        options={teams.map((t) => ({ value: t.id, label: t.name }))}
+        onChange={(v) => onTeamChange(v)}
+        popupMatchSelectWidth={false}
+      />
+    ) : teams.length === 1 ? (
+      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        团队 · {teams[0].name}
+      </Typography.Text>
+    ) : null
 
   const botName = (memberId?: string | null) =>
     memberId ? bots.find((b) => b.member_id === memberId)?.display_name || '已绑定' : null
@@ -400,7 +448,8 @@ export default function BotsRosterPage() {
           <Typography.Title level={4} style={{ margin: 0 }}>
             Bot 席位
           </Typography.Title>
-          <Space size={8}>
+          <Space size={8} wrap>
+            {teamSelect}
             <Tooltip title="Admin 签发团队入场码（ymt_）">
               <Button size="small" icon={<CopyOutlined />} loading={inviteBusy} onClick={() => void onCopyInvite()}>
                 复制入场码
@@ -412,6 +461,7 @@ export default function BotsRosterPage() {
           空手上场：贴身份钥匙与团队入场码，进空席或申请新席。活跃席不可顶替。
         </Typography.Paragraph>
         {migrateCollapse}
+        <TeamPinsPanel wsId={wsId} teamId={teamId} />
         <div className="acb-empty-panel" style={{ marginTop: 8 }}>
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -474,6 +524,7 @@ export default function BotsRosterPage() {
           Bot 席位
         </Typography.Title>
         <Space size={8} wrap>
+          {teamSelect}
           <Button size="small" type="primary" icon={<UserAddOutlined />} onClick={() => setJoinOpen(true)}>
             加入班底
           </Button>
@@ -489,6 +540,8 @@ export default function BotsRosterPage() {
       </Typography.Paragraph>
 
       {migrateCollapse}
+
+      <TeamPinsPanel wsId={wsId} teamId={teamId} />
 
       {roles.length ? (
         <div className="acb-bots-seat-grid">
