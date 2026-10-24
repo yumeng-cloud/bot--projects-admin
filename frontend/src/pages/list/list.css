@@ -60,13 +60,12 @@
   white-space: nowrap;
 }
 
-.acb-list-archived-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+/* C1 Switch → E3 三态 Select；密度与其它滤镜齐 */
+.acb-list-archived-view.ant-select {
   font-size: 12px;
+}
+.acb-list-archived-view .ant-select-selection-item {
   color: var(--acb-text-secondary, #8b8b8b);
-  user-select: none;
 }
 
 .acb-list-archived-tag {

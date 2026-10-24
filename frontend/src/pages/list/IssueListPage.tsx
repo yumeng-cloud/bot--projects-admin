@@ -12,7 +12,6 @@ import {
   Spin,
   message,
   Checkbox,
-  Switch,
 } from 'antd'
 import type { Key } from 'react'
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
@@ -48,6 +47,9 @@ export type IssueListPageProps = {
   projectId: string
 }
 
+/** 列表归档视图：与 C1 显隐对齐，E3 补仅归档 */
+type ArchiveView = 'hide' | 'include' | 'only'
+
 export default function IssueListPage({ workspaceId, projectId }: IssueListPageProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   const blocked = searchParams.get('blocked') === '1'
@@ -66,8 +68,8 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
   const [assigneeId, setAssigneeId] = useState<string | undefined>()
   const [labelId, setLabelId] = useState<string | undefined>()
   const [q, setQ] = useState('')
-  /** C1：默认关；开 → include_archived=1 */
-  const [showArchived, setShowArchived] = useState(false)
+  /** C1+E3：hide 剔归档；include=显示已归档；only=仅已归档（互斥） */
+  const [archiveView, setArchiveView] = useState<ArchiveView>('hide')
   const [open, setOpen] = useState(false)
   const [current, setCurrent] = useState<Issue | null>(null)
   const [newTitle, setNewTitle] = useState('')
@@ -101,22 +103,32 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
     try {
       // Fetch team-scoped project issues; other filters applied client-side for tree ancestors.
       // `blocked` stays API-side (needs relations).
-      // C1：默认不传 include_archived；开开关才传 1。
+      // C1/E3：hide 不传；include → include_archived=1；only → archived_only（API archived=only）
       const { issues: list } = await listIssues(workspaceId, {
         project_id: projectId,
         blocked: blocked || undefined,
         team_id: teamId || undefined,
-        include_archived: showArchived ? 1 : undefined,
+        ...(archiveView === 'only'
+          ? { archived_only: 1 as const }
+          : archiveView === 'include'
+            ? { include_archived: 1 as const }
+            : {}),
       })
-      // 关时防御性剔归档，避免主列表虚显；开时保留归档行
-      setIssues(showArchived ? list : list.filter((i) => !isIssueArchived(i)))
+      // 防御性客户端滤：only 只留归档；hide 剔归档；include 原样
+      const next =
+        archiveView === 'only'
+          ? list.filter((i) => isIssueArchived(i))
+          : archiveView === 'include'
+            ? list
+            : list.filter((i) => !isIssueArchived(i))
+      setIssues(next)
     } catch {
       setIssues([])
       // 4xx toast from client; empty pool, no white screen
     } finally {
       setLoading(false)
     }
-  }, [workspaceId, projectId, blocked, teamId, showArchived])
+  }, [workspaceId, projectId, blocked, teamId, archiveView])
 
   useEffect(() => {
     loadMeta()
@@ -281,21 +293,26 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
         <Checkbox checked={overdue} onChange={(e) => setFlag('overdue', e.target.checked)}>
           已逾期
         </Checkbox>
-        <span className="acb-list-archived-toggle">
-          显示已归档
-          <Switch
-            size="small"
-            checked={showArchived}
-            onChange={setShowArchived}
-            aria-label="显示已归档"
-          />
-        </span>
+        <Select
+          size="small"
+          className="acb-list-archived-view"
+          style={{ width: 130 }}
+          value={archiveView}
+          onChange={(v: ArchiveView) => setArchiveView(v)}
+          aria-label="归档筛选"
+          options={[
+            { value: 'hide', label: '隐藏已归档' },
+            { value: 'include', label: '显示已归档' },
+            { value: 'only', label: '仅已归档' },
+          ]}
+        />
       </Space>
       {loading ? (
         <div style={{ textAlign: 'center', padding: 48 }}>
           <Spin />
         </div>
-      ) : forceEmpty || (issues.length === 0 && !hasActiveFilters(filters)) ? (
+      ) : forceEmpty ||
+        (issues.length === 0 && !hasActiveFilters(filters) && archiveView === 'hide') ? (
         <div
           className="acb-empty-panel"
           style={{ minHeight: 120, padding: '20px 16px', textAlign: 'center', marginTop: 8 }}
@@ -361,7 +378,9 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
               <div className="acb-empty-panel" style={{ minHeight: 100, padding: '16px' }}>
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="没有符合条件的 Issue"
+                  description={
+                    archiveView === 'only' ? '暂无已归档的 Issue' : '没有符合条件的 Issue'
+                  }
                 />
               </div>
             ),
@@ -462,7 +481,13 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
         onClose={() => setOpen(false)}
         onSaved={(saved) => {
           const archived = isIssueArchived(saved)
-          if (archived && !showArchived) {
+          // hide：归档行踢出；only：解档行踢出；include：始终保留/更新
+          if (archiveView === 'hide' && archived) {
+            setIssues((prev) => prev.filter((i) => i.id !== saved.id))
+            setCurrent(saved)
+            return
+          }
+          if (archiveView === 'only' && !archived) {
             setIssues((prev) => prev.filter((i) => i.id !== saved.id))
             setCurrent(saved)
             return
