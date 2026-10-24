@@ -111,22 +111,22 @@
 - [x] **A2** 超管台分区 · `709c6a6` / `pro-a-platform.png`（顶条+工作区/用户对等）
 - [x] **A3** 侧栏层级 · 同 `pro-a-settings.png`（设置高亮·平台管理底入口）
 - [x] **A4** 壳箱截 · `9f6ced2`；视觉终审放行（基线 `d0216ff`）
-- [x] **B1** 无项目引导 · **P0 关绿** · FE `516226d` + 底图 `640fd6e` · QA `631af4a` / `PRO_ADMIN-B1-qa-retest-20261024.txt` Overall PASS（B1-a～g）
+- [x] **B1** 无项目引导 · **P0 关绿** · FE `72e0447` + 底图 `640fd6e` · QA `631af4a` / `PRO_ADMIN-B1-qa-retest-20261024.txt` Overall PASS（B1-a～g）
 - [x] **B2** 无成员引导 · `95974f1` / `pro-b-empty-no-members.png` · QA PASS `76824d1`
 - [x] **B3** 无 Issue 引导 · `95974f1` · QA PASS `76824d1`
 - [x] **B4** 空态箱截 · `95974f1`（无成员/无 Issue；无项目复用 B1 `pro-b-empty-no-project.png`）
-- [x] **C1** 归档显隐 · FE `516226d` + QA `0e76217` / `pro-c-archived-toggle.png`
-- [x] **C2** 多选批量 · FE `516226d` + Issue `3b8a0d6` + QA `99795f9` · 正式关
-- [x] **C3** 列显示配置 · FE `516226d` + QA `f65edc1` · 正式关
+- [x] **C1** 归档显隐 · FE `8c0fe5a` + QA `0e76217` / `pro-c-archived-toggle.png`
+- [x] **C2** 多选批量 · FE `a33651d` + Issue `3b8a0d6` + QA `99795f9` · 正式关
+- [x] **C3** 列显示配置 · FE `260fd1f` + QA `f65edc1` · 正式关
 - [ ] **C4** 超管 WS 筛选
 - [ ] **C5** 列表箱截
 - [ ] **D1** 成员表密度
 - [ ] **D2** 用户台 WS 芯片
 - [ ] **D3** 用户按 WS 筛
 - [ ] **D4** 成员/用户箱截
-- [x] **E1** 属性轨节奏 · FE `516226d` + QA `5fd8775` · 正式关 / `pro-e-drawer-rail.png`
+- [x] **E1** 属性轨节奏 · FE `75fb14a` + QA `5fd8775` · 正式关 / `pro-e-drawer-rail.png`
 - [ ] **E2** 看板归档入口
-- [x] **E3** 仅归档视图入口 · FE `516226d` + QA `a8e0635` · 正式关 / `pro-e-archived-only.png`
+- [x] **E3** 仅归档视图入口 · FE `41c6e88` + QA `a8e0635` · 正式关 / `pro-e-archived-only.png`
 - [ ] **E4** Issue 箱截
 - [x] **F1** 工作区表单文案 · 短说明 +「用于 URL」· `pro-a-settings.png`
 - [x] **F2** 标签/Key 表空态 · 成员分块邀请+表密度见 `pro-f-settings-density.png`（标签/接入同壳）
@@ -147,22 +147,22 @@
 - 2026-10-25 01:03 · （已撤回）曾拍解冻仅 C2；总指挥重申仍冻 C2–D 后收回。
 - 2026-10-25 00:54 · SEAT_REFILL 关后下一刀 **SEAT_REFILL_BIND**（冻项外）。**C2–D / E2 / G 仍冻**（明示）。
 - 2026-10-25 00:47 · **E3 正式关已落**；下一刀跳出 PRO_ADMIN → [`NEXT_WAVE_DEBT_SEAT_REFILL.md`](./NEXT_WAVE_DEBT_SEAT_REFILL.md)（停工席补位引导）。**C2–D / E2 / G 仍冻**（明示）。
-- 2026-10-25 00:46 · **E3 正式关** FE `516226d` + QA PASS† `a8e0635`。三态归档滤镜齐。**C2–D / E2 / G 仍冻**（明示）。PRO_ADMIN 本波可验项已尽；下一刀听拍（另开或解冻）。
-- 2026-10-25 00:45 · **产品勾 E3** FE `516226d`：三态「隐藏/显示/仅已归档」；only→`archived=only`；箱截 `pro-e-archived-only.png` 过。等 QA。C2–D / E2 / G 仍冻。
+- 2026-10-25 00:46 · **E3 正式关** FE `41c6e88` + QA PASS† `a8e0635`。三态归档滤镜齐。**C2–D / E2 / G 仍冻**（明示）。PRO_ADMIN 本波可验项已尽；下一刀听拍（另开或解冻）。
+- 2026-10-25 00:45 · **产品勾 E3** FE `41c6e88`：三态「隐藏/显示/仅已归档」；only→`archived=only`；箱截 `pro-e-archived-only.png` 过。等 QA。C2–D / E2 / G 仍冻。
 - 2026-10-25 00:45 · **E3 关绿** React `41c6e88`：列表归档滤镜升三态 Select（隐藏已归档 / 显示已归档 / 仅已归档）；only→`archived=only`（FE `archived_only`）；与 C1 include 互斥；深链 banner 不动；箱截 `pro-e-archived-only.png`；`tsc --noEmit` PASS。**C2–D / E2 / G 仍冻**（明示）。
 - 2026-10-25 00:36 · **下一刀·产品拍 仅 E3**：列表「仅已归档」视图/滤镜入口与 C1「显示已归档」对齐（深链归档 banner 已有；本刀补列表入口）。**C2–D / E2 / G 仍冻**（明示）。React 首刀；齐后 QA 抽。
-- 2026-10-25 00:36 · **E1 正式关** FE `516226d` + 视觉放行 + QA PASS† `5fd8775` / `PRO_ADMIN-E1-qa-spotcheck-20261025.txt`。C2–D / E2–E3 / G 仍冻。
-- 2026-10-25 00:35 · **视觉抽 E1 放行** `pro-e-drawer-rail.png` / FE `516226d`：属性轨同节奏、主栏留白、非 Form。等 QA 齐后正式关。
-- 2026-10-25 00:34 · **产品勾 E1** FE `516226d`：属性轨「归档」单行与状态/优先同节奏（已归档 + 取消归档）；主栏留白；箱截 `pro-e-drawer-rail.png` 过。等视觉抽 + QA。C2–D / E2–E3 / G 仍冻。
+- 2026-10-25 00:36 · **E1 正式关** FE `75fb14a` + 视觉放行 + QA PASS† `5fd8775` / `PRO_ADMIN-E1-qa-spotcheck-20261025.txt`。C2–D / E2–E3 / G 仍冻。
+- 2026-10-25 00:35 · **视觉抽 E1 放行** `pro-e-drawer-rail.png` / FE `75fb14a`：属性轨同节奏、主栏留白、非 Form。等 QA 齐后正式关。
+- 2026-10-25 00:34 · **产品勾 E1** FE `75fb14a`：属性轨「归档」单行与状态/优先同节奏（已归档 + 取消归档）；主栏留白；箱截 `pro-e-drawer-rail.png` 过。等视觉抽 + QA。C2–D / E2–E3 / G 仍冻。
 - 2026-10-25 00:35 · **E1 关绿** React `75fb14a`：Drawer 属性轨归档态/解档改为与状态/优先同节奏单行（13px·中文·label|value）；主栏居中留白保持；箱截 `pro-e-drawer-rail.png`；`tsc --noEmit` PASS。C2–D / E2–E3 / G 仍冻。
-- 2026-10-25 00:30 · **SEAT_LEAVE 整包关**（Go `c5f5596` + FE `516226d` + QA `43ecff8` / `a54535e`）。产品内部拍：**下一 P0 = 仅 E1**（Drawer 属性轨：归档态/解档与状态轨节奏统一，补间距与中文；对标 Linear Property 轨）。C2–D / E2–E3 / G 仍冻。React 首刀；齐后视觉抽 + QA 抽。
-- 2026-10-25 00:21 · **C1 正式关** FE `516226d` + QA PASS† `0e76217` / `PRO_ADMIN-C1-qa-spotcheck-20261025.txt`。产品+QA 双过。C2–E/G 仍冻。
+- 2026-10-25 00:30 · **SEAT_LEAVE 整包关**（Go `c5f5596` + FE `4883426` + QA `43ecff8` / `a54535e`）。产品内部拍：**下一 P0 = 仅 E1**（Drawer 属性轨：归档态/解档与状态轨节奏统一，补间距与中文；对标 Linear Property 轨）。C2–D / E2–E3 / G 仍冻。React 首刀；齐后视觉抽 + QA 抽。
+- 2026-10-25 00:21 · **C1 正式关** FE `8c0fe5a` + QA PASS† `0e76217` / `PRO_ADMIN-C1-qa-spotcheck-20261025.txt`。产品+QA 双过。C2–E/G 仍冻。
 - 2026-10-25 00:21 · **QA C1 抽验 PASS** `0e76217` / `PRO_ADMIN-C1-qa-spotcheck-20261025.txt`（默认关/开归档/其它筛/截全过）。**C1 关绿维持**。
 - 2026-10-25 00:19 · **产品勾 C1** `8c0fe5a`：滤镜「显示已归档」默认关；开→`include_archived`+弱标签灰行；其它筛保持；箱截 `pro-c-archived-toggle.png` 过。C2–E/G 仍冻。**下一刀 SEAT_LEAVE 开刀**。
 - 2026-10-25 00:18 · **C1 关绿** React `8c0fe5a`：列表滤镜「显示已归档」默认关；开→`include_archived=1`；归档行弱标签+灰态；其它筛保持；箱截 `pro-c-archived-toggle.png`；`tsc --noEmit` PASS。C2–E/G 仍冻；下一刀 SEAT_LEAVE。
 - 2026-10-25 00:53 · **对齐总指挥**：本波认 **C1 归档显隐**（@`2e328dd`）先关；SEAT_LEAVE 排 C1 关后下一刀（债已落 `71e9b4a`，不丢）。C2–E/G 仍冻。
 - 2026-10-25 00:50 · **C1（曾短暂让路 SEAT_LEAVE，已对齐回先关）**：总指挥拍下一 P0=SEAT_LEAVE；C–E/G 仍冻。见 [`NEXT_WAVE_DEBT_SEAT_LEAVE.md`](./NEXT_WAVE_DEBT_SEAT_LEAVE.md)。
-- 2026-10-25 00:45 · **B2/B3/B4 小包正式关** FE `516226d` + QA `76824d1`。
+- 2026-10-25 00:45 · **B2/B3/B4 小包正式关** FE `95974f1` + QA `76824d1`。
 - 2026-10-25 00:45 · **下一 P0 = C1 仅**：「已归档」显隐开关（默认关，`include_archived`）；搜索/状态等既有筛选保持。不并行 C2–C5/D/E/G。React 首刀；齐后 QA 抽 + 产品勾。
 - 2026-10-25 00:40 · **QA 抽验 PASS** `76824d1` / `PRO_ADMIN-B2-B3-qa-spotcheck-20261025.txt`（B2/B3 三条苛刻全过）。**B2/B3/B4 关绿维持**。
 - 2026-10-25 00:35 · **产品勾 B2/B3/B4** `95974f1`：目视箱截过（成员空态邀请/`ymw_` 与 Bot 分家；看板/列表无 Issue 短引导+新建，非半屏死白）。等 QA 抽验。
@@ -179,7 +179,7 @@
 
 - 2026-10-24 22:05 · **P0 空态**：B1 加硬——无项目主按钮=本页创建项目，禁踢设置；催 React 热修 `ProjectRedirect`。
 
-- 2026-10-24 22:00 · 产品勾 A1–A4 / F1–F4（视觉终审 `9f6ced2` · 基线 `d0216ff` · FE `516226d`）。下一刀 **B 空态**。
+- 2026-10-24 22:00 · 产品勾 A1–A4 / F1–F4（视觉终审 `9f6ced2` · 基线 `d0216ff` · FE `709c6a6`）。下一刀 **B 空态**。
 
 - 2026-10-24 21:45 · 债文定稿；WHEEL 已关，本波接上。首刀见派工「视觉总监」。
 
