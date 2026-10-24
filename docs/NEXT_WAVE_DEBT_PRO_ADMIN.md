@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:47 · **E3 正式关已落**；下一刀跳出 PRO_ADMIN → [`NEXT_WAVE_DEBT_SEAT_REFILL.md`](./NEXT_WAVE_DEBT_SEAT_REFILL.md)（停工席补位引导）。**C2–D / E2 / G 仍冻**（明示）。
 - 2026-10-25 00:46 · **E3 正式关** FE `41c6e88` + QA PASS† `a8e0635`。三态归档滤镜齐。**C2–D / E2 / G 仍冻**（明示）。PRO_ADMIN 本波可验项已尽；下一刀听拍（另开或解冻）。
 - 2026-10-25 00:45 · **产品勾 E3** FE `41c6e88`：三态「隐藏/显示/仅已归档」；only→`archived=only`；箱截 `pro-e-archived-only.png` 过。等 QA。C2–D / E2 / G 仍冻。
 - 2026-10-25 00:45 · **E3 关绿** React `41c6e88`：列表归档滤镜升三态 Select（隐藏已归档 / 显示已归档 / 仅已归档）；only→`archived=only`（FE `archived_only`）；与 C1 include 互斥；深链 banner 不动；箱截 `pro-e-archived-only.png`；`tsc --noEmit` PASS。**C2–D / E2 / G 仍冻**（明示）。
@@ -176,4 +177,4 @@
 
 ## 关单进度
 
-**B/C1/SEAT_LEAVE/E1/E3 正式关** · **C2–D / E2 / G 仍冻**（明示）；下一刀听拍。
+**B/C1/SEAT_LEAVE/E1/E3 正式关** · **C2–D / E2 / G 仍冻**（明示）；下一刀 **SEAT_REFILL**。
