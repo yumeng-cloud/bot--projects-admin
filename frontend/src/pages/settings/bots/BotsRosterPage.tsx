@@ -32,6 +32,7 @@ import {
   inviteTail,
   isInviteServiceMissing,
   isSeatConflict,
+  listTeamInvites,
   listTeams,
   seatOccupancy,
   type TeamInvite,
@@ -105,6 +106,13 @@ export default function BotsRosterPage() {
           setTeamSeats(rost.roster || [])
         } catch {
           setTeamSeats([])
+        }
+        // Go 29f9404+ 已挂 GET invites（无明文）；失败则保留本页签发缓存
+        try {
+          const inv = await listTeamInvites(wsId, tid)
+          setIssuedInvites(inv.invites || [])
+        } catch {
+          /* 保留本地签发缓存 */
         }
       } else {
         setTeamSeats([])
