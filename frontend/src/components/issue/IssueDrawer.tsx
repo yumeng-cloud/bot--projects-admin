@@ -4,6 +4,7 @@ import { patchIssue, listProjectMembers, listProjectLabels, listIssues } from '.
 import type { IssuePatch } from '../../api/issues'
 import { listCycles } from '../../api/cycles'
 import { listComments, createComment, deleteComment } from '../../api/comments'
+import { uploadCommentAttachment } from '../../api/attachments'
 import {
   listRelations,
   createRelation,
@@ -458,12 +459,18 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, onClose, onSa
     }
   }
 
-  const sendComment = async () => {
+  const sendComment = async (files: File[] = []) => {
     if (!issue || !commentBody.trim() || commentSending) return
     setCommentSending(true)
     try {
-      await createComment(workspaceId, issue.id, commentBody.trim())
-      message.success('已发送')
+      const res = await createComment(workspaceId, issue.id, commentBody.trim())
+      const cid = res.comment?.id
+      if (cid && files.length) {
+        for (const f of files) {
+          await uploadCommentAttachment(workspaceId, issue.id, cid, f)
+        }
+      }
+      message.success(files.length ? '已发送（含附件）' : '已发送')
       setCommentBody('')
       void loadSide(issue.id)
     } catch {
@@ -526,7 +533,7 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, onClose, onSa
             commentBody={commentBody}
             commentSending={commentSending}
             onCommentBodyChange={setCommentBody}
-            onSendComment={() => void sendComment()}
+            onSendComment={(files) => void sendComment(files)}
             onRemoveComment={(c) => void removeComment(c)}
             activities={activities}
             activitySentence={activitySentence}

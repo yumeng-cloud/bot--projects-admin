@@ -21,6 +21,8 @@ type Props = {
   disabled?: boolean
   label?: string
   onUploaded?: () => void
+  /** 选文件后不立刻上传（评论 composer：先挂再随发送落库） */
+  onPickPending?: (file: File) => void
 }
 
 /**
@@ -35,6 +37,7 @@ export function IssueAttachmentUpload({
   disabled = false,
   label,
   onUploaded,
+  onPickPending,
 }: Props) {
   const [uploading, setUploading] = useState(false)
   const uploadingRef = useRef(false)
@@ -54,6 +57,11 @@ export function IssueAttachmentUpload({
       message.warning('缺少 Issue')
       return Upload.LIST_IGNORE
     }
+    if (onPickPending) {
+      onPickPending(f)
+      return Upload.LIST_IGNORE
+    }
+
     if (uploadingRef.current) {
       message.info('正在上传，请稍候')
       return Upload.LIST_IGNORE

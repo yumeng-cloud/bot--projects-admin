@@ -22,7 +22,7 @@ type Props = {
   commentBody: string
   commentSending: boolean
   onCommentBodyChange: (v: string) => void
-  onSendComment: () => void
+  onSendComment: (files: File[]) => void
   onRemoveComment: (c: Comment) => void
   // activity
   activities: Activity[]
