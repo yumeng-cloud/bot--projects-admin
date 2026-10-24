@@ -102,7 +102,7 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
         return
       }
       setRedeem(res)
-      setAllowNew(Boolean(res.allow_new_seat))
+      setAllowNew(Boolean(res.allow_expand_seat))
       let seats = res.roster || []
       if (!seats.length && res.team_id) {
         try {
@@ -137,7 +137,7 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
               const r = await getRoster(wsId, tid)
               seats = r.roster || []
             }
-            setRedeem({ workspace_id: wsId, team_id: tid, roster: seats, allow_new_seat: false })
+            setRedeem({ workspace_id: wsId, team_id: tid, roster: seats, allow_expand_seat: false })
             setAllowNew(false)
             setRoster(seats)
             setStep('roster')

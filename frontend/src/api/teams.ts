@@ -48,7 +48,7 @@ export type TeamInvite = {
   code?: string
   code_prefix?: string
   code_tail?: string
-  allow_new_seat?: boolean
+  allow_expand_seat?: boolean
   max_uses?: number | null
   uses?: number
   expires_at?: string | null
@@ -61,7 +61,7 @@ export type RedeemInviteResult = {
   team_id: string
   team?: Team
   roster?: TeamSeat[]
-  allow_new_seat?: boolean
+  allow_expand_seat?: boolean
 }
 
 export function listTeams(workspaceId: string) {
@@ -122,20 +122,29 @@ export function unbindSeat(
 }
 
 /** 签发入场码（Go G3）；404 → 人话由调用方处理 */
-export function createTeamInvite(
+export async function createTeamInvite(
   workspaceId: string,
   teamId: string,
-  body?: { allow_new_seat?: boolean; max_uses?: number; expires_in_hours?: number },
+  body?: { allow_expand_seat?: boolean; max_uses?: number; expires_at?: string },
   idempotencyKey?: string,
 ) {
-  return api<{ invite: TeamInvite }>(`${ws(workspaceId)}/teams/${teamId}/invites`, {
-    method: 'POST',
-    body: JSON.stringify(body || {}),
-    idempotencyKey,
-    skipToast: true,
-  })
+  const res = await api<{ invite: TeamInvite; code?: string }>(
+    `${ws(workspaceId)}/teams/${teamId}/invites`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body || {}),
+      idempotencyKey,
+      skipToast: true,
+    },
+  )
+  // BE 同时返回顶层 code 与 invite.code；明文仅此一次
+  if (res.code && res.invite && !res.invite.code) {
+    res.invite = { ...res.invite, code: res.code }
+  }
+  return res
 }
 
+/** GET list 路由尚未挂载时会 404；调用方勿轮询，仅本地签发缓存即可 */
 export function listTeamInvites(workspaceId: string, teamId: string) {
   return api<{ invites: TeamInvite[] }>(`${ws(workspaceId)}/teams/${teamId}/invites`, {
     skipToast: true,

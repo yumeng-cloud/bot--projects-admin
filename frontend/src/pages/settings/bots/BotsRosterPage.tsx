@@ -31,7 +31,6 @@ import {
   inviteTail,
   isInviteServiceMissing,
   isSeatConflict,
-  listTeamInvites,
   listTeams,
   type TeamInvite,
 } from '../../../api/teams'
@@ -95,14 +94,7 @@ export default function BotsRosterPage() {
       setKeys((k.api_keys || []).filter((x) => !x.revoked_at))
       const tid = teams.teams?.[0]?.id || null
       setTeamId(tid)
-      if (tid) {
-        try {
-          const inv = await listTeamInvites(wsId, tid)
-          setIssuedInvites(inv.invites || [])
-        } catch {
-          /* invite list 可 404 */
-        }
-      }
+      // GET …/invites 尚未挂载（404）；不轮询，仅保留本页签发缓存
     } catch (e: unknown) {
       message.error(e instanceof Error ? e.message : '加载失败')
     } finally {
@@ -176,7 +168,7 @@ export default function BotsRosterPage() {
       const { invite } = await createTeamInvite(
         wsId,
         teamId,
-        { allow_new_seat: true },
+        { allow_expand_seat: true },
         crypto.randomUUID(),
       )
       const plain = invite.code
