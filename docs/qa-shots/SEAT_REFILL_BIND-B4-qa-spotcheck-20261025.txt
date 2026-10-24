@@ -1,0 +1,115 @@
+=== SEAT_REFILL_BIND B4 · QA spotcheck ===
+time_AsiaShanghai: 2026-10-25 01:01 Asia/Shanghai (box)
+result: Overall=PASS
+evidence_file: docs/qa-shots/SEAT_REFILL_BIND-B4-qa-spotcheck-20261025.txt
+debt: docs/NEXT_WAVE_DEBT_SEAT_REFILL_BIND.md
+HEAD_at_run: 141eda2 (141eda2e824c4e58840280758cf1f3ae74ac7c8b)
+  ancestors: f7048a4 (Go B1/B2) YES · 0c5f67b (FE B3) YES
+feat_go: f7048a4afe4b066e8a31792346184fbae8b98502 feat(go): SEAT_REFILL_BIND B1/B2 锚定补位码可绑停工席
+feat_fe: 0c5f67b40a0a42faedd185a6518f7e652f027f12 feat(fe): SEAT_REFILL_BIND B3 补位文案持码即占席
+API: http://127.0.0.1:8080 healthz ok
+  binary: rebuilt /tmp/ai-board-server from main incl. f7048a4 @ 2026-10-25 00:58 Asia/Shanghai
+  (prior binary mtime 2026-10-24 23:47 PREDATED f7048a4 → restarted per task)
+FE: source soft† (0c5f67b); B3 未加新 PNG；R4 seat-refill-*.png Toast 文案已过期（仍「新人持码入场」）→ 以源码 0c5f67b 为准
+actor: admin@yumeng.tech / Admin123! (JWT) + redeem no-Bearer newcomers
+WS: ba1481c49148aba9553ba3811406b69f
+TEAM: 17f9d26205ad55d93ce703230fd91261 (B4-SeatRefillBind-010055 · template_key=default · 5 seats)
+Frozen (not verified): PRO_ADMIN C2–D / E2 / G
+
+########## Method ##########
+1. git fetch && checkout main && pull --ff-only; confirm f7048a4 + 0c5f67b ancestors of HEAD
+2. git show f7048a4 / 0c5f67b; inspect resolveBootstrapSeat + FE copy
+3. Rebuild+restart /tmp/ai-board-server so f7048a4 live
+4. Soft† curl API matrix; Go unit tests
+5. Write this report; on PASS commit+push
+
+########## Go unit tests ##########
+go test ./internal/services/botmem/ -count=1 -run 'TestRedeemJoinAnchoredRefillBindStopped|TestRedeemJoinV2NoAutoFillLeftStopped|TestRedeemJoinActiveNoReplace' -v
+  PASS TestRedeemJoinActiveNoReplace
+  PASS TestRedeemJoinV2NoAutoFillLeftStopped
+  PASS TestRedeemJoinAnchoredRefillBindStopped
+Also broader -run 'ResolveBootstrap|Refill|Invite|Redeem|Seat' → all PASS (incl. classic redeem / force-bind audits)
+
+Code (f7048a4 invite_join.go resolveBootstrapSeat):
+  - anchored seat_slug|seat id + stopped|left|open → skipBind=false (direct bind)
+  - unanchored / RoleHint-only + stopped|left → skipBind=true (HUMAN V2)
+  - active+bound → 409「该席位占用中，禁止顶替」
+
+########## Soft† live API ##########
+fixtures: /tmp/b4_matrix.json (not committed)
+
+B4-1 stop baseline
+  INVITE seat_slug=frontend allow_expand_seat=false → ymt_…b7abaf6d
+  REDEEM_NO_BEARER → 201 seat_id=2409de56… member=baeeeb04… status→active
+  POST …/seats/{FE}/stop Admin JWT → roster frontend status=stopped bound=None
+  B4-1=PASS
+
+B4-2 anchored refill redeem binds stopped seat
+  INVITE allow_expand_seat=false seat_slug=frontend → ymt_…44df3b94 (invite.seat_slug=frontend, aes=false)
+  REDEEM_NO_BEARER → 201 seat_id=2409de56… (== FE) member=0b780b92… token_issued=true
+  ROSTER frontend status=active bound=0b780b92… (≠ bot_a baeeeb04…)
+  CHECKS: binds_stopped PASS; returns_seat_id PASS; status_active PASS; no orphan-then-force needed PASS
+  B4-2=PASS
+
+B4-3 unanchored / generic code does NOT silent-refill stopped|left (HUMAN V2)
+  Restop FE; close all other seats to stopped (no open empty)
+  INVITE role_hint=frontend ONLY (no seat_slug) → invite.seat_slug=null
+  REDEEM_NO_BEARER → 201 seat_id=null member=bbb48703… token_issued=true (orphan ok)
+  ROSTER: all stopped|left remain unbound; FE still stopped bound=None; silent=false
+  CHECKS: no_silent_bind_stopped PASS; V2_unchanged PASS
+  B4-3=PASS
+
+B4-4 active occupied → 409 human-readable ban on replace
+  Anchored refill on stopped backend → active holder=3e4f8cd7…
+  INVITE seat_slug=backend + REDEEM_NO_BEARER → HTTP 409「该席位占用中，禁止顶替」
+  holder_after unchanged · status=active
+  B4-4=PASS
+
+########## FE copy (0c5f67b) ##########
+BotsRosterPage.tsx:
+  Toast: 「持补位码入场即占该席；非扩编新席」
+  Tooltip: 「持码入场即占该席（非扩编）」
+  left card: 「持补位码入场即占该席；活跃席仍禁顶替。补位 ≠ 扩编新席。」
+SeatHandoffDrawer.tsx:
+  Alert: 「持补位码入场即占该席；活跃席仍禁顶替…占席后才有交接摘要。」
+No user-facing copy implies must force / 须再 force / 强行顶替 on refill path.
+NOTE: docs/qa-shots/seat-refill-after.png @R4 still shows pre-B3 Toast「新人持码入场」— stale vs 0c5f67b; no new B3 PNG in commit; source strings govern B3 accept.
+B3_copy=PASS† (source)
+
+########## Accept checklist ##########
+[1] PASS — Anchored seat_slug refill redeem binds stopped → active + seat_id (Soft† B4-2 + unit)
+[2] PASS — Unanchored/generic redeem does NOT silent-refill stopped|left (Soft† B4-3 + unit V2)
+[3] PASS — Active occupied still 409「该席位占用中，禁止顶替」(Soft† B4-4 + unit)
+[4] PASS† — FE copy 持码入场即占该席; does NOT imply must force (0c5f67b source; no new PNG)
+[5] PASS — Soft† live API reproduced end-to-end on rebuilt f7048a4 binary
+[6] PASS — Go unit tests resolveBootstrapSeat / refill bind paths green
+
+FAIL redlines hit? NONE
+- Anchored refill binds stopped: YES
+- Generic silent-bind stopped|left: NO
+- Active 409: YES
+- FE must-force implication: NO
+- Soft† reproducible with API up: YES
+
+########## SUMMARY ##########
+  B4-1_stop: PASS
+  B4-2_anchored_bind: PASS
+  B4-3_generic_v2: PASS
+  B4-4_active_409: PASS
+  B3_FE_copy_source: PASS†
+  unit_tests: PASS
+OVERALL: PASS
+
+defects_to_open:
+- soft† React/箱截: seat-refill-after.png Toast 仍为 R4「新人持码入场」；B3 改文案未换 PNG。不挡 B4（源码已绿）；产品若要箱证可补一帧 after@0c5f67b
+
+SKIP: PRO_ADMIN C2–D / E2 / G (FROZEN)
+
+fixtures_box: /tmp/b4_matrix.json · /tmp/b4_soft_matrix.py · /tmp/ai-board-server (rebuilt; not committed)
+shots_cited_optional:
+  docs/qa-shots/seat-refill-before.png (R4; structural left/occupied cards still relevant)
+  docs/qa-shots/seat-refill-after.png (R4; Toast text STALE vs B3)
+
+Verdict for 产品+Go+React+总指挥
+-----------------------------
+SEAT_REFILL_BIND B4 PASS @f7048a4+0c5f67b — 锚定补位码直绑停工席；通码 V2 不静默；active 409；FE 持码即占席无 force 暗示；可产品 B5 关单。
