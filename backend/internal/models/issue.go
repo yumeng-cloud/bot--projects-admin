@@ -38,30 +38,38 @@ type Cycle struct {
 
 // Issue 看板事项。
 type Issue struct {
-	ID          string   `json:"id"`
-	ProjectID   string   `json:"project_id"`
-	WorkspaceID string   `json:"workspace_id"`
-	Number      int      `json:"number"`
-	Identifier  string   `json:"identifier"`
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Status      string   `json:"status"`
-	Priority    string   `json:"priority"`
-	Estimate    *int     `json:"estimate"`
-	AssigneeID  *string  `json:"assignee_id"`
-	ReporterID  *string  `json:"reporter_id"`
-	CycleID     *string  `json:"cycle_id"`
-	ParentID    *string  `json:"parent_id"`
-	StartAt     *string  `json:"start_at"`
-	DueAt       *string  `json:"due_at"`
-	IsLeaf      bool     `json:"is_leaf"`
-	ChildCount  int      `json:"child_count"`
-	BoardOrder  float64  `json:"board_order"`
-	Version     int      `json:"version"`
-	LabelIDs    []string `json:"label_ids,omitempty"`
-	Labels      []Label  `json:"labels,omitempty"`
-	CreatedAt   string   `json:"created_at"`
-	UpdatedAt   string   `json:"updated_at"`
+	ID          string     `json:"id"`
+	ProjectID   string     `json:"project_id"`
+	WorkspaceID string     `json:"workspace_id"`
+	Number      int        `json:"number"`
+	Identifier  string     `json:"identifier"`
+	Title       string     `json:"title"`
+	Description string     `json:"description"`
+	Status      string     `json:"status"`
+	Priority    string     `json:"priority"`
+	Estimate    *int       `json:"estimate"`
+	AssigneeID  *string    `json:"assignee_id"`
+	Assignee    *MemberRef `json:"assignee"`
+	ReporterID  *string    `json:"reporter_id"`
+	Reporter    *MemberRef `json:"reporter"`
+	CycleID     *string    `json:"cycle_id"`
+	ParentID    *string    `json:"parent_id"`
+	StartAt     *string    `json:"start_at"`
+	DueAt       *string    `json:"due_at"`
+	IsLeaf      bool       `json:"is_leaf"`
+	ChildCount  int        `json:"child_count"`
+	BoardOrder  float64    `json:"board_order"`
+	Version     int        `json:"version"`
+	LabelIDs    []string   `json:"label_ids,omitempty"`
+	Labels      []Label    `json:"labels,omitempty"`
+	CreatedAt   string     `json:"created_at"`
+	UpdatedAt   string     `json:"updated_at"`
+}
+
+// MemberRef is a minimal nested member reference for Issue assignee/reporter.
+type MemberRef struct {
+	ID          string `json:"id"`
+	DisplayName string `json:"display_name"`
 }
 
 // IssueRelation 依赖关系。
@@ -86,12 +94,12 @@ type Comment struct {
 
 // Activity 活动流条目。
 type Activity struct {
-	ID          string `json:"id"`
-	WorkspaceID string `json:"workspace_id"`
+	ID          string  `json:"id"`
+	WorkspaceID string  `json:"workspace_id"`
 	IssueID     *string `json:"issue_id"`
 	ActorID     *string `json:"actor_id"`
-	ActorKind   string `json:"actor_kind"`
-	Action      string `json:"action"`
-	Payload     string `json:"payload"`
-	CreatedAt   string `json:"created_at"`
+	ActorKind   string  `json:"actor_kind"`
+	Action      string  `json:"action"`
+	Payload     string  `json:"payload"`
+	CreatedAt   string  `json:"created_at"`
 }

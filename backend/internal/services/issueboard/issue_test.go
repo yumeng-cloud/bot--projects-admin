@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/db"
+	"github.com/yumeng-tech/ai-collab-board/backend/internal/models"
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/pkg/apperr"
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/pkg/idgen"
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/services/issueboard"
@@ -104,10 +105,14 @@ func TestBotCannotSetDone(t *testing.T) {
 }
 
 func insertMember(t *testing.T, svc *issueboard.Service, wsID string) string {
+	return insertMemberNamed(t, svc, wsID, "Tester")
+}
+
+func insertMemberNamed(t *testing.T, svc *issueboard.Service, wsID, displayName string) string {
 	t.Helper()
 	mid := idgen.New()
 	_, err := svc.DB.Exec(`INSERT INTO members (id, workspace_id, user_id, role, display_name, is_bot, bot_enabled)
-		VALUES (?,?,NULL,'member','Tester',0,1)`, mid, wsID)
+		VALUES (?,?,NULL,'member',?,0,1)`, mid, wsID, displayName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -862,4 +867,88 @@ func TestIssueDispatchEvents(t *testing.T) {
 	if !hasUpdated || !hasAssigned {
 		t.Fatalf("update events=%v want issue.updated + issue.assigned", got)
 	}
+}
+
+func TestIssueNestedAssigneeReporterDisplayName(t *testing.T) {
+	svc, ws, pid := setup(t)
+	assigneeName := "Alice Chen"
+	reporterName := "Bob Reporter"
+	assigneeID := insertMemberNamed(t, svc, ws, assigneeName)
+	reporterID := insertMemberNamed(t, svc, ws, reporterName)
+
+	// Assigned + reporter via ActorID
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
+		ProjectID: pid, Title: "with assignee", ActorKind: "human",
+		ActorID: reporterID, AssigneeID: &assigneeID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if iss.Assignee == nil || iss.Assignee.ID != assigneeID || iss.Assignee.DisplayName != assigneeName {
+		t.Fatalf("Create assignee nested: %+v", iss.Assignee)
+	}
+	if iss.Reporter == nil || iss.Reporter.ID != reporterID || iss.Reporter.DisplayName != reporterName {
+		t.Fatalf("Create reporter nested: %+v", iss.Reporter)
+	}
+	if iss.AssigneeID == nil || *iss.AssigneeID != assigneeID {
+		t.Fatalf("assignee_id not kept: %v", iss.AssigneeID)
+	}
+
+	got, err := svc.GetIssue(ws, iss.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Assignee == nil || got.Assignee.DisplayName != assigneeName {
+		t.Fatalf("Get assignee.display_name want %q got %+v", assigneeName, got.Assignee)
+	}
+	if got.Reporter == nil || got.Reporter.DisplayName != reporterName {
+		t.Fatalf("Get reporter.display_name want %q got %+v", reporterName, got.Reporter)
+	}
+
+	list, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{ProjectID: pid})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var listed *models.Issue
+	for i := range list {
+		if list[i].ID == iss.ID {
+			listed = &list[i]
+			break
+		}
+	}
+	if listed == nil {
+		t.Fatal("issue missing from list")
+	}
+	if listed.Assignee == nil || listed.Assignee.DisplayName != assigneeName {
+		t.Fatalf("List assignee.display_name want %q got %+v", assigneeName, listed.Assignee)
+	}
+
+	// Unassigned → assignee null
+	unassigned, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
+		ProjectID: pid, Title: "no assignee", ActorKind: "human",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if unassigned.Assignee != nil {
+		t.Fatalf("unassigned Create want assignee null, got %+v", unassigned.Assignee)
+	}
+	if unassigned.AssigneeID != nil {
+		t.Fatalf("unassigned Create want assignee_id null, got %v", unassigned.AssigneeID)
+	}
+	ugot, err := svc.GetIssue(ws, unassigned.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ugot.Assignee != nil {
+		t.Fatalf("unassigned Get want assignee null, got %+v", ugot.Assignee)
+	}
+	ulist, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{ProjectID: pid, Q: "no assignee"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ulist) != 1 || ulist[0].Assignee != nil {
+		t.Fatalf("unassigned List want assignee null, got %+v", ulist)
+	}
+
 }

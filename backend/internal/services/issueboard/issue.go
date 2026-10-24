@@ -336,6 +336,9 @@ func (s *Service) ListIssues(workspaceID string, f ListIssuesFilter) ([]models.I
 		}
 		list[i].LabelIDs = ids
 	}
+	if err := s.attachMemberRefs(workspaceID, list); err != nil {
+		return nil, err
+	}
 	return list, nil
 }
 
@@ -394,6 +397,68 @@ func (s *Service) attachChildCountOne(workspaceID string, iss *models.Issue) err
 	return nil
 }
 
+// attachMemberRefs batch-loads members.display_name for assignee/reporter (no N+1).
+// Missing member rows still get {id, display_name:""}; null id → null nested object.
+func (s *Service) attachMemberRefs(workspaceID string, list []models.Issue) error {
+	if len(list) == 0 {
+		return nil
+	}
+	idSet := map[string]struct{}{}
+	for i := range list {
+		if list[i].AssigneeID != nil && strings.TrimSpace(*list[i].AssigneeID) != "" {
+			idSet[*list[i].AssigneeID] = struct{}{}
+		}
+		if list[i].ReporterID != nil && strings.TrimSpace(*list[i].ReporterID) != "" {
+			idSet[*list[i].ReporterID] = struct{}{}
+		}
+	}
+	names := map[string]string{}
+	if len(idSet) > 0 {
+		ids := make([]string, 0, len(idSet))
+		for id := range idSet {
+			ids = append(ids, id)
+		}
+		placeholders := make([]string, len(ids))
+		args := make([]any, 0, len(ids)+1)
+		args = append(args, workspaceID)
+		for i, id := range ids {
+			placeholders[i] = "?"
+			args = append(args, id)
+		}
+		q := `SELECT id, display_name FROM members WHERE workspace_id=? AND id IN (` + strings.Join(placeholders, ",") + `)`
+		rows, err := s.DB.Query(q, args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id, name string
+			if err := rows.Scan(&id, &name); err != nil {
+				return err
+			}
+			names[id] = name
+		}
+		if err := rows.Err(); err != nil {
+			return err
+		}
+	}
+	for i := range list {
+		if list[i].AssigneeID != nil && strings.TrimSpace(*list[i].AssigneeID) != "" {
+			id := *list[i].AssigneeID
+			list[i].Assignee = &models.MemberRef{ID: id, DisplayName: names[id]}
+		} else {
+			list[i].Assignee = nil
+		}
+		if list[i].ReporterID != nil && strings.TrimSpace(*list[i].ReporterID) != "" {
+			id := *list[i].ReporterID
+			list[i].Reporter = &models.MemberRef{ID: id, DisplayName: names[id]}
+		} else {
+			list[i].Reporter = nil
+		}
+	}
+	return nil
+}
+
 func (s *Service) GetIssue(workspaceID, issueID string) (*models.Issue, error) {
 	iss, err := scanIssue(s.DB.QueryRow(`SELECT `+issueCols+` FROM issues WHERE id = ? AND workspace_id = ?`, issueID, workspaceID))
 	if err == sql.ErrNoRows {
@@ -415,6 +480,11 @@ func (s *Service) GetIssue(workspaceID, issueID string) (*models.Issue, error) {
 		ids[i] = l.ID
 	}
 	iss.LabelIDs = ids
+	one := []models.Issue{iss}
+	if err := s.attachMemberRefs(workspaceID, one); err != nil {
+		return nil, err
+	}
+	iss = one[0]
 	return &iss, nil
 }
 
