@@ -98,7 +98,7 @@
 - [x] **B3** 人类邀请链接 `ymw_` · FE `2148f60` · b1 签发/列表/吊销
 - [x] **B4** 未注册可邀 / Home「兑换邀请码」· `2148f60`（与 ymt_ 隔离文案在）
 - [x] **B5** 成员表 · Bot 只读 · b1–b3
-- [x] **B6** 箱截 · `ws-admin-b1/b2/b3`
+- [x] **B6** 箱截 · `ws-admin-b1/b2/b3/b4-link-invite/b5-redeem`
 
 ### C 超管
 - [x] **C1** 旗标+me · `05a1d35`
@@ -106,27 +106,28 @@
 - [x] **C3** 全站 WS 列表 · `05a1d35` + `c1-platform.png`
 - [x] **C4** 停用/恢复+403 · `05a1d35`（台可见停用开关）
 - [x] **C5** 代开 · 台「代开工作空间」表单 · c1
-- [x] **C6** 用户授撤超管 · API 齐；FE 用户 Tab 待补截
+- [x] **C6** 用户授撤超管 · API 齐；FE 用户 Tab · `ws-admin-c9-users.png`
 - [x] **C7** 平台入口 · `c1-platform.png`（admin@）
 - [x] **C8** 工作区台 · 列表+停用+代开 · c1
-- [ ] **C9** 用户台 · FE 有 Tab；**缺用户台箱截**，补 `ws-admin-c9-users.png` 再勾（QA 见 c1 有用户 Tab 入口，内容截仍欠）
+- [x] **C9** 用户台 · `ws-admin-c9-users.png`（列表+平台超管 Switch 授/撤；client 搜索/所属 WS 列可后补，不挡关）
 - [x] **C10** 审计 · `05a1d35`
 - [x] **C11** 鉴权双验 · QA `198d019` / `WS_ADMIN-qa-retest-20261024.txt` PASS（非超管 403 + 超管 200 + FE 藏入口）
-- [x] **C12** 箱截 · `ws-admin-c1-platform.png`（工作区台；用户台另补）
+- [x] **C12** 箱截 · `ws-admin-c1-platform.png` + `ws-admin-c9-users.png`
 
 ### D 就绪
 - [x] **D1** 文档 · `e2a4c2f`/`05a1d35`
 - [x] **D2** 单测绿
 - [x] **D3** 停用全拒
 - [x] D4 README 开通路径
-- [ ] **D5** 箱全路径 · 待 C9 用户台截（C11 已齐）
+- [x] **D5** 箱全路径 · a1–a3 / b1–b5 / c1 / c9 齐；C11 已齐
 
 ### 进度注记
 - 2026-10-24 20:34 · 种子 D4 + D1 契约半齐 `4dbc83f`。
 - 2026-10-24 20:38 · Go `05a1d35` 测绿勾 BE。
 - 2026-10-24 20:46 · FE `2148f60` + 箱截入库：勾 A1–A6·B1–B6·C7/C8/C12。余 C9 用户台截、C11、D5。
 - 2026-10-24 20:49 · QA C11+invite harsh PASS `198d019`；勾 C11。补入库 `ws-admin-b4-link-invite.png`。
+- 2026-10-24 20:55 · FE 箱截 `ws-admin-c9-users.png` + `b5-redeem`：勾 C9、D5；A→B→C→D 全勾，整包关。
 
 ## 关单进度
 
-**近关** · 余 C9 用户台箱截 + D5。C11 已勾。
+**已关** · A1–A6 · B1–B6 · C1–C12 · D1–D5 全勾（BE `76cf6d1`/`05a1d35` · FE `2148f60` · 箱截入库）。软债：用户台 client 搜索、所属 WS 列（API 暂无 memberships）。
