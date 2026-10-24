@@ -62,8 +62,6 @@ Bot 不靠刷屏。`ymbot`（及 MCP）默认**人话短输出**：席位、交�
 
 ## 截图
 
-> 占位：把箱内 `docs/qa-shots/` 精选图贴上来，或换成你自己的演示 GIF。
-
 | 席位班底 | 从模板创建 | 交接续工 |
 | --- | --- | --- |
 | ![席位](./docs/qa-shots/seat-t1-roster.png) | ![从模板创建](./docs/qa-shots/t7r-r5-wizard-open.png) | ![交接](./docs/qa-shots/seat-t4-handoff.png) |
@@ -75,20 +73,18 @@ Bot 不靠刷屏。`ymbot`（及 MCP）默认**人话短输出**：席位、交�
 ```bash
 git clone https://github.com/yumeng-cloud/bot--projects-admin.git
 cd bot--projects-admin   # 箱内路径多为 /workspace/ai-collab-board
-cp .env.example .env     # 可选；默认 SQLite + AUTO_SEED
+cp .env.example .env     # 可选；默认 SQLite + AUTO_SEED=1
 
-cd backend && go mod tidy && cd ..
-cd frontend && npm install && cd ..
-
+make install             # go mod tidy + frontend pnpm install（仓内用 pnpm，非 npm）
 make seed                # 幂等；也可依赖服务启动 AUTO_SEED
-make dev                 # API :8080 + UI :5173
+make dev                 # API :8080 + Vite UI :5173（Makefile 固定端口）
 ```
 
 | | |
 | --- | --- |
-| UI | http://127.0.0.1:5173 |
-| API | http://127.0.0.1:8080 |
-| Health | `GET /healthz` |
+| UI | http://127.0.0.1:5173（若本机已被占用，请先释放或改 `Makefile`/`pnpm dev --port`；`.env` CORS 默认可含 5173） |
+| API | http://127.0.0.1:8080（`PORT`，见 `.env.example`） |
+| Health | `GET /healthz` 或 `GET /api/v1/healthz` |
 
 ### Seed 登录（仅本地演示）
 
@@ -102,13 +98,15 @@ make dev                 # API :8080 + UI :5173
 
 ### 生产向数据库（可选）
 
-开发默认 SQLite。需要语义召回 / 生产部署时切 **PostgreSQL + pgvector**（`DB_DRIVER` / 迁移见 [`.env.example`](./.env.example)、[`docs/database.md`](./docs/database.md)、[`docs/embed.md`](./docs/embed.md)）。
+开发默认 SQLite（`DB_DRIVER` 空或 `sqlite`）。需要语义召回 / 生产部署时切 **PostgreSQL + pgvector**（`DB_DRIVER=postgres`，DSN 与扩展见 [`.env.example`](./.env.example)、[`docs/database.md`](./docs/database.md)、[`docs/embed.md`](./docs/embed.md)；可选 `docker-compose.postgres.yml`）。
 
 ### 自测
 
 ```bash
-cd backend && go test ./...
-cd frontend && npm run build
+make test                # backend go test + frontend pnpm build
+# 或分步：
+# cd backend && go test ./...
+# cd frontend && pnpm build
 ```
 
 ---
@@ -141,7 +139,6 @@ cd frontend && npm run build
 | [`docs/API.md`](./docs/API.md) | `/api/v1` 路由、鉴权、错误格式 |
 | [`docs/BOT_TEAM_TEMPLATE_INDEX.md`](./docs/BOT_TEAM_TEMPLATE_INDEX.md) | 班底模板与 `playbook_ref` 约定 |
 | [`docs/bot-team-templates/`](./docs/bot-team-templates/) | 内置 `default` 模板可读副本 |
-| [`docs/BOT_TEAM_SEAT_P0.md`](./docs/BOT_TEAM_SEAT_P0.md) | 席位 / 换机 / 多队验收权威 |
 | [`docs/database.md`](./docs/database.md) | SQLite ↔ Postgres |
 | [`docs/embed.md`](./docs/embed.md) | 向量召回 |
 | [`COORDINATION.md`](./COORDINATION.md) | 多 Bot 协作目录约定（贡献者） |
