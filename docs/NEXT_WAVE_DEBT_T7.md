@@ -63,7 +63,7 @@
 
 ## 关单进度
 
-**整单关**：R1–R5 全勾 · 2026-10-24 19:44 Asia/Shanghai。升版 T7-4/5 仍后置。
+**整单关**：R1–R5 全勾 · 2026-10-24 19:44 Asia/Shanghai。QA 苛刻复测 PASS [`T7R-R5-qa-retest-20261024.txt`](./qa-shots/T7R-R5-qa-retest-20261024.txt) · `66f5b77`。升版 T7-4/5 仍后置。
 
 ### 下一刀
 

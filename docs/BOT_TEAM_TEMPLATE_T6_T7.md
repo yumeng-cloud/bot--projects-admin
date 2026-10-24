@@ -74,7 +74,7 @@
 |----|-------------|------|----|
 | **T7-1 创建** | 选手册 → 一键得本 WS 新 `team` + 空席表；席数/slug/显示名与模板一致；**无**自动绑 Key | T7-R · R1 | [x] |
 | **T7-2 字段** | 每席至少：`role_slug`（或等价）、显示名、`playbook_ref`（`repo@ref:path` 或 `{repo,ref,path}`）；`POST …/teams` + `roster/ensure` 可幂等补齐 | T7-R · R2 | [x] |
-| **T7-3 执行源** | ymbot/Agent **只**跟 `playbook_ref` 手册步骤跑，不另起第二套流程文档 | T7-R | [ ] |
+| **T7-3 执行源** | ymbot/Agent **只**跟 `playbook_ref` 手册步骤跑，不另起第二套流程文档 | T7-R · E1–E4 | [x] `d9e5a3c` + [`T73-playbook-source-20261024.txt`](./qa-shots/T73-playbook-source-20261024.txt) · [`NEXT_WAVE_DEBT_T73.md`](./NEXT_WAVE_DEBT_T73.md) |
 | **T7-4 升版 diff** | 模板升版 → dry-run 列出将改的席位 playbook/建议例程；无确认不 apply | **后置** | [ ] |
 | **T7-5 不覆盖** | apply **默认保留** `bot_memories` / todos / 进行中 Issue；静默抹记忆 = FAIL | **后置** | [ ] |
 | **T7-6 错误** | 未知模板 / 非法 `playbook_ref` / 非本 WS → **4xx** 人话；他队 path → **404**（同 T6-R 不泄露） | T7-R · R2 | [x] |

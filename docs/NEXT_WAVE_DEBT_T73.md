@@ -2,7 +2,7 @@
 
 > 2026-10-24 19:45 Asia/Shanghai · 产品体验 · T7-R 创建整单关后下一刀  
 > **本包：席位/通道只认 `playbook_ref` 手册，不另起第二套流程文。升版 T7-4/5 仍后置。**  
-> **Go 契约已落地 `d9e5a3c`**（roster/bind/handoff 出口 + 空/非法 400）。E2 通道人话 / E4 箱证待记忆与产品。
+> **整单 PASS** · 箱证 [`T73-playbook-source-20261024.txt`](./qa-shots/T73-playbook-source-20261024.txt) · API `d9e5a3c` · 证据 push `d5436e8`。升版 T7-4/5 仍后置。
 
 ## 裁定
 
@@ -43,10 +43,15 @@ Claim/enter/handoff/CLI 展示与指引：**以席位 `playbook_ref` 为唯一�
 
 ## 产品勾选
 
-- [x] **E1 / E3（Go）** · **`d9e5a3c`**（roster/bind/handoff 含 `playbook_ref`；空/非法 → 400）
-- [ ] **E2** 通道 CLI/MCP 人话投影（记忆席；未到勿勾）
-- [ ] **E4** 箱证 → 产品勾后回写 T6_T7 **T7-3 [x]**
+- [x] **E1–E4** PASS · 2026-10-24 19:52 Asia/Shanghai
+  - API `d9e5a3c` · 箱证 [`qa-shots/T73-playbook-source-20261024.txt`](./qa-shots/T73-playbook-source-20261024.txt) · `d5436e8`
+  - E1：roster/enter/handoff 可见席位 `playbook_ref`；同席两次同 ref；ensure 改 ref 后出口跟着变
+  - E2：CLI 人话「手册 playbook_ref=…」；无「流程说明」第二套字段
+  - E3：非法/空 ensure → 400 中文；DB 空 → roster 警示 + enter 400；不回落硬编码
+  - 产品抽跑 `go test … botmem/botclient -run Playbook|T73|ParsePlaybook` ok
+  - 已回写 [`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) **T7-3 [x]**
+  - 升版 T7-4/5 仍后置
 
 ## 关单进度
 
-Go 契约 **`d9e5a3c`**。升版 T7-4/5 仍后置；记忆 CLI/MCP 未齐前不关单。
+**整单关**：E1–E4 全勾 · 2026-10-24 19:52 Asia/Shanghai。升版 T7-4/5 仍后置。
