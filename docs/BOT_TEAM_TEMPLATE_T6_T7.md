@@ -1,7 +1,8 @@
 # 班底模板 · T6 / T7 最小说明
 
 > 2026-10-24 · 种子与文档 · 对齐 [`BOT_TEAM_SEAT_P0.md`](./BOT_TEAM_SEAT_P0.md) 验收表  
-> **本文件只定契约与边界**，不实现。总指挥「先写最小说明进 docs」。
+> **本文件只定契约与边界**，不实现。总指挥「先写最小说明进 docs」。  
+> T7 段已升版：**最小验收一行一事**（可勾选）；**仍不开** T7 业务代码。
 
 | ID | 期 | 一句话 |
 |----|-----|--------|
@@ -58,29 +59,42 @@
 
 ## T7 · 从模板创建团队（P1）
 
-### 要什么
+> **仍不开实现。** 下文 = 最小验收一行一事（diff / 可勾选）；边界一句对齐 T6-R。
 
-1. 选 **bot-team-template（班底作业手册）** → 一键生成 `team` + N 个**空席**（slug/显示名/`playbook_ref`），**尚未**绑 Key。  
-2. `playbook_ref` = `{ repo, ref, path }`（或等价）；ymbot / Agent **只执行手册步骤**，不另发明第二套流程。  
-3. **模板升版**：UI/CLI 给 diff（更新哪些席位的 playbook / 建议例程）；操作者确认；**默认保留**现场 `bot_memories` / todos / 进行中 Issue。  
-4. 同模板开第二队 → 席位**形状**一致，**记忆不串队**（同 T6）。
+### 要什么（摘要）
+
+选 **bot-team-template** → `team` + N **空席**（slug / 显示名 / `playbook_ref`，未绑 Key）→ 升版 dry-run **diff** 确认后 apply → **默认不覆盖** 现场 memory；同模板第二队形状同、记忆不串（依赖 T6）。
+
+### T7 最小验收（一行一事 · 可勾）
+
+| ID | 标准（一行） | 勾 |
+|----|-------------|----|
+| **T7-1 创建** | 选手册 → 一键得本 WS 新 `team` + 空席表；席数/slug/显示名与模板一致；**无**自动绑 Key | [ ] |
+| **T7-2 字段** | 每席至少：`role_slug`（或等价）、显示名、`playbook_ref={repo,ref,path}`（或等价）；`POST …/teams` + `roster/ensure` 可幂等补齐 | [ ] |
+| **T7-3 执行源** | ymbot/Agent **只**跟 `playbook_ref` 手册步骤跑，不另起第二套流程文档 | [ ] |
+| **T7-4 升版 diff** | 模板升版 → dry-run 列出将改的席位 playbook/建议例程（人可读 diff）；无确认不 apply | [ ] |
+| **T7-5 不覆盖** | apply **默认保留** `bot_memories` / todos / 进行中 Issue；静默抹记忆 = FAIL | [ ] |
+| **T7-6 错误** | 未知模板 / 非法 `playbook_ref` / 非本 WS → **4xx** 人话；他队 path → **404**（同 T6-R 不泄露） | [ ] |
+| **T7-7 双队** | 同模板开队 B：席位**形状**同队 A；私有 memory / pins（若已有）**不串**队 A | [ ] |
+
+**与 T6-R 边界（一句）**：T7 只负责「从模板捏出空席形状 + playbook」；**切队隔离 / roster 不串**仍归 T6-R（换 `team_uuid` 入参），T7 **不**重做 pins / Issue 池按队。
 
 ### 不做（本阶）
 
-- 自动把本机任意 Agent 镜像成席位；模板写回用户 git；静默覆盖 memory。
+- 自动把本机任意 Agent 镜像成席位；模板写回用户 git；静默覆盖 memory；开 T7 业务代码（等总指挥下令）。
 
-### 建议挂载（实现时）
+### 建议挂载（实现时 · 非本波）
 
 | 面 | 建议 |
 |----|------|
 | 模板清单 | 工作区可读「可用手册」列表（内置或配置 URL） |
-| API | `POST …/teams` + `roster/ensure`（已有 T9 幂等）扩展 `playbook_ref`；可选 `POST …/teams/{id}/template/apply`（dry-run + apply） |
+| API | `POST …/teams` + `roster/ensure`（T9 幂等）扩展 `playbook_ref`；可选 `POST …/teams/{id}/template/apply`（dry-run + apply） |
 | FE | 「从模板创建」向导：预览席位表 → 创建 → 发入场码/迁绑 |
-| 验收 | 空席形状与手册一致；升版 dry-run 可见 diff；apply 后 memory 键仍在 |
+| 通道 | 可选 CLI/MCP 包装同一 REST；切队语义仍 §11.4，不另造 sticky team env |
 
 ### 关单信号
 
-箱内走通「选模板 → 空席齐 → 升版不丢记忆」；勾 `BOT_TEAM_SEAT_P0` **T7**。
+上表 **T7-1～T7-7** 可勾 + 箱内「选模板 → 空席齐 → 升版 diff → memory 仍在」；再勾 `BOT_TEAM_SEAT_P0` **T7**。
 
 ---
 
