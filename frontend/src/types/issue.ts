@@ -120,8 +120,8 @@ export interface Comment {
   id: string
   issue_id: string
   author_id: string
-  /** 嵌套作者（N3）；优先于 memberName(author_id) */
-  author?: { id?: string; display_name?: string } | null
+  /** 嵌套作者；与 author_id 并存，可空 */
+  author?: MemberRef | null
   body: string
   created_at: string
   updated_at: string
