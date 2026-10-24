@@ -766,7 +766,7 @@ export default function BotsRosterPage() {
     }
   }
 
-  /** SEAT_REFILL：停工/可补位席签发 ymt_（allow_expand_seat=false）；文案写「补位」禁「扩编/新开席」；禁嵌 ymk_ */
+  /** SEAT_REFILL_BIND B3：停工/可补位席签发 ymt_（allow_expand_seat=false）；文案「持补位码入场即占该席」；禁暗示须 force；禁扩编/ymk_ */
   const onCopyRefillInvite = async (roleCtx: InviteRoleCtx) => {
     setInviteBusy(true)
     try {
@@ -808,7 +808,7 @@ export default function BotsRosterPage() {
       rememberPlainBriefly(plain)
       const name = roleCtx.displayName || slug
       message.success(
-        `已复制补位入场码（末四 ·${inviteCodeTail(plain)} · 席 ${name}）。新人持码入场；非扩编新席。勿发公开群`,
+        `已复制补位入场码（末四 ·${inviteCodeTail(plain)} · 席 ${name}）。持补位码入场即占该席；非扩编新席。勿发公开群`,
       )
     } catch (e: unknown) {
       if (isInviteServiceMissing(e)) {
@@ -1139,7 +1139,7 @@ export default function BotsRosterPage() {
                   </Button>
                   {left ? (
                     <>
-                      <Tooltip title="签发该席 ymt_ 补位入场码（非扩编新席）；禁嵌 ymk_；勿发公开群">
+                      <Tooltip title="签发该席 ymt_ 补位入场码；持码入场即占该席（非扩编）；禁嵌 ymk_；勿发公开群">
                         <Button
                           size="small"
                           type="link"
@@ -1241,7 +1241,7 @@ export default function BotsRosterPage() {
                     style={{ display: 'block', marginTop: 6, fontSize: 12 }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    新人持码入场；活跃席仍禁顶替。补位 ≠ 扩编新席。
+                    持补位码入场即占该席；活跃席仍禁顶替。补位 ≠ 扩编新席。
                   </Typography.Text>
                 ) : null}
               </Card>
