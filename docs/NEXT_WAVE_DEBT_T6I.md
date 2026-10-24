@@ -19,8 +19,8 @@
 
 | 做 | 不做 |
 | --- | --- |
-| `issues.team_id` 可空 + 索引；迁移 + 回填口径（新建必填当前队；旧单 `NULL`=全 WS 可见或挂默认队，**证据写明**） | 大改看板拖拽/排期语义 |
-| `ListIssues?team_id=`（或 path `/teams/{id}/issues`）只返本队（+ 约定 NULL 策略） | FE 全局团队切换器大改（可复用席位页当前 team 入参） |
+| `issues.team_id` 可空 + 索引；新建必填当前队；旧单 `NULL`=未分队（`?team_id=` **排除**；`?unassigned=1` 可见）· **`75aadce`** | 大改看板拖拽/排期语义 |
+| `ListIssues?team_id=` 只返本队（**排除** NULL）；`?unassigned=1` 仅未分队 · **`75aadce`** | FE 全局团队切换器大改（可复用席位页当前 team 入参） |
 | Create/Update 可写 `team_id`；跨队改 → 404 | T7；pins 返工；跨 WS |
 | 箱证据双队 list 不串 | 历史单批量搬家 UI |
 
@@ -48,9 +48,12 @@
 
 ## 文档回链
 
-- REST 契约：[`API.md`](./API.md)「Issue · team_id（T6-I）」
+- REST 契约：[`API.md`](./API.md)「Issue · team_id（T6-I）」· 已落地 **`75aadce`**（功能基线 `fc8a446`）
+- List：`?team_id=` **排除** `team_id IS NULL`；未分队仅 `?unassigned=1`
 
 ## 产品勾选
 
-- [ ] I1–I3 API/箱验 · 产品勾
-- [ ] I4 FE（可后于 API）
+- [x] **I1** API/单测 · `fc8a446` + List 排除 NULL **`75aadce`**
+- [x] **I2** API 错队 404 / 双队 list 不串（单测随上）；箱验证据仍等 QA/I3
+- [ ] **I3** 证据 `docs/qa-shots/T6I-issue-pool-YYYYMMDD.txt` · 产品勾
+- [ ] **I4** FE（可后于 API；有 `f3860c5` 换池，正式勾待箱截）
