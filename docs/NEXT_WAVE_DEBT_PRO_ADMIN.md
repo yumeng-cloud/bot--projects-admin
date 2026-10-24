@@ -124,7 +124,7 @@
 - [ ] **D2** 用户台 WS 芯片
 - [ ] **D3** 用户按 WS 筛
 - [ ] **D4** 成员/用户箱截
-- [x] d74a50` / `pro-e-drawer-rail.png`
+- [x] **E1** 属性轨节奏 · `75fb14a` / `pro-e-drawer-rail.png`
 - [ ] **E2** 看板归档入口
 - [ ] **E3** 仅归档视图入口
 - [ ] **E4** Issue 箱截
@@ -138,7 +138,7 @@
 
 ## 进度注记
 
-- 2026-10-25 00:35 · **d74a50`：Drawer 属性轨归档态/解档改为与状态/优先同节奏单行（13px·中文·label|value）；主栏居中留白保持；箱截 `pro-e-drawer-rail.png`；`tsc --noEmit` PASS。C2–D / E2–E3 / G 仍冻。
+- 2026-10-25 00:35 · **E1 关绿** React `75fb14a`：Drawer 属性轨归档态/解档改为与状态/优先同节奏单行（13px·中文·label|value）；主栏居中留白保持；箱截 `pro-e-drawer-rail.png`；`tsc --noEmit` PASS。C2–D / E2–E3 / G 仍冻。
 - 2026-10-25 00:30 · **SEAT_LEAVE 整包关**（Go `c5f5596` + FE `4883426` + QA `43ecff8` / `a54535e`）。产品内部拍：**下一 P0 = 仅 E1**（Drawer 属性轨：归档态/解档与状态轨节奏统一，补间距与中文；对标 Linear Property 轨）。C2–D / E2–E3 / G 仍冻。React 首刀；齐后视觉抽 + QA 抽。
 - 2026-10-25 00:21 · **C1 正式关** FE `8c0fe5a` + QA PASS† `0e76217` / `PRO_ADMIN-C1-qa-spotcheck-20261025.txt`。产品+QA 双过。C2–E/G 仍冻。
 - 2026-10-25 00:21 · **QA C1 抽验 PASS** `0e76217` / `PRO_ADMIN-C1-qa-spotcheck-20261025.txt`（默认关/开归档/其它筛/截全过）。**C1 关绿维持**。
