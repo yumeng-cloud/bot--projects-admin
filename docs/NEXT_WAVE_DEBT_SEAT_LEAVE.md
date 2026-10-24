@@ -19,7 +19,7 @@
 
 - 不重做 claim/roster；不改 HUMAN 自动身份主航线。
 - 不做「确认顶替活跃」FE（否决）。
-- 不并行 PRO_ADMIN C2–G；C1 归档显隐 **后置**。
+- 不并行 PRO_ADMIN C2–G（C1 已正式关）。
 
 ## 勾选
 
@@ -35,8 +35,8 @@
 
 ## 产品勾选
 
-- [x] **L1** stop/unbind Admin 路径单测（Go 交件，待产品勾）
-- [x] **L2** 审计留痕（Go 交件，待产品勾）
+- [x] **L1** stop/unbind Admin 路径单测 · Go `c5f5596` · 产品勾
+- [x] **L2** 审计留痕 · Go `c5f5596` · 产品勾
 - [ ] **L3** 席卡一键停工/离职
 - [ ] **L4** FE client + 文案
 - [ ] **L5** QA 箱证
@@ -54,6 +54,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:23 · **产品勾 L1/L2** Go `c5f5596`：单测绿；`seat.stop`/`seat.unbind` activity+comment。软债搁置：无独立 HTTP Admin JWT 集成测；stop 对 open/left 偏宽松（不挡最小包）。等 React L3/L4/L6。
 - 2026-10-25 · **Go L1/L2 交件**：Admin `stop`→`stopped` / `unbind`→`left`；错态中文+幂等；成功写 `seat.stop`/`seat.unbind` 人话 activity + Issue comment（force 审计已有，沿用 N3）。
 - 2026-10-25 00:19 · **开刀**：PRO_ADMIN C1 产品关 `8c0fe5a`；本包开干。派 Go L1/L2 · React L3/L4/L6 · QA L5。
 - 2026-10-25 00:53 · **总指挥对齐**：本波先关 PRO_ADMIN **C1**；本包排 **C1 关后下一刀**。Go/React/QA 已预派可先核底，但勿抢 C1 主航线；产品验收顺序 C1 → SEAT_LEAVE。
@@ -61,4 +62,4 @@
 
 ## 关单进度
 
-**开干** · 等 L1–L6。
+**开干** · L1/L2 已勾；等 React L3/L4/L6 → QA L5 → L7。
