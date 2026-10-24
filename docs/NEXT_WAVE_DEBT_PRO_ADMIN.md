@@ -120,12 +120,12 @@
 - [x] **C3** 列显示配置 · FE `260fd1f` + QA `f65edc1` · 正式关
 - [x] **C4** 超管 WS 筛选 · FE `516226d` + QA `5365db1` · 正式关
 - [x] **C5** 列表箱截 · `pro-c-bulk`/`pro-c-columns`/`pro-c-admin-ws` · 随 C2–C4 齐 · 正式关
-- [x] **D1** 成员表密度 · FE `f57c5c4`（待 QA/产品关）
+- [x] **D1** 成员表密度 · FE `f57c5c4` + QA `e0e55c7` · 正式关
 - [x] **D2** 超管用户台 WS 芯片 · FE `38e0b4c` + QA `85b9acf` · 正式关
 - [ ] **D3** 用户按 WS 筛
 - [ ] **D4** 成员/用户箱截
 - [x] **E1** 属性轨节奏 · FE `75fb14a` + QA `5fd8775` · 正式关 / `pro-e-drawer-rail.png`
-- [ ] **E2** 看板归档入口
+- [x] **E2** 看板归档入口 · FE `11ac139` + QA `d2ff642` · 正式关
 - [x] **E3** 仅归档视图入口 · FE `41c6e88` + QA `a8e0635` · 正式关 / `pro-e-archived-only.png`
 - [ ] **E4** Issue 箱截
 - [x] **F1** 工作区表单文案 · 短说明 +「用于 URL」· `pro-a-settings.png`
@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 02:08 · **E2 正式关**后产品拍：**仅解冻 D3**（超管用户台按所属 WS 筛）；**D4 / G 仍冻**。见 [`PRO_ADMIN_D3`](./NEXT_WAVE_DEBT_PRO_ADMIN_D3.md)。
 - 2026-10-25 02:06 · E2 FE `11ac139` 交验；产品勾 E2-1～E2-3，开 QA E2-4。**D3–D4 / G 仍冻**。
 - 2026-10-25 01:58 · **D2 正式关**后产品拍：**仅解冻 E2**（看板完成列「归档本列」入口）；**D3–D4 / G 仍冻**。见 [`PRO_ADMIN_E2`](./NEXT_WAVE_DEBT_PRO_ADMIN_E2.md)。好用优先：日用看板归档 > 超管 D3 筛。
 - 2026-10-25 01:55 · D2 FE `38e0b4c` 交验；产品勾 D2-1～D2-3，开 QA D2-4。**D3–D4 / E2 / G 仍冻**。
@@ -192,4 +193,4 @@
 
 ## 关单进度
 
-**B/C1–C5/D1–D2/SEAT_LEAVE/E1/E3 + SEAT_REFILL/BIND/SHOT 正式关** · **下一刀仅 E2**；**D3–D4 / G 仍冻**。
+**B/C1–C5/D1–D2/E2/SEAT_LEAVE/E1/E3 + SEAT_REFILL/BIND/SHOT 正式关** · **下一刀仅 D3**；**D4 / G 仍冻**。
