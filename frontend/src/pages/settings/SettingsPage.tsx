@@ -124,6 +124,18 @@ export default function SettingsPage() {
     [members],
   )
 
+  /** B2：人类成员池；qaEmpty=1 强制空态供箱截 */
+  const forceMembersEmpty = searchParams.get('qaEmpty') === '1'
+  const humanMembers = useMemo(
+    () => (forceMembersEmpty ? [] : members.filter((m) => !isBotMember(m))),
+    [members, forceMembersEmpty],
+  )
+  const botMembers = useMemo(
+    () => (forceMembersEmpty ? [] : members.filter((m) => isBotMember(m))),
+    [members, forceMembersEmpty],
+  )
+  const membersEmpty = humanMembers.length === 0
+
   const reloadMembers = useCallback(async () => {
     if (!wsId) return
     const data = await listMembers(wsId)
@@ -646,12 +658,16 @@ export default function SettingsPage() {
             },
             {
               key: 'members',
-              label: `成员 (${members.length})`,
+              label: `成员 (${humanMembers.length})`,
               children: (
                 <>
                   {isAdmin ? (
                     <div>
-                      <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+                      <Typography.Text
+                        id="acb-invite-email"
+                        strong
+                        style={{ display: 'block', marginBottom: 8 }}
+                      >
                         邀请已注册成员
                       </Typography.Text>
                       <Form
@@ -685,7 +701,11 @@ export default function SettingsPage() {
                         对方须已注册；未注册请用下方「人类邀请链接」。
                       </Typography.Paragraph>
 
-                      <Typography.Text strong style={{ display: 'block', marginBottom: 8, marginTop: 16 }}>
+                      <Typography.Text
+                        id="acb-invite-ymw"
+                        strong
+                        style={{ display: 'block', marginBottom: 8, marginTop: 16 }}
+                      >
                         人类邀请链接
                       </Typography.Text>
                       <Form
@@ -807,22 +827,76 @@ export default function SettingsPage() {
 
                   {isAdmin ? <Divider className="acb-settings-divider" style={{ margin: '20px 0' }} /> : null}
 
-                  {members.length ? (
+                  {membersEmpty ? (
+                    <div
+                      className="acb-empty-panel"
+                      style={{ minHeight: 120, padding: '20px 16px', textAlign: 'center' }}
+                    >
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                          <span>
+                            <Typography.Text
+                              strong
+                              style={{ display: 'block', fontSize: 15, marginBottom: 4 }}
+                            >
+                              还没有成员
+                            </Typography.Text>
+                            <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                              {isAdmin
+                                ? '邀请同事加入，或签发人类邀请码（ymw_ 开头）'
+                                : '请联系管理员邀请成员加入'}
+                            </Typography.Text>
+                          </span>
+                        }
+                      >
+                        {isAdmin ? (
+                          <Space wrap>
+                            <Button
+                              type="primary"
+                              onClick={() =>
+                                document.getElementById('acb-invite-email')?.scrollIntoView({
+                                  behavior: 'smooth',
+                                  block: 'center',
+                                })
+                              }
+                            >
+                              邀请成员
+                            </Button>
+                            <Button
+                              onClick={() =>
+                                document.getElementById('acb-invite-ymw')?.scrollIntoView({
+                                  behavior: 'smooth',
+                                  block: 'center',
+                                })
+                              }
+                            >
+                              签发人类邀请
+                            </Button>
+                          </Space>
+                        ) : null}
+                      </Empty>
+                    </div>
+                  ) : null}
+
+                  {humanMembers.length || botMembers.length ? (
                     <Table
                       className="acb-list-table"
                       size="small"
                       rowKey="id"
-                      dataSource={members}
+                      dataSource={[...humanMembers, ...botMembers]}
                       pagination={false}
                       columns={memberColumns}
+                      style={membersEmpty ? { marginTop: 16 } : undefined}
                     />
-                  ) : (
-                    empty('还没有成员')
-                  )}
+                  ) : null}
+                  {/* Bot 席脚注与上方人类邀请空态隔离：不写入空态主文案 */}
                   <div className="acb-settings-tab-foot">
-                    成员含人类与机器人。机器人行只读；席位与入场码请到侧栏「Bot」管理。
                     兑换人类邀请码可在首页「兑换邀请码」。
                     {!isAdmin ? ' 你当前不是管理员，成员表只读。' : ''}
+                    {botMembers.length > 0 || !membersEmpty
+                      ? ' 机器人席位请到侧栏「Bot」管理（与人类邀请 ymw_ 分家）。'
+                      : ''}
                   </div>
                 </>
               ),

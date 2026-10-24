@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Spin, Typography, Button, Input, Space, Empty, message } from 'antd'
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { archiveIssues, createIssue } from '../../api/issues'
@@ -35,6 +35,9 @@ export type BoardPageProps = {
 
 export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  /** B3/B4：qaEmpty=1 强制无 Issue 空态供箱截 */
+  const forceEmpty = searchParams.get('qaEmpty') === '1'
   const { teamId, loading: teamLoading } = useCurrentTeam(workspaceId)
   const pack = useBoardPackStats({
     workspaceId,
@@ -192,7 +195,7 @@ export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
         </Space>
       </div>
 
-      {!loading && !colsLoading ? (
+      {!loading && !colsLoading && !forceEmpty && issues.length > 0 ? (
         <BoardPackStrip
           done={pack.done}
           total={pack.total}
@@ -208,42 +211,54 @@ export default function BoardPage({ workspaceId, projectId }: BoardPageProps) {
         <div style={{ textAlign: 'center', padding: 32 }}>
           <Spin size="small" />
         </div>
-      ) : issues.length === 0 ? (
-        <Empty style={{ marginTop: 48 }} description="还没有 Issue，新建一条或套用列模板">
-          <Space wrap>
-            <Input
-              size="small"
-              placeholder="标题"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              onPressEnter={() => void handleCreate()}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  setNewTitle('')
-                  ;(e.target as HTMLInputElement).blur()
-                }
-              }}
-              style={{ width: 240 }}
-              disabled={creating}
-              allowClear
-            />
-            <Button
-              type="primary"
-              size="small"
-              icon={<PlusOutlined />}
-              loading={creating}
-              onClick={() => void handleCreate()}
-              disabled={!newTitle.trim()}
-            >
-              新建 Issue
-            </Button>
-            <ColumnTemplatePicker
-              prefs={colPrefs}
-              onApply={applyColPrefs}
-              variant="cta"
-            />
-          </Space>
-        </Empty>
+      ) : forceEmpty || issues.length === 0 ? (
+        <div
+          className="acb-empty-panel"
+          style={{ minHeight: 120, padding: '20px 16px', textAlign: 'center', marginTop: 8 }}
+        >
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <span>
+                <Typography.Text strong style={{ display: 'block', fontSize: 15, marginBottom: 4 }}>
+                  还没有 Issue
+                </Typography.Text>
+                <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                  写一条标题，立刻开工
+                </Typography.Text>
+              </span>
+            }
+          >
+            <Space wrap>
+              <Input
+                size="small"
+                placeholder="标题"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                onPressEnter={() => void handleCreate()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setNewTitle('')
+                    ;(e.target as HTMLInputElement).blur()
+                  }
+                }}
+                style={{ width: 220 }}
+                disabled={creating || forceEmpty}
+                allowClear
+              />
+              <Button
+                type="primary"
+                size="small"
+                icon={<PlusOutlined />}
+                loading={creating}
+                onClick={() => void handleCreate()}
+                disabled={forceEmpty || !newTitle.trim()}
+              >
+                新建
+              </Button>
+            </Space>
+          </Empty>
+        </div>
       ) : (
         <KanbanBoard
           workspaceId={workspaceId}

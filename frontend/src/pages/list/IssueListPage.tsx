@@ -51,6 +51,8 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
   const [searchParams, setSearchParams] = useSearchParams()
   const blocked = searchParams.get('blocked') === '1'
   const overdue = searchParams.get('overdue') === '1'
+  /** B3/B4：qaEmpty=1 强制无 Issue 空态供箱截 */
+  const forceEmpty = searchParams.get('qaEmpty') === '1'
   const { teamId, loading: teamLoading } = useCurrentTeam(workspaceId)
 
   const [loading, setLoading] = useState(true)
@@ -279,6 +281,55 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
         <div style={{ textAlign: 'center', padding: 48 }}>
           <Spin />
         </div>
+      ) : forceEmpty || (issues.length === 0 && !hasActiveFilters(filters)) ? (
+        <div
+          className="acb-empty-panel"
+          style={{ minHeight: 120, padding: '20px 16px', textAlign: 'center', marginTop: 8 }}
+        >
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <span>
+                <Typography.Text strong style={{ display: 'block', fontSize: 15, marginBottom: 4 }}>
+                  还没有 Issue
+                </Typography.Text>
+                <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                  写一条标题，立刻开工
+                </Typography.Text>
+              </span>
+            }
+          >
+            <Space wrap>
+              <Input
+                size="small"
+                placeholder="标题"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                onPressEnter={() => void handleCreate()}
+                style={{ width: 220 }}
+                disabled={creating || forceEmpty}
+                allowClear
+              />
+              <Button
+                type="primary"
+                size="small"
+                icon={<PlusOutlined />}
+                loading={creating}
+                onClick={() => {
+                  if (forceEmpty) {
+                    const el = document.querySelector<HTMLInputElement>('.acb-page-bar input')
+                    el?.focus()
+                    return
+                  }
+                  void handleCreate()
+                }}
+                disabled={forceEmpty ? false : !newTitle.trim()}
+              >
+                新建
+              </Button>
+            </Space>
+          </Empty>
+        </div>
       ) : (
         <Table<IssueTreeRow>
           className="acb-list-table acb-list-tree"
@@ -293,20 +344,11 @@ export default function IssueListPage({ workspaceId, projectId }: IssueListPageP
           }}
           locale={{
             emptyText: (
-              <div className="acb-empty-panel">
-                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="还没有 Issue，新建一条">
-                  <Button
-                    type="primary"
-                    size="small"
-                    icon={<PlusOutlined />}
-                    onClick={() => {
-                      const el = document.querySelector<HTMLInputElement>('.acb-page-bar input')
-                      el?.focus()
-                    }}
-                  >
-                    新建 Issue
-                  </Button>
-                </Empty>
+              <div className="acb-empty-panel" style={{ minHeight: 100, padding: '16px' }}>
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="没有符合条件的 Issue"
+                />
               </div>
             ),
           }}

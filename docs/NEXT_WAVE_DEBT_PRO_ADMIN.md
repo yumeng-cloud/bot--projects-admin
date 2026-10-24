@@ -112,9 +112,9 @@
 - [x] **A3** 侧栏层级 · 同 `pro-a-settings.png`（设置高亮·平台管理底入口）
 - [x] **A4** 壳箱截 · `9f6ced2`；视觉终审放行（基线 `d0216ff`）
 - [x] **B1** 无项目引导 · **P0 关绿** · FE `72e0447` + 底图 `640fd6e` · QA `631af4a` / `PRO_ADMIN-B1-qa-retest-20261024.txt` Overall PASS（B1-a～g）
-- [ ] **B2** 无成员引导
-- [ ] **B3** 无 Issue 引导
-- [ ] **B4** 空态箱截
+- [x] **B2** 无成员引导 · `9525fa9` / `pro-b-empty-no-members.png`
+- [x] **B3** 无 Issue 引导 · `9525fa9` / `pro-b-empty-no-issue.png` + `pro-b-empty-no-issue-list.png`
+- [x] **B4** 空态箱截 · `9525fa9`（无成员/无 Issue；无项目复用 B1 `pro-b-empty-no-project.png`）
 - [ ] **C1** 归档显隐
 - [ ] **C2** 多选批量
 - [ ] **C3** 列显示配置
@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:15 · **B2/B3/B4 关绿** React `9525fa9`：成员 Tab 空态邀请/`ymw_`（与 Bot 席隔离）；列表/看板无 Issue 短引导+新建；箱截 `pro-b-empty-no-members.png` / `pro-b-empty-no-issue.png` / `pro-b-empty-no-issue-list.png`。整包 C–E/G 仍冻。
 - 2026-10-25 00:25 · **开刀仅 B2/B3（+B4 箱截）**：ONE_TAP 已关；总指挥令只开人用空态。B2=成员 Tab 无成员→邀请/`ymw_`（与 Bot 席文案隔离）；B3=列表/看板无 Issue→短引导+新建（不半屏死白）。整包 C–E/G **不并行**。测绿 push；交勾带 SHA+截。
 - 2026-10-25 00:10 · **产品**：HUMAN 关后不并行整包；建议后置只开 **B2/B3 空态**。本波席位给 ONE_TAP 收口。
 - 2026-10-24 22:20 · **B1 QA 关绿** `631af4a` Overall PASS。
@@ -156,4 +157,4 @@
 
 ## 关单进度
 
-**进行中 · 仅 B2/B3(+B4)** · 整包其余冻结。
+**B2/B3/B4 已勾** · 整包其余（C–E/G）仍冻结。
