@@ -145,14 +145,14 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 | `template_key` | team / ensure body | 如 `default`、`bot-team-template`；未知 → **400** 人话 |
 | `role_slug` / `slug` | seat | 短 slug（`frontend`…）；与手册席位一致 |
 | `display_name` / `name` | seat | 显示名 |
-| `playbook_ref` | seat | 字符串 `repo@ref:path`（见索引）；空席创建后**未**绑 Key（`status=open`） |
+| `playbook_ref` | seat | 字符串 `repo@ref:path`（见索引）；空席创建后**未**绑 Key（`status=open`）；**T7-3 执行源**（`d9e5a3c`）：席位唯一作业手册入口；`GET roster` / `bind` / `GET …/handoff` 回包含该字段；写入/绑定时空或非法 → **400** 中文（不默默换硬编码手册） |
 
 **错误（R2）**
 
 | 情况 | HTTP |
 |------|------|
 | 未知 / 空（从模板路径）`template_key` | **400** 中文 |
-| 非法 `playbook_ref`（无法解析 path） | **400** 中文 |
+| 空 / 非法 `playbook_ref`（无法解析 path；T7-3 · `d9e5a3c`） | **400** 中文 |
 | 团队不存在 / 非本 WS | **404** |
 | 他队 path | **404**（不泄露） |
 

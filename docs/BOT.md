@@ -170,4 +170,5 @@ go run ./cmd/ymbot mcp-serve   # Cursor stdio MCP；tools: board_*；full/ids �
 - 续命验收 H1–H5：[`BOT_HANDOFF_CONTINUITY_P0.md`](./BOT_HANDOFF_CONTINUITY_P0.md)
 
 - 班底席位 / 入场码：[`BOT_TEAM_SEAT_P0.md`](./BOT_TEAM_SEAT_P0.md) · [`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md)（`seat.status`=`open|active|stopped|left`；`GET/POST …/teams/{id}/invites`）
+- **T7-3 执行源（已落地 `d9e5a3c`）**：席位作业手册 = `playbook_ref`；roster / bind / handoff 回包含该字段；空或非法 → **400** 中文；升版 T7-4/5 仍后置。开工单 [`NEXT_WAVE_DEBT_T73.md`](./NEXT_WAVE_DEBT_T73.md)（通道 MCP 人话投影待记忆席，勿当已齐）
 
