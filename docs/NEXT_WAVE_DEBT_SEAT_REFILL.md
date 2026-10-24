@@ -32,9 +32,9 @@
 
 ## 产品勾选
 
-- [x] **R1** 可补位入口 · FE `ed2e7cb`
-- [x] **R2** 文案分家 · FE `ed2e7cb`
-- [x] **R3** 箱截 · FE `ed2e7cb` · `docs/qa-shots/seat-refill-{before,after}.png`
+- [x] **R1** 可补位入口 · FE `d7e0396`
+- [x] **R2** 文案分家 · FE `d7e0396`
+- [x] **R3** 箱截 · FE `d7e0396` · `docs/qa-shots/seat-refill-{before,after}.png`
 - [ ] **R4** QA
 - [ ] **R5** 关单
 
@@ -48,7 +48,7 @@
 
 ## 进度注记
 
-- 2026-10-25 00:51 · **React 交 R1–R3** FE `ed2e7cb`：可补位席卡「复制补位入场码」+ 指派；Toast/短说明写补位禁扩编/ymk_；占用中仍停工/离职；箱截 seat-refill-{before,after}.png；`tsc --noEmit` PASS。等 QA R4 → 产品 R5。PRO_ADMIN C2–D/E2/G 仍冻。
+- 2026-10-25 00:51 · **React 交 R1–R3** FE `d7e0396`：可补位席卡「复制补位入场码」+ 指派；Toast/短说明写补位禁扩编/ymk_；占用中仍停工/离职；箱截 seat-refill-{before,after}.png；`tsc --noEmit` PASS。等 QA R4 → 产品 R5。PRO_ADMIN C2–D/E2/G 仍冻。
 - 2026-10-25 00:47 · E3 正式关后产品拍本包为下一刀（PRO_ADMIN 可验项已尽且 C2–D/E2/G 仍冻）。
 
 ## 关单进度
