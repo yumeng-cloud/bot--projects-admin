@@ -122,8 +122,8 @@
 - [x] **C5** 列表箱截 · `pro-c-bulk`/`pro-c-columns`/`pro-c-admin-ws` · 随 C2–C4 齐 · 正式关
 - [x] **D1** 成员表密度 · FE `f57c5c4` + QA `e0e55c7` · 正式关
 - [x] **D2** 超管用户台 WS 芯片 · FE `38e0b4c` + QA `85b9acf` · 正式关
-- [ ] **D3** 用户按 WS 筛
-- [ ] **D4** 成员/用户箱截
+- [x] **D3** 用户按 WS 筛 Soft† · FE `7def3a2` + QA `f5b2780` · 正式关
+- [x] **D4** 成员/用户箱截 · `pro-d-members.png` + `pro-d-users.png` · 并关
 - [x] **E1** 属性轨节奏 · FE `75fb14a` + QA `5fd8775` · 正式关 / `pro-e-drawer-rail.png`
 - [x] **E2** 看板归档入口 · FE `11ac139` + QA `d2ff642` · 正式关
 - [x] **E3** 仅归档视图入口 · FE `41c6e88` + QA `a8e0635` · 正式关 / `pro-e-archived-only.png`
@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 02:14 · **D3 Soft† + D4 正式关**后产品拍：**仅开 G**（G1 QA 苛刻抽 + G2 证据齐 + G3 产品关）；**不开新功能刀**。见 [`PRO_ADMIN_G`](./NEXT_WAVE_DEBT_PRO_ADMIN_G.md)。
 - 2026-10-25 02:13 · D3 FE Soft† `7def3a2` 交验；产品勾 D3-1～D3-3，开 QA D3-4。**D4 / G 仍冻**。
 - 2026-10-25 02:08 · **E2 正式关**后产品拍：**仅解冻 D3**（超管用户台按所属 WS 筛）；**D4 / G 仍冻**。见 [`PRO_ADMIN_D3`](./NEXT_WAVE_DEBT_PRO_ADMIN_D3.md)。
 - 2026-10-25 · React 交 **D3-1～D3-3 Soft† FE**（用户台所属 WS 筛；API 无 workspace_id；箱截 `pro-d-users.png`）；等 QA/产品。**D4/G 仍冻**。
@@ -195,4 +196,4 @@
 
 ## 关单进度
 
-**B/C1–C5/D1–D2/E2/SEAT_LEAVE/E1/E3 + SEAT_REFILL/BIND/SHOT 正式关** · **下一刀仅 D3**；**D4 / G 仍冻**。
+**B/C/D/E + SEAT_* 正式关** · **下一刀仅 G** 验收门。
