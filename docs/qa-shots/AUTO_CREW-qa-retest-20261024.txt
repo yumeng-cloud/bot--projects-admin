@@ -1,0 +1,56 @@
+=== AUTO_CREW C7 harsh verify ===
+time_AsiaShanghai: 2026-10-24 23:32:24 Asia/Shanghai (box)
+target_commit: fef5914 (fef5914) feat(fe): AUTO_CREW C1–C4——一键复制全班入场包
+HEAD_at_verify: dee44ea (dee44ea98c7012e2e63e363c21635def7ab783de)
+fef5914_ancestor_of_HEAD: YES
+Overall: PASS†
+
+--- Method ---
+1. git fetch; confirm fef5914 is ancestor of HEAD (merge-base --is-ancestor → 0).
+2. Live API @ :8080 as admin@yumeng.tech:
+   - GET …/team-templates → default 5 seats (frontend/pm/qa/backend/wiki)
+   - POST …/teams/from-template {template_key:default} → team QA-AUTO-CREW-* + roster N=5 status=open
+   - For each empty seat: POST …/teams/{id}/invites {allow_expand_seat, role_hint, seat_slug}
+     (same loop as frontend/src/utils/autoCrewPack.ts issueCrewPack)
+3. Soft† clipboard: CrewPackRevealModal onCopy → navigator.clipboard.writeText(result.markdown)
+   where markdown = buildCrewPackMarkdown ← buildJoinUrl + buildBotJoinPrompt (oneTapJoin.ts).
+   Built string from that source/API path is what Copy would put; live clipboard click not required.
+4. Entry (either OK): 建队成功 → onTeamCreatedFromTemplate opens CrewPackRevealModal(afterCreate);
+   席页空席时主按钮「复制全班入场包」(equiv 「一键复制全班入场包」).
+5. React C4 shot present: docs/qa-shots/auto-crew-pack-after-create.png
+
+--- Harsh checks ---
+[PASS] N empty seats = 5 (default 班底)
+[PASS] ymt_ count = 5 (one per empty seat); sample redacted:
+       ymt_05c4…3aee · ymt_18e0…e66c · ymt_2619…8868 · ymt_33a6…eef8 · ymt_06d1…90c9
+       (second issue round also 5×ymt_; middles masked)
+[PASS] Roles present per seat/line:
+       ## 后端（backend）  join?…&role=backend  --role backend
+       ## 前端（frontend）  join?…&role=frontend --role frontend
+       ## 产品经理（pm）    join?…&role=pm       --role pm
+       ## QA（qa）          join?…&role=qa       --role qa
+       ## 知识库（wiki）    join?…&role=wiki     --role wiki
+[PASS] ymk_ identity keys ABSENT: regex ymk_[A-Za-z0-9]{8,} → 0 hits in pack.
+       Note: instructional text may say「Bot Key（ymk_…）」/「禁止…完整 ymk_」
+       (forbid-paste guidance from buildBotJoinPrompt); NO embedded secret key. React「无 ymk_」= 禁嵌钥.
+
+--- Sample redacted pack structure ---
+# 班底入场包 · QA-AUTO-CREW-233134
+（含 5 个入场码，勿发公开群）
+
+## 后端（backend）
+入场链接：https://bot.api.sn.cn/join?code=ymt_****…****&role=backend
+… install + 入场码 ymt_… + 目标角色 slug + ymbot team join --code ymt_… --role backend …
+（其余 4 席同构：frontend / pm / qa / wiki）
+
+--- Source wiring ---
+- frontend/src/utils/autoCrewPack.ts (issueCrewPack / buildCrewPackMarkdown)
+- frontend/src/components/common/CrewPackRevealModal.tsx (签发+复制 CTA)
+- frontend/src/pages/settings/bots/BotsRosterPage.tsx (建队后自动开挡层 + 席页按钮)
+- frontend/src/utils/oneTapJoin.ts buildBotJoinPrompt (席页/入场包禁嵌 ymk_)
+
+--- Defects ---
+(none)
+
+--- Push ---
+PASS → commit this evidence + push origin/main (see git log after).
