@@ -1,0 +1,136 @@
+=== HUMAN_ONBOARD A/E/J · 记忆席箱证 ===
+time_AsiaShanghai: 2026-10-24 23:44:52 Asia/Shanghai
+HEAD_at_run: 7f68e55 (7f68e557e597a688bbfa6c04580a03eaa760ff9e)
+debt: docs/NEXT_WAVE_DEBT_HUMAN_ONBOARD.md (vote b6614ff+; §4 记忆校验)
+WS: ba1481c49148aba9553ba3811406b69f
+TEAM: ea918de1ac4d8116ed69651116a4acb9
+YMBOT_API_URL: http://127.0.0.1:8080
+NOTE: 自动身份实现归 Go redeem；本席只校验边界+通道人话。勿另发明 claim。
+
+## PASS/GAP 表
+| 项 | 结果 | 说明 |
+| --- | --- | --- |
+
+########## J 单活 claim（活跃席第二路 enter → 409 人话）##########
+===== whoami Key1 / KeyQB =====
+bot  Grok Bot
+member_id=094acad4a3f0aaef2ee6370e790912b4
+workspace_id=ba1481c49148aba9553ba3811406b69f
+认证失败：无效的 API Key（HTTP 401）
+===== KeyQB ensure holds frontend (or Key1 holds wiki for 409) =====
+冲突：该席位已绑定其他成员（Grok Bot）；禁止瞎抢；活跃席不可 --force 顶替，请对方 seat leave（HTTP 409）
+exit=13
+J_CLAIM_409=PASS
+reuse_T10: docs/qa-shots/ymbot-t9-t11-evidence-20261024.txt T10 PASS (2nd enter→HTTP 409 exit 13)
+
+########## E 换机同 member（leave→migrate→仅 handoff get）##########
+===== E whoami same member =====
+Key1={
+  "actor_kind": "bot",
+  "display_name": "Grok Bot",
+  "member_id": "094acad4a3f0aaef2ee6370e790912b4",
+  "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+}
+Key2={
+  "actor_kind": "bot",
+  "display_name": "Grok Bot",
+  "member_id": "094acad4a3f0aaef2ee6370e790912b4",
+  "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+}
+same_member=YES mid=094acad4a3f0aaef2ee6370e790912b4
+===== E seat=ops-j2a Key1 leave (cleanup) / Key2 leave =====
+left role=ops-j2a via=unbind
+left role=ops-j2a via=unbind
+===== E Key1 enter + set focus =====
+playbook_ref 不能为空（HTTP 400）
+已写服务端（进度在服务端；主航线 team pull → seat enter → handoff get；勿攒到最后 export）
+ops-j2a:last_focus	2026-10-24T15:44:52Z	AEJ-E-focus-1792856692
+===== E Key1 leave =====
+left role=ops-j2a via=unbind
+===== E Key2 migrate enter (no force) =====
+playbook_ref 不能为空（HTTP 400）
+exit_migrate=20
+===== E Key2 handoff get (only; no import) =====
+role=知识库  memories=6  todos=0  open_issues=6
+member=Grok Bot
+focus=T6-A-focus-1792836329
+手册 playbook_ref=bot-team-template@main:playbook/班底与补位.md
+  YM-12  N4 立即推送演示  todo
+  YM-11  N4 smoke  todo
+  YM-18  N4 c947a76 立即推送 spot-check  todo
+  YM-17  N3 readable force audit target  todo
+  YM-13  N3 force bind audit target  todo
+  YM-9  QA webhook match BOT_A updated  todo
+exit_handoff=0
+===== E Key2 handoff get --full snip focus =====
+alpha:last_focus = T6-A-focus-1792836329
+frontend:last_focus = WHEEL_FIX-C3-focus-1792847579
+gamma:last_focus = T6-B-gamma-1792836341
+ops-j2a:last_focus = AEJ-E-focus-1792856692
+E_MIGRATE_HANDOFF=FAIL marker=AEJ-E-focus-1792856692
+reuse_T2: docs/qa-shots/T2-handoff-migrate-20261024.txt V1–V3 PASS (same member leave→migrate→handoff get)
+WARN_DOC: 禁止无钥换机 bootstrap 造第二 member（现网无自动身份；持钥换机绿）
+
+########## A 空 focus 人话（BotB SRE memories=[]）##########
+role=SRE  memories=0  todos=0  open_issues=2
+member=BotB J2
+focus=空
+手册 playbook_ref=docs/sre.md
+  YM-16  patrol-p05-assign-1792835498  todo
+  YM-14  N4-c947a76-skip-1792835310545  todo
+exit=0
+A_EMPTY_FOCUS=PASS
+A_NO_SECOND_FLOW=PASS (playbook_ref only; no invented流程文)
+
+########## 自动造人边界（只校验、不实现；GAP=Q1）##########
+invite_code_prefix=ymt_3477...
+join role=wiki  redeem→team pull→seat enter→handoff get
+skipped_enter=true（已绑本席）
+已绑本席，跳过 enter，直接 handoff get
+handoff role=知识库  memories=6  todos=0  open_issues=6
+member=Grok Bot
+focus=T6-A-focus-1792836329
+手册 playbook_ref=bot-team-template@main:playbook/班底与补位.md
+  YM-12  N4 立即推送演示  todo
+  YM-11  N4 smoke  todo
+  YM-18  N4 c947a76 立即推送 spot-check  todo
+  YM-17  N3 readable force audit target  todo
+  YM-13  N3 force bind audit target  todo
+  YM-9  QA webhook match BOT_A updated  todo
+exit_join=0
+member_before=094acad4a3f0aaef2ee6370e790912b4 member_after=094acad4a3f0aaef2ee6370e790912b4
+AUTH_NO_SECOND_MEMBER=PASS (whoami member_id stable; 已鉴权路径未静默第二人)
+GAP_Q1=YES 现网 redeem 仍无自动身份（目标态；归 Go）
+FUTURE_AUTO_CREATE_MUST_NOT:
+  1) 绑活跃席（须撞 409 单活 claim，与现网 J 一致）
+  2) 已鉴权再造第二 member（本箱 whoami 稳定佐证）
+  3) 无钥换机 bootstrap（E 要求持原 ymk_/migrate 同 member）
+CHANNEL_NO_BYPASS_409: seat enter / migrate enter / team join 均走服务端 bind；409 人话由 CLI 透出（exit 13），不绕过。
+
+
+########## E 复跑（席=qa 有 playbook_ref；ops-j2a 因空 playbook 400 作废）##########
+time_AsiaShanghai_retest: see append
+SEAT=qa
+same_member=YES mid=094acad4a3f0aaef2ee6370e790912b4
+Key1 enter → memory set qa:last_focus=AEJ-E-focus-1792856700 → leave
+Key2 migrate enter --role qa (no --force) exit=0 bind.ok
+Key2 handoff get exit=0（仅 get；无 import）
+--full FOUND qa:last_focus AEJ-E-focus-1792856700
+E_MIGRATE_HANDOFF=PASS
+reuse_T2: docs/qa-shots/T2-handoff-migrate-20261024.txt V1–V3 PASS
+WARN: 禁止无钥换机 bootstrap 造第二 member
+
+## 汇总
+| 场景 | 结果 |
+| --- | --- |
+| J 单活 claim 409 人话 | PASS（本箱 wiki 第二路 exit=13 + 人话；复用 T10） |
+| E 换机同 member + handoff get | PASS（qa leave→migrate→handoff get；marker 见 --full；复用 T2） |
+| A 空 focus 人话 focus=空 | PASS（补丁后 BotB SRE memories=0 → focus=空） |
+| 自动造人边界（不实现） | GAP=Q1；AUTH_NO_SECOND_MEMBER=PASS；未来不得绑活跃/造第二人/无钥 bootstrap |
+| 人话补丁 | 是：FormatHandoffText + ProjectHandoff focus=空 |
+
+## 给总指挥/产品短报
+- 记忆席 A/E/J 箱证已进仓；空 focus 通道人话已最小补丁。
+- Q1 自动身份仍 GAP（归 Go redeem）；通道未另发明 claim，409 单活不绕过。
+- 产品可选债：handoff 摘要 focus 当前取「裸 last_focus 优先否则首个 *:last_focus」，兼岗多焦点时未必等于当前席；不挡 A（空）/E（--full 可见席键）。
+- ops-j2a 等空 playbook_ref 席 enter→400，与「手册=playbook_ref、空则警示不回落」一致；迁绑剧本请挑有手册席或先补 ref。

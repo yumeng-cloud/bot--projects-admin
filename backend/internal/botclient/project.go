@@ -204,7 +204,6 @@ func (c *Client) projectIssueMap(m map[string]any, names map[string]string, opts
 	return out
 }
 
-
 // issueArchivedAt 读非空 archived_at（字符串）；无则 ""。
 func issueArchivedAt(m map[string]any) string {
 	return strings.TrimSpace(strField(m, "archived_at"))
@@ -541,12 +540,15 @@ func (c *Client) ProjectHandoff(raw json.RawMessage, opts ViewOpts) (any, error)
 		roleName = strField(role, "name", "slug")
 	}
 	memN, todoN := 0, 0
+	var memArr []any
 	if arr, ok := hdo["memories"].([]any); ok {
+		memArr = arr
 		memN = len(arr)
 	}
 	if arr, ok := hdo["todos"].([]any); ok {
 		todoN = len(arr)
 	}
+	focusVal, focusEmpty := focusFromMemories(memArr)
 	var issues []map[string]any
 	if arr, ok := hdo["issues"].([]any); ok {
 		for _, it := range arr {
@@ -578,6 +580,13 @@ func (c *Client) ProjectHandoff(raw json.RawMessage, opts ViewOpts) (any, error)
 		"issue_count":  len(issues),
 		"issues":       issues,
 	}
+	if focusEmpty {
+		out["focus"] = ""
+		out["focus_empty"] = true
+	} else {
+		out["focus"] = focusVal
+		out["focus_empty"] = false
+	}
 	AttachPlaybookRef(out, strField(hdo, "playbook_ref"))
 	if opts.IDs {
 		if mid := strField(hdo, "member_id"); mid != "" {
@@ -594,6 +603,40 @@ func (c *Client) ProjectHandoff(raw json.RawMessage, opts ViewOpts) (any, error)
 	return out, nil
 }
 
+// focusFromMemories 从 handoff memories 取续工焦点。
+// 认 key=last_focus 或 *:last_focus；皆无或值为空 → empty=true（人话 focus=空）。
+func focusFromMemories(mems []any) (value string, empty bool) {
+	var bare, seatScoped string
+	for _, it := range mems {
+		m, ok := it.(map[string]any)
+		if !ok || m == nil {
+			continue
+		}
+		key := strings.TrimSpace(strField(m, "key_name", "key"))
+		val := strings.TrimSpace(strField(m, "value_text", "value"))
+		if key == "" || val == "" {
+			continue
+		}
+		switch {
+		case key == "last_focus":
+			if bare == "" {
+				bare = val
+			}
+		case strings.HasSuffix(key, ":last_focus"):
+			if seatScoped == "" {
+				seatScoped = val
+			}
+		}
+	}
+	if bare != "" {
+		return bare, false
+	}
+	if seatScoped != "" {
+		return seatScoped, false
+	}
+	return "", true
+}
+
 func FormatHandoffText(v any) string {
 	m, ok := v.(map[string]any)
 	if !ok {
@@ -605,6 +648,14 @@ func FormatHandoffText(v any) string {
 		dash(strField(m, "claimed_role")), m["memory_count"], m["todo_count"], m["issue_count"])
 	if member := strField(m, "member"); member != "" {
 		fmt.Fprintf(&b, "member=%s\n", member)
+	}
+	// A：无 last_focus → 人话明示「空」；有则截断展示；不回落假 focus / 第二套流程文
+	if empty, ok := m["focus_empty"].(bool); ok && empty {
+		fmt.Fprintf(&b, "focus=空\n")
+	} else if focus := strField(m, "focus"); focus != "" {
+		fmt.Fprintf(&b, "focus=%s\n", trunc(focus, 72))
+	} else {
+		fmt.Fprintf(&b, "focus=空\n")
 	}
 	if p := strField(m, "playbook_ref"); p != "" {
 		fmt.Fprintf(&b, "手册 playbook_ref=%s\n", p)

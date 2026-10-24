@@ -241,3 +241,52 @@ func TestProjectIssuesDropsArchivedByDefault(t *testing.T) {
 		t.Fatalf("DropArchivedFromIssueListJSON: %#v", items2)
 	}
 }
+
+func TestFormatHandoffFocusEmptyExplicit(t *testing.T) {
+	c := &Client{}
+	// 无 memories → 明示空
+	hv, err := c.ProjectHandoff(json.RawMessage(`{"handoff":{"claimed_role":{"name":"SRE","slug":"sre"},"memories":[],"todos":[],"issues":[],"playbook_ref":"docs/sre.md"}}`), ViewOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ht := FormatHandoffText(hv)
+	if !strings.Contains(ht, "focus=空") {
+		t.Fatalf("want focus=空, got:\n%s", ht)
+	}
+	if strings.Contains(ht, "假 focus") || strings.Contains(ht, "流程说明") {
+		t.Fatalf("must not invent second流程文: %s", ht)
+	}
+	// 有 seat-scoped last_focus → 展示值、不写空
+	hv2, err := c.ProjectHandoff(json.RawMessage(`{"handoff":{"claimed_role":{"name":"前端"},"memories":[{"key_name":"frontend:last_focus","value_text":"AEJ-focus-marker"}],"todos":[],"issues":[]}}`), ViewOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ht2 := FormatHandoffText(hv2)
+	if strings.Contains(ht2, "focus=空") {
+		t.Fatalf("should not be empty when last_focus present:\n%s", ht2)
+	}
+	if !strings.Contains(ht2, "focus=AEJ-focus-marker") {
+		t.Fatalf("want focus value, got:\n%s", ht2)
+	}
+}
+
+func TestFocusFromMemories(t *testing.T) {
+	v, empty := focusFromMemories(nil)
+	if !empty || v != "" {
+		t.Fatalf("nil mems: v=%q empty=%v", v, empty)
+	}
+	v, empty = focusFromMemories([]any{
+		map[string]any{"key_name": "decision", "value_text": "x"},
+		map[string]any{"key_name": "qa:last_focus", "value_text": "seat-f"},
+	})
+	if empty || v != "seat-f" {
+		t.Fatalf("seat scoped: v=%q empty=%v", v, empty)
+	}
+	v, empty = focusFromMemories([]any{
+		map[string]any{"key_name": "last_focus", "value_text": "bare"},
+		map[string]any{"key_name": "qa:last_focus", "value_text": "seat-f"},
+	})
+	if empty || v != "bare" {
+		t.Fatalf("bare preferred: v=%q empty=%v", v, empty)
+	}
+}
