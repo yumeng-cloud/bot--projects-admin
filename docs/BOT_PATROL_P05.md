@@ -60,4 +60,8 @@ every 5..15 min:
 
 ## 产品勾选
 
-- [ ] P1–P3 交件 · 产品勾 · J7 巡检债清
+- [x] P1–P3 交件 · 产品勾 · J7 巡检债清（2026-10-24 17:52 Asia/Shanghai）
+  - 功能 `e6e4402` · docs `66f9223`
+  - 证据 `docs/qa-shots/ymbot-patrol-p05-20261024.txt`（有输出→再跑 stdout=0）
+  - CLI `ymbot patrol` / `ymbot issue patrol` · MCP `board_patrol` · `--quiet-if-unchanged`
+  - P4 不需要（assignee=me 已有）
