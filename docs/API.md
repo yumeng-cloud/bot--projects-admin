@@ -85,7 +85,7 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 - Relations 防环 → `409 conflict`；乐观锁见上文「竞态 / 乐观锁」
 - Cycles / Comments / Activities / Search
 
-**T6-I `team_id`（Issue 池按队）**：`POST` 创建 **必须**带 `team_id`（body 或 `?team_id=`；缺/错 → 4xx 中文）。`GET` list/board/search 传 `?team_id=<当前队>` 时只返 **本队 + `team_id IS NULL`**；`?unassigned=1` 仅未分队旧单。**NULL 策略（已裁定）**：旧行 `team_id IS NULL` = **全工作区可见**（出现在任意队 list；非「挂默认队」）。错队 `GET/PATCH ?team_id=`（已分到其它队）→ **404**。详见 [`NEXT_WAVE_DEBT_T6I.md`](./NEXT_WAVE_DEBT_T6I.md)。
+**T6-I `team_id`（Issue 池按队）**：`POST` 创建 **必须**带 `team_id`（body 或 `?team_id=`；缺/错 → 4xx 中文）。`GET` list/board/search 传 `?team_id=<当前队>` 时默认 list **仅本队**；NULL=未分队，仅 `?unassigned=1`。错队 `GET/PATCH ?team_id=`（已分到其它队）→ **404**。详见 [`NEXT_WAVE_DEBT_T6I.md`](./NEXT_WAVE_DEBT_T6I.md)。
 
 写操作建议支持 Header `Idempotency-Key`。
 
@@ -98,8 +98,8 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 | **列** | `issues.team_id` 可空，`REFERENCES teams(id)`；索引 `(workspace_id, team_id)`；PG `010_issues_team_id.sql` |
 | **JSON** | Issue 对象可选 `team_id`（`snake_case`；未分队为 `null`） |
 | **新建** | `POST …/issues` **必填** `team_id`（body 或 `?team_id=`）；缺/错/非本 WS 队 → **4xx** 中文 |
-| **列表** | `GET …/issues?team_id=<uuid>`：返 **本队 + `team_id IS NULL`**；`?unassigned=1` 仅旧未分队单 |
-| **NULL 策略（已裁定）** | 旧行 `team_id IS NULL` = **全工作区可见**（任意队 list 均含；非「挂默认队」） |
+| **列表** | `GET …/issues?team_id=<uuid>`：默认 list **仅本队**；NULL=未分队，仅 `?unassigned=1` |
+| **NULL 策略（已裁定）** | 旧行 `team_id IS NULL` = **未分队**；默认带 `team_id` 的 list **排除**；仅 `?unassigned=1` 可见 |
 | **读写隔离** | 错队 `GET` / `PATCH`（含改 `team_id` 跨队）→ **404**；不跨 workspace |
 | **Update** | `PATCH` 可写 `team_id`（本 WS 内）；跨队目标 → **404** |
 
@@ -126,7 +126,7 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 
 **invite.status**（派生、不落库）：`active` | `revoked` | `expired` | `exhausted`。
 
-**隔离（T6-R 最小）**：roster / seats / bind / expand 均以 path `teamID` 为界，跨 `team_id` 不串 claim；通道切队 = 换 `team_uuid`（见 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.4）。**已落地（见上「Issue · team_id」· [`NEXT_WAVE_DEBT_T6I.md`](./NEXT_WAVE_DEBT_T6I.md)）**：Issue 列表/创建按 `team_id` 隔离（NULL=全 WS 可见）。**`team_pins` REST 已落地**（见下「Team pins」· `6915db4`）；MCP/CLI `board_pin_*` 已落地（[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.5 · `63e69c6`）。全文边界：[`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) · 开工单：[`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md)。
+**隔离（T6-R 最小）**：roster / seats / bind / expand 均以 path `teamID` 为界，跨 `team_id` 不串 claim；通道切队 = 换 `team_uuid`（见 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.4）。**已落地（见上「Issue · team_id」· [`NEXT_WAVE_DEBT_T6I.md`](./NEXT_WAVE_DEBT_T6I.md)）**：Issue 列表/创建按 `team_id` 隔离（默认 list 仅本队；NULL=未分队，仅 `?unassigned=1`）。**`team_pins` REST 已落地**（见下「Team pins」· `6915db4`）；MCP/CLI `board_pin_*` 已落地（[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.5 · `63e69c6`）。全文边界：[`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) · 开工单：[`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md)。
 
 详见 [`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md) · [`BOT_TEAM_SEAT_P0.md`](./BOT_TEAM_SEAT_P0.md)。
 

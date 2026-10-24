@@ -1071,8 +1071,8 @@ func TestI2CrossTeamHiddenAndWrongTeam404(t *testing.T) {
 	}
 }
 
-// NULL 策略：旧单 team_id IS NULL = 全工作区可见（出现在任意队 list）。
-func TestLegacyNullTeamIDVisibleInAllTeamLists(t *testing.T) {
+// NULL 策略：默认带 TeamID 的 list 不见 NULL 旧单；仅 UnassignedOnly 可见。
+func TestLegacyNullTeamIDExcludedFromTeamLists(t *testing.T) {
 	svc, ws, pid, tidA := setup(t)
 	tidB := idgen.New()
 	if _, err := svc.DB.Exec(`INSERT INTO teams (id, workspace_id, name, slug) VALUES (?,?,?,?)`,
@@ -1092,17 +1092,10 @@ func TestLegacyNullTeamIDVisibleInAllTeamLists(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		found := false
 		for _, iss := range list {
 			if iss.ID == id {
-				found = true
-				if iss.TeamID != nil {
-					t.Fatalf("legacy should have nil team_id, got %v", iss.TeamID)
-				}
+				t.Fatalf("NULL legacy issue must NOT appear in team %s list (默认排除 NULL)", tid)
 			}
-		}
-		if !found {
-			t.Fatalf("NULL legacy issue must appear in team %s list (全 WS 可见)", tid)
 		}
 	}
 	un, err := svc.ListIssues(ws, issueboard.ListIssuesFilter{UnassignedOnly: true})
@@ -1111,5 +1104,8 @@ func TestLegacyNullTeamIDVisibleInAllTeamLists(t *testing.T) {
 	}
 	if len(un) != 1 || un[0].ID != id {
 		t.Fatalf("unassigned filter: %+v", un)
+	}
+	if un[0].TeamID != nil {
+		t.Fatalf("legacy should have nil team_id, got %v", un[0].TeamID)
 	}
 }

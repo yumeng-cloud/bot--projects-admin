@@ -247,7 +247,7 @@ func (s *Service) CreateIssue(workspaceID string, in CreateIssueInput) (*models.
 
 type ListIssuesFilter struct {
 	ProjectID      string
-	TeamID         string // 非空：本队 + team_id IS NULL（全 WS 可见旧单）
+	TeamID         string // 非空：仅本队（默认排除 team_id IS NULL）
 	UnassignedOnly bool   // 仅 team_id IS NULL（Admin「未分队」）
 	Status         string
 	AssigneeID     string
@@ -270,8 +270,8 @@ func (s *Service) ListIssues(workspaceID string, f ListIssuesFilter) ([]models.I
 	if f.UnassignedOnly {
 		conds = append(conds, `i.team_id IS NULL`)
 	} else if f.TeamID != "" {
-		// T6-I：旧单 NULL = 全工作区可见；队 A 的单不会出现在队 B 的 list
-		conds = append(conds, `(i.team_id = ? OR i.team_id IS NULL)`)
+		// T6-I：默认 list 仅本队；NULL（未分队）排除，仅 UnassignedOnly 可见
+		conds = append(conds, `i.team_id = ?`)
 		args = append(args, f.TeamID)
 	}
 	if f.LabelID != "" {
