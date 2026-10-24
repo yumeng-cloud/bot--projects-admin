@@ -168,11 +168,13 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 
 | Method | Path | 说明 |
 |--------|------|------|
-| GET | `/join?code=ymt_…&role={slug}&seat={id?}&api={override?}` | 轻页：校验 code；展示复制提示词 / 看板深链说明 / `ymbot team join` 一行。**不**调用 redeem、不另造 claim |
+| GET | `/join?code=ymt_…&role={slug}&seat={id?}&api={override?}` | 轻页：校验 code；展示**一键安装** / 复制提示词 / 看板深链 / `ymbot team join`。**不**调用 redeem、不另造 claim |
+| GET | `/install.sh` | 一键装 `ymbot` CLI（text/plain）；生产 `https://bot.api.sn.cn/install.sh`。备：仓库 raw `scripts/install-ymbot.sh` |
 
 - 规范链接：`https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}`（生产默认；自托管改 `PUBLIC_API_BASE`）
 - `api=` 可选，覆盖提示词内 API 根；省略则用配置/`PUBLIC_API_BASE`（默认生产根）
-- Go helper：`internal/joinlink`（`BuildJoinURL` / `BuildBotPrompt`）
+- 安装：`curl -fsSL https://bot.api.sn.cn/install.sh | bash`（宿主随 `PUBLIC_API_BASE`）；备 `go install github.com/yumeng-tech/ai-collab-board/backend/cmd/ymbot@latest`
+- Go helper：`internal/joinlink`（`BuildJoinURL` / `BuildBotPrompt` / `InstallCurlLine`）；脚本嵌入 `internal/installscript`
 
 ### Team templates（T7-R · 已落地 `716c3d0`）
 

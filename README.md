@@ -48,7 +48,7 @@
 
 ### 通道瘦输出：`ymbot` CLI · MCP
 
-Bot 不靠刷屏。`ymbot`（及 MCP）默认**人话短输出**：席位、交接、手册路径一眼可读，少甩 UUID 海。完整契约见 [`docs/BOT.md`](./docs/BOT.md) · [`docs/BOT_MCP_CLI.md`](./docs/BOT_MCP_CLI.md)。
+Bot 不靠刷屏。`ymbot`（及 MCP）默认**人话短输出**：席位、交接、手册路径一眼可读，少甩 UUID 海。一键装 CLI：`curl -fsSL https://bot.api.sn.cn/install.sh | bash`（自托管随 `PUBLIC_API_BASE`；备 `scripts/install-ymbot.sh`）。完整契约见 [`docs/BOT.md`](./docs/BOT.md) · [`docs/BOT_MCP_CLI.md`](./docs/BOT_MCP_CLI.md)。
 
 ### Wiki · 工时 · 周期 · 排期
 

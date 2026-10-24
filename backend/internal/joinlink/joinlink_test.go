@@ -99,7 +99,15 @@ func TestBuildBotPrompt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	installCurl := "curl -fsSL https://bot.api.sn.cn/install.sh | bash"
+	if !strings.HasPrefix(strings.TrimSpace(p), "curl -fsSL ") || !strings.Contains(p, installCurl) {
+		t.Fatalf("prompt must lead with install curl|bash:\n%s", p)
+	}
 	for _, need := range []string{
+		installCurl,
+		"install.sh",
+		GoInstallCmd,
+		"go install github.com/yumeng-tech/ai-collab-board/backend/cmd/ymbot@latest",
 		"https://bot.api.sn.cn",
 		"ymt_cafe",
 		"frontend",
@@ -108,6 +116,7 @@ func TestBuildBotPrompt(t *testing.T) {
 		"handoff get",
 		"禁止",
 		"mcp.json",
+		"一键安装",
 	} {
 		if !strings.Contains(p, need) {
 			t.Fatalf("prompt missing %q:\n%s", need, p)
@@ -120,6 +129,18 @@ func TestBuildBotPrompt(t *testing.T) {
 		if strings.Contains(p, ban) {
 			t.Fatalf("prompt must not contain %q", ban)
 		}
+	}
+}
+
+func TestInstallCurlLine(t *testing.T) {
+	got := InstallCurlLine("")
+	want := "curl -fsSL https://bot.api.sn.cn/install.sh | bash"
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+	got = InstallCurlLine("http://127.0.0.1:8080/")
+	if got != "curl -fsSL http://127.0.0.1:8080/install.sh | bash" {
+		t.Fatal(got)
 	}
 }
 

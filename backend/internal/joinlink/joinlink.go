@@ -1,5 +1,5 @@
 // Package joinlink builds one-tap team join URLs and Bot system prompts.
-// Contract: docs/NEXT_WAVE_DEBT_ONE_TAP_JOIN.md (ONE_TAP_JOIN · A).
+// Contract: docs/NEXT_WAVE_DEBT_ONE_TAP_JOIN.md (ONE_TAP_JOIN · A · E).
 // Does not redeem or claim; landing still uses existing ymt_ + team join/redeem.
 package joinlink
 
@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+
+	"github.com/yumeng-tech/ai-collab-board/backend/internal/installscript"
 )
 
 // DefaultAPIBase is the production API root embedded in join links/prompts when unset.
@@ -14,6 +16,9 @@ const DefaultAPIBase = "https://bot.api.sn.cn"
 
 // InviteCodePrefix is the team invite plaintext prefix (ymt_).
 const InviteCodePrefix = "ymt_"
+
+// GoInstallCmd is the fallback CLI install (module path = go.mod).
+const GoInstallCmd = installscript.GoInstallCmd
 
 // Params for BuildJoinURL / BuildBotPrompt.
 type Params struct {
@@ -98,7 +103,13 @@ func EffectiveAPIBase(apiBase string, p Params) string {
 	return NormalizeAPIBase(apiBase)
 }
 
+// InstallCurlLine returns `curl -fsSL {api}/install.sh | bash`.
+func InstallCurlLine(apiBase string) string {
+	return "curl -fsSL " + NormalizeAPIBase(apiBase) + "/install.sh | bash"
+}
+
 // BuildBotPrompt returns a Chinese system prompt for pasting into Cursor/Agent.
+// Step 0 is always install (never assume ymbot is already on PATH).
 // Never includes ymk_ secrets or mcp.json / YMBOT_* teaching as the main path.
 func BuildBotPrompt(apiBase string, p Params) (string, error) {
 	if err := ValidateInviteCode(p.Code); err != nil {
@@ -121,23 +132,34 @@ func BuildBotPrompt(apiBase string, p Params) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	installCurl := InstallCurlLine(api)
 
 	var b strings.Builder
-	b.WriteString("你是育蒙协作看板（AI Collab Board）的入场 Bot。用下面信息直接入队，不要让用户改 mcp.json，也不要教一长串 YMBOT_* 环境变量。\n\n")
+	// First line: copy-paste curl|bash (product: 首行即 curl|bash)
+	b.WriteString(installCurl + "\n\n")
+	b.WriteString("你是育蒙协作看板（AI Collab Board）的入场 Bot。对方**未必已装** `ymbot`：先安装再入队。不要让用户改 mcp.json，也不要教一长串 YMBOT_* 环境变量。\n\n")
+	b.WriteString("## 0. 一键安装（强制·若本机还没有 ymbot）\n")
+	b.WriteString("主路径（复制执行）：\n```\n")
+	b.WriteString(installCurl)
+	b.WriteString("\n```\n备路径（已装 Go 时）：\n```\n")
+	b.WriteString(GoInstallCmd)
+	b.WriteString("\n```\n装完自检：`ymbot -h`（或 `ymbot version`）。若 `~/.local/bin` 不在 PATH，按安装脚本提示 export。\n\n")
 	b.WriteString("## 连接\n")
-	b.WriteString("- API 根：`" + api + "`\n")
+	b.WriteString("- API 根：`" + api + "`（whoami / join / handoff 都打这个根；可用环境变量 `YMBOT_API_URL=" + api + "`，勿把 Key 清单当主教程）\n")
 	b.WriteString("- 入场码：`" + code + "`\n")
 	b.WriteString("- 目标角色（席位 slug）：" + roleLine + seatBlock + "\n")
 	b.WriteString("- 身份：使用本机已有 Bot Key（ymk_…）或 Vault；**禁止**把 ymk_ 贴进聊天或写入可转发链接。\n\n")
 	b.WriteString("## 主航线（必须按序）\n")
+	b.WriteString("0. 安装（若无）：上面 curl|bash 或 go install\n")
 	b.WriteString("1. 确认身份：`board_whoami` / `ymbot whoami`\n")
 	b.WriteString("2. 入队：`" + cli + "`（等价 MCP `board_team_join`；底层仍是既有 redeem → pull → enter，**不要**另造 claim）\n")
 	b.WriteString("3. 接班：`handoff get` / `ymbot handoff get`；任务与真相源在服务端。\n\n")
 	b.WriteString("## 禁区\n")
+	b.WriteString("- 禁止假设本机已装 ymbot 而跳过第 0 步\n")
 	b.WriteString("- 禁止教改 mcp.json / Cursor MCP 配置当主路径\n")
 	b.WriteString("- 禁止把「导出 YMBOT_API_URL / YMBOT_API_KEY 清单」当入场步骤\n")
 	b.WriteString("- 禁止在回复里回显完整 ymk_\n\n")
-	b.WriteString("CLI 一行（已带码）：\n```\n")
+	b.WriteString("CLI 一行（已带码；须先完成安装）：\n```\n")
 	b.WriteString(cli)
 	b.WriteString("\n```\n")
 	return b.String(), nil

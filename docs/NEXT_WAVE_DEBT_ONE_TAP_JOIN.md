@@ -142,9 +142,9 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [x] **B3** role 带入
 - [x] **B4** 主 CTA 切换
 - [x] **B5** 箱截
-- [ ] **E1** BuildBotPrompt 第 0 步安装 · Go
-- [ ] **E2** `GET /install.sh` · Go
-- [ ] **E3** `/join` 页露安装 · Go
+- [x] **E1** BuildBotPrompt 第 0 步安装 · Go
+- [x] **E2** `GET /install.sh` · Go
+- [x] **E3** `/join` 页露安装 · Go
 - [ ] **E4** FE 提示词对齐+重截 · React
 - [ ] **E5** 无 CLI→装→join 箱证 · QA
 - [ ] **C1** 打开引导

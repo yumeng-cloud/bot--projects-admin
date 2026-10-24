@@ -58,13 +58,14 @@ func (h *JoinHandler) Page(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJoinHTML(w, http.StatusOK, joinOKPage(joinOKData{
-		APIBase:   apiBase,
-		Code:      code,
-		Role:      role,
-		Seat:      seat,
-		CLI:       cli,
-		Prompt:    prompt,
-		BoardHint: boardHint,
+		APIBase:     apiBase,
+		Code:        code,
+		Role:        role,
+		Seat:        seat,
+		CLI:         cli,
+		Prompt:      prompt,
+		BoardHint:   boardHint,
+		InstallCurl: joinlink.InstallCurlLine(apiBase),
 	}))
 }
 
@@ -73,13 +74,14 @@ func urlQueryEscape(s string) string {
 }
 
 type joinOKData struct {
-	APIBase   string
-	Code      string
-	Role      string
-	Seat      string
-	CLI       string
-	Prompt    string
-	BoardHint string
+	APIBase     string
+	Code        string
+	Role        string
+	Seat        string
+	CLI         string
+	Prompt      string
+	BoardHint   string
+	InstallCurl string
 }
 
 func writeJoinHTML(w http.ResponseWriter, status int, body string) {
@@ -144,7 +146,7 @@ button.secondary{background:#fff;color:#1677ff;border:1px solid #1677ff}
 </head>
 <body>
 <h1>一键入场</h1>
-<p class="sub">把提示词贴给 Bot，或用 CLI 一行入队。本页<strong>不会</strong>消耗入场码（兑换仍由 <code>team join</code> / redeem 完成）。</p>
+<p class="sub">先装 <code>ymbot</code>（若无）→ 再贴提示词或 CLI 入队。本页<strong>不会</strong>消耗入场码（兑换仍由 <code>team join</code> / redeem 完成）。</p>
 <table>
 <tr><th>API 根</th><td><code>` + html.EscapeString(d.APIBase) + `</code></td></tr>
 <tr><th>入场码</th><td><code>` + html.EscapeString(d.Code) + `</code></td></tr>
@@ -152,7 +154,13 @@ button.secondary{background:#fff;color:#1677ff;border:1px solid #1677ff}
 ` + seatRow + `
 </table>
 <div class="note">` + html.EscapeString(d.BoardHint) + `</div>
-<h2>CLI 一行</h2>
+<h2>① 一键安装 ymbot（若本机还没有）</h2>
+<p class="sub">禁止假设已装 CLI。主路径 curl|bash；备路径见提示词内 <code>go install …</code>。</p>
+<pre id="install">` + html.EscapeString(d.InstallCurl) + `</pre>
+<div class="actions">
+<button type="button" onclick="copyText('install',this)">复制安装命令</button>
+</div>
+<h2>② CLI 入队（装好后再跑）</h2>
 <pre id="cli">` + html.EscapeString(d.CLI) + `</pre>
 <div class="actions">
 <button type="button" onclick="copyText('cli',this)">复制 CLI</button>

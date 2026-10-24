@@ -27,6 +27,9 @@ func TestJoinPage_OK(t *testing.T) {
 		"frontend",
 		"ymbot team join --code ymt_deadbeef --role frontend",
 		"https://bot.api.sn.cn",
+		"curl -fsSL https://bot.api.sn.cn/install.sh | bash",
+		"install.sh",
+		"一键安装",
 		"复制提示词",
 		"whoami",
 	} {

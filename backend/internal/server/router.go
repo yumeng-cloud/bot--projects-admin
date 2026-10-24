@@ -54,6 +54,7 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 
 	joinH := &handlers.JoinHandler{PublicAPIBase: cfg.PublicAPIBase, BoardBase: cfg.PublicBoardBase}
 	r.Get("/join", joinH.Page)
+	r.Get("/install.sh", (&handlers.InstallHandler{}).Script)
 
 	r.Get("/healthz", health.Healthz)
 	r.Get("/api/v1/healthz", health.Healthz)
