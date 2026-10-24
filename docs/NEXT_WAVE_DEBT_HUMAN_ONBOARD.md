@@ -95,8 +95,8 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 | 角色 | 投票后首刀 |
 | --- | --- |
 | **Go** | redeem 自动身份 + V1/V2/V6 · **已合** `c4ae0a5`（箱测 PASS） |
-| **React** | V3/V4/V5；Join 成功单把露钥 · **V5** `e761305` · **V3/V4** 本轮合入 |
-| **记忆** | 校验造人不踩 claim 单活；换机同 member；空 focus 人话 · **箱证 PASS** `def5aee`（J 409 / E migrate+handoff / A focus=空）；**GAP=Q1** 仍归 Go |
+| **React** | V3/V4/V5 · **已合** V5 `e761305` · V3/V4 `662346d` |
+| **记忆** | 校验造人不踩 claim 单活；换机同 member；空 focus 人话 · **箱证 PASS** `def5aee`（J 409 / E migrate+handoff / A focus=空）；Q1 API 已合 `c4ae0a5`；待 QA 箱验 |
 | **QA** | 用 §5 矩阵苛刻验；挂已有证 AUTO_CREW/FOOLPROOF/SEAT |
 | **种子** | 文案两码对齐；禁免责腔 |
 | **产品** | 维护本表决；勾选关刀 |
@@ -143,8 +143,8 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 ### 分歧
 - [x] **V1** 无钥重复 join · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
 - [x] **V2** 补位是否自动 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
-- [x] **V3** Web Join 只贴 ymt_ · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
-- [x] **V4** 入场提示词两态 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
+- [x] **V3** Web Join 只贴 ymt_ · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED` · **FE 已合** `662346d`
+- [x] **V4** 入场提示词两态 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED` · **FE 已合** `662346d`
 - [x] **V5** 建队文案热修（可先于 API） · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED` · **FE 已合** `e761305`
 - [x] **V6** 并发同码策略 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED` · **Go 已合** `c4ae0a5`
 - [x] **V7** B1 开干门禁 · **推荐默认** · `VOTE_ACCEPT_ALL_RECOMMENDED`
@@ -177,7 +177,8 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 
 ## 8. 进度
 
-- 2026-10-25 00:00 · **React V3/V4 冻干合入**：`RedeemInviteResult` 补 `token`/`token_issued`；JoinWizard 主路径只贴 `ymt_`，有 token→IdentityKeyReveal；`buildBotJoinPrompt`+Go `BuildBotPrompt` 身份两态（空手自动得钥/已有钥带 Bearer）。**V5 未回退**。
+- 2026-10-25 00:01 · **产品勾 V3/V4** `662346d`（Join 只贴 ymt_ + IdentityKeyReveal；提示词两态；V5 未回退）。等 QA Q1。
+- 2026-10-25 00:00 · **React V3/V4 产品收** `662346d`：`RedeemInviteResult` 补 `token`/`token_issued`；JoinWizard 主路径只贴 `ymt_`，有 token→IdentityKeyReveal；`buildBotJoinPrompt`+Go `BuildBotPrompt` 身份两态（空手自动得钥/已有钥带 Bearer）。**V5 未回退**。
 - 2026-10-24 23:50 · **Go redeem 自动身份绿** `c4ae0a5`（无 Bearer→is_bot+ymk_+绑 empty；持钥幂等不重发；人类 JWT 只定位；V1 409 贴旧钥；V2 不自动补位；V6 bootstrapped_member_id；F2 active 409）。箱内 `go test` botmem+handlers PASS。**已派 React V3/V4 + QA Q1 联验**。
 - 2026-10-24 23:49 · **记忆席 A/E/J 箱证收** `def5aee` + `docs/qa-shots/HUMAN_ONBOARD-AEJ-memory-20261024.txt`：J 409 PASS · E leave→migrate→handoff PASS · A `focus=空` PASS · `AUTH_NO_SECOND_MEMBER=PASS`；**Q1 自动身份仍 GAP（Go）**。可选软债：兼岗摘要 focus≠当前席（不挡 A/E，搁置）。
 - 2026-10-24 23:48 · **用户睡前站立（总指挥转）**：后续口径争议**内部**消化——提反对→产品主持拍板→统一口径干；**勿再弹用户票**。H0/H1 仍冻 `b6614ff`。
