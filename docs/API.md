@@ -126,7 +126,7 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 
 **T6-I `team_id`（Issue 池按队 · 已落地 `75aadce`）**：`POST` 创建 **必须**带 `team_id`（body 或 `?team_id=`；缺/错 → 4xx 中文）。`GET` list/board/search 传 `?team_id=<当前队>` 时 **排除** `team_id IS NULL`（仅本队）；`?unassigned=1` 仅未分队旧单。错队 `GET/PATCH ?team_id=` → **404**。详见 [`NEXT_WAVE_DEBT_T6I.md`](./NEXT_WAVE_DEBT_T6I.md)。
 
-**Issue 归档（[`NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md`](./NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md) · 实现待 SHA）**：字段 `archived_at`；`POST …/issues/archive`；列表/看板/搜索默认剔归档；`?include_archived=1` 含归档、`?archived_only=1` 仅归档。
+**Issue 归档（[`NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md`](./NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md) · 实现待 SHA）**：字段 `archived_at`；`POST …/issues/archive`；列表/看板/搜索默认剔归档；`?include_archived=1` 含归档、`?archived=only` 仅归档。
 
 写操作建议支持 Header `Idempotency-Key`。
 
