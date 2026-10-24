@@ -1,0 +1,72 @@
+BATCH_STATUS Soft† B405-3 QA spotcheck · 2026-10-25 02:21 Asia/Shanghai
+Overall: PASS†
+Feature SHA: c20724e87d408c7eafbc6d1a6f36604ee6b01b6b (B405-2 FE fallback 认 405; ancestor of HEAD 6807d53)
+Live API: ai-board-server :8080 POST …/issues/batch-status → 200 (not 405); B405-1 re-verified by QA
+Debt: docs/NEXT_WAVE_DEBT_BATCH_STATUS_405.md
+Report: docs/qa-shots/BATCH_STATUS_405-qa-spotcheck-20261025.txt
+Scope: B405-3 Soft† live only. B405-4 产品关 — not opened.
+
+Product accept（总指挥开验 + steering 细则）:
+1) Live POST /api/v1/workspaces/{ws}/issues/batch-status JWT → 200 + results（非 405）
+2) FE c20724e：batchUpdateIssueStatus 优先；404/405/501 → 串行 fallback（IssueListPage + issues.ts）
+3) Soft† UX：多选改状态走 batch 路径当 API 200；列表刷新正确 —— curl+源码证；浏览器 DevTools 可略
+4) Fallback 代码路径存在（不必 live 逼 405）
+
+Method
+- git: c20724e IS ancestor of HEAD 6807d53; git show c20724e (issues.ts + IssueListPage.tsx)
+- Login POST /api/v1/auth/login admin@yumeng.tech / Admin123! → JWT OK
+- List WS 育蒙科技 ba1481c4… / issues ≥2 (YM-15 / YM-16)
+- Live curl POST batch-status todo→in_progress → HTTP 200 + results[]; list verify statuses; restore todo→200
+- Vite :5174 proxy /api→8080 same POST → 200
+- Inspect frontend/src/api/issues.ts batchUpdateIssueStatus + pages/list/IssueListPage.tsx handleBulkStatus
+- Soft† 浏览器 DevTools 略（curl+源码证 batch 路径）
+
+Accept checklist
+1. Live POST batch-status JWT → 200 (not 405), body has results …… PASS
+   - Endpoint: POST http://127.0.0.1:8080/api/v1/workspaces/ba1481c49148aba9553ba3811406b69f/issues/batch-status
+   - Auth: Bearer JWT (admin@yumeng.tech)
+   - Body: {"ids":["8095f40326477e0607259be145285bb0","6139d66cdfecfcf13e2ed970b1face13"],"status":"in_progress"}
+   - HTTP=200 (not 405); GET same path → 404; OPTIONS → 204
+   - Response snippet:
+     {"results":[
+       {"id":"8095f40326477e0607259be145285bb0","ok":true,"status":"in_progress","version":2},
+       {"id":"6139d66cdfecfcf13e2ed970b1face13","ok":true,"status":"in_progress","version":3}
+     ]}
+   - List verify after: YM-15 / YM-16 status=in_progress (ver 2 / 3)
+   - Restore POST status=todo → HTTP=200; results ok
+   - Vite proxy :5174 same path → HTTP=200 + results (FE 同源 /api/v1 形)
+
+2. FE source: batchUpdateIssueStatus preferred; fallback serial on 404/405/501 …… PASS
+   - c20724e ancestor of HEAD ✓
+   - issues.ts batchUpdateIssueStatus → POST `/workspaces/${ws}/issues/batch-status` body {ids,status}
+   - catch: ApiError status === 404 || 405 || 501 → rethrow 中文「批量改状态接口尚未就绪」（供调用方 fallback）
+   - IssueListPage handleBulkStatus: 优先 await batchUpdateIssueStatus(...); catch readyMissing = 404|405|501 → serialFallback() (serial patchIssue)
+   - Comment + readyMissing 均含 405（相对先前仅 404/501）
+
+3. Soft† list refresh path (乐观/reload) …… PASS
+   - 成功 path: 从 results 组 updates（status/version）→ applyLocal(updates) = setIssues map merge
+   - Toast: 全成功 message.success(`已将 ${ok} 条改为「${STATUS_LABELS[target]}」`) + clearSelection
+   - 部分失败 warning；全失败 error；非 missing ApiError 直接 message.error return
+   - Soft† note: 浏览器 DevTools 略；curl 证同 endpoint FE 调 + 源码证 batch 优先 + 乐观刷新
+
+4. Fallback code path present (no need force 405 live) …… PASS
+   - serialFallback: loop selectedIssues → patchIssue(version,status)
+   - Trigger: readyMissing (404/405/501) OR !(err instanceof ApiError)
+   - Live 未逼 405（API 已 200）；路径源码在
+
+FAIL redlines hit? NONE
+- live 405 — NO (200)
+- FE 无 405 fallback — NO (c20724e)
+- 无 batch 优先 — NO
+- 无列表刷新路径 — NO (applyLocal)
+
+Soft† notes
+- Live API :8080 ai-board-server re-verify by QA: POST batch-status 200 (B405-1 总指挥称 live 200 无新 SHA — QA 自验确认)
+- Vite :5174/5175/5176 up; proxy spot :5174 → 200
+- 浏览器 DevTools / 多选 UI 点击略 — standing Soft† OK when curl+源码 solid
+- Restore YM-15/YM-16 回 todo 以免脏数据（version bumped）
+
+Defects: (none blocking)
+
+Verdict: PASS† @c20724e · live API 200
+One-line → 产品+React+总指挥(+Issue域 FYI): B405-3 PASS† Soft†；live POST …/issues/batch-status JWT→200+results（非405）；FE c20724e batchUpdateIssueStatus 优先 + 404/405/501 串行 fallback；乐观 applyLocal 刷新；Vite 代理同 200；DevTools 略 curl+源码证；无缺陷。
