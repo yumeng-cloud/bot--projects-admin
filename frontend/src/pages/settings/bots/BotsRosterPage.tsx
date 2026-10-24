@@ -70,6 +70,9 @@ import {
   buildJoinUrl,
   inviteCodeTail,
 } from '../../../utils/oneTapJoin'
+import { emptySeatsForPack } from '../../../utils/autoCrewPack'
+import type { CrewPackResult } from '../../../utils/autoCrewPack'
+import CrewPackRevealModal from '../../../components/common/CrewPackRevealModal'
 import './bots.css'
 
 type ApiKeyRow = {
@@ -113,6 +116,10 @@ export default function BotsRosterPage() {
   const [inviteBusy, setInviteBusy] = useState(false)
   /** 签发当次明文，只存活到复制成功后的一次 Toast；列表只留末四 */
   const [lastPlainInvite, setLastPlainInvite] = useState<string | null>(null)
+  /** AUTO_CREW：全班入场包挡层（seats 快照防切队 refetch 冲掉） */
+  const [crewPackOpen, setCrewPackOpen] = useState(false)
+  const [crewPackAfterCreate, setCrewPackAfterCreate] = useState(false)
+  const [crewPackSeats, setCrewPackSeats] = useState<TeamSeat[]>([])
   const [revokingId, setRevokingId] = useState<string | null>(null)
   /** N2：占用席下发任务 */
   const [dispatchOpen, setDispatchOpen] = useState(false)
@@ -183,12 +190,55 @@ export default function BotsRosterPage() {
   }, [wsId, teamId])
 
   /** SEAT_VISIBILITY：立刻切新队 + 用返回名册 seed，避免只 Toast */
+  /** AUTO_CREW C1：同帧弹出全班入场包挡层 */
   const onTeamCreatedFromTemplate = (team: Team, roster: TeamSeat[]) => {
     setPendingCreatedTeam(team)
     setTeamSeats(roster || [])
     setTeamId(team.id)
     void reload().finally(() => setPendingCreatedTeam(null))
     void load()
+    if (emptySeatsForPack(roster || []).length > 0) {
+      setCrewPackSeats(roster || [])
+      setCrewPackAfterCreate(true)
+      setCrewPackOpen(true)
+    }
+  }
+
+  const emptySeats = useMemo(() => emptySeatsForPack(teamSeats), [teamSeats])
+
+  const onCrewPackIssued = (result: CrewPackResult) => {
+    if (!result.ok.length) return
+    setIssuedInvites((prev) => {
+      const next = [...prev]
+      for (const row of result.ok) {
+        const inv = row.invite
+        const tail = inviteTail(inv)
+        const stripped = {
+          ...inv,
+          code: undefined,
+          code_tail: tail,
+          code_prefix: inv.code_prefix || `ymt_····${tail}`,
+        }
+        const idx = next.findIndex((x) => x.id === inv.id)
+        if (idx >= 0) next[idx] = stripped
+        else next.unshift(stripped)
+      }
+      return next
+    })
+  }
+
+  const openCrewPack = (afterCreate = false) => {
+    if (!teamId) {
+      message.warning('尚无团队，请先创建或加入班底')
+      return
+    }
+    if (emptySeats.length === 0) {
+      message.info('当前队没有空席，无需签发全班入场包')
+      return
+    }
+    setCrewPackSeats(teamSeats)
+    setCrewPackAfterCreate(afterCreate)
+    setCrewPackOpen(true)
   }
 
   const currentTeamName =
@@ -800,6 +850,7 @@ export default function BotsRosterPage() {
           </Empty>
         </div>
         {/* 空态不重复列邀请；有绑定时下方统一列表 */}
+
         <CreateTeamFromTemplateModal
           open={createFromTplOpen}
           wsId={wsId}
@@ -870,6 +921,18 @@ export default function BotsRosterPage() {
           <Button size="small" type="primary" icon={<UserAddOutlined />} onClick={() => setJoinOpen(true)}>
             加入班底
           </Button>
+          {emptySeats.length > 0 ? (
+            <Button
+              size="small"
+              type="primary"
+              ghost
+              icon={<CopyOutlined />}
+              loading={inviteBusy}
+              onClick={() => openCrewPack(false)}
+            >
+              复制全班入场包
+            </Button>
+          ) : null}
           {renderOneTapActions()}
         </Space>
       </div>
@@ -1164,6 +1227,22 @@ export default function BotsRosterPage() {
         occupantMemberId={drawerRole ? seatOccForRole(drawerRole).occupantId : null}
         occupantLabel={drawerRole ? seatOccForRole(drawerRole).occupantLabel : null}
       />
+
+
+        <CrewPackRevealModal
+          open={crewPackOpen}
+          onClose={() => {
+            setCrewPackOpen(false)
+            setCrewPackAfterCreate(false)
+            setCrewPackSeats([])
+          }}
+          workspaceId={wsId}
+          teamId={teamId || ''}
+          teamName={currentTeamName || '未命名团队'}
+          seats={crewPackSeats.length ? crewPackSeats : teamSeats}
+          afterCreate={crewPackAfterCreate}
+          onIssued={onCrewPackIssued}
+        />
 
       <CreateTeamFromTemplateModal
         open={createFromTplOpen}

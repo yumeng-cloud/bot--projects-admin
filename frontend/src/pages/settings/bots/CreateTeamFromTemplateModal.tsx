@@ -147,7 +147,7 @@ export default function CreateTeamFromTemplateModal({ open, wsId, onClose, onCre
       onCreated(team, roster)
       onClose()
       message.success(`已创建团队「${team.name}」· ${roster.length || tmpl.seats.length} 空席（未绑 Key）`)
-      message.info('可用「复制入场码」邀请 Bot 入席', 4)
+      message.info('请复制全班入场包，一次带走各席入场材料', 4)
     } finally {
       setBusy(false)
     }
