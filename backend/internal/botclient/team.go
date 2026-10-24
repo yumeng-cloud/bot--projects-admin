@@ -768,6 +768,11 @@ type TeamInviteRedeemResult struct {
 	AllowExpandSeat bool
 	RoleHint        string
 	TemplateKey     string
+	SeatID          string
+	MemberID        string
+	RoleSlug        string
+	Token           string // bootstrap 当次明文；续队空
+	TokenIssued     bool
 	Raw             json.RawMessage
 }
 
@@ -833,10 +838,19 @@ func (c *Client) TeamInviteRedeem(code string) (*TeamInviteRedeemResult, error) 
 		TeamID:      strField(top, "team_id"),
 		RoleHint:    strField(top, "role_hint", "role_slug", "slug"),
 		TemplateKey: strField(top, "template_key", "template_ref"),
+		SeatID:      strField(top, "seat_id"),
+		MemberID:    strField(top, "member_id"),
+		RoleSlug:    strField(top, "role_slug"),
+		Token:       strField(top, "token"),
 		Raw:         raw,
 	}
 	if v, ok := top["allow_expand_seat"].(bool); ok {
 		out.AllowExpandSeat = v
+	}
+	if v, ok := top["token_issued"].(bool); ok {
+		out.TokenIssued = v
+	} else if out.Token != "" {
+		out.TokenIssued = true
 	}
 	if out.WorkspaceID == "" || out.TeamID == "" {
 		return nil, &APIError{Status: 502, Code: "bad_gateway", Message: "兑换结果缺少 workspace_id 或 team_id"}

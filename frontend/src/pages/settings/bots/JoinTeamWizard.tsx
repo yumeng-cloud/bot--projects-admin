@@ -27,9 +27,10 @@ import {
   type RedeemInviteResult,
   type TeamSeat,
 } from '../../../api/teams'
+import IdentityKeyRevealModal from '../../../components/common/IdentityKeyRevealModal'
 import SeatConflictPanel, { type SeatConflictInfo } from './SeatConflictPanel'
 
-type StepKey = 'keys' | 'roster' | 'conflict'
+type StepKey = 'code' | 'roster' | 'conflict'
 
 type Props = {
   open: boolean
@@ -43,7 +44,7 @@ const YMK_RE = /^ymk_[A-Za-z0-9_-]+$/i
 const YMT_RE = /^ymt_[A-Za-z0-9_-]+$/i
 
 export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props) {
-  const [step, setStep] = useState<StepKey>('keys')
+  const [step, setStep] = useState<StepKey>('code')
   const [ymk, setYmk] = useState('')
   const [ymt, setYmt] = useState('')
   const [busy, setBusy] = useState(false)
@@ -52,9 +53,11 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
   const [allowNew, setAllowNew] = useState(false)
   const [conflict, setConflict] = useState<SeatConflictInfo | null>(null)
   const [serviceHint, setServiceHint] = useState<string | null>(null)
+  const [revealToken, setRevealToken] = useState<string | null>(null)
+  const [showOptionalKey, setShowOptionalKey] = useState(false)
 
   const reset = () => {
-    setStep('keys')
+    setStep('code')
     setYmk('')
     setYmt('')
     setBusy(false)
@@ -63,6 +66,8 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
     setAllowNew(false)
     setConflict(null)
     setServiceHint(null)
+    setRevealToken(null)
+    setShowOptionalKey(false)
   }
 
   const handleClose = () => {
@@ -73,22 +78,35 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
   const ymkMasked = useMemo(() => {
     const t = ymk.trim()
     if (!t) return ''
-    if (t.length < 8) return maskKeyTail(t)
     return maskKeyTail(t)
   }, [ymk])
 
-  const validateKeys = (): string | null => {
-    const k = ymk.trim()
+  const validateCode = (): string | null => {
     const c = ymt.trim()
-    if (!k) return '请粘贴身份钥匙（ymk_…）'
-    if (!YMK_RE.test(k)) return '身份钥匙须以 ymk_ 开头，勿贴裸 UUID'
     if (!c) return '请粘贴团队入场码（ymt_…）'
     if (!YMT_RE.test(c)) return '团队入场码须以 ymt_ 开头，勿贴裸 UUID'
+    const k = ymk.trim()
+    if (k && !YMK_RE.test(k)) return '身份钥匙须以 ymk_ 开头，勿贴裸 UUID'
     return null
   }
 
+  const finishEntered = (res: RedeemInviteResult, seats: TeamSeat[]) => {
+    const memberId = res.member_id
+    if (!memberId) return
+    let seatName = res.role_slug || res.seat_slug || res.role_hint || '席位'
+    if (res.seat_id) {
+      const hit = seats.find((s) => s.id === res.seat_id)
+      if (hit) seatName = seatDisplayName(hit)
+    }
+    onEntered({
+      memberId,
+      seatName: typeof seatName === 'string' ? seatName : '席位',
+      roleId: res.seat_id || null,
+    })
+  }
+
   const onRedeem = async () => {
-    const err = validateKeys()
+    const err = validateCode()
     if (err) {
       message.warning(err)
       return
@@ -96,13 +114,54 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
     setBusy(true)
     setServiceHint(null)
     try {
-      const res = await redeemTeamInvite(ymt.trim(), crypto.randomUUID())
+      const botKey = ymk.trim() || null
+      const res = await redeemTeamInvite(ymt.trim(), {
+        idempotencyKey: crypto.randomUUID(),
+        botKey,
+      })
       if (res.workspace_id && res.workspace_id !== wsId) {
         message.error('入场码属于其他工作区，请切换工作区后再试')
         return
       }
       setRedeem(res)
       setAllowNew(Boolean(res.allow_expand_seat))
+
+      const issued = Boolean(res.token_issued && res.token && res.token.startsWith('ymk_'))
+      if (issued && res.token) {
+        setRevealToken(res.token)
+        message.success('入场成功，已自动获得身份钥匙（仅此一次）')
+        let seats = res.roster || []
+        if (!seats.length && res.team_id) {
+          try {
+            const r = await getRoster(wsId, res.team_id)
+            seats = r.roster || []
+          } catch {
+            /* roster 可后拉 */
+          }
+        }
+        setRoster(seats)
+        finishEntered(res, seats)
+        return
+      }
+
+      // 续队（持钥）已定位/进席：无新 token
+      if (botKey && res.member_id) {
+        let seats = res.roster || []
+        if (!seats.length && res.team_id) {
+          try {
+            const r = await getRoster(wsId, res.team_id)
+            seats = r.roster || []
+          } catch {
+            /* ignore */
+          }
+        }
+        setRoster(seats)
+        message.success('续队成功（未重发身份钥匙）')
+        finishEntered(res, seats)
+        handleClose()
+        return
+      }
+
       let seats = res.roster || []
       if (!seats.length && res.team_id) {
         try {
@@ -124,7 +183,6 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
       if (isInviteServiceMissing(e)) {
         setServiceHint('入场码服务尚未开通')
         message.warning('入场码服务尚未开通')
-        // 演示：拉本工作区已有班底，便于选席 / T3 专面（非真兑换）
         try {
           const { teams } = await listTeams(wsId)
           const tid = teams?.[0]?.id
@@ -144,7 +202,7 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
             message.info('已打开本区班底供演示（入场码服务未开通）')
           }
         } catch {
-          /* 保持在钥匙步 */
+          /* 保持在入场码步 */
         }
         return
       }
@@ -168,15 +226,12 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
       setStep('conflict')
       return
     }
-    // left/stopped/empty → 正常进席（不进 T3）
     if (!redeem?.team_id) {
       message.error('缺少团队上下文，请重新兑换入场码')
       return
     }
     setBusy(true)
     try {
-      // 身份钥匙仅本机持有；看板侧 bind 走当前登录成员（Admin 代绑需选 Bot）
-      // 产品：Bot 持 ymk_ 调用；Web 向导用当前会话 + 校验钥匙格式后进席
       const { seat: bound } = await bindSeat(
         wsId,
         redeem.team_id,
@@ -242,173 +297,195 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
   }
 
   const emptySeats = roster.filter((s) => seatOccupancy(s) !== 'active')
-  const stepIndex = step === 'keys' ? 0 : step === 'roster' ? 1 : 2
+  const stepIndex = step === 'code' ? 0 : step === 'roster' ? 1 : 2
 
   return (
-    <Drawer
-      title="加入班底"
-      width={440}
-      open={open}
-      onClose={handleClose}
-      destroyOnClose
-      className="acb-bots-join-drawer"
-    >
-      <Steps
-        size="small"
-        current={stepIndex}
-        style={{ marginBottom: 16 }}
-        items={[{ title: '钥匙' }, { title: '选席' }, { title: '结果' }]}
-      />
+    <>
+      <Drawer
+        title="加入班底"
+        width={440}
+        open={open}
+        onClose={handleClose}
+        destroyOnClose
+        className="acb-bots-join-drawer"
+      >
+        <Steps
+          size="small"
+          current={stepIndex}
+          style={{ marginBottom: 16 }}
+          items={[{ title: '入场码' }, { title: '选席' }, { title: '结果' }]}
+        />
 
-      {step === 'keys' ? (
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          <div>
-            <Typography.Text strong>身份钥匙</Typography.Text>
-            <Typography.Paragraph type="secondary" style={{ margin: '2px 0 6px', fontSize: 12 }}>
-              本机 Bot Key（ymk_…）。界面只显末四，勿贴裸 UUID。
-            </Typography.Paragraph>
-            <Input.Password
-              value={ymk}
-              onChange={(e) => setYmk(e.target.value)}
-              placeholder="ymk_…"
-              visibilityToggle
-              autoComplete="off"
-            />
-            {ymk.trim() ? (
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                掩码 · {ymkMasked}
-              </Typography.Text>
-            ) : null}
-          </div>
-          <div>
-            <Typography.Text strong>团队入场码</Typography.Text>
-            <Typography.Paragraph type="secondary" style={{ margin: '2px 0 6px', fontSize: 12 }}>
-              总指挥/Admin 签发的 ymt_…，定位工作区与班底。
-            </Typography.Paragraph>
-            <Input
-              value={ymt}
-              onChange={(e) => setYmt(e.target.value)}
-              placeholder="ymt_…"
-              autoComplete="off"
-            />
-          </div>
-          {serviceHint ? <Alert type="info" showIcon message={serviceHint} /> : null}
-          <Button type="primary" block loading={busy} onClick={() => void onRedeem()}>
-            兑换并查看班底
-          </Button>
-        </Space>
-      ) : null}
-
-      {step === 'roster' ? (
-        <div>
-          <Typography.Paragraph type="secondary" style={{ marginBottom: 10, fontSize: 13 }}>
-            空席可选进入；占用中灰显不可选（不能顶替）。无空席时申请新席（码未允许则失败）。
-          </Typography.Paragraph>
-          {busy && !roster.length ? (
-            <div style={{ textAlign: 'center', padding: 24 }}>
-              <Spin />
+        {step === 'code' ? (
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <div>
+              <Typography.Text strong>团队入场码</Typography.Text>
+              <Typography.Paragraph type="secondary" style={{ margin: '2px 0 6px', fontSize: 12 }}>
+                主路径：只贴总指挥签发的 ymt_…。空手入场后自动获得身份钥匙（仅此一次）。
+              </Typography.Paragraph>
+              <Input
+                value={ymt}
+                onChange={(e) => setYmt(e.target.value)}
+                placeholder="ymt_…"
+                autoComplete="off"
+              />
             </div>
-          ) : roster.length ? (
-            <div className="acb-bots-seat-grid" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {roster.map((seat) => {
-                const occ = seatOccupancy(seat)
-                const active = occ === 'active'
-                const left = occ === 'left'
-                return (
-                  <button
-                    key={seat.id}
-                    type="button"
-                    className="acb-bots-seat-card"
-                    disabled={active || busy}
-                    tabIndex={active ? -1 : undefined}
-                    aria-disabled={active || busy}
-                    aria-label={
-                      active
-                        ? `${seatDisplayName(seat)}，占用中，不可选`
-                        : `${seatDisplayName(seat)}`
-                    }
-                    onClick={() => {
-                      // D3：占用席真正不可进；T3 仅绑定时 409 冲突进专面
-                      if (active || busy) return
-                      void onPickSeat(seat)
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      minHeight: 36,
-                      padding: '6px 10px',
-                      textAlign: 'left',
-                      borderRadius: 6,
-                      border: '1px solid var(--acb-border, #e5e7eb)',
-                      background: active
-                        ? 'var(--acb-bg-layout, #f5f5f5)'
-                        : 'var(--acb-bg-container, #fff)',
-                      opacity: active ? 0.55 : 1,
-                      cursor: active || busy ? 'not-allowed' : 'pointer',
-                      pointerEvents: active ? 'none' : undefined,
-                    }}
-                    title={seatDisplayName(seat)}
-                  >
-                    <Typography.Text strong className="acb-bots-lead" style={{ flex: 1, minWidth: 0 }}>
-                      {seatDisplayName(seat)}
-                    </Typography.Text>
-                    {active ? (
-                      <Tag style={{ margin: 0 }}>占用中</Tag>
-                    ) : left ? (
-                      <Tag color="orange" style={{ margin: 0 }}>
-                        可补位
-                      </Tag>
-                    ) : (
-                      <Tag color="green" style={{ margin: 0 }}>
-                        空席
-                      </Tag>
-                    )}
-                    {active && seat.bound_display_name ? (
-                      <Typography.Text type="secondary" style={{ fontSize: 12, maxWidth: 88 }} ellipsis>
-                        {seat.bound_display_name}
-                      </Typography.Text>
-                    ) : null}
-                  </button>
-                )
-              })}
-            </div>
-          ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="班底暂无席位" />
-          )}
-          <Space style={{ marginTop: 14 }} wrap>
-            {!emptySeats.length || allowNew ? (
-              <Button loading={busy} onClick={() => void onRequestNewSeat()}>
-                申请新席
+            <div>
+              <Button
+                type="link"
+                size="small"
+                style={{ padding: 0, height: 'auto' }}
+                onClick={() => setShowOptionalKey((v) => !v)}
+              >
+                {showOptionalKey ? '收起：已有身份钥匙（续队）' : '可选：已有身份钥匙（续队）'}
               </Button>
-            ) : null}
-            <Button
-              onClick={() => {
-                setStep('keys')
-                setConflict(null)
-              }}
-            >
-              返回
+              {showOptionalKey ? (
+                <div style={{ marginTop: 8 }}>
+                  <Typography.Paragraph type="secondary" style={{ margin: '0 0 6px', fontSize: 12 }}>
+                    续队/换机持原 ymk_… 再兑同一入场码；不会重发钥匙。勿贴裸 UUID。
+                  </Typography.Paragraph>
+                  <Input.Password
+                    value={ymk}
+                    onChange={(e) => setYmk(e.target.value)}
+                    placeholder="ymk_…（可选）"
+                    visibilityToggle
+                    autoComplete="off"
+                  />
+                  {ymk.trim() ? (
+                    <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                      掩码 · {ymkMasked}
+                    </Typography.Text>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+            {serviceHint ? <Alert type="info" showIcon message={serviceHint} /> : null}
+            <Button type="primary" block loading={busy} onClick={() => void onRedeem()}>
+              兑换入场
             </Button>
           </Space>
-        </div>
-      ) : null}
+        ) : null}
 
-      {step === 'conflict' && conflict ? (
-        <SeatConflictPanel
-          info={conflict}
-          showRequestNew
-          onPickOther={() => {
-            setConflict(null)
-            setStep('roster')
-          }}
-          onRequestNew={() => void onRequestNewSeat()}
-          onBack={() => {
-            setConflict(null)
-            setStep('roster')
-          }}
-        />
-      ) : null}
-    </Drawer>
+        {step === 'roster' ? (
+          <div>
+            <Typography.Paragraph type="secondary" style={{ marginBottom: 10, fontSize: 13 }}>
+              空席可选进入；占用中灰显不可选（不能顶替）。无空席时申请新席（码未允许则失败）。
+            </Typography.Paragraph>
+            {busy && !roster.length ? (
+              <div style={{ textAlign: 'center', padding: 24 }}>
+                <Spin />
+              </div>
+            ) : roster.length ? (
+              <div className="acb-bots-seat-grid" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {roster.map((seat) => {
+                  const occ = seatOccupancy(seat)
+                  const active = occ === 'active'
+                  const left = occ === 'left'
+                  return (
+                    <button
+                      key={seat.id}
+                      type="button"
+                      className="acb-bots-seat-card"
+                      disabled={active || busy}
+                      tabIndex={active ? -1 : undefined}
+                      aria-disabled={active || busy}
+                      aria-label={
+                        active
+                          ? `${seatDisplayName(seat)}，占用中，不可选`
+                          : `${seatDisplayName(seat)}`
+                      }
+                      onClick={() => {
+                        if (active || busy) return
+                        void onPickSeat(seat)
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        minHeight: 36,
+                        padding: '6px 10px',
+                        textAlign: 'left',
+                        borderRadius: 6,
+                        border: '1px solid var(--acb-border, #e5e7eb)',
+                        background: active
+                          ? 'var(--acb-bg-layout, #f5f5f5)'
+                          : 'var(--acb-bg-container, #fff)',
+                        opacity: active ? 0.55 : 1,
+                        cursor: active || busy ? 'not-allowed' : 'pointer',
+                        pointerEvents: active ? 'none' : undefined,
+                      }}
+                      title={seatDisplayName(seat)}
+                    >
+                      <Typography.Text strong className="acb-bots-lead" style={{ flex: 1, minWidth: 0 }}>
+                        {seatDisplayName(seat)}
+                      </Typography.Text>
+                      {active ? (
+                        <Tag style={{ margin: 0 }}>占用中</Tag>
+                      ) : left ? (
+                        <Tag color="orange" style={{ margin: 0 }}>
+                          可补位
+                        </Tag>
+                      ) : (
+                        <Tag color="green" style={{ margin: 0 }}>
+                          空席
+                        </Tag>
+                      )}
+                      {active && seat.bound_display_name ? (
+                        <Typography.Text type="secondary" style={{ fontSize: 12, maxWidth: 88 }} ellipsis>
+                          {seat.bound_display_name}
+                        </Typography.Text>
+                      ) : null}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="班底暂无席位" />
+            )}
+            <Space style={{ marginTop: 14 }} wrap>
+              {!emptySeats.length || allowNew ? (
+                <Button loading={busy} onClick={() => void onRequestNewSeat()}>
+                  申请新席
+                </Button>
+              ) : null}
+              <Button
+                onClick={() => {
+                  setStep('code')
+                  setConflict(null)
+                }}
+              >
+                返回
+              </Button>
+            </Space>
+          </div>
+        ) : null}
+
+        {step === 'conflict' && conflict ? (
+          <SeatConflictPanel
+            info={conflict}
+            showRequestNew
+            onPickOther={() => {
+              setConflict(null)
+              setStep('roster')
+            }}
+            onRequestNew={() => void onRequestNewSeat()}
+            onBack={() => {
+              setConflict(null)
+              setStep('roster')
+            }}
+          />
+        ) : null}
+      </Drawer>
+
+      <IdentityKeyRevealModal
+        open={Boolean(revealToken)}
+        token={revealToken}
+        inviteCode={ymt.trim() || null}
+        onClose={() => {
+          setRevealToken(null)
+          handleClose()
+        }}
+      />
+    </>
   )
 }

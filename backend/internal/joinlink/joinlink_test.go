@@ -117,6 +117,10 @@ func TestBuildBotPrompt(t *testing.T) {
 		"禁止",
 		"mcp.json",
 		"一键安装",
+		"身份两态",
+		"自动发一把",
+		"已有钥",
+		"不重发",
 	} {
 		if !strings.Contains(p, need) {
 			t.Fatalf("prompt missing %q:\n%s", need, p)
@@ -125,6 +129,7 @@ func TestBuildBotPrompt(t *testing.T) {
 	for _, ban := range []string{
 		"YMBOT_API_KEY=",
 		"ymk_abcdef",
+		"使用本机已有 Bot Key",
 	} {
 		if strings.Contains(p, ban) {
 			t.Fatalf("prompt must not contain %q", ban)

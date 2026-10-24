@@ -97,7 +97,7 @@ export function installCurlLine(apiBase?: string | null): string {
 /**
  * 中文 Bot 系统提示词。与 Go joinlink.BuildBotPrompt 同构（E1/E4）：
  * 首行 curl|bash；§0 安装（主 curl|bash + 备 go install）；API 根 + code + role；
- * 主航线 0 安装→whoami→join→handoff；禁假设已装 ymbot / mcp.json / 长 env / ymk_。
+ * 主航线 0 安装→join→whoami→handoff；身份两态（空手自动得钥 / 已有钥带 Bearer）；禁假设已装 ymbot / mcp.json / 长 env。
  */
 export function buildBotJoinPrompt(params: BotJoinPromptParams): string {
   validateInviteCode(params.code)
@@ -146,12 +146,14 @@ export function buildBotJoinPrompt(params: BotJoinPromptParams): string {
     `- API 根：\`${apiBase}\`（whoami / join / handoff 都打这个根；可用环境变量 \`YMBOT_API_URL=${apiBase}\`，勿把 Key 清单当主教程）`,
     `- 入场码：\`${code}\``,
     `- 目标角色（席位 slug）：${roleLine}${seatBlock}`,
-    '- 身份：使用本机已有 Bot Key（ymk_…）或 Vault；**禁止**把 ymk_ 贴进聊天或写入可转发链接。',
+    '- 身份两态：',
+    '  - **空手**：无本机 ymk_ 也可直接 join；成功响应会**自动发一把**身份钥匙（仅此一次，私存；**禁止**贴进聊天或写入可转发链接）',
+    '  - **已有钥**：续队/换机带上原 `ymk_`（Bearer / `YMBOT_API_KEY`）；**不重发**钥匙',
     '',
     '## 主航线（必须按序）',
     '0. 安装（若无）：上面 curl|bash 或 go install',
-    '1. 确认身份：`board_whoami` / `ymbot whoami`',
-    `2. 入队：\`${cli}\`（等价 MCP \`board_team_join\`；底层仍是既有 redeem → pull → enter，**不要**另造 claim）`,
+    `1. 入队：\`${cli}\`（等价 MCP \`board_team_join\`；底层 redeem → pull → enter，**不要**另造 claim）`,
+    '2. 确认身份：`board_whoami` / `ymbot whoami`（空手 join 后才有钥；已有钥可先 whoami）',
     '3. 接班：`handoff get` / `ymbot handoff get`；任务与真相源在服务端。',
     '',
     '## 禁区',

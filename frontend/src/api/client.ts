@@ -46,6 +46,8 @@ export type ApiRequestInit = RequestInit & {
   skipToast?: boolean
   /** 写操作幂等键 */
   idempotencyKey?: string
+  /** 不附带 localStorage JWT（如入场码无身份 bootstrap） */
+  skipAuth?: boolean
 }
 
 const TOKEN_KEY = 'token'
@@ -104,13 +106,14 @@ function handleUnauthorized() {
 }
 
 export async function api<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
-  const { skipToast, idempotencyKey, ...req } = init
+  const { skipToast, idempotencyKey, skipAuth, ...req } = init
   const headers = new Headers(req.headers)
   if (!headers.has('Content-Type') && req.body) {
     headers.set('Content-Type', 'application/json')
   }
+  const explicitAuth = headers.has('Authorization')
   const token = getToken()
-  if (token && !headers.has('Authorization')) {
+  if (!skipAuth && token && !explicitAuth) {
     headers.set('Authorization', `Bearer ${token}`)
   }
   if (idempotencyKey) {
@@ -147,7 +150,10 @@ export async function api<T>(path: string, init: ApiRequestInit = {}): Promise<T
     const err = new ApiError(body.message, code, res.status)
     if (res.status === 401) {
       if (!skipToast) message.error(body.message || '请重新登录')
-      handleUnauthorized()
+      // skipAuth / 显式 Authorization（如 ymk_）失败不踢人会话
+      if (!skipAuth && !explicitAuth) {
+        handleUnauthorized()
+      }
     } else if (!skipToast) {
       message.error(body.message || '请求失败')
     }

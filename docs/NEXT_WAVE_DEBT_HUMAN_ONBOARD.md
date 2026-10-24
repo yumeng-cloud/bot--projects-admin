@@ -95,7 +95,7 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 | 角色 | 投票后首刀 |
 | --- | --- |
 | **Go** | redeem 自动身份 + V1/V2/V6 · **已合** `c4ae0a5`（箱测 PASS） |
-| **React** | V3/V4/V5；Join 成功单把露钥（若投 V3 主路径） |
+| **React** | V3/V4/V5；Join 成功单把露钥 · **V5** `e761305` · **V3/V4** 本轮合入 |
 | **记忆** | 校验造人不踩 claim 单活；换机同 member；空 focus 人话 · **箱证 PASS** `def5aee`（J 409 / E migrate+handoff / A focus=空）；**GAP=Q1** 仍归 Go |
 | **QA** | 用 §5 矩阵苛刻验；挂已有证 AUTO_CREW/FOOLPROOF/SEAT |
 | **种子** | 文案两码对齐；禁免责腔 |
@@ -167,7 +167,7 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 ## 7. 附录 · 各角原文摘要（备查）
 
 - **Go：** redeem 现只定位；自动身份主挂 redeem；危险=无钥重复造第二人、补位静默、换机无钥 bootstrap、同码并发。  
-- **React：** JoinWizard 仍强制 ymk_；无成功面接 token；Toast「未绑 Key」打架；建议主 CTA=入场包、Web 只贴 ymt_。  
+- **React：** V3 JoinWizard 主路径只贴 ymt_；成功有 token→IdentityKeyReveal；V4 提示词两态；V5 文案已合。  
 - **记忆：** 换机必须同 member；自动造人只 empty；已鉴权禁再造第二人；空 focus 明示。
 - **可选软债·兼岗 focus（搁置）：** handoff 摘要取裸/`*:last_focus` 首个未必=当前席；不挡 A/E；`--full` 可见席键。  
 - **QA：** X0/E1–E7 骨架如上。  
@@ -177,6 +177,7 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 
 ## 8. 进度
 
+- 2026-10-25 00:00 · **React V3/V4 冻干合入**：`RedeemInviteResult` 补 `token`/`token_issued`；JoinWizard 主路径只贴 `ymt_`，有 token→IdentityKeyReveal；`buildBotJoinPrompt`+Go `BuildBotPrompt` 身份两态（空手自动得钥/已有钥带 Bearer）。**V5 未回退**。
 - 2026-10-24 23:50 · **Go redeem 自动身份绿** `c4ae0a5`（无 Bearer→is_bot+ymk_+绑 empty；持钥幂等不重发；人类 JWT 只定位；V1 409 贴旧钥；V2 不自动补位；V6 bootstrapped_member_id；F2 active 409）。箱内 `go test` botmem+handlers PASS。**已派 React V3/V4 + QA Q1 联验**。
 - 2026-10-24 23:49 · **记忆席 A/E/J 箱证收** `def5aee` + `docs/qa-shots/HUMAN_ONBOARD-AEJ-memory-20261024.txt`：J 409 PASS · E leave→migrate→handoff PASS · A `focus=空` PASS · `AUTH_NO_SECOND_MEMBER=PASS`；**Q1 自动身份仍 GAP（Go）**。可选软债：兼岗摘要 focus≠当前席（不挡 A/E，搁置）。
 - 2026-10-24 23:48 · **用户睡前站立（总指挥转）**：后续口径争议**内部**消化——提反对→产品主持拍板→统一口径干；**勿再弹用户票**。H0/H1 仍冻 `b6614ff`。

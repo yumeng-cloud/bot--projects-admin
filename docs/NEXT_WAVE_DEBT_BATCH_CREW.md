@@ -102,6 +102,7 @@ POST …/team-invites/redeem  或  通道等价 ymbot team join
 
 ## 进度注记
 
+- 2026-10-25 00:00 · **B3 React V3/V4 冻干**：Join 只贴 ymt_ + token 露钥；提示词两态。V5 未回退。
 - 2026-10-24 23:50 · **B1 绿** Go redeem `c4ae0a5`；B0/B2 随 HUMAN 冻+V5 勾。待 React V3/V4（B3）+ QA Q1（B5/B6）。
 - 2026-10-24 23:45 · 上位 HUMAN_ONBOARD 已出**可投表决稿**（A–K + V1–V7）；本债 API 细案等投票后再开 B1。
 - 2026-10-24 23:40 · **全景冻结**：盲改暂停，等 HUMAN_ONBOARD H0+H1。

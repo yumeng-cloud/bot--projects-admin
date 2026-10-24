@@ -68,6 +68,14 @@ export type RedeemInviteResult = {
   team?: Team
   roster?: TeamSeat[]
   allow_expand_seat?: boolean
+  role_hint?: string | null
+  seat_slug?: string | null
+  seat_id?: string
+  member_id?: string
+  role_slug?: string
+  /** bootstrap 当次明文 ymk_；续队省略 */
+  token?: string
+  token_issued?: boolean
 }
 
 export function listTeams(workspaceId: string) {
@@ -339,13 +347,29 @@ export function inviteStatusCn(status?: string | null): string {
   }
 }
 
-/** 兑换入场码 → workspace+team(+roster) */
-export function redeemTeamInvite(code: string, idempotencyKey?: string) {
+/** 兑换入场码 → workspace+team(+roster)；可回 token/token_issued（空手 bootstrap） */
+export function redeemTeamInvite(
+  code: string,
+  opts?: { idempotencyKey?: string; botKey?: string | null; role?: string | null; seat?: string | null },
+) {
+  const botKey = (opts?.botKey || '').trim()
+  const body: Record<string, string> = { code: code.trim() }
+  const role = (opts?.role || '').trim()
+  const seat = (opts?.seat || '').trim()
+  if (role) body.role = role
+  if (seat) body.seat = seat
+  const headers: Record<string, string> = {}
+  if (botKey) {
+    headers.Authorization = `Bearer ${botKey}`
+  }
   return api<RedeemInviteResult>(`/team-invites/redeem`, {
     method: 'POST',
-    body: JSON.stringify({ code: code.trim() }),
-    idempotencyKey,
+    body: JSON.stringify(body),
+    headers,
+    idempotencyKey: opts?.idempotencyKey,
     skipToast: true,
+    // 无 ymk_ 时不带人类 JWT，走无 Bearer bootstrap；有 ymk_ 则显式 Bearer
+    skipAuth: !botKey,
   })
 }
 
