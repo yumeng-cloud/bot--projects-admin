@@ -14,7 +14,7 @@ SHAs
   FE    ab7f72b feat(fe): Issue 完成列批量归档（C1–C4）
   go test ./internal/services/issueboard/ -run IssueArchive → ok
 
-Overall: PASS (redlines Q1–Q4 + Q5/Q6；Q7 FE箱截 pending 不挡)
+Overall: PASS (redlines Q1–Q4 + Q5/Q6/Q7；箱截并行入库后已轻抽)
 
 ================================================================================
 Q1 · POST …/issues/archive
@@ -72,10 +72,13 @@ Q6 PASS
   mcp.go / cli.go 均 DropArchivedFromIssueListJSON 防御；go test ./internal/botclient/ -run DropArchived|ProjectIssuesDrops → ok
 
 ================================================================================
-Q7 · FE 箱截
+Q7 · FE 箱截（复测写证后并行入库，已目视抽）
 ================================================================================
-Q7 PASS（记 pending，不挡）— docs/qa-shots/issue-archive-*.png 尚无
-  FE C1–C4 码 @ab7f72b 在仓；箱截并行未入库 → 产品 D3/C5 另勾
+Q7 PASS — issue-archive-*.png 已在仓，轻抽与 BE 一致
+  c1-select.png: 完成列多选 YM-22/YM-19 +「归档(2)」「归档本列已完成」；进度 2/2
+  c2-after.png: 归档后看板空态，卡消失；进度 0/0（与 BE 默认剔归档一致）
+  c3-stats.png: Pack 条 进度 0/0 · 卡点 0（与归档后 BE done/total 下降一致）
+  FE 码 ab7f72b；产品 C5/D3 仍可由产品正式勾
 
 ================================================================================
 Defects
@@ -83,4 +86,4 @@ Defects
 无阻塞缺陷。
 软注：ListRelations 不剔指向已归档的边（Issue 默认列表已不见）——非 Q1–Q4 假绿；若产品要「关系面板也不露归档 id」另开软债。
 
-关报：Overall PASS · Q1–Q4 PASS · 证据本文件 · HEAD 见上（push 后含本 docs commit）。
+关报：Overall PASS · Q1–Q4 PASS · 证据本文件 · HEAD 见 push。

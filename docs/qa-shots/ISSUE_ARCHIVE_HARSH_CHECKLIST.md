@@ -23,7 +23,7 @@
 |----|------|------|
 | Q5 | GET 单条已归档仍 200 + `archived_at`；status 仍为 done（正交） | ✅ |
 | Q6 | Bot/MCP 列表同源默认不返回归档 | ✅ |
-| Q7 | FE（有箱截则抽）：完成列批量归档后卡消失；Pack 数字与 BE 一致 | ✅ pending箱截 |
+| Q7 | FE（有箱截则抽）：完成列批量归档后卡消失；Pack 数字与 BE 一致 | ✅ |
 
 ## 关报
 短报**产品体验**（+总指挥）：Overall · Q1–Q4 · 证据 · HEAD。测绿可 push main。
