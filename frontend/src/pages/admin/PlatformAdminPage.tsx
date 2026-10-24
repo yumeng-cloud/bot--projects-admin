@@ -11,6 +11,7 @@ import {
   Table,
   Tabs,
   Tag,
+  Tooltip,
   Typography,
   message,
   Empty,
@@ -27,8 +28,10 @@ import {
   patchAdminUser,
   patchAdminWorkspace,
   type AdminUser,
+  type AdminUserWorkspace,
   type AdminWorkspace,
 } from '../../api/admin'
+import { listMyWorkspaces } from '../../api/workspaces'
 import { formatShanghai } from '../../utils/time'
 
 /** C4：工作区状态筛 */
@@ -37,6 +40,7 @@ type WsStatusFilter = 'all' | 'enabled' | 'disabled'
 /**
  * 平台超管台（PRO_ADMIN A2）：顶栏标题+副文+主操作一排；工作区|用户对等；表区 hug。
  * C4：工作区表顶名称搜索 + 状态筛（FE 滤）。
+ * D2：用户台所属 WS 芯片可点（有成员权进 WS / 否则复制名）；搜索防抖 + 空搜人话提示。
  */
 export default function PlatformAdminPage() {
   const nav = useNavigate()
@@ -54,9 +58,14 @@ export default function PlatformAdminPage() {
   const [userQuery, setUserQuery] = useState('')
   const [userQueryDebounced, setUserQueryDebounced] = useState('')
   const userSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** D2：当前超管本人可进入的 WS（listMine）；用于芯片优先跳转 vs 复制 */
+  const [myWsIds, setMyWsIds] = useState<Set<string>>(() => new Set())
   /** C4：工作区名称搜索 + 状态筛（FE 滤；API 无 q/status） */
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const forceWsFilter = searchParams.get('qaWsFilter') === '1'
+  const tabParam = searchParams.get('tab')
+  const initialTab = tabParam === 'users' || searchParams.get('qaUsers') === '1' ? 'users' : 'workspaces'
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [wsQuery, setWsQuery] = useState(forceWsFilter ? 'QA' : '')
   const [wsQueryDebounced, setWsQueryDebounced] = useState(forceWsFilter ? 'QA' : '')
   const wsSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -146,6 +155,9 @@ export default function PlatformAdminPage() {
   useEffect(() => {
     if (!user?.is_platform_admin) return
     void loadWorkspaces()
+    void listMyWorkspaces()
+      .then((r) => setMyWsIds(new Set((r.workspaces || []).map((w) => w.id))))
+      .catch(() => setMyWsIds(new Set()))
   }, [user?.is_platform_admin])
 
   useEffect(() => {
@@ -206,6 +218,20 @@ export default function PlatformAdminPage() {
     }
   }
 
+  /** D2-1：所属 WS 芯片——本人有成员权则只读进 WS；否则复制名称 + Toast */
+  const onUserWsChipClick = async (w: AdminUserWorkspace) => {
+    const name = (w.name || '').trim() || '未命名工作区'
+    if (myWsIds.has(w.id)) {
+      nav(`/w/${w.id}/board`)
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(name)
+      message.success(`已复制工作区名称「${name}」`)
+    } catch {
+      message.warning(`无权限进入「${name}」，请手动复制名称`)
+    }
+  }
 
   const isWsDisabled = (row: AdminWorkspace) => !!(row.disabled_at || row.status === 'disabled')
 
@@ -255,6 +281,15 @@ export default function PlatformAdminPage() {
 
       <div className="acb-surface-panel">
         <Tabs
+          activeKey={activeTab}
+          onChange={(key) => {
+            setActiveTab(key)
+            const next = new URLSearchParams(searchParams)
+            if (key === 'users') next.set('tab', 'users')
+            else next.delete('tab')
+            next.delete('qaUsers')
+            setSearchParams(next, { replace: true })
+          }}
           items={[
             {
               key: 'workspaces',
@@ -379,20 +414,25 @@ export default function PlatformAdminPage() {
                 <>
                   <Input.Search
                     allowClear
-                    placeholder="搜索邮箱或名称"
+                    placeholder="输入邮箱或名称筛选用户"
                     value={userQuery}
                     onChange={(e) => setUserQuery(e.target.value)}
                     onSearch={(v) => {
                       setUserQuery(v)
                       setUserQueryDebounced(v)
                     }}
-                    style={{ maxWidth: 320, marginBottom: 12 }}
+                    style={{ maxWidth: 320, marginBottom: 8 }}
+                    aria-label="输入邮箱或名称筛选用户"
                   />
                   {!userQueryDebounced.trim() ? (
-                    <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: -4, marginBottom: 12 }}>
-                      输入邮箱或名称筛选用户
+                    <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 0, marginBottom: 12 }}>
+                      输入邮箱或名称筛选用户；留空显示全部
                     </Typography.Paragraph>
-                  ) : null}
+                  ) : (
+                    <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 0, marginBottom: 12 }}>
+                      正在筛选「{userQueryDebounced.trim()}」
+                    </Typography.Paragraph>
+                  )}
                   {userErr ? (
                     <Alert
                       type="warning"
@@ -425,12 +465,25 @@ export default function PlatformAdminPage() {
                               const list = row.workspaces || []
                               if (!list.length) return '—'
                               return (
-                                <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 8 }}>
-                                  {list.map((w) => (
-                                    <Tag key={w.id} style={{ margin: 0 }}>
-                                      {w.name || '未命名工作区'}
-                                    </Tag>
-                                  ))}
+                                <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 6 }}>
+                                  {list.map((w) => {
+                                    const label = w.name || '未命名工作区'
+                                    const canEnter = myWsIds.has(w.id)
+                                    return (
+                                      <Tooltip
+                                        key={w.id}
+                                        title={canEnter ? '点击进入该工作区' : '无成员权：点击复制名称'}
+                                      >
+                                        <Tag
+                                          color={canEnter ? 'processing' : 'default'}
+                                          style={{ margin: 0, cursor: 'pointer' }}
+                                          onClick={() => void onUserWsChipClick(w)}
+                                        >
+                                          {label}
+                                        </Tag>
+                                      </Tooltip>
+                                    )
+                                  })}
                                 </span>
                               )
                             },
@@ -472,7 +525,9 @@ export default function PlatformAdminPage() {
                     ) : (
                       empty(
                         userErr ||
-                          (userQueryDebounced.trim() ? '无匹配用户' : '还没有用户'),
+                          (userQueryDebounced.trim()
+                            ? '无匹配用户，试试其他邮箱或名称'
+                            : '还没有用户 · 输入邮箱或名称筛选用户'),
                       )
                     )}
                   </Spin>
