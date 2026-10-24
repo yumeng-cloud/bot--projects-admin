@@ -27,8 +27,8 @@
 
 ## 产品勾选
 
-- [x] **C4-1** 搜索+筛 · FE `bdc2dde` · 待产品勾
-- [x] **C4-2** 箱截 · `pro-c-admin-ws.png` · FE `bdc2dde` · 待产品勾
+- [x] **C4-1** 搜索+筛 · FE `516226d` · 待产品勾
+- [x] **C4-2** 箱截 · `pro-c-admin-ws.png` · FE `516226d` · 待产品勾
 - [ ] **C4-3** QA
 - [ ] **C4-4** 关单（含 C5）
 
@@ -43,7 +43,7 @@
 
 ## 进度注记
 
-- 2026-10-25 01:34 Asia/Shanghai · React 交 C4-1+C4-2：工作区表顶名称搜索（300ms 防抖）+ 状态筛（全部/启用/停用）；FE 客户端滤（`GET /admin/workspaces` 无 q/status，无需 Go）；空结果「没有符合条件的工作区」；箱截 `pro-c-admin-ws.png`（搜索 QA + 筛启用）；`tsc --noEmit` PASS。SHA `bdc2dde`。等 QA C4-3 / 产品 C4-4。D/E2/G 仍冻。
+- 2026-10-25 01:34 Asia/Shanghai · React 交 C4-1+C4-2：工作区表顶名称搜索（300ms 防抖）+ 状态筛（全部/启用/停用）；FE 客户端滤（`GET /admin/workspaces` 无 q/status，无需 Go）；空结果「没有符合条件的工作区」；箱截 `pro-c-admin-ws.png`（搜索 QA + 筛启用）；`tsc --noEmit` PASS。SHA `516226d`。等 QA C4-3 / 产品 C4-4。D/E2/G 仍冻。
 - 2026-10-25 01:24 · C3 关后产品拍开本刀；D/E2/G 仍冻。
 
 ## 关单进度
