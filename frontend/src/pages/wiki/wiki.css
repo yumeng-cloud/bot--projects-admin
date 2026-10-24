@@ -1,15 +1,17 @@
 /**
- * Wiki layout — Linear/Notion-like reading stage (UI 视觉 · W3/W7/W8)
+ * Wiki layout — Linear/Notion reading stage (UI 视觉 · P1-1…P1-6)
  * Contract classes for React:
  *   .acb-wiki-shell   — left tree + main stage
- *   .acb-wiki-sider   — directory / spaces column
- *   .acb-wiki-main    — reading/editing column (~32–40 padding like issue main)
- *   .acb-wiki-title   — large inline title (~24–28px / 600), no form label wall
- *   .acb-wiki-md      — ByteMD skin (mirrors .acb-issue-md); empty 「开始写点什么…」
+ *   .acb-wiki-sider   — directory / spaces column (≥240, prefer 260–280)
+ *   .acb-wiki-main    — reading canvas (#F7F8FA / --acb-bg-layout)
+ *   .acb-wiki-main-inner — reading column max ~752, left-aligned + breathing
+ *   .acb-wiki-title   — large inline title (~24–28px / 600)
+ *   .acb-wiki-md      — ByteMD skin; quiet toolbar
  *   .acb-wiki-meta    — time line tertiary 12px
+ *   .acb-wiki-props / .acb-wiki-prop-chip — property chip rail (not form Selects)
+ *   .acb-wiki-done    — demoted/hidden 「完成」 (auto-save replaces primary CTA)
  *   .acb-wiki-empty   — short copy + primary CTA spacing
- *   .acb-wiki-empty-cta — primary「新建第一页」/「新建页面」button hook
- * Do not touch Issue/timeline CSS; Modals stay until React W1/W2.
+ * Do not touch Issue/timeline CSS.
  */
 
 /* —— Shell: left tree + main —— */
@@ -18,27 +20,51 @@
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: var(--acb-bg-container);
+  background: var(--acb-bg-layout);
+  font-family: var(--acb-font-sans);
 }
 
 .acb-wiki-shell.ant-layout {
-  background: var(--acb-bg-container);
+  background: var(--acb-bg-layout);
 }
 
+/* —— P1-2 Tree sider —— */
 .acb-wiki-sider {
   flex-shrink: 0;
+  min-width: 240px !important;
+  width: 280px;
   border-right: 1px solid var(--acb-border-secondary) !important;
-  background: color-mix(in srgb, var(--acb-bg-layout) 55%, var(--acb-bg-container)) !important;
+  background: var(--acb-bg-sider, #F2F4F8) !important;
   padding: 12px !important;
   overflow: auto;
   height: 100%;
+  box-shadow: none !important;
+}
+
+.acb-wiki-sider.ant-layout-sider {
+  background: var(--acb-bg-sider, #F2F4F8) !important;
+  max-width: none !important;
 }
 
 .acb-wiki-sider .ant-layout-sider-children {
   height: 100%;
 }
 
-/* Tree selected / hover — soft primary wash */
+/* Tree row density ~28–32, Linear soft hover/selected */
+.acb-wiki-sider .ant-tree .ant-tree-treenode {
+  padding: 1px 0;
+  min-height: 28px;
+  align-items: center;
+}
+
+.acb-wiki-sider .ant-tree .ant-tree-node-content-wrapper {
+  min-height: 28px;
+  line-height: 28px;
+  padding-inline: 6px;
+  border-radius: 6px;
+  transition: background 0.12s ease;
+}
+
 .acb-wiki-sider .ant-tree .ant-tree-node-content-wrapper.ant-tree-node-selected,
 .acb-wiki-sider .ant-tree .ant-tree-node-selected .ant-tree-node-content-wrapper {
   background: color-mix(in srgb, var(--acb-primary) 12%, transparent) !important;
@@ -51,21 +77,62 @@
   border-radius: 6px;
 }
 
-/* —— Main reading/editing column —— */
+.acb-wiki-sider .ant-tree {
+  background: transparent;
+  font-size: 13px;
+  font-family: var(--acb-font-sans);
+}
+
+.acb-wiki-sider .ant-list-item {
+  border-block-end: none !important;
+}
+
+.acb-wiki-sider .ant-input-search .ant-input-affix-wrapper,
+.acb-wiki-sider .ant-input-affix-wrapper,
+.acb-wiki-sider .ant-input {
+  background: color-mix(in srgb, var(--acb-bg-container) 70%, transparent);
+  border-color: var(--acb-border-secondary);
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+/* —— P1-1 Reading column —— */
 .acb-wiki-main {
   flex: 1;
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--acb-issue-main-padding-y) var(--acb-issue-main-padding-x);
-  background: var(--acb-bg-container);
+  /* top rhythm ~28–36 — not sparse white sea; title sits with breathing */
+  padding: 32px 40px 48px;
+  background: var(--acb-bg-layout, #F7F8FA);
   -webkit-overflow-scrolling: touch;
+  font-family: var(--acb-font-sans);
 }
 
 .acb-wiki-main-inner {
-  max-width: 720px;
-  margin: 0 auto;
+  max-width: 752px;
+  /* left-aligned with breathing (padding on .acb-wiki-main) — not mid-void float */
+  margin: 0;
   width: 100%;
+}
+
+/* Vertical rhythm: toolbar → title → meta → prop chips → body */
+.acb-wiki-main-inner > .acb-wiki-main-toolbar {
+  margin-bottom: 12px;
+}
+
+.acb-wiki-main-inner > .acb-wiki-title,
+.acb-wiki-main-inner > .acb-wiki-title-input,
+.acb-wiki-main-inner > .ant-input.acb-wiki-title-input {
+  margin-bottom: 8px !important;
+}
+
+.acb-wiki-main-inner > .acb-wiki-meta {
+  margin-bottom: 12px !important;
+}
+
+.acb-wiki-main-inner > .acb-wiki-props {
+  margin-bottom: 24px;
 }
 
 .acb-wiki-main-toolbar {
@@ -73,7 +140,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  min-height: 28px;
 }
 
 .acb-wiki-main-toolbar .ant-btn-default {
@@ -92,23 +160,46 @@
   color: var(--acb-text) !important;
 }
 
+/* P1-4: any leftover primary in toolbar — no purple capsule fill */
 .acb-wiki-main-toolbar .ant-btn-primary {
   background: transparent !important;
   border-color: transparent !important;
-  color: var(--acb-primary) !important;
+  color: var(--acb-text-tertiary) !important;
   box-shadow: none !important;
-  font-weight: 500;
-  border-radius: 8px !important;
-  height: 28px;
-  padding-inline: 10px;
+  font-weight: 450;
+  border-radius: 6px !important;
+  height: 24px;
+  padding-inline: 6px;
+  font-size: 12px;
 }
 
 .acb-wiki-main-toolbar .ant-btn-primary:hover {
-  background: color-mix(in srgb, var(--acb-primary) 8%, transparent) !important;
-  color: var(--acb-primary) !important;
+  background: color-mix(in srgb, var(--acb-text) 5%, transparent) !important;
+  color: var(--acb-text-secondary) !important;
   border-color: transparent !important;
 }
 
+/* P1-4: 「完成」 demoted — no purple capsule; micro tertiary exit (autosave is source of truth) */
+.acb-wiki-main-toolbar .acb-wiki-done,
+.acb-wiki-main-toolbar button.acb-wiki-done {
+  display: inline-flex !important;
+  height: 24px !important;
+  padding-inline: 6px !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  color: var(--acb-text-tertiary) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.acb-wiki-main-toolbar .acb-wiki-done:hover,
+.acb-wiki-main-toolbar button.acb-wiki-done:hover {
+  color: var(--acb-text-secondary) !important;
+  background: color-mix(in srgb, var(--acb-text) 4%, transparent) !important;
+}
+
+/* Delete → quieter tertiary / danger ghost */
 .acb-wiki-main-toolbar .ant-btn-dangerous {
   border: none !important;
   background: transparent !important;
@@ -116,6 +207,8 @@
   color: var(--acb-text-tertiary) !important;
   border-radius: 8px !important;
   height: 28px;
+  font-weight: 400;
+  padding-inline: 8px;
 }
 
 .acb-wiki-main-toolbar .ant-btn-dangerous:hover {
@@ -123,22 +216,29 @@
   background: color-mix(in srgb, #cf1322 8%, transparent) !important;
 }
 
+.acb-wiki-save-hint {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--acb-text-tertiary);
+  font-weight: 400;
+}
+
 /* —— Title: large inline, no form label wall —— */
 .acb-wiki-title {
-  margin: 0 0 6px !important;
+  margin: 0 0 8px !important;
   font-size: 26px !important;
   font-weight: 600 !important;
   line-height: 1.3 !important;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
   color: var(--acb-text) !important;
   padding-inline-start: 2px;
+  font-family: var(--acb-font-sans);
 }
 
 .acb-wiki-title.ant-typography {
-  margin-bottom: 6px !important;
+  margin-bottom: 8px !important;
 }
 
-/* Edit form: strip vertical label wall; title input looks like page title */
 .acb-wiki-main .ant-form-vertical .ant-form-item-label {
   display: none;
 }
@@ -154,12 +254,13 @@
   font-size: 26px !important;
   font-weight: 600;
   line-height: 1.3;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
   color: var(--acb-text);
   padding: 2px 2px 2px 0 !important;
   border: none !important;
   box-shadow: none !important;
   background: transparent !important;
+  font-family: var(--acb-font-sans);
 }
 
 .acb-wiki-title-input.ant-input::placeholder,
@@ -168,43 +269,204 @@
   font-weight: 500;
 }
 
-/* —— Meta time line (W7) —— */
+/* —— Meta time line —— */
 .acb-wiki-meta {
   font-size: 12px !important;
   line-height: 1.4;
   color: var(--acb-text-tertiary) !important;
-  margin: 0 0 8px !important;
+  margin: 0 0 12px !important;
   padding-inline-start: 2px;
   font-weight: 400;
 }
 
 .acb-wiki-meta.ant-typography {
-  margin-bottom: 8px !important;
+  margin-bottom: 12px !important;
 }
 
-/* —— Linked project / issue props (W5) —— */
-.acb-wiki-props {
+/* —— P1-3 Property chips (button chip rail; Select only in popover) —— */
+.acb-wiki-props,
+.acb-wiki-props.acb-wiki-prop-rail {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 20px;
-  margin: 0 0 20px;
-  padding-inline-start: 2px;
+  gap: 8px;
+  margin: 0 0 24px;
+  padding-inline-start: 0;
 }
 
-.acb-wiki-props-item {
+.acb-wiki-props-item,
+.acb-wiki-prop-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
+  max-width: 100%;
+  padding: 2px 8px;
+  height: 26px;
+  border: 1px solid var(--acb-border-secondary);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--acb-bg-container) 80%, transparent);
+  transition: background 0.12s ease, border-color 0.12s ease;
+  cursor: default;
+}
+
+/* Real <button> chips from WikiPropChips */
+button.acb-wiki-prop-chip {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  font: inherit;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+  line-height: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+button.acb-wiki-prop-chip:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--acb-primary) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.acb-wiki-props-item:hover,
+.acb-wiki-prop-chip:hover {
+  background: color-mix(in srgb, var(--acb-text) 3.5%, transparent);
+  border-color: var(--acb-border);
+}
+
+/* --set: filled / normal chip */
+.acb-wiki-prop-chip--set {
+  border-style: solid;
+  border-color: var(--acb-border-secondary);
+  background: color-mix(in srgb, var(--acb-bg-container) 80%, transparent);
+  cursor: pointer;
+}
+
+.acb-wiki-prop-chip--set:hover {
+  background: color-mix(in srgb, var(--acb-text) 3.5%, transparent);
+  border-color: var(--acb-border);
+}
+
+/* --empty: softer dashed / lower-opacity border */
+.acb-wiki-prop-chip--empty {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--acb-border-secondary) 70%, transparent);
+  background: color-mix(in srgb, var(--acb-bg-container) 45%, transparent);
+  cursor: pointer;
+}
+
+.acb-wiki-prop-chip--empty:hover {
+  border-color: var(--acb-border-secondary);
+  background: color-mix(in srgb, var(--acb-text) 2.5%, transparent);
+}
+
+.acb-wiki-prop-chip--empty .acb-wiki-prop-chip-value {
+  color: var(--acb-text-tertiary);
 }
 
 .acb-wiki-props-label {
   flex-shrink: 0;
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.3;
   color: var(--acb-text-tertiary);
   white-space: nowrap;
+  font-weight: 450;
+}
+
+.acb-wiki-prop-chip-value {
+  min-width: 0;
+  max-width: 160px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--acb-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 400;
+}
+
+/* Popover: Select lives here (not in the chip) */
+.acb-wiki-prop-chip-popover {
+  min-width: 0;
+}
+
+.acb-wiki-prop-chip-overlay.ant-popover .ant-popover-inner {
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--acb-text) 10%, transparent);
+  background: var(--acb-bg-container, #fff);
+}
+
+.acb-wiki-prop-chip-overlay.ant-popover .ant-popover-arrow::before,
+.acb-wiki-prop-chip-overlay.ant-popover .ant-popover-arrow::after {
+  background: var(--acb-bg-container, #fff);
+}
+
+.acb-wiki-prop-chip-popover .ant-select {
+  width: 100%;
+  font-size: 13px;
+}
+
+.acb-wiki-prop-chip-popover .ant-select-selector {
+  border-radius: 6px !important;
+}
+
+/* Fallback: chip-ify nested Ant Selects if still mounted in-chip */
+.acb-wiki-props .ant-select,
+.acb-wiki-prop-chip .ant-select {
+  min-width: 0 !important;
+  max-width: 220px;
+  font-size: 12px;
+}
+
+.acb-wiki-props .ant-select-selector,
+.acb-wiki-prop-chip .ant-select-selector {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+  min-height: 22px !important;
+  height: 22px !important;
+  border-radius: 4px !important;
+}
+
+.acb-wiki-props .ant-select-focused .ant-select-selector,
+.acb-wiki-props .ant-select-selector:hover,
+.acb-wiki-prop-chip .ant-select-focused .ant-select-selector,
+.acb-wiki-prop-chip .ant-select-selector:hover {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.acb-wiki-props .ant-select-selection-item,
+.acb-wiki-props .ant-select-selection-placeholder,
+.acb-wiki-prop-chip .ant-select-selection-item,
+.acb-wiki-prop-chip .ant-select-selection-placeholder {
+  font-size: 12px !important;
+  line-height: 22px !important;
+  color: var(--acb-text-secondary);
+}
+
+.acb-wiki-props .ant-select-selection-placeholder,
+.acb-wiki-prop-chip .ant-select-selection-placeholder {
+  color: var(--acb-text-tertiary) !important;
+}
+
+.acb-wiki-props .ant-select-arrow,
+.acb-wiki-prop-chip .ant-select-arrow {
+  color: var(--acb-text-tertiary);
+  font-size: 10px;
+  inset-inline-end: 2px;
+}
+
+.acb-wiki-props .ant-select-clear,
+.acb-wiki-prop-chip .ant-select-clear {
+  inset-inline-end: 14px;
+  font-size: 10px;
+  background: transparent;
+  color: var(--acb-text-tertiary);
 }
 
 /* —— Body surface (read) —— */
@@ -227,7 +489,7 @@
   font-style: normal;
 }
 
-/* —— ByteMD skin (.acb-wiki-md) — quiet toolbar, empty 「开始写点什么…」 —— */
+/* —— P1-5 ByteMD toolbar restraint —— */
 .acb-wiki-md {
   min-height: 220px;
 }
@@ -250,29 +512,37 @@
   display: flex !important;
   align-items: center;
   border: none;
-  border-bottom: 1px solid var(--acb-border-secondary);
+  border-bottom: 1px solid color-mix(in srgb, var(--acb-border-secondary) 70%, transparent);
   background: transparent;
   padding: 0 0 4px;
   min-height: 26px;
 }
 
+/* Default icons ~0.4; reveal on hover/focus — kill icon soup weight */
 .acb-wiki-md .bytemd-toolbar-left {
-  opacity: 0.55;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
 }
 
-.acb-wiki-md .bytemd-toolbar-left:hover {
+.acb-wiki-md .bytemd-toolbar-left:hover,
+.acb-wiki-md:focus-within .bytemd-toolbar-left {
   opacity: 1;
+}
+
+.acb-wiki-md .bytemd-toolbar-icon {
+  color: var(--acb-text-tertiary);
 }
 
 .acb-wiki-md .bytemd-toolbar-tab {
   font-size: 12px;
   font-weight: 450;
   color: var(--acb-text-tertiary);
+  padding: 2px 6px;
 }
 
 .acb-wiki-md .bytemd-toolbar-tab-active {
-  color: var(--acb-text);
-  font-weight: 550;
+  color: var(--acb-text-secondary);
+  font-weight: 500;
 }
 
 .acb-wiki-md .bytemd-status {
@@ -290,10 +560,12 @@
   line-height: 1.68;
   color: var(--acb-text);
   background: transparent;
+  font-family: var(--acb-font-sans);
 }
 
 .acb-wiki-md .CodeMirror {
   padding: 4px 0 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .acb-wiki-md .CodeMirror-scroll {
@@ -373,7 +645,7 @@
   border-bottom-color: color-mix(in srgb, var(--acb-border-secondary) 70%, transparent);
 }
 
-/* Fallback while still on TextArea (pre–ByteMD): quiet mono surface */
+/* Fallback TextArea */
 .acb-wiki-main textarea.ant-input,
 .acb-wiki-md textarea.ant-input {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -402,16 +674,16 @@
   color: var(--acb-text-tertiary);
 }
 
-/* —— Empty states (W8) —— */
+/* —— Empty states —— */
 .acb-wiki-empty {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 8px;
-  min-height: 280px;
-  padding: 48px 24px;
-  text-align: center;
+  min-height: 200px;
+  padding: 24px 0 48px;
+  text-align: left;
 }
 
 .acb-wiki-empty .ant-empty {
@@ -423,7 +695,7 @@
   font-size: 14px;
   line-height: 1.55;
   max-width: 320px;
-  margin: 0 auto;
+  margin: 0;
 }
 
 .acb-wiki-empty-copy {
@@ -460,7 +732,7 @@
   opacity: 0.92;
 }
 
-/* Sider empty — tighter, still CTA-ready */
+/* Sider empty — tighter, CTA-ready */
 .acb-wiki-sider-empty {
   padding: 16px 4px 8px;
   text-align: center;
@@ -477,11 +749,15 @@
 
 @media (max-width: 720px) {
   .acb-wiki-main {
-    padding: 18px 16px 24px;
+    padding: 24px 16px 32px;
   }
 
   .acb-wiki-main-inner {
     max-width: none;
+  }
+
+  .acb-wiki-sider {
+    min-width: 200px !important;
   }
 
   .acb-wiki-title,

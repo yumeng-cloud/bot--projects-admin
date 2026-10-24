@@ -8,7 +8,6 @@ import {
   Layout,
   List,
   Modal,
-  Select,
   Space,
   Spin,
   Tree,
@@ -44,7 +43,8 @@ import { listIssues } from '../../api/issues'
 import type { Issue } from '../../types/issue'
 import type { WikiPage as WikiPageT, WikiSpace, WikiTreeNode } from '../../types/wiki'
 import { formatWikiTime } from '../../utils/time'
-import { WikiBodyEditor, WikiBodyViewer } from '../../components/wiki'
+import { WikiBodyEditor, WikiBodyViewer, WikiPropChips } from '../../components/wiki'
+import type { ChipDef } from '../../components/wiki'
 import './wiki.css'
 
 const { Sider, Content } = Layout
@@ -292,7 +292,11 @@ export default function WikiPage() {
     setEditing(false)
   }
 
-  const patchPageLinks = async (patch: { project_id?: string | null; issue_id?: string | null }) => {
+  const patchPageLinks = async (patch: {
+    project_id?: string | null
+    issue_id?: string | null
+    parent_id?: string | null
+  }) => {
     const cur = pageRef.current
     if (!cur || !wsId) return
     const prev = cur
@@ -300,11 +304,13 @@ export default function WikiPage() {
       ...cur,
       ...(patch.project_id !== undefined ? { project_id: patch.project_id } : {}),
       ...(patch.issue_id !== undefined ? { issue_id: patch.issue_id } : {}),
+      ...(patch.parent_id !== undefined ? { parent_id: patch.parent_id } : {}),
     }
     setPage(optimistic)
     try {
       const res = await updateWikiPage(wsId, cur.id, patch)
       setPage(res.page)
+      if (spaceId && patch.parent_id !== undefined) void loadTreeAndPages(spaceId)
     } catch (e: unknown) {
       setPage(prev)
       message.error(e instanceof Error ? e.message : '关联更新失败')
@@ -322,6 +328,10 @@ export default function WikiPage() {
     void patchPageLinks({ issue_id: value || null })
   }
 
+  const onParentLinkChange = (value: string | null) => {
+    void patchPageLinks({ parent_id: value || null })
+  }
+
   const projectOptions = useMemo(
     () => projects.map((p) => ({ label: p.name, value: p.id })),
     [projects],
@@ -336,38 +346,113 @@ export default function WikiPage() {
     return opts
   }, [issues, page?.issue_id])
 
-  const renderPageProps = () => (
-    <div className="acb-wiki-props">
-      <span className="acb-wiki-props-item">
-        <span className="acb-wiki-props-label">关联项目</span>
-        <Select
-          allowClear
-          showSearch
-          optionFilterProp="label"
-          placeholder="选择项目"
-          style={{ minWidth: 160, maxWidth: 240 }}
-          size="small"
-          value={page?.project_id || undefined}
-          options={projectOptions}
-          onChange={(v) => onProjectLinkChange((v as string) ?? null)}
-        />
-      </span>
-      <span className="acb-wiki-props-item">
-        <span className="acb-wiki-props-label">关联 Issue</span>
-        <Select
-          allowClear
-          showSearch
-          optionFilterProp="label"
-          placeholder="选择 Issue"
-          style={{ minWidth: 200, maxWidth: 320 }}
-          size="small"
-          value={page?.issue_id || undefined}
-          options={issueOptions}
-          onChange={(v) => onIssueLinkChange((v as string) ?? null)}
-        />
-      </span>
-    </div>
-  )
+  const parentOptions = useMemo(() => {
+    if (!page) return []
+    return pages
+      .filter((p) => p.id !== page.id)
+      .map((p) => ({ label: p.title || '无标题', value: p.id }))
+  }, [pages, page])
+
+  const projectDisplay = useMemo(() => {
+    if (!page?.project_id) return ''
+    return projects.find((p) => p.id === page.project_id)?.name || '已关联项目'
+  }, [page?.project_id, projects])
+
+  const issueDisplay = useMemo(() => {
+    if (!page?.issue_id) return ''
+    const hit = issues.find((i) => i.id === page.issue_id)
+    return hit ? issueSelectLabel(hit) : '已关联 Issue'
+  }, [page?.issue_id, issues])
+
+  const parentDisplay = useMemo(() => {
+    if (!page?.parent_id) return ''
+    return pages.find((p) => p.id === page.parent_id)?.title || '已设父级'
+  }, [page?.parent_id, pages])
+
+  const propChips: ChipDef[] = useMemo(() => {
+    if (!page) return []
+    return [
+      {
+        kind: 'project',
+        label: '项目',
+        value: page.project_id,
+        display: projectDisplay,
+        emptyText: '未关联',
+        options: projectOptions,
+        onChange: onProjectLinkChange,
+      },
+      {
+        kind: 'issue',
+        label: 'Issue',
+        value: page.issue_id,
+        display: issueDisplay,
+        emptyText: '未关联',
+        options: issueOptions,
+        onChange: onIssueLinkChange,
+      },
+      {
+        kind: 'parent',
+        label: '父级',
+        value: page.parent_id,
+        display: parentDisplay,
+        emptyText: '无',
+        options: parentOptions,
+        onChange: onParentLinkChange,
+      },
+    ]
+  }, [
+    page,
+    projectDisplay,
+    issueDisplay,
+    parentDisplay,
+    projectOptions,
+    issueOptions,
+    parentOptions,
+  ])
+
+  const renderPageProps = () => (page ? <WikiPropChips chips={propChips} /> : null)
+
+  const spaceName = spaces.find((s) => s.id === spaceId)?.name || 'Wiki'
+
+  const pageMoreItems: MenuProps['items'] = [
+    ...(editing
+      ? [
+          {
+            key: 'exit',
+            label: '退出编辑',
+            onClick: () => {
+              void finishEdit()
+            },
+          } as const,
+        ]
+      : [
+          {
+            key: 'edit',
+            label: '编辑',
+            icon: <EditOutlined />,
+            onClick: () => {
+              if (!page) return
+              setDraftTitle(page.title || '')
+              setDraftBody(page.body_md || '')
+              setEditing(true)
+            },
+          } as const,
+        ]),
+    {
+      key: 'del',
+      label: '删除',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: () => removePage(),
+    },
+  ]
+
+  const dirty =
+    !!page &&
+    editing &&
+    ((draftTitle.trim() || '无标题') !== (page.title || '') || draftBody !== (page.body_md || ''))
+
+  const saveHint = saving ? '保存中…' : dirty ? '编辑中 · ⌘S 保存' : editing ? '已保存 · ⌘S' : ''
 
   const removePage = (target?: WikiPageT | null) => {
     const p = target || page
@@ -477,7 +562,7 @@ export default function WikiPage() {
   return (
     <Layout
       className="acb-fill-page acb-wiki-shell"
-      style={{ background: themeToken.colorBgContainer, height: '100%', overflow: 'hidden' }}
+      style={{ background: themeToken.colorBgLayout, height: '100%', overflow: 'hidden' }}
     >
       <Sider
         width={280}
@@ -485,6 +570,7 @@ export default function WikiPage() {
         className="acb-wiki-sider"
         style={{
           borderRight: `1px solid ${themeToken.colorBorderSecondary}`,
+          background: themeToken.colorFillSecondary,
           padding: 12,
           overflow: 'auto',
           height: '100%',
@@ -607,17 +693,17 @@ export default function WikiPage() {
           ) : editing ? (
             <>
               <div className="acb-wiki-main-toolbar">
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {saving ? '保存中…' : '编辑中 · ⌘S 保存'}
-                </Typography.Text>
-                <Space>
-                  <Button type="primary" onClick={() => void finishEdit()}>
-                    完成
-                  </Button>
-                  <Button danger icon={<DeleteOutlined />} onClick={() => removePage()}>
-                    删除
-                  </Button>
+                <Space size={8} wrap>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {spaceName}
+                  </Typography.Text>
+                  <Typography.Text className="acb-wiki-save-hint" type="secondary">
+                    {saveHint}
+                  </Typography.Text>
                 </Space>
+                <Dropdown menu={{ items: pageMoreItems }} trigger={['click']}>
+                  <Button type="text" size="small" icon={<MoreOutlined />} aria-label="更多" />
+                </Dropdown>
               </div>
               <Input
                 className="acb-wiki-title-input"
@@ -645,9 +731,13 @@ export default function WikiPage() {
           ) : (
             <>
               <div className="acb-wiki-main-toolbar">
-                <span />
-                <Space>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {spaceName}
+                </Typography.Text>
+                <Space size={4}>
                   <Button
+                    type="text"
+                    size="small"
                     icon={<EditOutlined />}
                     onClick={() => {
                       setDraftTitle(page.title || '')
@@ -657,9 +747,9 @@ export default function WikiPage() {
                   >
                     编辑
                   </Button>
-                  <Button danger icon={<DeleteOutlined />} onClick={() => removePage()}>
-                    删除
-                  </Button>
+                  <Dropdown menu={{ items: pageMoreItems }} trigger={['click']}>
+                    <Button type="text" size="small" icon={<MoreOutlined />} aria-label="更多" />
+                  </Dropdown>
                 </Space>
               </div>
               <Typography.Title level={2} className="acb-wiki-title" style={{ margin: 0 }}>
