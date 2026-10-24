@@ -38,7 +38,13 @@ func (s *Service) ListComments(workspaceID, issueID string) ([]models.Comment, e
 		}
 		list = append(list, c)
 	}
-	return list, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := s.attachCommentAuthors(workspaceID, list); err != nil {
+		return nil, err
+	}
+	return list, nil
 }
 
 type CreateCommentInput struct {
@@ -75,18 +81,27 @@ func (s *Service) CreateComment(workspaceID, issueID string, in CreateCommentInp
 	if err != nil {
 		return nil, err
 	}
+	// body/summary/comment: FE + Bot lean-read human text (align seat.force_bind payload keys)
 	if err := appendActivity(tx, workspaceID, issueID, in.AuthorID, in.ActorKind, "comment.created", map[string]any{
 		"comment_id": id,
+		"body":       in.Body,
+		"summary":    in.Body,
+		"comment":    in.Body,
 	}); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &models.Comment{
+	c := models.Comment{
 		ID: id, IssueID: issueID, AuthorID: in.AuthorID,
 		Body: in.Body, CreatedAt: now, UpdatedAt: now,
-	}, nil
+	}
+	one := []models.Comment{c}
+	if err := s.attachCommentAuthors(workspaceID, one); err != nil {
+		return nil, err
+	}
+	return &one[0], nil
 }
 
 type UpdateCommentInput struct {
@@ -148,16 +163,24 @@ func (s *Service) UpdateComment(workspaceID, issueID, commentID string, in Updat
 	}
 	if err := appendActivity(tx, workspaceID, issueID, actor, in.ActorKind, "comment.updated", map[string]any{
 		"comment_id": commentID,
+		"body":       in.Body,
+		"summary":    in.Body,
+		"comment":    in.Body,
 	}); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &models.Comment{
+	c := models.Comment{
 		ID: commentID, IssueID: issueID, AuthorID: authorID,
 		Body: in.Body, CreatedAt: createdAt, UpdatedAt: now,
-	}, nil
+	}
+	one := []models.Comment{c}
+	if err := s.attachCommentAuthors(workspaceID, one); err != nil {
+		return nil, err
+	}
+	return &one[0], nil
 }
 
 func (s *Service) DeleteComment(workspaceID, issueID, commentID, actorID, actorKind string) error {
@@ -192,4 +215,56 @@ func (s *Service) DeleteComment(workspaceID, issueID, commentID, actorID, actorK
 		return apperr.NotFound("评论不存在")
 	}
 	return tx.Commit()
+}
+
+// attachCommentAuthors batch-loads members.display_name onto Comment.Author (workspace-scoped).
+func (s *Service) attachCommentAuthors(workspaceID string, list []models.Comment) error {
+	if len(list) == 0 {
+		return nil
+	}
+	idSet := map[string]struct{}{}
+	for i := range list {
+		if strings.TrimSpace(list[i].AuthorID) != "" {
+			idSet[list[i].AuthorID] = struct{}{}
+		}
+	}
+	names := map[string]string{}
+	if len(idSet) > 0 {
+		ids := make([]string, 0, len(idSet))
+		for id := range idSet {
+			ids = append(ids, id)
+		}
+		placeholders := make([]string, len(ids))
+		args := make([]any, 0, len(ids)+1)
+		args = append(args, workspaceID)
+		for i, id := range ids {
+			placeholders[i] = "?"
+			args = append(args, id)
+		}
+		q := `SELECT id, display_name FROM members WHERE workspace_id=? AND id IN (` + strings.Join(placeholders, ",") + `)`
+		rows, err := s.DB.Query(q, args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id, name string
+			if err := rows.Scan(&id, &name); err != nil {
+				return err
+			}
+			names[id] = name
+		}
+		if err := rows.Err(); err != nil {
+			return err
+		}
+	}
+	for i := range list {
+		if strings.TrimSpace(list[i].AuthorID) == "" {
+			list[i].Author = nil
+			continue
+		}
+		id := list[i].AuthorID
+		list[i].Author = &models.MemberRef{ID: id, DisplayName: names[id]}
+	}
+	return nil
 }

@@ -195,19 +195,23 @@ func TestRelationDuplicateConflict(t *testing.T) {
 
 func TestCommentCreate(t *testing.T) {
 	svc, ws, pid := setup(t)
-	mid := insertMember(t, svc, ws)
+	mid := insertMemberNamed(t, svc, ws, "Alice")
 	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{ProjectID: pid, Title: "cmt", ActorKind: "human", ActorID: mid})
 	if err != nil {
 		t.Fatal(err)
 	}
+	body := "hello force audit readable"
 	c, err := svc.CreateComment(ws, iss.ID, issueboard.CreateCommentInput{
-		Body: "hello", AuthorID: mid, ActorKind: "human",
+		Body: body, AuthorID: mid, ActorKind: "human",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Body != "hello" || c.AuthorID != mid || c.IssueID != iss.ID {
+	if c.Body != body || c.AuthorID != mid || c.IssueID != iss.ID {
 		t.Fatalf("unexpected comment: %+v", c)
+	}
+	if c.Author == nil || c.Author.ID != mid || c.Author.DisplayName != "Alice" {
+		t.Fatalf("create author want Alice, got %+v", c.Author)
 	}
 	list, err := svc.ListComments(ws, iss.ID)
 	if err != nil {
@@ -215,6 +219,9 @@ func TestCommentCreate(t *testing.T) {
 	}
 	if len(list) != 1 {
 		t.Fatalf("want 1 comment, got %d", len(list))
+	}
+	if list[0].Author == nil || list[0].Author.DisplayName != "Alice" {
+		t.Fatalf("ListComments author.display_name want Alice, got %+v", list[0].Author)
 	}
 	acts, err := svc.ListIssueActivities(ws, iss.ID)
 	if err != nil {
@@ -224,6 +231,14 @@ func TestCommentCreate(t *testing.T) {
 	for _, a := range acts {
 		if a.Action == "comment.created" {
 			found = true
+			if !strings.Contains(a.Payload, body) {
+				t.Fatalf("comment.created payload missing body text: %s", a.Payload)
+			}
+			for _, key := range []string{`"body"`, `"summary"`, `"comment"`} {
+				if !strings.Contains(a.Payload, key) {
+					t.Fatalf("comment.created payload missing %s: %s", key, a.Payload)
+				}
+			}
 			break
 		}
 	}
