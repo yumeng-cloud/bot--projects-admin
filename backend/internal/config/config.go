@@ -24,6 +24,11 @@ type Config struct {
 	SeedWSName      string
 	AttachmentsDir        string
 	PlatformAdminEmails []string
+	// PublicAPIBase is the externally reachable API root for join links/prompts (ONE_TAP_JOIN).
+	// Env PUBLIC_API_BASE; default https://bot.api.sn.cn
+	PublicAPIBase string
+	// PublicBoardBase optional FE origin for /join deep-link hints (PUBLIC_BOARD_BASE).
+	PublicBoardBase string
 }
 
 func Load() Config {
@@ -52,6 +57,8 @@ func Load() Config {
 		SeedWSName:      getenv("SEED_WORKSPACE_NAME", "育蒙科技"),
 		AttachmentsDir:        getenv("ATTACHMENTS_DIR", "./data/attachments"),
 		PlatformAdminEmails: parseCSVEmails(getenv("PLATFORM_ADMIN_EMAILS", "")),
+		PublicAPIBase:       strings.TrimRight(getenv("PUBLIC_API_BASE", "https://bot.api.sn.cn"), "/"),
+		PublicBoardBase:     strings.TrimRight(getenv("PUBLIC_BOARD_BASE", ""), "/"),
 	}
 }
 

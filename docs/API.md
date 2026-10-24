@@ -164,6 +164,16 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 | POST | `/workspaces/{ws}/teams/{teamID}/invites/{inviteID}/revoke` | Admin 吊销；幂等已吊销仍 200 + `status=revoked` |
 | POST | `/team-invites/redeem` | `{code}` → `{workspace_id,team_id,allow_expand_seat,seat_slug?,role_hint?}`（不在 ws 路径下） |
 
+### 一键入场 `GET /join`（ONE_TAP_JOIN · A · 宿在 API 根，**不在** `/api/v1` 下）
+
+| Method | Path | 说明 |
+|--------|------|------|
+| GET | `/join?code=ymt_…&role={slug}&seat={id?}&api={override?}` | 轻页：校验 code；展示复制提示词 / 看板深链说明 / `ymbot team join` 一行。**不**调用 redeem、不另造 claim |
+
+- 规范链接：`https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}`（生产默认；自托管改 `PUBLIC_API_BASE`）
+- `api=` 可选，覆盖提示词内 API 根；省略则用配置/`PUBLIC_API_BASE`（默认生产根）
+- Go helper：`internal/joinlink`（`BuildJoinURL` / `BuildBotPrompt`）
+
 ### Team templates（T7-R · 已落地 `716c3d0`）
 
 > 权威开工单：[`NEXT_WAVE_DEBT_T7.md`](./NEXT_WAVE_DEBT_T7.md)（契约基线 `0999576` / 债文 `95e27c6`）。手册索引：[`BOT_TEAM_TEMPLATE_INDEX.md`](./BOT_TEAM_TEMPLATE_INDEX.md)。  

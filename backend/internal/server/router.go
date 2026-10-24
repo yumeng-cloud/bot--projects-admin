@@ -52,6 +52,9 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 	platformAdmin := mw.RequirePlatformAdmin(sqlDB)
 	idem := mw.Idempotency(sqlDB)
 
+	joinH := &handlers.JoinHandler{PublicAPIBase: cfg.PublicAPIBase, BoardBase: cfg.PublicBoardBase}
+	r.Get("/join", joinH.Page)
+
 	r.Get("/healthz", health.Healthz)
 	r.Get("/api/v1/healthz", health.Healthz)
 

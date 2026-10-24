@@ -133,7 +133,8 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 ## 进度注记
 
 - 2026-10-24 22:05 · 债文定稿。首刀：**Go A 契约 + React B 按钮并行**。
+- 2026-10-24 22:10+ · **Go A1–A3 已落地**：`internal/joinlink` + `GET /join`（API 根）+ `PUBLIC_API_BASE`（默认 `https://bot.api.sn.cn`）。A4 箱证留给 QA。
 
 ## 关单进度
 
-**进行中** · 债已落；待 Go/React 并行首刀。
+**进行中** · Go A1–A3 已推；待 React B + QA A4/C3。
