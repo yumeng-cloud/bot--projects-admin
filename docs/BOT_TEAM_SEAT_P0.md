@@ -56,6 +56,17 @@ Bot = **可迁绑的角色席位**（身份挂在工作区·团队下，不钉�
 
 通道草图（实现归属 Bot 记忆角色 + Go）：`board_team_roster_get|ensure` · 现有 `board_whoami` / `board_handoff_get` / `board_role_claim` · 迁绑/吊销 Key 的 seat bind API。
 
+### 1.2 现成技术形状（Bot 记忆角色回帖 · 对齐实现）
+
+| 概念 | 现状 |
+|------|------|
+| **角色认领** | `BotRoleClaim(workspace_id, role_id, member_id, claimed_at, released_at?)`；同 role **单活**（`released_at IS NULL`）；POST claim 冲突 **409** |
+| **BotRole** | `name, slug, responsibilities, skills, default_project_ids`；列表可嵌 `claim` |
+| **Handoff** | 无表、实时组装：`claimed_role?` + memories + todos(todo\|doing) + 指派开放 issues |
+| **记忆** | `bot_memories` UNIQUE`(workspace_id, member_id, key_name)`；可选 `role_id` 未当共享墙；**无**团队/看板级共享记忆表（→ P0.5） |
+
+P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_id` roster = 按团队 UUID 物化/列出 role 席位，不另发明第二套 claim。
+
 ---
 
 ## 2. 看板里三块面
@@ -135,11 +146,16 @@ Bot = **可迁绑的角色席位**（身份挂在工作区·团队下，不钉�
 | **T6** | （P0.5）团队切换后 Issue 池与席位组隔离；共享 pins 与席位私有 memory 不串 | [ ] |
 | **T7** | （P1）从模板创建团队：空席位形状与 playbook_ref 挂上；升版 diff 可选更新、默认不覆盖 memory | [ ] |
 | **T8** | 硬规矩：关键路径箱内自测 / CLI 记录；禁半成品甩用户本机当小白鼠；**禁 fan-out 吵用户** | [ ] |
-| **T9** | **团队 UUID 拉班底**：对已知 `team_id` ensure roster → 得到完整角色席位列表；重复调用幂等、不双建、不清空 memory | [ ] |
-| **T10** | **席位迁绑**：新 Key/新机绑到原席位后，仅 `handoff get` 能续；第二路抢绑冲突可测（409/提示），确认后单活 | [ ] |
-| **T11** | **补位 / 扩工不打架**：① 空席可 claim；② 占用席默认不可瞎抢（须显式接管+留痕）；③ 兼岗/扩席记忆按席位隔离，不互相覆盖 `last_focus`；④ 两团队同模板班底记忆不串 | [ ] |
+| **T9** | **团队 UUID 拉班底**：给定 `team_id`（UUID）ensure/pull roster → 完整角色席位（slug/名/claim 态）；重复调用**幂等**、不双建 role、**不清空** memory/todos | [ ] |
+| **T10** | **补位 / 扩工不抢 claim、不抢 in-progress**：① 空席可 claim；② 他席已有 `released_at IS NULL` 的 claim → 默认 **409**，禁止静默顶替；③ 他人 assignee 且进行中（in-progress / doing）的 Issue → 补位者**不得**自动 claim/改派抢走；④ 显式接管须留 comment/审计；⑤ 兼岗记忆按 member/seat 隔离 | [ ] |
+| **T11** | **席位迁绑续命**：新 Key/新机绑到原 role 后仅 `handoff get` 能续；第二路抢绑同 T3 单活 | [ ] |
 
-**关单条件（API/通道 P0）**：**T9–T11 + T2/T3 + T8** 全勾即可先关后端通道单。  
+### 5.1 通道 P0 必验小节（总指挥点名）
+
+1. **T9 团队 UUID 拉班底** — 入参 team UUID → 班底齐；再拉一次仍同批 id、无重复行、记忆仍在。  
+2. **T10 补位扩工不抢** — 场景 A：角色已被 claim → 第二 Bot claim 得 409；场景 B：Issue 已在他人 in-progress → 补位/扩工 API **不**把 assignee/claim 抢走；仅空闲资源可接手。
+
+**关单条件（API/通道 P0）**：**T9 + T10 + T8**（建议连带 T2/T3/T11）全勾即可先关后端通道单。  
 **关单条件（含 FE）**：另加 **T1、T4、T5**。T6/T7 另开子单；§3 挂载点已写清。
 
 ---
