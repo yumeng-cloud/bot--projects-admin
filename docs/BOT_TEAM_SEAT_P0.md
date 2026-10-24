@@ -56,7 +56,7 @@ Bot = **可迁绑的角色席位**（身份挂在工作区·团队下，不钉�
 |------|----------|------------|
 | **拉班底** | `GET/POST …/teams/{team_id}/roster`（或等价）：按团队 UUID 列出/物化空席位；幂等——同 `team_id`+`role_slug` 不双建 | Idempotency-Key；重复拉 = 返回已有席位，**不**重置 memory |
 | **席位迁绑** | 机 B / 新 Agent：绑定 Key→席位（member）；**主航线** `team pull` → `seat enter` → `handoff get`（slug=席位；whoami 可选自检） | **单活**：第二绑定 409/冲突提示；确认后旧绑失效；claim 冲突只读占用者，**禁止瞎抢** |
-| **补位** | 席位空闲或持有人掉线：另一 Bot **认领空席** 或「代班」只读交接卡后 claim | 有人占着 → 须显式接管（force）并写 comment；默认拒绝静默顶替 |
+| **补位** | 仅旧席**离职/停工**后接管；或认领**空席**/新员工新席 | **活跃席禁止顶替**；`--force` **仅**已停/已离职席；新人只加新席，不挤活跃席 |
 | **扩工** | 同团队加新角色席位 / 同一人兼第二席位 | 兼岗须**显式**第二席位绑定；默认记忆按席位隔离，禁止两席位写同一 `last_focus` 键互相覆盖（键加 `seat_slug:` 前缀或分 member） |
 | **扩团队** | 新 `team_id` 再拉同一模板班底 | 新团队新席位组；**记忆不串队**（member/seat 作用域含 team 或 workspace 隔离） |
 
@@ -153,13 +153,13 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 | **T7** | （P1）从模板创建团队：空席位形状与 playbook_ref 挂上；升版 diff 可选更新、默认不覆盖 memory | [ ] |
 | **T8** | 硬规矩：关键路径箱内自测 / CLI 记录；禁半成品甩用户本机当小白鼠；**禁 fan-out 吵用户** | [x] 2026-10-24 CLI `/tmp/ymbot_t9_t10_evidence.txt` |
 | **T9** | **团队 UUID 拉班底**：给定 `team_id`（UUID）ensure/pull roster → 完整角色席位（slug/名/claim 态）；重复调用**幂等**、不双建 role、**不清空** memory/todos | [x] pull×2 五席同 id；`t9_probe` 保留 · HEAD `0968a9a` |
-| **T10** | **补位 / 扩工不抢 claim、不抢 in-progress**：① 空席可 claim；② 他席已有 `released_at IS NULL` 的 claim → 默认 **409**，禁止静默顶替；③ 他人 assignee 且进行中（in-progress / doing）的 Issue → 补位者**不得**自动 claim/改派抢走；④ 显式接管须留 comment/审计；⑤ 兼岗记忆按 member/seat 隔离 | [x] 二绑/migrate→409；expand 不偷 YM-1/8/10/15；force 显式接管 OK；④ comment 留痕标 P0.1 补强 |
-| **T11** | **席位迁绑续命**：新 Key/新机绑到原 role 后仅 `handoff get` 能续；第二路抢绑同 T3 单活 | [x] 空席可进；占用无 force→409；`--force` 接管；`frontend:`/`qa:last_focus` 隔离；enter 带回 handoff（与 T2 全文换机剧本可另补 FE） |
+| **T10** | **补位 / 扩工不抢 claim、不抢 in-progress**：① 空席/新席可 claim；② 活跃席已有 `released_at IS NULL` → 默认 **409**，禁止顶替（含 force）；③ 他人 assignee 且进行中 → 不得自动改派；④ **仅停工/离职席**可用 `--force` 接管并留 comment/审计；⑤ 兼岗记忆按 member/seat 隔离；新人只加新席 | [x] 二绑/migrate→409；expand 不偷 YM-1/8/10/15；force 仅停/离职席；④ comment 留痕标 P0.1 补强 |
+| **T11** | **席位迁绑续命**：新 Key/新机绑到原 role 后仅 `handoff get` 能续；第二路抢绑同 T3 单活 | [x] 空席可进；活跃占用→409（不可 force 顶替）；`--force` 仅停工/离职席；`frontend:`/`qa:last_focus` 隔离；enter 带回 handoff（与 T2 全文换机剧本可另补 FE） |
 
 ### 5.1 通道 P0 必验小节（总指挥点名）
 
 1. **T9 团队 UUID 拉班底** — 入参 team UUID → 班底齐；再拉一次仍同批 id、无重复行、记忆仍在。  
-2. **T10 补位扩工不抢** — 场景 A：角色已被 claim → 第二 Bot claim 得 409；场景 B：Issue 已在他人 in-progress → 补位/扩工 API **不**把 assignee/claim 抢走；仅空闲资源可接手。
+2. **T10 补位扩工不抢** — 场景 A：活跃席已被 claim → 第二 Bot 得 409（不可 force 顶替）；场景 B：Issue 已在他人 in-progress → 不抢走；仅空闲/停工离职席或**新席**可接手。
 
 **关单条件（API/通道 P0）**：**T9 + T10 + T8**（建议连带 T2/T3/T11）全勾即可先关后端通道单。  
 **关单条件（含 FE）**：另加 **T1、T4、T5**。T6/T7 另开子单；§3 挂载点已写清。
@@ -193,7 +193,7 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 | 项 | 状态 | 备注 |
 |----|------|------|
 | CLI `ymbot team pull --uuid` | 已接线 | 主航线① → `POST …/teams/{id}/roster/ensure` → `{roster}`；slug=席位 |
-| CLI `seat enter`（`migrate enter`=别名） | 已接线 | 主航线②：**bind**（`--team`）或 role claim；409 含占用者；`--force` 接管 |
+| CLI `seat enter`（`migrate enter`=别名） | 已接线 | 主航线②：**bind**（`--team`）或 role claim；活跃席 409；`--force` 仅停工/离职席 |
 | CLI `handoff get` | 已接线 | 主航线③：服务端摘要无文件 |
 | CLI `seat leave` | 已接线 | `--team` → unbind（顺带 release）；否则 role release |
 | CLI `seat expand` | 已接线 | → `POST …/expand` `{project_id?,limit?}` → assigned/skipped；`--dry-run` 兜底 |
