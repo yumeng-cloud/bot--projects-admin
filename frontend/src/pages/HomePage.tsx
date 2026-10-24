@@ -90,7 +90,7 @@ export default function HomePage({ onLogout }: { onLogout: () => void }) {
                     列表
                   </Button>
                   <Button size="small" type="link" onClick={() => enter(w, 'cycles')}>
-                    Cycles
+                    周期
                   </Button>
                   <Button size="small" type="link" onClick={() => enter(w, 'wiki')}>
                     Wiki

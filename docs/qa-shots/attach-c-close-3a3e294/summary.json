@@ -1,0 +1,111 @@
+{
+  "suite": "ATTACHMENT_C_CLOSE",
+  "spec": "ACCEPTANCE_UX_BOT.md §C F1–F10",
+  "checklist": "/workspace/ai-collab-board/docs/ATTACHMENT_C_CLOSE_CHECKLIST.md",
+  "evidence_dir": "/workspace/qa-shots/attach-c-close-3a3e294",
+  "timestamp_asia_shanghai": "2026-10-24 17:56:33 Asia/Shanghai",
+  "env": {
+    "api": "http://127.0.0.1:8080",
+    "vite": "http://127.0.0.1:5174",
+    "workspace_id": "ba1481c49148aba9553ba3811406b69f",
+    "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+    "issue_id": "8095f40326477e0607259be145285bb0",
+    "comment_id": "bfae3f2a1492344a80446845dcd5f289",
+    "login": "admin@yumeng.tech"
+  },
+  "go_test_attachments": "PASS",
+  "go_test_log": "go-test-attachments.log",
+  "items": {
+    "F1": {
+      "result": "PASS",
+      "layer": "api",
+      "evidence": [
+        "f1-upload-png.json",
+        "f1-upload-pdf.json"
+      ]
+    },
+    "F2": {
+      "result": "PASS",
+      "layer": "api",
+      "evidence": [
+        "f2-comment-upload.json"
+      ]
+    },
+    "F3": {
+      "result": "FAIL",
+      "layer": "api+fe",
+      "api": "PASS",
+      "fe": "FAIL",
+      "note": "API Content-Disposition inline + bytes OK; FE lightbox screenshot missing (no I3-image-preview.png)",
+      "evidence_api": [
+        "f3-headers.txt",
+        "f3-content.png"
+      ],
+      "evidence_fe": []
+    },
+    "F4": {
+      "result": "PASS",
+      "layer": "api",
+      "evidence": [
+        "f4-headers.txt",
+        "f4-content.pdf"
+      ]
+    },
+    "F5": {
+      "result": "PASS",
+      "layer": "api",
+      "evidence": [
+        "f5-reject.json"
+      ],
+      "message": "不支持的文件类型"
+    },
+    "F6": {
+      "result": "PASS",
+      "layer": "api",
+      "evidence": [
+        "f6-reject.json"
+      ],
+      "message": "文件过大，上限 10MB"
+    },
+    "F7": {
+      "result": "PASS",
+      "layer": "api",
+      "evidence": [
+        "f7-noauth.json",
+        "f7-auth.json"
+      ]
+    },
+    "F8": {
+      "result": "PASS",
+      "layer": "api",
+      "evidence": [
+        "f8-upload.json",
+        "f8-delete.json"
+      ]
+    },
+    "F9": {
+      "result": "PASS",
+      "layer": "fe",
+      "evidence": [
+        "F9-compact-list-image.png",
+        "F9-compact-list-doc.png",
+        "F9-compact-list-ym9.png",
+        "/workspace/ai-collab-board/docs/qa-shots/I3-issue-image.png",
+        "/workspace/ai-collab-board/docs/qa-shots/I3-issue-doc.png"
+      ]
+    },
+    "F10": {
+      "result": "PASS",
+      "layer": "api",
+      "evidence": [
+        "f10-delete.json",
+        "f10-content-after.json",
+        "f10-reupload.json"
+      ]
+    }
+  },
+  "overall": "FAIL",
+  "blocker": "F3 FE: missing lightbox/Image preview screenshot (I3-image-preview.png / F3-fe-lightbox.png)",
+  "no_push": true,
+  "no_agent_messages": true
+}
