@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Alert,
   Button,
@@ -42,15 +42,20 @@ export default function TeamPinsPanel({ wsId, teamId }: Props) {
   const [editingKey, setEditingKey] = useState<string | null>(null)
   const [form] = Form.useForm<{ key: string; value: string }>()
 
+  const teamIdRef = useRef(teamId)
+  teamIdRef.current = teamId
+
   const load = useCallback(async (tid: string) => {
     setLoading(true)
     setHint(null)
     try {
       const res = await listPins(wsId, tid)
       // 再次确认仍是当前队，避免竞态残留
+      if (teamIdRef.current !== tid) return
       setPins(res.pins || [])
       setApiMissing(false)
     } catch (e: unknown) {
+      if (teamIdRef.current !== tid) return
       setPins([])
       if (isPinsServiceMissing(e)) {
         setApiMissing(true)
@@ -60,7 +65,9 @@ export default function TeamPinsPanel({ wsId, teamId }: Props) {
         setHint(e instanceof ApiError ? e.message : '加载记忆墙失败')
       }
     } finally {
-      setLoading(false)
+      if (teamIdRef.current === tid) {
+        setLoading(false)
+      }
     }
   }, [wsId])
 
