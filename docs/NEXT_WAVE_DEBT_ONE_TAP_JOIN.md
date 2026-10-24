@@ -149,7 +149,7 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [x] **E3** `/join` 页露安装 · Go `4cdaa04`
 - [x] **E4** FE 提示词对齐+重截 · React `b76bfc0` · `one-tap-copy-prompt.png`
 - [x] **E5** 无 CLI→装→join 箱证 · QA **PASS† local** `e1b3f26`/`ONE_TAP_E5-qa-retest-20261024.txt`；**prod BLOCKED**（须 API≥`4cdaa04` 重部署后 spotcheck `https://bot.api.sn.cn/install.sh`）
-- [ ] **C1** 打开引导
+- [x] **C1** 打开引导 · React FE `/join` 登录预填 JoinWizard · `5191f6c`
 - [ ] **C2** 提示词航线 join
 - [ ] **C3** 打开即用箱证
 - [x] **D1** 文档主路径改口 · `518a4b6` BOT.md 主路径=席页复制入场链接/提示词；env/mcp 降附录非推荐；README 轻对齐
@@ -159,6 +159,8 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 - 2026-10-25 00:12 · **产品勾 D1** `518a4b6`（对照 H4/ONE_TAP：席页一键主路径；env/mcp 附录非推荐）。D2 等 C1–C3。
 - 2026-10-24 23:56 · **D1 已交** 种子 `518a4b6`：BOT.md / README 主路径=席页「复制入场链接或提示词」；附录 env/mcp 标非推荐；对齐 HUMAN H4（入队自动 ymk_、入场包只 ymt_）。待 D2 产品关单。C1–C3 未动。
+
+- 2026-10-24 23:58 · **React C1** `5191f6c` FE 同源 `/join`：已登录→席页预填 JoinWizard（ymt_+role/seat）；未登录→短引导（复制提示词/安装/登录）；对齐 HUMAN V3；不改坏 Go API `/join` 宿主。
 
 - 2026-10-25 00:10 · **产品拍下一包（HUMAN/BATCH 已关）**：ONE_TAP **收口为下一 P0**。C1=登录态 join→预填 JoinWizard（React，对齐 HUMAN V3）；C2=记忆抽提示词 join；C3=QA 箱证；D1=种子对齐 HUMAN/H4。**公网 E5**：箱侧 DNS 超时 `bot.api.sn.cn`，redeploy/spotcheck **交总指挥运维**，不挡 C/D 代码收口；齐后 D2 关。PRO_ADMIN 整包不并行；建议后置只开 B2/B3 空态。
 - 2026-10-24 22:42 · **E5 PASS† local** QA `e1b3f26`：装→whoami→join 绿；**prod BLOCKED** DNS/未部署。产品勾本地；生产关等重部署 spotcheck。

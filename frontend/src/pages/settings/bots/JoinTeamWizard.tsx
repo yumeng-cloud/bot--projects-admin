@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Button,
@@ -38,12 +38,26 @@ type Props = {
   wsId: string
   /** 进席成功后回调：打开交接摘要 */
   onEntered: (opts: { memberId: string; seatName: string; roleId?: string | null }) => void
+  /** C1：深链 /join?code= 预填入场码 */
+  initialCode?: string | null
+  /** C1：深链 role= 席位 slug，redeem 时带上 */
+  initialRole?: string | null
+  /** C1：深链 seat= 席位 id，优先于 role */
+  initialSeat?: string | null
 }
 
 const YMK_RE = /^ymk_[A-Za-z0-9_-]+$/i
 const YMT_RE = /^ymt_[A-Za-z0-9_-]+$/i
 
-export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props) {
+export default function JoinTeamWizard({
+  open,
+  onClose,
+  wsId,
+  onEntered,
+  initialCode,
+  initialRole,
+  initialSeat,
+}: Props) {
   const [step, setStep] = useState<StepKey>('code')
   const [ymk, setYmk] = useState('')
   const [ymt, setYmt] = useState('')
@@ -55,6 +69,10 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
   const [serviceHint, setServiceHint] = useState<string | null>(null)
   const [revealToken, setRevealToken] = useState<string | null>(null)
   const [showOptionalKey, setShowOptionalKey] = useState(false)
+  /** 深链带入的 role/seat，仅用于 redeem body */
+  const [prefRole, setPrefRole] = useState('')
+  const [prefSeat, setPrefSeat] = useState('')
+
 
   const reset = () => {
     setStep('code')
@@ -68,12 +86,26 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
     setServiceHint(null)
     setRevealToken(null)
     setShowOptionalKey(false)
+    setPrefRole('')
+    setPrefSeat('')
   }
 
   const handleClose = () => {
     reset()
     onClose()
   }
+
+  // C1：打开时预填深链 code/role/seat（主路径只贴 ymt_）
+  useEffect(() => {
+    if (!open) return
+    const c = (initialCode || '').trim()
+    if (c) setYmt(c)
+    const r = (initialRole || '').trim()
+    const s = (initialSeat || '').trim()
+    setPrefRole(r)
+    setPrefSeat(s)
+  }, [open, initialCode, initialRole, initialSeat])
+
 
   const ymkMasked = useMemo(() => {
     const t = ymk.trim()
@@ -118,6 +150,8 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
       const res = await redeemTeamInvite(ymt.trim(), {
         idempotencyKey: crypto.randomUUID(),
         botKey,
+        role: prefRole || null,
+        seat: prefSeat || null,
       })
       if (res.workspace_id && res.workspace_id !== wsId) {
         message.error('入场码属于其他工作区，请切换工作区后再试')
@@ -329,6 +363,15 @@ export default function JoinTeamWizard({ open, onClose, wsId, onEntered }: Props
                 placeholder="ymt_…"
                 autoComplete="off"
               />
+              {prefRole || prefSeat ? (
+                <Typography.Paragraph type="secondary" style={{ margin: '6px 0 0', fontSize: 12 }}>
+                  深链已带
+                  {prefRole ? <> 角色 <Typography.Text code>{prefRole}</Typography.Text></> : null}
+                  {prefRole && prefSeat ? ' ·' : null}
+                  {prefSeat ? <> 席位 <Typography.Text code>{prefSeat}</Typography.Text></> : null}
+                  ，兑换时自动带上。
+                </Typography.Paragraph>
+              ) : null}
             </div>
             <div>
               <Button

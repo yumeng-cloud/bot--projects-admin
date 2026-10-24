@@ -69,6 +69,7 @@ import {
   buildBotJoinPrompt,
   buildJoinUrl,
   inviteCodeTail,
+  parseJoinSearchParams,
 } from '../../../utils/oneTapJoin'
 import { emptySeatsForPack } from '../../../utils/autoCrewPack'
 import type { CrewPackResult } from '../../../utils/autoCrewPack'
@@ -95,7 +96,7 @@ function keyTailHint(prefix?: string | null): string | undefined {
 
 export default function BotsRosterPage() {
   const { wsId = '' } = useParams()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const forceEmpty = searchParams.get('f1empty') === '1'
   const { teams, teamId, setTeamId, loading: teamLoading, reload } = useCurrentTeam(wsId)
   const [loading, setLoading] = useState(true)
@@ -105,6 +106,12 @@ export default function BotsRosterPage() {
   const [drawerRole, setDrawerRole] = useState<BotRole | null>(null)
   const [claiming, setClaiming] = useState<string | null>(null)
   const [joinOpen, setJoinOpen] = useState(false)
+  /** C1：深链预填（code/role/seat） */
+  const [joinPrefill, setJoinPrefill] = useState<{
+    code: string
+    role: string
+    seat: string
+  } | null>(null)
   const [createFromTplOpen, setCreateFromTplOpen] = useState(false)
   const [conflictOpen, setConflictOpen] = useState(false)
   const [conflictInfo, setConflictInfo] = useState<SeatConflictInfo | null>(null)
@@ -152,6 +159,29 @@ export default function BotsRosterPage() {
       setLoading(false)
     }
   }
+
+  // ONE_TAP C1：?join=1&code=ymt_… 或仅 ?code=ymt_… → 打开预填 JoinWizard，并清 query
+  useEffect(() => {
+    const parsed = parseJoinSearchParams(searchParams)
+    const want =
+      searchParams.get('join') === '1' ||
+      (parsed.code.startsWith('ymt_') && parsed.code.length > 4)
+    if (!want || !parsed.code) return
+    setJoinPrefill({
+      code: parsed.code,
+      role: parsed.role,
+      seat: parsed.seat,
+    })
+    setJoinOpen(true)
+    const next = new URLSearchParams(searchParams)
+    next.delete('join')
+    next.delete('code')
+    next.delete('role')
+    next.delete('seat')
+    next.delete('api')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
+
 
   useEffect(() => {
     void load()
@@ -859,8 +889,14 @@ export default function BotsRosterPage() {
         />
         <JoinTeamWizard
           open={joinOpen}
-          onClose={() => setJoinOpen(false)}
+          onClose={() => {
+            setJoinOpen(false)
+            setJoinPrefill(null)
+          }}
           wsId={wsId}
+          initialCode={joinPrefill?.code}
+          initialRole={joinPrefill?.role}
+          initialSeat={joinPrefill?.seat}
           onEntered={({ memberId, roleId }) => {
             void load()
             void refreshTeamRoster()
@@ -1252,8 +1288,14 @@ export default function BotsRosterPage() {
       />
       <JoinTeamWizard
         open={joinOpen}
-        onClose={() => setJoinOpen(false)}
+        onClose={() => {
+          setJoinOpen(false)
+          setJoinPrefill(null)
+        }}
         wsId={wsId}
+        initialCode={joinPrefill?.code}
+        initialRole={joinPrefill?.role}
+        initialSeat={joinPrefill?.seat}
         onEntered={({ memberId, roleId }) => {
           void load()
           void refreshTeamRoster()

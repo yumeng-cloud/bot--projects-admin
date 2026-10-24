@@ -250,3 +250,41 @@ export function buildFirstRunPrompt(params: FirstRunPromptParams): string {
 
   return lines.join('\n')
 }
+
+export type ParsedJoinQuery = {
+  code: string
+  role: string
+  seat: string
+  api: string
+}
+
+/** 从 location.search / URLSearchParams 解析 join 深链参（C1） */
+export function parseJoinSearchParams(search: string | URLSearchParams): ParsedJoinQuery {
+  const q =
+    typeof search === 'string'
+      ? new URLSearchParams(search.startsWith('?') ? search.slice(1) : search)
+      : search
+  return {
+    code: (q.get('code') || '').trim(),
+    role: (q.get('role') || '').trim(),
+    seat: (q.get('seat') || '').trim(),
+    api: (q.get('api') || '').trim(),
+  }
+}
+
+/** 同源 FE 深链路径：/join?code=ymt_…&role=…（对齐 Go PUBLIC_BOARD_BASE 提示） */
+export function buildBoardJoinPath(params: JoinUrlParams): string {
+  validateInviteCode(params.code)
+  const q = new URLSearchParams()
+  q.set('code', params.code.trim())
+  const role = (params.role || '').trim()
+  if (role) q.set('role', role)
+  const seat = (params.seat || '').trim()
+  if (seat) q.set('seat', seat)
+  const apiOverride = (params.api || '').trim().replace(/\/+$/, '')
+  if (apiOverride && apiOverride !== DEFAULT_PUBLIC_API_BASE) {
+    q.set('api', apiOverride)
+  }
+  return `/join?${q.toString()}`
+}
+
