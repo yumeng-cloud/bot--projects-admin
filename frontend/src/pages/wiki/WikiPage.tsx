@@ -3,7 +3,6 @@ import {
   Button,
   Dropdown,
   Empty,
-  Form,
   Input,
   Layout,
   List,
@@ -18,18 +17,20 @@ import {
 import type { DataNode, TreeProps } from 'antd/es/tree'
 import type { MenuProps } from 'antd'
 import {
+  BookOutlined,
   DeleteOutlined,
+  DownOutlined,
   EditOutlined,
   FileTextOutlined,
   MoreOutlined,
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
+  SettingOutlined,
 } from '@ant-design/icons'
 import { useParams } from 'react-router-dom'
 import {
   createWikiPage,
-  createWikiSpace,
   deleteWikiPage,
   getWikiPage,
   listWikiPages,
@@ -43,14 +44,19 @@ import { listIssues } from '../../api/issues'
 import type { Issue } from '../../types/issue'
 import type { WikiPage as WikiPageT, WikiSpace, WikiTreeNode } from '../../types/wiki'
 import { formatWikiTime } from '../../utils/time'
-import { WikiBodyEditor, WikiBodyViewer, WikiPropChips } from '../../components/wiki'
+import { WikiBodyEditor, WikiBodyViewer, WikiPropChips, WikiSpaceAdmin } from '../../components/wiki'
 import type { ChipDef } from '../../components/wiki'
 import './wiki.css'
 
 const { Sider, Content } = Layout
 
+/**
+ * Wiki P2 知识库工作台壳（对标飞书文档 / 语雀 / Notion 中文）：
+ * 顶条切换知识库 + 管理入口；目录像书；舞台大标题→属性芯片→正文；管理与写作分面。
+ * 验收：WIKI_CN_REBUILD_P0 C1–C8 · WIKI_IA_REDESIGN_P2 R1–R5 · WIKI_VISUAL_SPEC_P2。
+ */
+
 function isRenderableTreeNode(n: WikiTreeNode | null | undefined): n is WikiTreeNode {
-  // keep empty-title pages (render as「无标题」); drop only id-less dirty nodes
   return !!n?.id
 }
 
@@ -65,18 +71,14 @@ function toTreeData(
       return {
         key: n.id,
         title: renderTitle(n),
-        // icon lives inside title (horizontal row); leave leaves without children
         children: kids.length ? kids : undefined,
       }
     })
 }
 
-
-/** Depth-first first page id in the directory tree. */
 function firstTreePageId(nodes: WikiTreeNode[]): string | undefined {
   for (const n of nodes || []) {
     if (isRenderableTreeNode(n)) return n.id
-    // still walk children of blank-title shells (filtered from render, may hold pages)
     const child = firstTreePageId((n as WikiTreeNode | undefined)?.children || [])
     if (child) return child
   }
@@ -106,17 +108,15 @@ export default function WikiPage() {
   const [saving, setSaving] = useState(false)
   const [q, setQ] = useState('')
   const [searchHits, setSearchHits] = useState<WikiPageT[] | null>(null)
-  const [spaceModal, setSpaceModal] = useState(false)
+  const [adminOpen, setAdminOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draftTitle, setDraftTitle] = useState('')
   const [draftBody, setDraftBody] = useState('')
   const [projects, setProjects] = useState<Project[]>([])
   const [issues, setIssues] = useState<Issue[]>([])
-  const [spaceForm] = Form.useForm()
   const saveTimer = useRef<number | null>(null)
   const pageRef = useRef<WikiPageT | null>(null)
   pageRef.current = page
-  /** Track which space we already auto-opened, to avoid loops when user has no selection. */
   const autoOpenSpaceRef = useRef<string | null>(null)
 
   const loadSpaces = useCallback(async () => {
@@ -126,9 +126,12 @@ export default function WikiPage() {
       const res = await listWikiSpaces(wsId)
       const list = res.spaces || []
       setSpaces(list)
-      setSpaceId((prev) => prev || list[0]?.id)
+      setSpaceId((prev) => {
+        if (prev && list.some((s) => s.id === prev)) return prev
+        return list[0]?.id
+      })
     } catch (e: unknown) {
-      message.error(e instanceof Error ? e.message : '加载空间失败')
+      message.error(e instanceof Error ? e.message : '加载知识库失败')
     } finally {
       setLoading(false)
     }
@@ -213,7 +216,6 @@ export default function WikiPage() {
     }
   }
 
-  // Default-open first directory page — never show「还没有打开页面」while the tree has pages.
   useEffect(() => {
     if (!spaceId || page || pageLoading || loading) return
     if (autoOpenSpaceRef.current === spaceId) return
@@ -221,10 +223,8 @@ export default function WikiPage() {
     if (!firstId) return
     autoOpenSpaceRef.current = spaceId
     void openPage(firstId)
-    // openPage is stable enough for this mount cycle; tree/pages drive the trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spaceId, tree, pages, page, pageLoading, loading])
-
 
   const onSearch = async () => {
     if (!wsId || !q.trim()) {
@@ -239,19 +239,10 @@ export default function WikiPage() {
     }
   }
 
-  const createSpace = async () => {
-    const v = await spaceForm.validateFields()
-    await createWikiSpace(wsId, v)
-    message.success('空间已创建')
-    setSpaceModal(false)
-    spaceForm.resetFields()
-    await loadSpaces()
-  }
-
-  /** W1: 点新建即草稿，无三字段 Modal */
+  /** C2: 点新建即草稿，无三字段 Modal */
   const createDraftPage = async (parentId?: string | null) => {
     if (!spaceId || !wsId) {
-      message.warning('请先选择或创建一个 Wiki 空间')
+      message.warning('请先选择或新建一个知识库')
       return
     }
     setCreating(true)
@@ -447,9 +438,8 @@ export default function WikiPage() {
     parentOptions,
   ])
 
-  const renderPageProps = () => (page ? <WikiPropChips chips={propChips} /> : null)
-
-  const spaceName = spaces.find((s) => s.id === spaceId)?.name || 'Wiki'
+  const spaceName = spaces.find((s) => s.id === spaceId)?.name || '知识库'
+  const currentSpace = spaces.find((s) => s.id === spaceId)
 
   const pageMoreItems: MenuProps['items'] = [
     ...(editing
@@ -552,9 +542,7 @@ export default function WikiPage() {
     return (
       <span className="acb-wiki-tree-node">
         <FileTextOutlined className="acb-wiki-tree-node-icon" aria-hidden />
-        <span className="acb-wiki-tree-node-title">
-          {n.title?.trim() || '无标题'}
-        </span>
+        <span className="acb-wiki-tree-node-title">{n.title?.trim() || '无标题'}</span>
         <Dropdown menu={{ items }} trigger={['click']}>
           <Button
             type="text"
@@ -590,6 +578,13 @@ export default function WikiPage() {
     if (typeof id === 'string') void openPage(id)
   }
 
+  const spaceSwitchItems: MenuProps['items'] = spaces.map((s) => ({
+    key: s.id,
+    label: s.name,
+    icon: <BookOutlined />,
+    onClick: () => setSpaceId(s.id),
+  }))
+
   if (loading) {
     return (
       <div style={{ padding: 48, textAlign: 'center' }}>
@@ -598,253 +593,318 @@ export default function WikiPage() {
     )
   }
 
+  /* C6: 无任何知识库 */
+  if (!spaces.length) {
+    return (
+      <div className="acb-fill-page acb-wiki-shell acb-wiki-shell--empty">
+        <div className="acb-wiki-topbar">
+          <span className="acb-wiki-topbar-space">知识库</span>
+          <Button
+            type="text"
+            size="small"
+            className="acb-wiki-topbar-admin"
+            icon={<SettingOutlined />}
+            onClick={() => setAdminOpen(true)}
+          >
+            管理
+          </Button>
+        </div>
+        <div className="acb-wiki-empty-workspace">
+          <p className="acb-wiki-empty-copy">还没有知识库</p>
+          <p className="acb-wiki-empty-hint">新建一个知识库，开始写团队手册</p>
+          <Button
+            type="primary"
+            className="acb-wiki-empty-cta"
+            icon={<PlusOutlined />}
+            onClick={() => setAdminOpen(true)}
+          >
+            新建知识库
+          </Button>
+        </div>
+        <WikiSpaceAdmin
+          open={adminOpen}
+          onClose={() => setAdminOpen(false)}
+          workspaceId={wsId}
+          spaces={spaces}
+          currentSpaceId={spaceId}
+          onSelectSpace={setSpaceId}
+          onSpacesChanged={loadSpaces}
+        />
+      </div>
+    )
+  }
+
   return (
-    <Layout
-      className="acb-fill-page acb-wiki-shell"
-      style={{
-        background: themeToken.colorBgLayout,
-        flex: '1 1 0',
-        minHeight: 0,
-        height: '100%',
-        alignSelf: 'stretch',
-        overflow: 'hidden',
-      }}
-    >
-      <Sider
-        width={300}
-        theme="light"
-        className="acb-wiki-sider"
+    <div className="acb-fill-page acb-wiki-shell">
+      {/* C1: 知识库顶条 — 当前库名▾ + 管理 */}
+      <header className="acb-wiki-topbar">
+        <Dropdown
+          menu={{
+            items: [
+              ...spaceSwitchItems,
+              { type: 'divider' as const },
+              {
+                key: '__manage',
+                label: '管理知识库…',
+                icon: <SettingOutlined />,
+                onClick: () => setAdminOpen(true),
+              },
+            ],
+            selectedKeys: spaceId ? [spaceId] : [],
+          }}
+          trigger={['click']}
+        >
+          <button type="button" className="acb-wiki-topbar-space">
+            <BookOutlined className="acb-wiki-topbar-space-icon" aria-hidden />
+            <span className="acb-wiki-topbar-space-name">{spaceName}</span>
+            <DownOutlined className="acb-wiki-topbar-space-caret" aria-hidden />
+          </button>
+        </Dropdown>
+        <div className="acb-wiki-topbar-actions">
+          <Button
+            type="text"
+            size="small"
+            className="acb-wiki-topbar-admin"
+            icon={<SettingOutlined />}
+            onClick={() => setAdminOpen(true)}
+          >
+            管理
+          </Button>
+        </div>
+      </header>
+
+      <Layout
+        className="acb-wiki-body-row"
         style={{
-          borderRight: `1px solid ${themeToken.colorBorderSecondary}`,
-          background: themeToken.colorFillSecondary,
-          padding: 14,
-          overflow: 'auto',
-          alignSelf: 'stretch',
-          height: '100%',
+          background: themeToken.colorBgLayout,
+          flex: '1 1 0',
           minHeight: 0,
+          height: '100%',
+          alignSelf: 'stretch',
+          overflow: 'hidden',
         }}
       >
-        <Space direction="vertical" style={{ width: '100%' }} size="middle">
-          <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-            <Typography.Text strong>Wiki</Typography.Text>
-            <Space size={4}>
-              <Button size="small" icon={<ReloadOutlined />} onClick={() => void loadSpaces()} />
-              <Button size="small" icon={<PlusOutlined />} onClick={() => setSpaceModal(true)} />
+        {/* C3: 目录栏 ≥300 */}
+        <Sider
+          width={300}
+          theme="light"
+          className="acb-wiki-sider acb-wiki-dir"
+          style={{
+            borderRight: `1px solid ${themeToken.colorBorderSecondary}`,
+            background: themeToken.colorFillSecondary,
+            padding: 14,
+            overflow: 'auto',
+            alignSelf: 'stretch',
+            height: '100%',
+            minHeight: 0,
+          }}
+        >
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+              <Typography.Text strong>目录</Typography.Text>
+              <Button
+                size="small"
+                type="text"
+                icon={<ReloadOutlined />}
+                aria-label="刷新"
+                onClick={() => spaceId && void loadTreeAndPages(spaceId)}
+              />
             </Space>
-          </Space>
 
-          <List
-            size="small"
-            dataSource={spaces}
-            locale={{ emptyText: '暂无空间' }}
-            renderItem={(s) => (
-              <List.Item
-                style={{
-                  cursor: 'pointer',
-                  background: s.id === spaceId ? themeToken.colorPrimaryBg : undefined,
-                  padding: '6px 8px',
-                  borderRadius: 6,
-                }}
-                onClick={() => setSpaceId(s.id)}
-              >
-                <Typography.Text ellipsis>{s.name}</Typography.Text>
-              </List.Item>
-            )}
-          />
-
-          <Input.Search
-            placeholder="搜索页面"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onSearch={() => void onSearch()}
-            enterButton={<SearchOutlined />}
-            allowClear
-            onClear={() => setSearchHits(null)}
-          />
-
-          {searchHits ? (
-            <List
-              size="small"
-              header={<Typography.Text type="secondary">搜索结果</Typography.Text>}
-              dataSource={searchHits}
-              locale={{ emptyText: '无匹配' }}
-              renderItem={(p) => (
-                <List.Item style={{ cursor: 'pointer' }} onClick={() => void openPage(p.id)}>
-                  {p.title}
-                </List.Item>
-              )}
+            <Input.Search
+              placeholder="搜索页面"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onSearch={() => void onSearch()}
+              enterButton={<SearchOutlined />}
+              allowClear
+              onClear={() => setSearchHits(null)}
             />
-          ) : (
-            <>
-              <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                <Typography.Text type="secondary">目录</Typography.Text>
-                <Button
-                  size="small"
-                  type="link"
-                  icon={<PlusOutlined />}
-                  disabled={!spaceId || creating}
-                  loading={creating}
-                  onClick={() => void createDraftPage(page?.id)}
-                >
-                  新建页
-                </Button>
-              </Space>
-              {treeData.length || flatFallback.length ? (
-                <Tree
-                  className="acb-wiki-tree"
-                  showIcon={false}
-                  blockNode
-                  treeData={treeData.length ? treeData : flatFallback}
-                  selectedKeys={page ? [page.id] : []}
-                  defaultExpandAll
-                  onSelect={onSelect}
-                />
-              ) : (
-                <div className="acb-wiki-sider-empty">
-                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无页面" />
+
+            {searchHits ? (
+              <List
+                size="small"
+                header={<Typography.Text type="secondary">搜索结果</Typography.Text>}
+                dataSource={searchHits}
+                locale={{ emptyText: '无匹配页面' }}
+                renderItem={(p) => (
+                  <List.Item style={{ cursor: 'pointer' }} onClick={() => void openPage(p.id)}>
+                    {p.title || '无标题'}
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <>
+                <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                  <Typography.Text type="secondary">页面</Typography.Text>
                   <Button
-                    type="primary"
                     size="small"
-                    className="acb-wiki-empty-cta"
+                    type="link"
                     icon={<PlusOutlined />}
                     disabled={!spaceId || creating}
                     loading={creating}
                     onClick={() => void createDraftPage()}
                   >
-                    新建第一页
+                    新建页
                   </Button>
-                </div>
-              )}
-            </>
-          )}
-        </Space>
-      </Sider>
+                </Space>
+                {treeData.length || flatFallback.length ? (
+                  <Tree
+                    className="acb-wiki-tree"
+                    showIcon={false}
+                    blockNode
+                    treeData={treeData.length ? treeData : flatFallback}
+                    selectedKeys={page ? [page.id] : []}
+                    defaultExpandAll
+                    onSelect={onSelect}
+                  />
+                ) : (
+                  <div className="acb-wiki-sider-empty">
+                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无页面" />
+                    <Button
+                      type="primary"
+                      size="small"
+                      className="acb-wiki-empty-cta"
+                      icon={<PlusOutlined />}
+                      disabled={!spaceId || creating}
+                      loading={creating}
+                      onClick={() => void createDraftPage()}
+                    >
+                      新建第一页
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </Space>
+        </Sider>
 
-      <Content className="acb-wiki-main">
-        <div className="acb-wiki-main-inner">
-          {pageLoading || (!page && (tree.length > 0 || pages.length > 0)) ? (
-            <Spin />
-          ) : !page ? (
-            <div className="acb-wiki-empty">
-              <p className="acb-wiki-empty-copy">还没有页面</p>
-              <p className="acb-wiki-empty-hint">新建一页开始写团队手册</p>
-              <Button
-                type="primary"
-                className="acb-wiki-empty-cta"
-                icon={<PlusOutlined />}
-                disabled={!spaceId || creating}
-                loading={creating}
-                onClick={() => void createDraftPage()}
-              >
-                新建第一页
-              </Button>
-            </div>
-          ) : editing ? (
-            <>
-              <div className="acb-wiki-main-toolbar">
-                <Space size={8} wrap>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {spaceName}
-                  </Typography.Text>
+        {/* C4: 页面舞台 */}
+        <Content className="acb-wiki-main acb-wiki-stage">
+          <div className="acb-wiki-main-inner acb-wiki-stage-rail">
+            {pageLoading || (!page && (tree.length > 0 || pages.length > 0)) ? (
+              <Spin />
+            ) : !page ? (
+              <div className="acb-wiki-empty">
+                <p className="acb-wiki-empty-copy">还没有页面</p>
+                <p className="acb-wiki-empty-hint">新建一页开始写团队手册</p>
+                <Button
+                  type="primary"
+                  className="acb-wiki-empty-cta"
+                  icon={<PlusOutlined />}
+                  disabled={!spaceId || creating}
+                  loading={creating}
+                  onClick={() => void createDraftPage()}
+                >
+                  新建第一页
+                </Button>
+              </div>
+            ) : editing ? (
+              <>
+                <div className="acb-wiki-breadcrumb">
+                  <Typography.Text type="secondary">{spaceName}</Typography.Text>
+                </div>
+                <div className="acb-wiki-main-toolbar">
                   <Typography.Text className="acb-wiki-save-hint" type="secondary">
                     {saveHint}
                   </Typography.Text>
-                </Space>
-                <Dropdown menu={{ items: pageMoreItems }} trigger={['click']}>
-                  <Button
-                    type="text"
-                    size="small"
-                    className="acb-wiki-more-btn"
-                    icon={<MoreOutlined />}
-                    aria-label="更多"
-                  />
-                </Dropdown>
-              </div>
-              <Input
-                className="acb-wiki-title-input"
-                value={draftTitle}
-                placeholder="无标题"
-                onChange={(e) => {
-                  setDraftTitle(e.target.value)
-                  scheduleSave()
-                }}
-                onBlur={() => void flushSave()}
-              />
-              <Typography.Paragraph className="acb-wiki-meta">
-                更新于 {formatWikiTime(page.updated_at)}
-              </Typography.Paragraph>
-              {renderPageProps()}
-              <WikiBodyEditor
-                value={draftBody}
-                onChange={(md) => {
-                  setDraftBody(md)
-                  scheduleSave()
-                }}
-                onBlur={() => void flushSave()}
-              />
-            </>
-          ) : (
-            <>
-              <div className="acb-wiki-main-toolbar">
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {spaceName}
-                </Typography.Text>
-                <Space size={4}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<EditOutlined />}
-                    onClick={() => {
-                      setDraftTitle(page.title || '')
-                      setDraftBody(page.body_md || '')
-                      setEditing(true)
-                    }}
-                  >
-                    编辑
-                  </Button>
                   <Dropdown menu={{ items: pageMoreItems }} trigger={['click']}>
                     <Button
-                    type="text"
-                    size="small"
-                    className="acb-wiki-more-btn"
-                    icon={<MoreOutlined />}
-                    aria-label="更多"
-                  />
+                      type="text"
+                      size="small"
+                      className="acb-wiki-more-btn"
+                      icon={<MoreOutlined />}
+                      aria-label="更多"
+                    />
                   </Dropdown>
-                </Space>
-              </div>
-              <Typography.Title level={2} className="acb-wiki-title" style={{ margin: 0 }}>
-                {page.title || '无标题'}
-              </Typography.Title>
-              <Typography.Paragraph className="acb-wiki-meta">
-                更新于 {formatWikiTime(page.updated_at)}
-              </Typography.Paragraph>
-              {renderPageProps()}
-              <WikiBodyViewer value={page.body_md || ''} />
-            </>
-          )}
-        </div>
-      </Content>
+                </div>
+                <Input
+                  className="acb-wiki-title-input"
+                  value={draftTitle}
+                  placeholder="无标题"
+                  onChange={(e) => {
+                    setDraftTitle(e.target.value)
+                    scheduleSave()
+                  }}
+                  onBlur={() => void flushSave()}
+                />
+                <Typography.Paragraph className="acb-wiki-meta">
+                  更新于 {formatWikiTime(page.updated_at)}
+                </Typography.Paragraph>
+                <WikiPropChips chips={propChips} />
+                <WikiBodyEditor
+                  value={draftBody}
+                  onChange={(md) => {
+                    setDraftBody(md)
+                    scheduleSave()
+                  }}
+                  onBlur={() => void flushSave()}
+                />
+              </>
+            ) : (
+              <>
+                <div className="acb-wiki-breadcrumb">
+                  <Typography.Text type="secondary">{spaceName}</Typography.Text>
+                  {currentSpace?.description ? (
+                    <>
+                      <Typography.Text type="secondary"> · </Typography.Text>
+                      <Typography.Text type="secondary" ellipsis>
+                        {page.title || '无标题'}
+                      </Typography.Text>
+                    </>
+                  ) : null}
+                </div>
+                <div className="acb-wiki-main-toolbar">
+                  <span />
+                  <Space size={4}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={() => {
+                        setDraftTitle(page.title || '')
+                        setDraftBody(page.body_md || '')
+                        setEditing(true)
+                      }}
+                    >
+                      编辑
+                    </Button>
+                    <Dropdown menu={{ items: pageMoreItems }} trigger={['click']}>
+                      <Button
+                        type="text"
+                        size="small"
+                        className="acb-wiki-more-btn"
+                        icon={<MoreOutlined />}
+                        aria-label="更多"
+                      />
+                    </Dropdown>
+                  </Space>
+                </div>
+                <Typography.Title level={2} className="acb-wiki-title" style={{ margin: 0 }}>
+                  {page.title || '无标题'}
+                </Typography.Title>
+                <Typography.Paragraph className="acb-wiki-meta">
+                  更新于 {formatWikiTime(page.updated_at)}
+                </Typography.Paragraph>
+                <WikiPropChips chips={propChips} />
+                <WikiBodyViewer value={page.body_md || ''} />
+              </>
+            )}
+          </div>
+        </Content>
+      </Layout>
 
-      <Modal
-        title="新建 Wiki 空间"
-        open={spaceModal}
-        onCancel={() => setSpaceModal(false)}
-        onOk={() => void createSpace()}
-        destroyOnHidden
-      >
-        <Form form={spaceForm} layout="vertical">
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="slug" label="Slug">
-            <Input placeholder="可选" />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </Layout>
+      {/* C8: 管理面 — 建库/改名只在此 */}
+      <WikiSpaceAdmin
+        open={adminOpen}
+        onClose={() => setAdminOpen(false)}
+        workspaceId={wsId}
+        spaces={spaces}
+        pageCountBySpace={spaceId ? { [spaceId]: pages.length } : undefined}
+        currentSpaceId={spaceId}
+        onSelectSpace={setSpaceId}
+        onSpacesChanged={loadSpaces}
+      />
+    </div>
   )
 }

@@ -975,3 +975,158 @@ button.acb-wiki-prop-chip:focus-visible {
     font-size: 22px !important;
   }
 }
+
+/* ─── P2 shell layout (React 壳 · 最小硬尺寸；细 token 留给 UI视觉) ─── */
+.acb-wiki-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  align-self: stretch;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.acb-wiki-topbar {
+  flex: 0 0 48px;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--acb-border-secondary, rgba(15, 23, 42, 0.06));
+  background: var(--acb-bg-container, #fff);
+  box-sizing: border-box;
+  z-index: 2;
+}
+
+.acb-wiki-topbar-space {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  margin: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--acb-text, #0F172A);
+  font-family: inherit;
+  max-width: min(420px, 70vw);
+}
+
+.acb-wiki-topbar-space:hover {
+  background: color-mix(in srgb, var(--acb-text, #0F172A) 4%, transparent);
+}
+
+.acb-wiki-topbar-space-icon {
+  font-size: 14px;
+  color: var(--acb-text-secondary, #64748B);
+}
+
+.acb-wiki-topbar-space-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.acb-wiki-topbar-space-caret {
+  font-size: 10px;
+  color: var(--acb-text-secondary, #64748B);
+}
+
+.acb-wiki-topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.acb-wiki-topbar-admin.ant-btn {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--acb-text-secondary, #64748B) !important;
+  height: 32px;
+}
+
+.acb-wiki-body-row {
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+}
+
+.acb-wiki-dir.acb-wiki-sider,
+.acb-wiki-sider.acb-wiki-dir {
+  /* alias kept; width already 300 in existing rules */
+}
+
+.acb-wiki-stage.acb-wiki-main,
+.acb-wiki-main.acb-wiki-stage {
+  background: var(--wiki-stage-bg, #FFFFFF);
+  padding-inline-start: 48px;
+}
+
+.acb-wiki-stage-rail.acb-wiki-main-inner,
+.acb-wiki-main-inner.acb-wiki-stage-rail {
+  max-width: 760px;
+}
+
+.acb-wiki-breadcrumb {
+  margin-bottom: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--acb-text-secondary, #64748B);
+}
+
+.acb-wiki-shell .acb-wiki-title,
+.acb-wiki-stage .acb-wiki-title {
+  font-size: 30px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+}
+
+.acb-wiki-shell .acb-wiki-title-input.ant-input {
+  font-size: 30px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+}
+
+.acb-wiki-empty-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.acb-wiki-admin-body {
+  min-height: 120px;
+}
+
+.acb-wiki-admin-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+}
+
+.acb-wiki-admin-row {
+  cursor: default;
+}
+
+.acb-wiki-admin-row--active {
+  background: color-mix(in srgb, var(--acb-primary, #5b5bd6) 8%, transparent);
+  border-radius: 8px;
+}
