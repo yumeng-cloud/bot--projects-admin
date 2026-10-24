@@ -351,7 +351,7 @@ export default function BotsRosterPage() {
 
   const onCopyInvite = async () => {
     if (!teamId) {
-      message.warning('尚无团队，请先拉班底 / seed')
+      message.warning('尚无团队，请先创建或加入班底')
       return
     }
     setInviteBusy(true)
