@@ -32,6 +32,14 @@
 - `BOT_TEAM_SEAT_P0` T2 `[x]` + 本文件下方产品勾  
 - 证据可复跑
 
+
+## 交件注（Bot 记忆 · 2026-10-24 18:01 Asia/Shanghai）
+
+- **V1–V3 = PASS**（箱 :8080；无 force；无 import）
+- 证据：[`docs/qa-shots/T2-handoff-migrate-20261024.txt`](./qa-shots/T2-handoff-migrate-20261024.txt)
+- 路径：同 member 双 API Key → Key₁ `seat enter frontend` + `frontend:last_focus` + claim **YM-11** → Key₁ `seat leave` → Key₂ `migrate enter frontend` → Key₂ **仅** `handoff get`/`--full` 见 focus + YM-11
+- `BOT_TEAM_SEAT_P0` T2 已 `[x]`；下方**产品勾选**留给产品体验关包（V4）
+
 ## 产品勾选
 
 - [ ] V1–V3 交件 · 产品勾 T2 · 关本包

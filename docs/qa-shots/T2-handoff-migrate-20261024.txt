@@ -1,0 +1,696 @@
+=== T2 handoff-migrate V1–V3 evidence ===
+time_AsiaShanghai: 2026-10-24 18:01 Asia/Shanghai (box)
+result: V1=PASS V2=PASS V3=PASS
+evidence_file: docs/qa-shots/T2-handoff-migrate-20261024.txt
+HEAD_at_run: see body (re-pull before commit may advance)
+WS: ba1481c49148aba9553ba3811406b69f
+TEAM: ea918de1ac4d8116ed69651116a4acb9
+SEAT_SLUG: frontend
+MEMBER (Key1=Key2 same member): 094acad4a3f0aaef2ee6370e790912b4
+KEY1_file: /tmp/ymbot_t2_key1.txt  prefix=ymk_19330f80  (j2-bot-a; seed via admin JWT POST /api-keys)
+KEY2_file: /tmp/ymbot_t2_key2.txt  prefix=ymk_91a528d9  (t2-machine-b; SAME member_id as KEY1)
+YMBOT_API_URL: http://127.0.0.1:8080
+YMBOT binary: go build -o /tmp/ymbot ./cmd/ymbot  (from backend/)
+FOCUS_VALUE: T2-V1-focus-machineA-1792836082
+CLAIMED_ISSUE: YM-11 (assignee=me after claim)
+NO_force: true (leave then empty-seat migrate enter)
+NO_import: true (V3 only handoff get / get --full)
+
+## 设计注（给 QA/产品）
+handoff 服务端按 member_id 组装 memories/todos/open issues。
+「换机续命」正确路径 = 同 Bot member 发第二把 API Key（机 B）+
+机 A `seat leave` 释席 → 机 B `migrate enter`/`seat enter` 合法绑同席（非 force 顶活跃）→
+仅 `handoff get`（可用 --full 看 last_focus 值）。异 member 换 Key 不会自动共享 handoff（需 import 救场，非本剧本）。
+
+## 给 QA 的复验步骤（Key 勿进 git）
+1. `cd backend && go build -o /tmp/ymbot ./cmd/ymbot`；`export YMBOT_API_URL=http://127.0.0.1:8080 YMBOT_WORKSPACE_ID=<WS>`
+2. 准备同 member 两把 Key：已有 `/tmp/ymbot_t2_key1.txt` + `/tmp/ymbot_t2_key2.txt`；或 admin JWT：
+   `POST /api/v1/workspaces/<WS>/api-keys` body `{"name":"t2-machine-b","member_id":"<MID>"}` → 保存 `token`
+3. 机 A：`YMBOT_API_KEY=$(cat /tmp/ymbot_t2_key1.txt) /tmp/ymbot team pull --uuid <TEAM>` →
+   `seat enter --role frontend --team <TEAM>` →
+   `memory set --key frontend:last_focus --value <marker>` →
+   `issue claim <YM-n> --version N`（assignee=me）
+4. 机 A leave：`seat leave --role frontend --team <TEAM>`（确认 pull 后 frontend claim=empty）
+5. 机 B：`YMBOT_API_KEY=$(cat /tmp/ymbot_t2_key2.txt) /tmp/ymbot migrate enter --role frontend --team <TEAM>`（禁 --force）→
+   **只** `handoff get` 与 `handoff get --full`：须见 marker 于 memories[].value_text 且开放 Issue 含该 YM-n；**不要** `handoff import`
+
+## 关键命令（redact）
+机 A leave:  `/tmp/ymbot seat leave --role frontend --team ea918de1ac4d8116ed69651116a4acb9`
+机 B enter:  `/tmp/ymbot migrate enter --role frontend --team ea918de1ac4d8116ed69651116a4acb9`   # = seat enter 别名
+机 B get:    `/tmp/ymbot handoff get`  /  `/tmp/ymbot handoff get --full`
+
+## 关键片段（V3 Key2 handoff get）
+role=前端  memories=1  todos=0  open_issues=6
+member=Grok Bot
+  YM-11  N4 smoke  todo
+  …
+--full memories: key_name=frontend:last_focus value_text=T2-V1-focus-machineA-1792836082
+
+===== RAW LOG (redacted) =====
+
+===== V0 leave frontend Key1 (cleanup) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot seat leave --role frontend --team ea918de1ac4d8116ed69651116a4acb9
+left role=frontend via=unbind
+exit=0
+
+===== V0 leave frontend Key2 (cleanup) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot seat leave --role frontend --team ea918de1ac4d8116ed69651116a4acb9
+left role=frontend via=unbind
+exit=0
+
+########## V1: Key1 enter + last_focus + open Issue ##########
+
+===== V1 team pull =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot team pull --uuid ea918de1ac4d8116ed69651116a4acb9 --json
+[
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "后端",
+    "slug": "backend"
+  },
+  {
+    "claim": "empty",
+    "name": "前端",
+    "slug": "frontend"
+  },
+  {
+    "claim": "claimed",
+    "holder": "管理员",
+    "name": "j2-new",
+    "slug": "j2-new"
+  },
+  {
+    "claim": "claimed",
+    "holder": "QA Bot B",
+    "name": "N3强制补位审计",
+    "slug": "n3-force-audit-1792835295"
+  },
+  {
+    "claim": "empty",
+    "name": "N3可读强制审计",
+    "slug": "n3-readable-1792835492"
+  },
+  {
+    "claim": "claimed",
+    "holder": "QA Bot B",
+    "name": "N3可读强制审计",
+    "slug": "n3-readable-1792835532"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "ops-j2a",
+    "slug": "ops-j2a"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "产品经理",
+    "slug": "pm"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "QA",
+    "slug": "qa"
+  },
+  {
+    "claim": "claimed",
+    "holder": "QA Bot B",
+    "name": "QA Bind Seat ec1742d",
+    "slug": "qa-bind-ec1742d"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "QA Full Test Seat",
+    "slug": "qa-full-test-36"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "QA Left Path",
+    "slug": "qa-left-536"
+  },
+  {
+    "claim": "claimed",
+    "holder": "BotB J2",
+    "name": "SRE",
+    "playbook": "docs/sre.md",
+    "slug": "sre"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "知识库",
+    "slug": "wiki"
+  }
+]
+exit=0
+
+===== V1 seat enter frontend Key1 =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot seat enter --role frontend --team ea918de1ac4d8116ed69651116a4acb9 --json
+{
+  "bind": {
+    "bound_at": "2026-10-24T10:01:22Z",
+    "claimed_at": "2026-10-24T10:01:22Z",
+    "holder": "Grok Bot",
+    "ok": true,
+    "slug": "frontend"
+  },
+  "claim": {
+    "ok": true,
+    "via": "bind"
+  },
+  "handoff": {
+    "claimed_role": "-",
+    "issue_count": 5,
+    "issues": [
+      {
+        "identifier": "YM-18",
+        "status": "todo",
+        "title": "N4 c947a76 立即推送 spot-check"
+      },
+      {
+        "identifier": "YM-17",
+        "status": "todo",
+        "title": "N3 readable force audit target"
+      },
+      {
+        "identifier": "YM-13",
+        "status": "todo",
+        "title": "N3 force bind audit target"
+      },
+      {
+        "identifier": "YM-12",
+        "status": "todo",
+        "title": "N4 立即推送演示"
+      },
+      {
+        "identifier": "YM-9",
+        "status": "todo",
+        "title": "QA webhook match BOT_A updated"
+      }
+    ],
+    "member": "Grok Bot",
+    "memory_count": 0,
+    "todo_count": 0
+  },
+  "memory_key_hint": "frontend:last_focus",
+  "role": "frontend",
+  "step": "whoami→handoff get→seat bind",
+  "whoami": {
+    "actor_kind": "bot",
+    "display_name": "Grok Bot"
+  }
+}
+exit=0
+
+===== V1 memory set frontend:last_focus =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot memory set --key frontend:last_focus --value 'T2-V1-focus-machineA-1792836082' --autosave
+已写服务端（进度在服务端；主航线 team pull → seat enter → handoff get；勿攒到最后 export）
+frontend:last_focus	2026-10-24T10:01:22Z	T2-V1-focus-machineA-1792836082
+exit=0
+
+===== V1 issue get YM-11 =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot issue get YM-11 --json
+{
+  "assignee": "-",
+  "identifier": "YM-11",
+  "priority": "none",
+  "status": "todo",
+  "title": "N4 smoke",
+  "updated_at": "2026-10-24T09:44:54Z",
+  "version": 1
+}
+exit=0
+YM-11 version=1
+
+===== V1 issue claim YM-11 =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot issue claim YM-11 --version 1 --autosave
+已写服务端（进度在服务端；主航线 team pull → seat enter → handoff get；勿攒到最后 export）
+YM-11  N4 smoke
+status=todo  priority=none  assignee=Grok Bot
+version=2
+updated_at=2026-10-24T10:01:22Z
+exit=0
+
+===== V1 handoff get (baseline on Key1) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot handoff get
+role=前端  memories=1  todos=0  open_issues=6
+member=Grok Bot
+  YM-11  N4 smoke  todo
+  YM-18  N4 c947a76 立即推送 spot-check  todo
+  YM-17  N3 readable force audit target  todo
+  YM-13  N3 force bind audit target  todo
+  YM-12  N4 立即推送演示  todo
+  YM-9  QA webhook match BOT_A updated  todo
+exit=0
+
+===== V1 handoff get --full (focus visible) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot handoff get --full
+{
+  "handoff": {
+    "claimed_role": {
+      "claim": {
+        "claimed_at": "2026-10-24T10:01:22.177142659Z",
+        "id": "6468d62eea1da034fa866b617e757207",
+        "member_id": "094acad4a3f0aaef2ee6370e790912b4",
+        "released_at": null,
+        "role_id": "91dc54d2953e3857816cb370441e3826",
+        "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+      },
+      "created_at": "2026-10-23T22:06:35.812813847Z",
+      "default_project_ids": "[]",
+      "id": "91dc54d2953e3857816cb370441e3826",
+      "name": "前端",
+      "responsibilities": "UI/前端实现、组件与交互",
+      "skills": "[]",
+      "slug": "frontend",
+      "updated_at": "2026-10-23T22:06:35.812813847Z",
+      "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+    },
+    "generated_at": "2026-10-24T10:01:22.530591932Z",
+    "issues": [
+      {
+        "cycle_id": null,
+        "id": "3746ead344fd373fed9ed3310298f5a8",
+        "identifier": "YM-11",
+        "priority": "none",
+        "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+        "status": "todo",
+        "title": "N4 smoke",
+        "updated_at": "2026-10-24T10:01:22.496078257Z"
+      },
+      {
+        "cycle_id": null,
+        "id": "5393369861a358f7ad92897e9238c0a5",
+        "identifier": "YM-18",
+        "priority": "none",
+        "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+        "status": "todo",
+        "title": "N4 c947a76 立即推送 spot-check",
+        "updated_at": "2026-10-24T09:53:09.003472253Z"
+      },
+      {
+        "cycle_id": null,
+        "id": "f0dad598ced6854683d55ef68b69dcb8",
+        "identifier": "YM-17",
+        "priority": "none",
+        "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+        "status": "todo",
+        "title": "N3 readable force audit target",
+        "updated_at": "2026-10-24T09:52:12.614489085Z"
+      },
+      {
+        "cycle_id": null,
+        "id": "0465195e5dba831dba0e7319ef5cd779",
+        "identifier": "YM-13",
+        "priority": "none",
+        "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+        "status": "todo",
+        "title": "N3 force bind audit target",
+        "updated_at": "2026-10-24T09:48:15.890114664Z"
+      },
+      {
+        "cycle_id": null,
+        "id": "fd06ed3e47cbf500417b97cdd7675f0c",
+        "identifier": "YM-12",
+        "priority": "none",
+        "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+        "status": "todo",
+        "title": "N4 立即推送演示",
+        "updated_at": "2026-10-24T09:45:45.123781997Z"
+      },
+      {
+        "cycle_id": null,
+        "id": "3b2a4ee954ef0766cbbbc9143adc92ce",
+        "identifier": "YM-9",
+        "priority": "low",
+        "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+        "status": "todo",
+        "title": "QA webhook match BOT_A updated",
+        "updated_at": "2026-10-24T08:12:56.223934434Z"
+      }
+    ],
+    "member_id": "094acad4a3f0aaef2ee6370e790912b4",
+    "memories": [
+      {
+        "created_at": "2026-10-24T10:01:22.193842302Z",
+        "id": "454dcc1a5de49d7431ff2b99912ac629",
+        "key_name": "frontend:last_focus",
+        "member_id": "094acad4a3f0aaef2ee6370e790912b4",
+        "role_id": null,
+        "tags": "[]",
+        "updated_at": "2026-10-24T10:01:22.193842302Z",
+        "value_text": "T2-V1-focus-machineA-1792836082",
+        "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+      }
+    ],
+    "todos": [],
+    "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+  }
+}
+exit=0
+FOCUS_VAL=T2-V1-focus-machineA-1792836082
+
+########## V2: Key1 leave; Key2 migrate/enter same seat (no force) ##########
+
+===== V2 Key1 seat leave frontend =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot seat leave --role frontend --team ea918de1ac4d8116ed69651116a4acb9
+left role=frontend via=unbind
+exit=0
+
+===== V2 team pull (frontend should be empty) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot team pull --uuid ea918de1ac4d8116ed69651116a4acb9 --json
+[
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "后端",
+    "slug": "backend"
+  },
+  {
+    "claim": "empty",
+    "name": "前端",
+    "slug": "frontend"
+  },
+  {
+    "claim": "claimed",
+    "holder": "管理员",
+    "name": "j2-new",
+    "slug": "j2-new"
+  },
+  {
+    "claim": "claimed",
+    "holder": "QA Bot B",
+    "name": "N3强制补位审计",
+    "slug": "n3-force-audit-1792835295"
+  },
+  {
+    "claim": "empty",
+    "name": "N3可读强制审计",
+    "slug": "n3-readable-1792835492"
+  },
+  {
+    "claim": "claimed",
+    "holder": "QA Bot B",
+    "name": "N3可读强制审计",
+    "slug": "n3-readable-1792835532"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "ops-j2a",
+    "slug": "ops-j2a"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "产品经理",
+    "slug": "pm"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "QA",
+    "slug": "qa"
+  },
+  {
+    "claim": "claimed",
+    "holder": "QA Bot B",
+    "name": "QA Bind Seat ec1742d",
+    "slug": "qa-bind-ec1742d"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "QA Full Test Seat",
+    "slug": "qa-full-test-36"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "QA Left Path",
+    "slug": "qa-left-536"
+  },
+  {
+    "claim": "claimed",
+    "holder": "BotB J2",
+    "name": "SRE",
+    "playbook": "docs/sre.md",
+    "slug": "sre"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "知识库",
+    "slug": "wiki"
+  }
+]
+exit=0
+
+===== V2 Key2 migrate enter frontend (legal, no force) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot migrate enter --role frontend --team ea918de1ac4d8116ed69651116a4acb9 --json
+{
+  "bind": {
+    "bound_at": "2026-10-24T10:01:38Z",
+    "claimed_at": "2026-10-24T10:01:38Z",
+    "holder": "Grok Bot",
+    "ok": true,
+    "slug": "frontend"
+  },
+  "claim": {
+    "ok": true,
+    "via": "bind"
+  },
+  "handoff": {
+    "claimed_role": "-",
+    "issue_count": 6,
+    "issues": [
+      {
+        "identifier": "YM-11",
+        "status": "todo",
+        "title": "N4 smoke"
+      },
+      {
+        "identifier": "YM-18",
+        "status": "todo",
+        "title": "N4 c947a76 立即推送 spot-check"
+      },
+      {
+        "identifier": "YM-17",
+        "status": "todo",
+        "title": "N3 readable force audit target"
+      },
+      {
+        "identifier": "YM-13",
+        "status": "todo",
+        "title": "N3 force bind audit target"
+      },
+      {
+        "identifier": "YM-12",
+        "status": "todo",
+        "title": "N4 立即推送演示"
+      },
+      {
+        "identifier": "YM-9",
+        "status": "todo",
+        "title": "QA webhook match BOT_A updated"
+      }
+    ],
+    "member": "Grok Bot",
+    "memory_count": 1,
+    "todo_count": 0
+  },
+  "memory_key_hint": "frontend:last_focus",
+  "role": "frontend",
+  "step": "whoami→handoff get→seat bind",
+  "whoami": {
+    "actor_kind": "bot",
+    "display_name": "Grok Bot"
+  }
+}
+exit=0
+
+########## V3: Key2 handoff get ONLY (no import) ##########
+
+===== V3 Key2 handoff get (default text) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot handoff get
+role=前端  memories=1  todos=0  open_issues=6
+member=Grok Bot
+  YM-11  N4 smoke  todo
+  YM-18  N4 c947a76 立即推送 spot-check  todo
+  YM-17  N3 readable force audit target  todo
+  YM-13  N3 force bind audit target  todo
+  YM-12  N4 立即推送演示  todo
+  YM-9  QA webhook match BOT_A updated  todo
+exit=0
+
+===== V3 Key2 handoff get --json (slim) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot handoff get --json
+{
+  "claimed_role": "前端",
+  "issue_count": 6,
+  "issues": [
+    {
+      "identifier": "YM-11",
+      "status": "todo",
+      "title": "N4 smoke"
+    },
+    {
+      "identifier": "YM-18",
+      "status": "todo",
+      "title": "N4 c947a76 立即推送 spot-check"
+    },
+    {
+      "identifier": "YM-17",
+      "status": "todo",
+      "title": "N3 readable force audit target"
+    },
+    {
+      "identifier": "YM-13",
+      "status": "todo",
+      "title": "N3 force bind audit target"
+    },
+    {
+      "identifier": "YM-12",
+      "status": "todo",
+      "title": "N4 立即推送演示"
+    },
+    {
+      "identifier": "YM-9",
+      "status": "todo",
+      "title": "QA webhook match BOT_A updated"
+    }
+  ],
+  "member": "Grok Bot",
+  "memory_count": 1,
+  "todo_count": 0
+}
+exit=0
+
+===== V3 Key2 handoff get --full (assert focus+YM-11) =====
++ env YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot handoff get --full
+{
+  "handoff": {
+    "claimed_role": {
+      "claim": {
+        "claimed_at": "2026-10-24T10:01:38.729896755Z",
+        "id": "6468d62eea1da034fa866b617e757207",
+        "member_id": "094acad4a3f0aaef2ee6370e790912b4",
+        "released_at": null,
+        "role_id": "91dc54d2953e3857816cb370441e3826",
+        "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+      },
+      "created_at": "2026-10-23T22:06:35.812813847Z",
+      "default_project_ids": "[]",
+      "id": "91dc54d2953e3857816cb370441e3826",
+      "name": "前端",
+      "responsibilities": "UI/前端实现、组件与交互",
+      "skills": "[]",
+      "slug": "frontend",
+      "updated_at": "2026-10-23T22:06:35.812813847Z",
+      "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+    },
+    "generated_at": "2026-10-24T10:01:38.780599004Z",
+    "issues": [
+      {
+        "cycle_id": null,
+        "id": "3746ead344fd373fed9ed3310298f5a8",
+        "identifier": "YM-11",
+        "priority": "none",
+        "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+        "status": "todo",
+        "title": "N4 smoke",
+        "updated_at": "2026-10-24T10:01:22.496078257Z"
+      },
+      {
+        "cycle_id": null,
+        "id": "5393369861a358f7ad92897e9238c0a5",
+        "identifier": "YM-18",
+        "priority": "none",
+        "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+        "status": "todo",
+        "title": "N4 c947a76 立即推送 spot-check",
+        "updated_at": "2026-10-24T09:53:09.003472253Z"
+      },
+      {
+        "cycle_id": null,
+        "id": "f0dad598ced6854683d55ef68b69dcb8",
+        "identifier": "YM-17",
+        "priority": "none",
+        "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+        "status": "todo",
+        "title": "N3 readable force audit target",
+        "updated_at": "2026-10-24T09:52:12.614489085Z"
+      },
+      {
+        "cycle_id": null,
+        "id": "0465195e5dba831dba0e7319ef5cd779",
+        "identifier": "YM-13",
+        "priority": "none",
+        "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+        "status": "todo",
+        "title": "N3 force bind audit target",
+        "updated_at": "2026-10-24T09:48:15.890114664Z"
+      },
+      {
+        "cycle_id": null,
+        "id": "fd06ed3e47cbf500417b97cdd7675f0c",
+        "identifier": "YM-12",
+        "priority": "none",
+        "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+        "status": "todo",
+        "title": "N4 立即推送演示",
+        "updated_at": "2026-10-24T09:45:45.123781997Z"
+      },
+      {
+        "cycle_id": null,
+        "id": "3b2a4ee954ef0766cbbbc9143adc92ce",
+        "identifier": "YM-9",
+        "priority": "low",
+        "project_id": "b1e996fb8ba9c350e249f7a862425a67",
+        "status": "todo",
+        "title": "QA webhook match BOT_A updated",
+        "updated_at": "2026-10-24T08:12:56.223934434Z"
+      }
+    ],
+    "member_id": "094acad4a3f0aaef2ee6370e790912b4",
+    "memories": [
+      {
+        "created_at": "2026-10-24T10:01:22.193842302Z",
+        "id": "454dcc1a5de49d7431ff2b99912ac629",
+        "key_name": "frontend:last_focus",
+        "member_id": "094acad4a3f0aaef2ee6370e790912b4",
+        "role_id": null,
+        "tags": "[]",
+        "updated_at": "2026-10-24T10:01:22.193842302Z",
+        "value_text": "T2-V1-focus-machineA-1792836082",
+        "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+      }
+    ],
+    "todos": [],
+    "workspace_id": "ba1481c49148aba9553ba3811406b69f"
+  }
+}
+exit=0
+
+===== ASSERTIONS =====
+FOCUS_EXPECTED=T2-V1-focus-machineA-1792836082
+V3_focus_in_handoff_full=True
+V3_YM-11_in_open_issues=True
+V3_default_contains_YM-11=True
+V3_memory_keys=['frontend:last_focus']
+V3_issue_idents=['YM-11', 'YM-18', 'YM-17', 'YM-13', 'YM-12', 'YM-9']
+V3_NO_import_used=True
+V1_PASS=True
+V2_PASS=True  # confirmed by migrate enter exit=0 above
+V3_PASS=True
+
+
+===== FINAL =====
+V1_PASS=True
+V2_PASS=True
+V3_PASS=True
