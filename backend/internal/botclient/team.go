@@ -100,7 +100,7 @@ func (c *Client) teamExpandDryRunLocal(teamID string, opts TeamExpandOpts) (json
 }
 
 // TeamSeatBind POST …/teams/{teamID}/seats/{seatID}/bind
-// body: force?；Bot 侧 member 由服务端取 actor。二绑无 force → 409。
+// body: force?；Bot 侧 member 由服务端取 actor。活跃占用一律 409；force 仅清无 active claim 的脏绑。
 func (c *Client) TeamSeatBind(teamID, seatID string, force bool) (json.RawMessage, error) {
 	teamID = strings.TrimSpace(teamID)
 	seatID = strings.TrimSpace(seatID)
@@ -254,7 +254,7 @@ func (c *Client) enrichRoleClaimConflict(slug string, role map[string]any, ae *A
 	if holder != "" && !strings.Contains(msg, holder) {
 		msg = fmt.Sprintf("%s（占用者：%s）", msg, holder)
 	}
-	msg = fmt.Sprintf("%s；禁止瞎抢，请 seat leave 或显式接管", msg)
+	msg = fmt.Sprintf("%s；禁止瞎抢；活跃席不可 force 顶替，请对方 seat leave", msg)
 	return &APIError{Status: 409, Code: ae.Code, Message: msg}
 }
 
@@ -265,7 +265,7 @@ type SeatEnterOpts struct {
 }
 
 // SeatEnter 迁绑进场：whoami → handoff get → bind|role claim。
-// 冲突 409 不吞；有 team 时 bind 含单活接管（须 --force）。
+// 冲突 409 不吞；活跃席不可 force 顶替；--force 仅清脏绑。
 func (c *Client) SeatEnter(roleSlug string, opts SeatEnterOpts) (map[string]any, error) {
 	roleSlug = strings.TrimSpace(roleSlug)
 	if roleSlug == "" {
@@ -359,7 +359,7 @@ func (c *Client) enrichBindConflict(slug string, seat map[string]any, ae *APIErr
 	if holder != "" && !strings.Contains(msg, holder) {
 		msg = fmt.Sprintf("%s（占用者：%s）", msg, holder)
 	}
-	msg = fmt.Sprintf("%s；禁止瞎抢，请 seat leave 或显式 --force 接管", msg)
+	msg = fmt.Sprintf("%s；禁止瞎抢；活跃席不可 --force 顶替，请对方 seat leave", msg)
 	return &APIError{Status: 409, Code: ae.Code, Message: msg}
 }
 

@@ -35,6 +35,7 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 	keyH := &handlers.APIKeyHandler{DB: sqlDB}
 	hookH := &handlers.WebhookHandler{DB: sqlDB}
 	boardSvc := issueboard.New(sqlDB)
+	boardSvc.DispatchEvent = hookH.DispatchEvent
 	issueH := &handlers.IssueHandler{Svc: boardSvc}
 	cycleH := &handlers.CycleHandler{Svc: boardSvc}
 	searchH := &handlers.SearchHandler{Svc: boardSvc}
@@ -154,7 +155,7 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 	handlers.MountWiki(root, sqlDB, authAny)
 	handlers.MountTime(root, sqlDB, authAny)
 	handlers.MountBots(root, sqlDB, authAny)
-	handlers.MountTeams(root, sqlDB, authAny)
+	handlers.MountTeams(root, sqlDB, authAny, hookH.DispatchEvent)
 	root.Handle("/", r)
 	return root
 }

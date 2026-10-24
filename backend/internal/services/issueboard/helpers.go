@@ -9,9 +9,13 @@ import (
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/pkg/idgen"
 )
 
+// EventDispatcher 可选回调：Issue 创建/更新/指派后扇出 Webhook（由 router 注入 handlers.WebhookHandler.DispatchEvent）。
+type EventDispatcher func(workspaceID, event string, payload any)
+
 type Service struct {
-	DB       *sql.DB
-	postgres bool // SELECT … FOR UPDATE when true
+	DB            *sql.DB
+	postgres      bool // SELECT … FOR UPDATE when true
+	DispatchEvent EventDispatcher
 }
 
 func New(sqlDB *sql.DB) *Service {
@@ -22,6 +26,13 @@ func New(sqlDB *sql.DB) *Service {
 		s.postgres = true
 	}
 	return s
+}
+
+func (s *Service) emit(workspaceID, event string, payload any) {
+	if s == nil || s.DispatchEvent == nil {
+		return
+	}
+	s.DispatchEvent(workspaceID, event, payload)
 }
 
 // querier is satisfied by *sql.DB and *sql.Tx so cycle checks can run inside a transaction.

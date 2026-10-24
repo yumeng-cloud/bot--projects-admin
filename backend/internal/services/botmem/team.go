@@ -2,6 +2,7 @@ package botmem
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -312,7 +313,19 @@ func (s *Service) BindSeat(workspaceID, teamID, seatID, memberID string, force b
 	if err != nil {
 		return nil, err
 	}
+	forceClearedDirty := false
+	var dirtyFromMember string
 	if seat.BoundMemberID != nil && *seat.BoundMemberID != "" && *seat.BoundMemberID != memberID {
+		// 异人 active claim → 即使 force 也 409（活跃禁止顶替）
+		if seat.BotRoleID != nil && *seat.BotRoleID != "" {
+			active, aerr := s.activeClaim(*seat.BotRoleID)
+			if aerr != nil {
+				return nil, aerr
+			}
+			if active != nil && active.MemberID != memberID {
+				return nil, apperr.Conflict("该席位占用中，禁止顶替")
+			}
+		}
 		if !force {
 			msg := "该席位已绑定其他成员"
 			if seat.BoundDisplayName != nil {
@@ -320,17 +333,14 @@ func (s *Service) BindSeat(workspaceID, teamID, seatID, memberID string, force b
 			}
 			return nil, apperr.Conflict(msg)
 		}
-		old := *seat.BoundMemberID
-		if seat.BotRoleID != nil && *seat.BotRoleID != "" {
-			if active, aerr := s.activeClaim(*seat.BotRoleID); aerr == nil && active != nil && active.MemberID == old {
-				_ = s.Release(workspaceID, *seat.BotRoleID)
-			}
-		}
+		// force 仅清「无 active claim 但残留 bound」的脏绑
+		dirtyFromMember = *seat.BoundMemberID
 		_, err = s.DB.Exec(`UPDATE team_seats SET bound_member_id = NULL, bound_at = NULL, updated_at = ? WHERE id = ?`,
 			nowUTC(), seatID)
 		if err != nil {
 			return nil, err
 		}
+		forceClearedDirty = true
 	}
 	now := nowUTC()
 	_, err = s.DB.Exec(`UPDATE team_seats SET bound_member_id = ?, bound_at = ?, updated_at = ? WHERE id = ?`,
@@ -339,18 +349,32 @@ func (s *Service) BindSeat(workspaceID, teamID, seatID, memberID string, force b
 		return nil, err
 	}
 	if seat.BotRoleID != nil && *seat.BotRoleID != "" {
-		if _, err := s.Claim(workspaceID, *seat.BotRoleID, memberID, force); err != nil {
+		if _, err := s.Claim(workspaceID, *seat.BotRoleID, memberID, false); err != nil {
 			return nil, err
 		}
 	}
-	if force && seat.BoundMemberID != nil && *seat.BoundMemberID != "" && *seat.BoundMemberID != memberID {
-		_, _ = s.UpsertMemory(workspaceID, memberID, UpsertMemoryInput{
-			KeyName:   "seat_takeover:" + seat.RoleSlug,
-			ValueText: fmt.Sprintf("席位「%s」已从其他成员接管", seat.DisplayName),
-			RoleID:    seat.BotRoleID,
-		})
+	if forceClearedDirty {
+		s.writeSeatForceAudit(workspaceID, memberID, seat, dirtyFromMember, memberID)
 	}
 	return s.getSeat(workspaceID, teamID, seatID)
+}
+
+// writeSeatForceAudit 脏绑 force 成功后的可读审计（activities，禁止只 UpsertMemory）。
+func (s *Service) writeSeatForceAudit(workspaceID, actorID string, seat *models.TeamSeat, fromMember, toMember string) {
+	comment := fmt.Sprintf("force 清脏绑：席位「%s」(%s) 自成员 %s 改绑至 %s（无 active claim）",
+		seat.DisplayName, seat.RoleSlug, fromMember, toMember)
+	payload, _ := json.Marshal(map[string]any{
+		"comment":         comment,
+		"seat_id":         seat.ID,
+		"team_id":         seat.TeamID,
+		"role_slug":       seat.RoleSlug,
+		"from_member_id":  fromMember,
+		"to_member_id":    toMember,
+	})
+	_, _ = s.DB.Exec(`INSERT INTO activities
+		(id, workspace_id, issue_id, actor_id, actor_kind, action, payload, created_at)
+		VALUES (?,?,NULL,?,?,?,?,?)`,
+		idgen.New(), workspaceID, actorID, "bot", "seat.force_bind", string(payload), nowUTC())
 }
 
 func (s *Service) UnbindSeat(workspaceID, teamID, seatID, memberID string, asAdmin bool) (*models.TeamSeat, error) {
@@ -480,6 +504,7 @@ func (s *Service) ExpandSeats(workspaceID, teamID string, in ExpandInput) (*Expa
 	}
 
 	ib := issueboard.New(s.DB)
+	ib.DispatchEvent = s.IssueDispatch
 	si := 0
 	for _, c := range candidates {
 		if si >= len(idle) {

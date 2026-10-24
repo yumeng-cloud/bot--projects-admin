@@ -3,7 +3,6 @@ package botmem
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strings"
 	"time"
 
@@ -18,6 +17,8 @@ type Service struct {
 	DB    *sql.DB
 	Embed embedder.Embedder // optional; set via WithEmbedder
 	Store *embedder.Store   // optional; Postgres+pgvector
+	// IssueDispatch 可选：ExpandSeats 改派时转发给 issueboard（避免 handlers↔services 循环依赖）。
+	IssueDispatch func(workspaceID, event string, payload any)
 }
 
 func New(db *sql.DB) *Service { return &Service{DB: db} }
@@ -177,18 +178,19 @@ func (s *Service) activeClaim(roleID string) (*models.BotRoleClaim, error) {
 	return &c, nil
 }
 
-// Claim 认领角色。force=true 时允许接管他人 active claim。
+// Claim 认领角色。异人存在 active claim（released_at IS NULL）时一律 409，即使 force=true 也禁止顶替。
+// force 保留兼容：无 active 时与普通认领等价（可清「已释放」历史行后重认领）。
 // schema UNIQUE(role_id) 仅允许一行：已释放则 UPDATE 重认领。
 func (s *Service) Claim(workspaceID, roleID, memberID string, force bool) (*models.BotRoleClaim, error) {
+	_ = force // 活跃不可 force 顶替；参数仅兼容旧客户端
 	if memberID == "" {
 		return nil, apperr.BadRequest("member_id 不能为空")
 	}
-	role, err := s.GetRole(workspaceID, roleID)
-	if err != nil {
+	if _, err := s.GetRole(workspaceID, roleID); err != nil {
 		return nil, err
 	}
 	var mid string
-	err = s.DB.QueryRow(`SELECT id FROM members WHERE id = ? AND workspace_id = ?`, memberID, workspaceID).Scan(&mid)
+	err := s.DB.QueryRow(`SELECT id FROM members WHERE id = ? AND workspace_id = ?`, memberID, workspaceID).Scan(&mid)
 	if err == sql.ErrNoRows {
 		return nil, apperr.NotFound("成员不存在")
 	}
@@ -196,20 +198,13 @@ func (s *Service) Claim(workspaceID, roleID, memberID string, force bool) (*mode
 		return nil, err
 	}
 
-	tookOver := false
 	if active, err := s.activeClaim(roleID); err != nil {
 		return nil, err
 	} else if active != nil {
 		if active.MemberID == memberID {
 			return active, nil
 		}
-		if !force {
-			return nil, apperr.Conflict("该角色已被其他成员认领")
-		}
-		if err := s.Release(workspaceID, roleID); err != nil {
-			return nil, err
-		}
-		tookOver = true
+		return nil, apperr.Conflict("该席位占用中，禁止顶替")
 	}
 
 	now := nowUTC()
@@ -236,7 +231,7 @@ func (s *Service) Claim(workspaceID, roleID, memberID string, force bool) (*mode
 			VALUES (?,?,?,?,?,NULL)`, id, workspaceID, roleID, memberID, now)
 		if err != nil {
 			if db.IsUniqueViolation(err) {
-				return nil, apperr.Conflict("该角色已被其他成员认领")
+				return nil, apperr.Conflict("该席位占用中，禁止顶替")
 			}
 			return nil, err
 		}
@@ -245,15 +240,6 @@ func (s *Service) Claim(workspaceID, roleID, memberID string, force bool) (*mode
 			return nil, err
 		}
 		claim = &c
-	}
-
-	if tookOver {
-		rid := role.ID
-		_, _ = s.UpsertMemory(workspaceID, memberID, UpsertMemoryInput{
-			KeyName:   "seat_takeover:" + role.Slug,
-			ValueText: fmt.Sprintf("角色「%s」已从其他成员接管", role.Name),
-			RoleID:    &rid,
-		})
 	}
 	return claim, nil
 }

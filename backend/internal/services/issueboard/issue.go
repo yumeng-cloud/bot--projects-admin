@@ -221,7 +221,15 @@ func (s *Service) CreateIssue(workspaceID string, in CreateIssueInput) (*models.
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return s.GetIssue(workspaceID, id)
+	iss, err := s.GetIssue(workspaceID, id)
+	if err != nil {
+		return nil, err
+	}
+	s.emit(workspaceID, "issue.created", iss)
+	if iss.AssigneeID != nil && strings.TrimSpace(*iss.AssigneeID) != "" {
+		s.emit(workspaceID, "issue.assigned", iss)
+	}
+	return iss, nil
 }
 
 type ListIssuesFilter struct {
@@ -692,7 +700,17 @@ func (s *Service) UpdateIssue(workspaceID, issueID string, in UpdateIssueInput) 
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return s.GetIssue(workspaceID, issueID)
+	iss, err := s.GetIssue(workspaceID, issueID)
+	if err != nil {
+		return nil, err
+	}
+	if len(changes) > 0 {
+		s.emit(workspaceID, "issue.updated", map[string]any{"issue": iss, "changes": changes})
+		if _, ok := changes["assignee_id"]; ok {
+			s.emit(workspaceID, "issue.assigned", iss)
+		}
+	}
+	return iss, nil
 }
 
 func (s *Service) DeleteIssue(workspaceID, issueID, actorID, actorKind string) error {

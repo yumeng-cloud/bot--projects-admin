@@ -267,10 +267,10 @@ func (h *WebhookHandler) DispatchEvent(workspaceID, event string, payload any) {
 
 func (h *WebhookHandler) dispatchSync(workspaceID, event string, payload any) {
 	body, err := json.Marshal(map[string]any{
-		"event":      event,
+		"event":        event,
 		"workspace_id": workspaceID,
-		"occurred_at": time.Now().UTC().Format(time.RFC3339Nano),
-		"data":       payload,
+		"occurred_at":  time.Now().UTC().Format(time.RFC3339Nano),
+		"data":         payload,
 	})
 	if err != nil {
 		return
@@ -279,7 +279,8 @@ func (h *WebhookHandler) dispatchSync(workspaceID, event string, payload any) {
 	if err != nil {
 		return
 	}
-	defer rows.Close()
+	type target struct{ id, url, secret string }
+	var targets []target
 	for rows.Next() {
 		var id, url, secret, eventsJSON string
 		if err := rows.Scan(&id, &url, &secret, &eventsJSON); err != nil {
@@ -288,7 +289,11 @@ func (h *WebhookHandler) dispatchSync(workspaceID, event string, payload any) {
 		if !eventMatch(eventsJSON, event) {
 			continue
 		}
-		h.deliverOne(id, url, secret, event, body)
+		targets = append(targets, target{id: id, url: url, secret: secret})
+	}
+	_ = rows.Close() // 必须先关游标再 Exec（SQLite 单连接，否则 deliver/logDelivery 会死锁）
+	for _, t := range targets {
+		h.deliverOne(t.id, t.url, t.secret, event, body)
 	}
 }
 

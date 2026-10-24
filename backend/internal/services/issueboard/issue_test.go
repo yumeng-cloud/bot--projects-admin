@@ -809,3 +809,57 @@ func TestForceAssigneeGate(t *testing.T) {
 		t.Fatalf("force assignee: %+v", got2.AssigneeID)
 	}
 }
+
+func TestIssueDispatchEvents(t *testing.T) {
+	svc, ws, pid := setup(t)
+	var mu sync.Mutex
+	var events []string
+	svc.DispatchEvent = func(workspaceID, event string, payload any) {
+		mu.Lock()
+		defer mu.Unlock()
+		events = append(events, event)
+		if workspaceID != ws {
+			t.Errorf("ws=%s want %s", workspaceID, ws)
+		}
+		if payload == nil {
+			t.Errorf("nil payload for %s", event)
+		}
+	}
+	m1 := insertMember(t, svc, ws)
+	iss, err := svc.CreateIssue(ws, issueboard.CreateIssueInput{
+		ProjectID: pid, Title: "hook", ActorKind: "human", AssigneeID: &m1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	got := append([]string(nil), events...)
+	mu.Unlock()
+	if len(got) < 2 || got[0] != "issue.created" || got[1] != "issue.assigned" {
+		t.Fatalf("create events=%v want [issue.created issue.assigned …]", got)
+	}
+
+	events = nil
+	m2 := insertMember(t, svc, ws)
+	_, err = svc.UpdateIssue(ws, iss.ID, issueboard.UpdateIssueInput{
+		Version: iss.Version, AssigneeID: &m2, ActorKind: "human", ForceAssignee: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	got = append([]string(nil), events...)
+	mu.Unlock()
+	hasUpdated, hasAssigned := false, false
+	for _, e := range got {
+		if e == "issue.updated" {
+			hasUpdated = true
+		}
+		if e == "issue.assigned" {
+			hasAssigned = true
+		}
+	}
+	if !hasUpdated || !hasAssigned {
+		t.Fatalf("update events=%v want issue.updated + issue.assigned", got)
+	}
+}

@@ -1,6 +1,7 @@
 package botmem_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/pkg/apperr"
@@ -83,12 +84,17 @@ func TestBindSeatSingleActiveForce(t *testing.T) {
 	if !ok || ae.Code != "conflict" {
 		t.Fatalf("want conflict got %#v", err)
 	}
-	forced, err := svc.BindSeat(ws, team.ID, seatID, m2, true)
-	if err != nil {
-		t.Fatal(err)
+	// 活跃 claim + force 仍 409，禁止顶替
+	_, err = svc.BindSeat(ws, team.ID, seatID, m2, true)
+	if err == nil {
+		t.Fatal("expected 409 even with force on active seat")
 	}
-	if forced.BoundMemberID == nil || *forced.BoundMemberID != m2 {
-		t.Fatalf("force bind: %+v", forced)
+	ae, ok = err.(*apperr.AppError)
+	if !ok || ae.Code != "conflict" {
+		t.Fatalf("want conflict got %#v", err)
+	}
+	if ae.Message != "该席位占用中，禁止顶替" {
+		t.Fatalf("msg=%q", ae.Message)
 	}
 }
 
@@ -109,12 +115,61 @@ func TestClaimForce(t *testing.T) {
 	if !ok || ae.Code != "conflict" {
 		t.Fatalf("want conflict %#v", err)
 	}
-	c, err := svc.Claim(ws, role.ID, m2, true)
+	// 活跃 claim + force 仍 409
+	_, err = svc.Claim(ws, role.ID, m2, true)
+	if err == nil {
+		t.Fatal("expected 409 even with force on active claim")
+	}
+	ae, ok = err.(*apperr.AppError)
+	if !ok || ae.Code != "conflict" {
+		t.Fatalf("want conflict %#v", err)
+	}
+	if ae.Message != "该席位占用中，禁止顶替" {
+		t.Fatalf("msg=%q", ae.Message)
+	}
+}
+
+func TestBindSeatForceDirtyBindWritesAudit(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "Dirty"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.MemberID != m2 {
-		t.Fatalf("force claim member=%s", c.MemberID)
+	roster, err := svc.EnsureRoster(ws, team.ID, botmem.EnsureRosterInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	seat := roster[0]
+	if _, err := svc.BindSeat(ws, team.ID, seat.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	// 释放 claim，保留 bound → 脏绑
+	if seat.BotRoleID == nil || *seat.BotRoleID == "" {
+		t.Fatal("expected bot_role_id on roster seat")
+	}
+	if err := svc.Release(ws, *seat.BotRoleID); err != nil {
+		t.Fatal(err)
+	}
+	forced, err := svc.BindSeat(ws, team.ID, seat.ID, m2, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if forced.BoundMemberID == nil || *forced.BoundMemberID != m2 {
+		t.Fatalf("force dirty bind: %+v", forced)
+	}
+	var action, payload string
+	err = svc.DB.QueryRow(
+		`SELECT action, payload FROM activities WHERE workspace_id=? AND action=? ORDER BY created_at DESC LIMIT 1`,
+		ws, "seat.force_bind",
+	).Scan(&action, &payload)
+	if err != nil {
+		t.Fatalf("audit activity: %v", err)
+	}
+	if action != "seat.force_bind" {
+		t.Fatalf("action=%s", action)
+	}
+	if !strings.Contains(payload, "force 清脏绑") || !strings.Contains(payload, m1) || !strings.Contains(payload, m2) {
+		t.Fatalf("payload=%s", payload)
 	}
 }
 

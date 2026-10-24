@@ -631,14 +631,14 @@ func cmdSeatEnter(c *botclient.Client, args []string) error {
 	fs := newFS("seat enter")
 	role := fs.String("role", "", "席位 slug（=模板角色；frontend/pm/qa/backend/wiki…）")
 	team := fs.String("team", "", "团队 UUID（有则走 seat bind；否则 role claim）")
-	force := fs.Bool("force", false, "接管已绑席（写 seat_takeover:<slug>）")
+	force := fs.Bool("force", false, "仅清无 active claim 的残留脏绑；活跃占用仍 409")
 	idKey := fs.String("idempotency-key", "", "")
 	full, ids, asJSON := viewFlags(fs)
 	if err := fs.Parse(reorderFlags(args)); err != nil {
 		return err
 	}
 	if *role == "" {
-		return fmt.Errorf("用法: ymbot seat enter --role <slug> [--team <uuid>] [--force]\n主航线②：slug=席位；有 --team 走 bind；冲突 409 禁瞎抢\nmigrate enter = 本命令别名")
+		return fmt.Errorf("用法: ymbot seat enter --role <slug> [--team <uuid>] [--force]\n主航线②：slug=席位；有 --team 走 bind；活跃占用 409 禁顶替；--force 仅清脏绑\nmigrate enter = 本命令别名")
 	}
 	applyIDKey(c, *idKey)
 	v, err := c.SeatEnter(*role, botclient.SeatEnterOpts{TeamID: *team, Force: *force})

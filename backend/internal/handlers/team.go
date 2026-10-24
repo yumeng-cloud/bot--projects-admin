@@ -201,8 +201,12 @@ func (h *TeamHandler) ExpandSeats(w http.ResponseWriter, r *http.Request) {
 }
 
 // MountTeams 挂载 teams roster / seat bind / expand。auth 同 bots（workspace member + idempotency）。
-func MountTeams(mux *http.ServeMux, db *sql.DB, wrap func(http.Handler) http.Handler) {
+// onIssueEvent 可选：ExpandSeats 改派时扇出 Webhook（通常传 WebhookHandler.DispatchEvent）。
+func MountTeams(mux *http.ServeMux, db *sql.DB, wrap func(http.Handler) http.Handler, onIssueEvent ...func(workspaceID, event string, payload any)) {
 	h := NewTeamHandler(db)
+	if len(onIssueEvent) > 0 && onIssueEvent[0] != nil {
+		h.Svc.IssueDispatch = onIssueEvent[0]
+	}
 	if wrap == nil {
 		wrap = func(next http.Handler) http.Handler { return next }
 	}
