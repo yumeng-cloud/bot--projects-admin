@@ -101,6 +101,10 @@
 /* Description wrap — ByteMD lives inside (see .acb-issue-md below) */
 .acb-issue-desc-wrap {
   margin-bottom: 8px;
+  min-height: 0;
+}
+.acb-issue-desc-wrap:has(.acb-issue-md:not(.is-empty)),
+.acb-issue-desc-wrap:has(.acb-issue-md:focus-within) {
   min-height: 180px;
 }
 
@@ -466,6 +470,9 @@
 .acb-issue-md {
   min-height: 180px;
 }
+.acb-issue-md.is-empty:not(:focus-within) {
+  min-height: 48px;
+}
 .acb-issue-md .bytemd {
   height: auto;
   min-height: 180px;
@@ -601,7 +608,10 @@
   pointer-events: none;
   font-weight: 400;
 }
-.acb-issue-md.is-empty .bytemd-preview {
+.acb-issue-md.is-empty:not(:focus-within) .bytemd-preview {
+  min-height: 48px;
+}
+.acb-issue-md.is-empty:focus-within .bytemd-preview {
   min-height: 160px;
 }
 .acb-issue-md.is-empty .bytemd-preview .markdown-body {
@@ -621,6 +631,17 @@
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+}
+/* I3: empty + unfocused — hug ≈48px (override global 160/180) */
+.acb-issue-md.is-empty:not(:focus-within) .bytemd,
+.acb-issue-md.is-empty:not(:focus-within) .bytemd-body,
+.acb-issue-md.is-empty:not(:focus-within) .CodeMirror,
+.acb-issue-md.is-empty:not(:focus-within) .bytemd-preview {
+  min-height: 48px !important;
+  height: auto;
+}
+.acb-issue-md.is-empty:not(:focus-within) .CodeMirror-scroll {
+  min-height: 48px !important;
 }
 /* Focused or non-empty: very faint bottom edge only — not a heavy frame */
 .acb-issue-md:focus-within .bytemd,
