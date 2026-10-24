@@ -138,7 +138,8 @@
 
 ## 进度注记
 
-- 2026-10-25 01:04 · **对齐总指挥**：仍冻 **C2–D / E2 / G**（明示）。撤回「解冻仅 C2」派工。SEAT_REFILL_BIND 关后下一刀 → [`NEXT_WAVE_DEBT_SEAT_REFILL_SHOT.md`](./NEXT_WAVE_DEBT_SEAT_REFILL_SHOT.md)（补位 Toast 箱截对齐 B3；软†收口）。
+- 2026-10-25 01:05 · **产品统一短票（总指挥反对 `8a722ae`）**：用户令不停/不堵/能干跑完/好用优先。**SHOT ∥ C2 并行**；截图不挡多选批量。**C3–D / E2 / G 仍冻**；解冻条件：C2 关后另拍 / 或人用刚需反对短票。已重派 React（C2+SHOT）+ Issue 域（C2-2 待命）。
+- 2026-10-25 01:04 · （已被 01:05 统一短票取代）曾收回 C2 只开 SHOT；总指挥反对后改 **SHOT∥C2**。
 - 2026-10-25 01:03 · （已撤回）曾拍解冻仅 C2；总指挥重申仍冻 C2–D 后收回。
 - 2026-10-25 00:54 · SEAT_REFILL 关后下一刀 **SEAT_REFILL_BIND**（冻项外）。**C2–D / E2 / G 仍冻**（明示）。
 - 2026-10-25 00:47 · **E3 正式关已落**；下一刀跳出 PRO_ADMIN → [`NEXT_WAVE_DEBT_SEAT_REFILL.md`](./NEXT_WAVE_DEBT_SEAT_REFILL.md)（停工席补位引导）。**C2–D / E2 / G 仍冻**（明示）。
@@ -180,4 +181,4 @@
 
 ## 关单进度
 
-**B/C1/SEAT_LEAVE/E1/E3 + SEAT_REFILL/BIND 正式关** · **C2–D / E2 / G 仍冻**（明示）；下一刀 **SEAT_REFILL_SHOT**。
+**B/C1/SEAT_LEAVE/E1/E3 + SEAT_REFILL/BIND 正式关** · **开 C2（∥ SHOT）**；**C3–D / E2 / G 仍冻**（解冻条件见注记）。

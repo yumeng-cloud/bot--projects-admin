@@ -3,7 +3,8 @@
 > 2026-10-25 01:04 Asia/Shanghai · 产品体验  
 > **承接：** [`SEAT_REFILL_BIND`](./NEXT_WAVE_DEBT_SEAT_REFILL_BIND.md) 已关；QA B4 soft†：`seat-refill-after` Toast 旧于 B3 文案。  
 > **本刀：** 重截补位成功 Toast / 席卡，对齐「持补位码入场即占该席」；源码已准，只收证据。  
-> **明示仍冻：** PRO_ADMIN **C2–D / E2 / G**。
+> **并行：** 与 [`PRO_ADMIN_C2`](./NEXT_WAVE_DEBT_PRO_ADMIN_C2.md) **并行**，本刀 soft† **不挡** C2。  
+> **仍冻：** PRO_ADMIN **C3–D / E2 / G**（C2 已开）。
 
 ## 目标态
 
@@ -39,8 +40,9 @@
 
 ## 进度注记
 
-- 2026-10-25 01:04 · BIND 关后总指挥重申仍冻 C2–D；产品收回解冻 C2，改拍本软†收口。
+- 2026-10-25 01:05 · **短票统一**：本刀 soft† 与 C2 **并行**；不挡主航线。
+- 2026-10-25 01:04 · （已取代）曾独开本刀收 C2；总指挥反对后改并行。
 
 ## 关单进度
 
-**开干** · 等 React S1。
+**开干** · 等 React S1（∥ C2）。
