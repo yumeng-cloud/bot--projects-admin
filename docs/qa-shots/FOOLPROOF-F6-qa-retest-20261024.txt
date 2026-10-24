@@ -1,0 +1,84 @@
+=== FOOLPROOF F6 箱证（全链可串）===
+time_AsiaShanghai: 2026-10-24 23:27 Asia/Shanghai (box)
+result: Overall=PASS†
+evidence_file: docs/qa-shots/FOOLPROOF-F6-qa-retest-20261024.txt
+debt_doc: docs/NEXT_WAVE_DEBT_ONE_TAP_FOOLPROOF.md
+fix_SHA: 681de29 (ancestor YES of HEAD)
+HEAD_at_run: 1ef1c70c087e76f9f1af69171cdc4e6a8e6512d7
+prior_product_ticks: F2–F5 勾 @ React 681de29 · docs(ux) 1c4460a
+API/FE: :8080 ok · :5174 ok · admin@yumeng.tech / Admin123!
+WS: ba1481c49148aba9553ba3811406b69f（育蒙科技）
+separate_from: SEAT_VISIBILITY V5 PASS（3df4345 / docs 关单 1ef1c70）— 本文件只报 F6
+
+## F6 full chain（产品底图）
+
+### 1 设置 → 新建身份钥匙 — PASS
+POST /api/v1/workspaces/{ws}/api-keys
+  name=F6-full-chain-20261024
+  → 201 { api_key, token }
+token: ymk_848a9c25…524f（len=52；startswith ymk_=YES）
+api_key.id: 25282088691b04bab04fe833f6ba4536
+api_key.member_id: 094acad4a3f0aaef2ee6370e790912b4
+api_key.key_prefix: ymk_848a9c25（= token[:12]）
+Go: backend/internal/handlers/apikey.go Create → "token": raw（明文仅此一次）
+FE: SettingsPage.onCreateKey → createApiKey → setLastKeyToken(token)
+    无 token → error「服务未返回身份钥匙明文」（禁当成功无钥）
+
+### 2 成功挡层露钥 + 复制启动提示词嵌 ymk_ — PASS†（Modal 点击 soft†）
+Source @ 681de29:
+  IdentityKeyRevealModal.tsx
+    - title「身份钥匙（仅此一次）」；maskClosable=false；正文渲染完整 {token}
+    - 主按钮「复制身份钥匙」；次按钮「复制启动提示词」→ buildFirstRunPrompt({token})
+  SettingsPage wires <IdentityKeyRevealModal open={Boolean(lastKeyToken)} token={lastKeyToken} />
+箱截（F2 产品勾，同 SHA 引入）: docs/qa-shots/foolproof-create-bot-key.png（41069 B）
+Live prompt（esbuild 打包 frontend/src/utils/oneTapJoin.ts → buildFirstRunPrompt）:
+  embeds_token=YES
+  has_export_line=YES  export YMBOT_API_KEY=ymk_848a9c25…524f
+  has_install=YES      curl -fsSL http://127.0.0.1:8080/install.sh | bash
+  has_whoami=YES       ymbot whoami
+  has_warn=YES         勿发公开群 / 勿转发
+† soft: 本执行器未点开浏览器 Modal DOM；硬证= API 201 token + FE 挡层接线 + 同函数产物含钥。
+  硬 FAIL 门槛（露钥隐藏 / 提示词无钥）未触发。
+
+### 3 装 CLI — PASS
+GET http://127.0.0.1:8080/install.sh → 200（提示词主路径）
+本机已有 ymbot（E5 路径 + backend/ymbot）:
+  /tmp/e5-ymbot-home/.local/bin/ymbot
+  /workspace/ai-collab-board/backend/ymbot
+未重跑 curl|bash（避免污染；install 端点可达 + CLI 可执行即满足 F6「装 CLI」环节）。
+
+### 4 按提示词配钥 → ymbot whoami = 当次 Bot — PASS
+从启动提示词抽出 YMBOT_API_KEY（= 创建响应 token；extracted_match=YES）
+环境:
+  YMBOT_API_URL=http://127.0.0.1:8080
+  YMBOT_API_KEY=<当次 ymk_>
+  YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f
+backend/ymbot whoami → `bot  Grok Bot` · --json {"actor_kind":"bot","display_name":"Grok Bot"}
+E5 ymbot whoami → `bot  Grok Bot`（同钥同身份）
+GET …/bots/me (Bearer ymk_) →
+  member_id=094acad4a3f0aaef2ee6370e790912b4
+  display_name=Grok Bot · actor_kind=bot
+= api_key.member_id（创建时默认绑工作区首个 is_bot 成员）→ **同一 Bot**
+
+## Source checklist
+| Check | Result |
+| --- | --- |
+| 681de29 ancestor of HEAD | YES |
+| Modal 渲染完整 token（非只 Toast） | PASS |
+| 复制启动提示词 → buildFirstRunPrompt | PASS |
+| buildFirstRunPrompt 强制 ymk_ 前缀并嵌 export | PASS |
+| 席页 buildBotJoinPrompt 仍禁嵌 ymk_（F5 分家） | PASS（源码保留；本包不重验 F5） |
+| API 返回 token | PASS 201 |
+| whoami 身份 = 钥绑定成员 | PASS |
+
+## Method note
+computerUse/浏览器 Modal 实地点击 soft†（同 SEAT V5 约束风格）。
+硬证链: live POST api-keys → esbuild 执行 FE buildFirstRunPrompt → 自提示词抽钥 → ymbot whoami + GET /bots/me。
+勿把完整 ymk_ 写入可转发渠道；本证据仅留 prefix…tail。
+
+## Defects
+(none)
+
+## Overall
+PASS† — F6 全链可串（创建露钥 → 启动提示词嵌钥 → CLI → whoami 同 Bot）。
+Go 无需改（token 已回）。React 681de29 行为满足 F2–F4/F3；F6 QA 勾此文件。
