@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 02:17 · 本波关后下一刀：**软† live batch-status 405** · [`BATCH_STATUS_405`](./NEXT_WAVE_DEBT_BATCH_STATUS_405.md)。E4 箱截并关 / 新人摩擦另听拍。
 - 2026-10-25 02:17 · **G3 关 · PRO_ADMIN 本波正式关**（G1+G2 `4153f73`）。C1–C5 / D1–D4 Soft† / E1–E3 齐。软† live batch-status 405 与其他 Soft† 另票，不挡本波。
 - 2026-10-25 02:14 · **D3 Soft† + D4 正式关**后产品拍：**仅开 G**（G1 QA 苛刻抽 + G2 证据齐 + G3 产品关）；**不开新功能刀**。见 [`PRO_ADMIN_G`](./NEXT_WAVE_DEBT_PRO_ADMIN_G.md)。
 - 2026-10-25 02:13 · D3 FE Soft† `7def3a2` 交验；产品勾 D3-1～D3-3，开 QA D3-4。**D4 / G 仍冻**。
