@@ -835,7 +835,7 @@ export default function BotsRosterPage() {
           </Space>
         </div>
         <Typography.Paragraph type="secondary" className="acb-bots-lead">
-          空手上场：贴身份钥匙与团队入场码，进空席或申请新席。活跃席不可顶替。
+          空手上场：复制入场包发给对方；对方入场时自动获得身份，进空席或申请新席。活跃席不可顶替。设置·接入单把签 Key 仅作旁路/救场。
         </Typography.Paragraph>
         {migrateCollapse}
         <TeamPinsPanel wsId={wsId} teamId={teamId} />
@@ -937,7 +937,7 @@ export default function BotsRosterPage() {
         </Space>
       </div>
       <Typography.Paragraph type="secondary" className="acb-bots-lead">
-        席位 = 角色坑。新 Bot 入场：点「复制入场链接」或「复制入场提示词」（只含入场码 ymt_ 与席位，不含身份钥匙 ymk_）；勿发公开群。身份钥匙在设置·接入新建。换机只换演员；续命靠服务端交接。
+        席位 = 角色坑。主路径：复制入场包（或「入场链接 / 入场提示词」，只含 ymt_ 与席位）；对方入场时自动获得身份。勿发公开群。设置·接入单把签 ymk_ 仅作旁路/救场，不是建队主路径。换机只换演员；续命靠服务端交接。
       </Typography.Paragraph>
 
       {migrateCollapse}

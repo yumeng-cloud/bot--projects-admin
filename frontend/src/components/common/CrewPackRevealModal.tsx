@@ -113,7 +113,7 @@ export default function CrewPackRevealModal({
   }
 
   const title = afterCreate
-    ? `班底已就绪 · 复制全班入场包`
+    ? `班底已就绪 · 复制入场包，对方入场时自动获得身份`
     : `复制全班入场包`
 
   return (
@@ -133,10 +133,10 @@ export default function CrewPackRevealModal({
           showIcon
           message={
             afterCreate
-              ? `团队「${teamName}」已创建；一次复制即可把各空席入场材料发给对应 Agent`
-              : `为当前队「${teamName}」的每个空席签发带 role 的入场码（仅 ymt_，不含身份钥匙）`
+              ? `团队「${teamName}」已创建；复制入场包，对方入场时自动获得身份`
+              : `为当前队「${teamName}」的每个空席签发入场包（仅 ymt_ + 席位）；对方入场时自动获得身份`
           }
-          description="勿发公开群。身份钥匙（ymk_）仍走设置·接入，勿与入场码混用。"
+          description="勿发公开群。两码分轨：入场包只含 ymt_。设置·接入单把签 ymk_ 仅作旁路/救场，不是建队主路径。"
         />
 
         {busy ? (

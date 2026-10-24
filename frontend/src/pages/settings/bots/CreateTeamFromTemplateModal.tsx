@@ -146,8 +146,8 @@ export default function CreateTeamFromTemplateModal({ open, wsId, onClose, onCre
 
       onCreated(team, roster)
       onClose()
-      message.success(`已创建团队「${team.name}」· ${roster.length || tmpl.seats.length} 空席（未绑 Key）`)
-      message.info('请复制全班入场包，一次带走各席入场材料', 4)
+      message.success(`已创建团队「${team.name}」· ${roster.length || tmpl.seats.length} 空席`)
+      message.info('复制入场包，对方入场时自动获得身份', 4)
     } finally {
       setBusy(false)
     }
@@ -196,7 +196,7 @@ export default function CreateTeamFromTemplateModal({ open, wsId, onClose, onCre
         </div>
         <div>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            空席预览（创建后未绑 Key）
+            空席预览（创建后复制入场包发给对方）
           </Typography.Text>
           <Table
             size="small"

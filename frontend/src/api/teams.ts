@@ -113,7 +113,7 @@ export const BUILTIN_TEAM_TEMPLATES: TeamTemplateCatalogItem[] = [
   {
     key: 'default',
     name: '默认班底',
-    description: '五席：前端 / 产品经理 / QA / 后端 / 知识库；空席未绑 Key',
+    description: '五席：前端 / 产品经理 / QA / 后端 / 知识库；创建后复制入场包即可',
     source: 'builtin',
     seats: [
       { slug: 'frontend', name: '前端', playbook_ref: 'playbook/frontend.md' },
