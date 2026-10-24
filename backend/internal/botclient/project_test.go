@@ -196,3 +196,48 @@ func TestProjectIssuesMembersFailShowsDash(t *testing.T) {
 		t.Fatalf("UUID leaked on members miss: %s", txt)
 	}
 }
+
+func TestProjectIssuesDropsArchivedByDefault(t *testing.T) {
+	raw := json.RawMessage(`{"issues":[
+		{"id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","identifier":"YM-1","title":"Open","status":"todo","priority":"low","version":1,"updated_at":"t"},
+		{"id":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","identifier":"YM-2","title":"Archived","status":"done","priority":"low","version":1,"updated_at":"t","archived_at":"2026-10-24T12:00:00Z"}
+	]}`)
+	c := &Client{}
+	items, err := c.ProjectIssues(raw, ViewOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("want 1 after drop archived, got %d %#v", len(items), items)
+	}
+	if items[0]["identifier"] != "YM-1" {
+		t.Fatalf("got %#v", items[0])
+	}
+
+	kept, err := c.ProjectIssues(raw, ViewOpts{IncludeArchived: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(kept) != 2 {
+		t.Fatalf("include want 2, got %d", len(kept))
+	}
+
+	// Detail/get：单条已归档仍投影
+	one := json.RawMessage(`{"issue":{"id":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","identifier":"YM-2","title":"Archived","status":"done","priority":"low","version":1,"archived_at":"2026-10-24T12:00:00Z"}}`)
+	got, err := c.ProjectIssues(one, ViewOpts{Detail: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0]["identifier"] != "YM-2" {
+		t.Fatalf("detail archived: %#v", got)
+	}
+
+	filtered := DropArchivedFromIssueListJSON(raw)
+	items2, err := c.ProjectIssues(filtered, ViewOpts{IncludeArchived: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items2) != 1 || items2[0]["identifier"] != "YM-1" {
+		t.Fatalf("DropArchivedFromIssueListJSON: %#v", items2)
+	}
+}

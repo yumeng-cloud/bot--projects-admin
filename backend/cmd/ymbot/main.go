@@ -70,7 +70,7 @@ whoami 可前置自检；migrate enter = seat enter（别名，非第二条主�
                                             扩工补位：未领叶子→空闲已绑席；禁改 in-progress
   patrol [--quiet-if-unchanged] [--state-file PATH] [--full|--id|--json]
                                             辅路径：open+assignee=me；quiet 无变化则无刷屏
-  issue list [--status] [--assignee me|id] [--project] [--q] [--cycle] [--label] [--team] [--leaf-only] [--full|--id|--json]
+  issue list [--status] [--assignee me|id] [--project] [--q] [--cycle] [--label] [--team] [--leaf-only] [--include-archived|--archived-only] [--full|--id|--json]
   issue get <YM-12|id> [--full|--id|--json]
   issue create --project ID --title T --parent YM-n|ID […]
   issue claim <YM-12|id> [--version N] [--idempotency-key] [--autosave]

@@ -103,6 +103,8 @@ func cmdIssue(c *botclient.Client, args []string) error {
 		team := fs.String("team", "", "团队 UUID（query team_id；后端按队过滤）")
 		leafOnly := fs.Bool("leaf-only", false, "仅叶子（query leaf_only=1）")
 		unassigned := fs.Bool("unassigned", false, "未分配")
+		includeArchived := fs.Bool("include-archived", false, "含已归档（query include_archived=1；默认剔）")
+		archivedOnly := fs.Bool("archived-only", false, "仅已归档（query archived=only）")
 		full, ids, asJSON := viewFlags(fs)
 		if err := fs.Parse(reorderFlags(args[1:])); err != nil {
 			return err
@@ -127,9 +129,20 @@ func cmdIssue(c *botclient.Client, args []string) error {
 		if *unassigned {
 			qv.Set("unassigned", "1")
 		}
+		// 默认不传 include_archived / archived；显式旗标才传
+		if *archivedOnly {
+			qv.Set("archived", "only")
+			opts.IncludeArchived = true
+		} else if *includeArchived {
+			qv.Set("include_archived", "1")
+			opts.IncludeArchived = true
+		}
 		raw, err := c.IssueList(qv)
 		if err != nil {
 			return err
+		}
+		if !opts.IncludeArchived {
+			raw = botclient.DropArchivedFromIssueListJSON(raw)
 		}
 		if opts.Full {
 			printRawFull(raw)

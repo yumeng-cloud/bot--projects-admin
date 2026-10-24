@@ -10,10 +10,11 @@ import (
 
 // ViewOpts 通道展示档位（CLI --full/--id/--json；MCP full/ids）。
 type ViewOpts struct {
-	Full   bool // 接近 REST 全量（含裸 UUID）
-	IDs    bool // 仍瘦，但附加裸 id
-	JSON   bool // 强制 JSON（默认文本）
-	Detail bool // issue get/写回结果：瘦输出含 version（list 仍不含）
+	Full            bool // 接近 REST 全量（含裸 UUID）
+	IDs             bool // 仍瘦，但附加裸 id
+	JSON            bool // 强制 JSON（默认文本）
+	Detail          bool // issue get/写回结果：瘦输出含 version（list 仍不含）
+	IncludeArchived bool // list 默认剔 archived_at；get/Detail 或显式 include 保留
 }
 
 // HexUUIDRe 匹配 8-4-4-4-12 或连续 32 hex（验收扫默认 stdout 用）。
@@ -203,6 +204,43 @@ func (c *Client) projectIssueMap(m map[string]any, names map[string]string, opts
 	return out
 }
 
+
+// issueArchivedAt 读非空 archived_at（字符串）；无则 ""。
+func issueArchivedAt(m map[string]any) string {
+	return strings.TrimSpace(strField(m, "archived_at"))
+}
+
+// DropArchivedFromIssueListJSON 对 {"issues":[...]} 信封去掉带非空 archived_at 的项；其它形状原样返回。
+// 供 CLI/MCP list 在 --full 直出 raw 前做防御性过滤（API 尚未剔归档时仍生效）。
+func DropArchivedFromIssueListJSON(raw json.RawMessage) json.RawMessage {
+	var top map[string]any
+	if err := json.Unmarshal(raw, &top); err != nil {
+		return raw
+	}
+	arr, ok := top["issues"].([]any)
+	if !ok {
+		return raw
+	}
+	kept := make([]any, 0, len(arr))
+	for _, it := range arr {
+		m, ok := it.(map[string]any)
+		if !ok {
+			kept = append(kept, it)
+			continue
+		}
+		if issueArchivedAt(m) != "" {
+			continue
+		}
+		kept = append(kept, m)
+	}
+	top["issues"] = kept
+	b, err := json.Marshal(top)
+	if err != nil {
+		return raw
+	}
+	return b
+}
+
 func (c *Client) ProjectIssues(raw json.RawMessage, opts ViewOpts) (slim []map[string]any, err error) {
 	var top map[string]any
 	if err := json.Unmarshal(raw, &top); err != nil {
@@ -228,6 +266,10 @@ func (c *Client) ProjectIssues(raw json.RawMessage, opts ViewOpts) (slim []map[s
 	}
 	out := make([]map[string]any, 0, len(list))
 	for _, m := range list {
+		// list 默认剔归档；Detail/get 或 IncludeArchived 保留（深链仍可读）
+		if !opts.IncludeArchived && !opts.Detail && issueArchivedAt(m) != "" {
+			continue
+		}
 		out = append(out, c.projectIssueMap(m, names, opts))
 	}
 	return out, nil

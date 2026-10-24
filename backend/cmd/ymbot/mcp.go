@@ -120,9 +120,9 @@ func mcpTools() []map[string]any {
 	issueRef := map[string]any{"type": "string", "description": "YM-n 或 id"}
 	return []map[string]any{
 		{"name": "board_whoami", "description": "可选自检：Bot 身份短文本；主航线仍是 team_pull→seat_enter→handoff_get", "inputSchema": obj(map[string]any{"full": full, "ids": ids})},
-		{"name": "board_issue_list", "description": "Issue 瘦表 YM-n（无 UUID）；leaf_only=可领池；team_id=按队过滤", "inputSchema": obj(map[string]any{
+		{"name": "board_issue_list", "description": "Issue 瘦表 YM-n（无 UUID）；默认剔归档；leaf_only=可领池；team_id=按队过滤", "inputSchema": obj(map[string]any{
 			"status": str, "assignee_id": str, "project_id": str, "q": str, "cycle_id": str, "label_id": str, "team_id": str,
-			"leaf_only": bol, "full": full, "ids": ids,
+			"leaf_only": bol, "include_archived": bol, "archived_only": bol, "full": full, "ids": ids,
 		})},
 		{"name": "board_issue_get", "description": "Issue 瘦读；默认含 version（乐观锁），无 UUID", "inputSchema": obj(map[string]any{"issue_id": issueRef, "full": full, "ids": ids}, "issue_id")},
 		{"name": "board_issue_create", "description": "父下建叶子（须 parent_id）；禁无父游离", "inputSchema": obj(map[string]any{
@@ -281,9 +281,20 @@ func callTool(c *botclient.Client, name string, args map[string]any) (string, er
 		if boolArg(args, "leaf_only") {
 			qv.Set("leaf_only", "1")
 		}
+		// 默认不传 include_archived / archived；显式参数才传（archived=only 优先）
+		if boolArg(args, "archived_only") {
+			qv.Set("archived", "only")
+			opts.IncludeArchived = true
+		} else if boolArg(args, "include_archived") {
+			qv.Set("include_archived", "1")
+			opts.IncludeArchived = true
+		}
 		raw, err := c.IssueList(qv)
 		if err != nil {
 			return "", err
+		}
+		if !opts.IncludeArchived {
+			raw = botclient.DropArchivedFromIssueListJSON(raw)
 		}
 		return emitIssue(raw)
 	case "board_issue_get":
