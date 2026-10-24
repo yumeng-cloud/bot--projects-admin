@@ -22,14 +22,25 @@ func TestHelpListsTeamSeatCommands(t *testing.T) {
 	_, _ = io.Copy(&buf, r)
 	out := buf.String()
 	for _, want := range []string{
+		"team pull → seat enter → handoff get",
+		"slug = 席位",
+		"bot-team-template/playbook/看板席位迁绑.md",
 		"team pull --uuid",
-		"migrate enter --role",
 		"seat enter --role",
+		"handoff get",
+		"migrate enter --role",
+		"= seat enter（别名）",
 		"seat leave --role",
 		"seat expand --team",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("help missing %q\n%s", want, out)
 		}
+	}
+	// migrate 不得抢主航线位：seat enter 须先于 migrate enter 出现在「命令」区
+	seatIdx := strings.Index(out, "seat enter --role")
+	migIdx := strings.Index(out, "migrate enter --role")
+	if seatIdx < 0 || migIdx < 0 || seatIdx > migIdx {
+		t.Fatalf("seat enter should appear before migrate enter alias\n%s", out)
 	}
 }

@@ -29,10 +29,15 @@ func main() {
 }
 
 func printHelp() {
-	fmt.Print(`ymbot — 看板 Bot CLI / MCP（通道 DX：docs/BOT_CHANNEL_DX_P0.md；续命：docs/BOT_HANDOFF_CONTINUITY_P0.md）
+	fmt.Print(`ymbot — 看板 Bot CLI / MCP（= bot-team-template 班底作业手册里的手；非另一套系统）
 
-续工: 先 whoami → handoff get（无文件，服务端真相源）；进度写 memory/todo/comment，勿攒到最后 export。
-export: 换机备份可选；日常续工不需要。import: 救场/迁入可选。
+主航线（唯一）: team pull → seat enter → handoff get → 干活
+  术语: 模板角色 slug = 席位（seat / role_slug）
+  MCP:  board_team_pull → board_seat_enter → board_handoff_get
+  说明书: bot-team-template/playbook/看板席位迁绑.md · templates/ymbot/
+  契约:   docs/BOT_TEAM_SEAT_P0.md
+whoami 可前置自检；migrate enter = seat enter（别名，非第二条主航线）。
+进度写 memory/todo/comment（服务端真相源）。export/import 仅换机备份/救场。
 
 环境:
   YMBOT_API_URL           默认 http://127.0.0.1:8080
@@ -42,8 +47,17 @@ export: 换机备份可选；日常续工不需要。import: 救场/迁入可选
   YMBOT_IDEMPOTENCY_KEY   可选；写操作未传 --idempotency-key 时使用
   YMBOT_AUTOSAVE          可选=1；claim/comment/memory set 成功后 stderr 提醒「已写服务端」（非 daemon）
 
-命令:
-  whoami [--full|--id|--json]
+命令（主航线优先）:
+  team pull --uuid <team_uuid>              拉班底（幂等 ensure roster；不清 memory）
+  seat enter --role <slug> [--team] [--force]
+                                            进席（slug=席位；有 --team 走 bind；409 禁瞎抢）
+  handoff get [--full|--id|--json]          续命权威：服务端摘要，无文件
+  whoami [--full|--id|--json]               可选自检（非主航线另立）
+  migrate enter --role <slug> [--team] [--force]
+                                            = seat enter（别名）
+  seat leave --role <slug> [--team]         离席：有 --team 走 unbind，否则 release
+  seat expand --team <uuid> [--project] [--limit N] [--dry-run]
+                                            扩工补位：未领叶子→空闲已绑席；禁改 in-progress
   issue list [--status] [--assignee me|id] [--project] [--q] [--cycle] [--label] [--leaf-only] [--full|--id|--json]
   issue get <YM-12|id> [--full|--id|--json]
   issue create --project ID --title T --parent YM-n|ID […]
@@ -53,17 +67,8 @@ export: 换机备份可选；日常续工不需要。import: 救场/迁入可选
   comment create --issue YM-12 -m|--body TEXT [--idempotency-key] [--autosave]
   memory list [--q] [--mode keyword|semantic|hybrid] [--limit N] [--full|--id|--json]
   memory set --key K --value V [--tags] [--idempotency-key] [--autosave]
-  handoff get [--full|--id|--json]          续命权威：服务端摘要，无文件
   handoff export [--out file.json] […]      换机备份可选；日常续工不需要
   handoff import --file file.json|- […]     救场/迁入可选；非日常续工
-  team pull --uuid <team_uuid>              幂等拉班底（ensure roster；不清 memory）
-  migrate enter --role <slug> [--team] [--force]
-                                            进场：whoami→handoff→bind|claim（= seat enter）
-  seat enter --role <slug> [--team] [--force]
-                                            有 --team 走 bind；409 禁瞎抢（须 --force 接管）
-  seat leave --role <slug> [--team]         有 --team 走 unbind，否则 release
-  seat expand --team <uuid> [--project] [--limit N] [--dry-run]
-                                            未领叶子派空闲已绑席；禁改 in-progress
   mcp-serve            stdio MCP（full/ids 同 --full/--id）
 
 输出档位:

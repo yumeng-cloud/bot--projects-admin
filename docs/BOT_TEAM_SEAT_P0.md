@@ -41,7 +41,7 @@ Bot = **可迁绑的角色席位**（身份挂在工作区·团队下，不钉�
 1. 机 B 打开**同一工作区**入口。  
 2. **迁绑**：设置 → Bot 席位 →「绑定此设备 / 此 Agent」（贴同一 Bot Key，或席位邀请码认领）。  
    - 身份跟着**席位**走，不跟着本机文件夹走。  
-3. 新会话：`whoami` → `handoff get` → 恢复记忆 / Todo / 开放 `YM-n` → 接着干。  
+3. 新会话主航线：`team pull`（若班底未齐）→ `seat enter` → `handoff get` → 恢复记忆 / Todo / 开放 `YM-n` → 接着干（`whoami` 可选自检）。  
 4. **禁止**把「export → U 盘 → import」写成默认剧本（保留救场）。
 
 ### 晚上 · 多团队
@@ -58,12 +58,12 @@ Bot = **可迁绑的角色席位**（身份挂在工作区·团队下，不钉�
 | 动作 | 产品行为 | 不打架规则 |
 |------|----------|------------|
 | **拉班底** | `GET/POST …/teams/{team_id}/roster`（或等价）：按团队 UUID 列出/物化空席位；幂等——同 `team_id`+`role_slug` 不双建 | Idempotency-Key；重复拉 = 返回已有席位，**不**重置 memory |
-| **席位迁绑** | 机 B / 新 Agent：绑定 Key→席位（member）；进场 `whoami` → `handoff get` → `role claim` | **单活**：第二绑定 409/冲突提示；确认后旧绑失效；claim 冲突只读占用者，**禁止瞎抢** |
+| **席位迁绑** | 机 B / 新 Agent：绑定 Key→席位（member）；**主航线** `team pull` → `seat enter` → `handoff get`（slug=席位；whoami 可选自检） | **单活**：第二绑定 409/冲突提示；确认后旧绑失效；claim 冲突只读占用者，**禁止瞎抢** |
 | **补位** | 席位空闲或持有人掉线：另一 Bot **认领空席** 或「代班」只读交接卡后 claim | 有人占着 → 须显式接管（force）并写 comment；默认拒绝静默顶替 |
 | **扩工** | 同团队加新角色席位 / 同一人兼第二席位 | 兼岗须**显式**第二席位绑定；默认记忆按席位隔离，禁止两席位写同一 `last_focus` 键互相覆盖（键加 `seat_slug:` 前缀或分 member） |
 | **扩团队** | 新 `team_id` 再拉同一模板班底 | 新团队新席位组；**记忆不串队**（member/seat 作用域含 team 或 workspace 隔离） |
 
-通道草图（实现归属 Bot 记忆角色 + Go）：`board_team_roster_get|ensure` · 现有 `board_whoami` / `board_handoff_get` / `board_role_claim` · 迁绑/吊销 Key 的 seat bind API。
+通道主航线（唯一；与 bot-team-template 同序）：`board_team_pull` → `board_seat_enter` → `board_handoff_get`。slug=席位。`board_whoami` 可选自检；`migrate enter` = `seat enter`。说明书：`bot-team-template/playbook/看板席位迁绑.md`。
 
 ### 1.2 现成技术形状（Bot 记忆角色回帖 · 对齐实现）
 
@@ -191,13 +191,14 @@ P0 班底/迁绑/补位：优先复用 **BotRole + Claim 单活 + 409**；`team_
 
 | 项 | 状态 | 备注 |
 |----|------|------|
-| CLI `ymbot team pull --uuid` | 已接线 | → `POST …/teams/{id}/roster/ensure` → `{roster}`；瘦表 slug/claim |
-| CLI `migrate enter` / `seat enter` | 已接线 | whoami→handoff→**bind**（`--team`）或 role claim；409 含占用者；`--force` 接管 |
+| CLI `ymbot team pull --uuid` | 已接线 | 主航线① → `POST …/teams/{id}/roster/ensure` → `{roster}`；slug=席位 |
+| CLI `seat enter`（`migrate enter`=别名） | 已接线 | 主航线②：**bind**（`--team`）或 role claim；409 含占用者；`--force` 接管 |
+| CLI `handoff get` | 已接线 | 主航线③：服务端摘要无文件 |
 | CLI `seat leave` | 已接线 | `--team` → unbind（顺带 release）；否则 role release |
 | CLI `seat expand` | 已接线 | → `POST …/expand` `{project_id?,limit?}` → assigned/skipped；`--dry-run` 兜底 |
-| MCP `board_team_pull` / `board_seat_enter` / `board_seat_leave` / `board_seat_expand` | 已接线 | 描述短、默认无 UUID |
+| MCP `board_team_pull` → `board_seat_enter` → `board_handoff_get`（+ leave/expand） | 已接线 | 与模板说明书同序同术语；默认无 UUID |
 | botclient `TeamPull` / `SeatEnter` / `SeatLeave` / `TeamSeatBind` / `TeamSeatExpand` | 已落地 | 记忆键 `SeatMemoryKey(slug,key)`；**未**双写 REST handler |
 | Go `teams` / `team_seats` handler + 迁移 | **Go 同事** | 通道已按精确契约接线 |
 | T9–T11 真服务证据 | **PASS** · 2026-10-24 · HEAD `0968a9a` · `/tmp/ymbot_t9_t10_evidence.txt` | 产品体验已勾；通道 P0 关单 |
 
-回链：[`BOT_SEAT_BIND_TECH_P0.md`](./BOT_SEAT_BIND_TECH_P0.md) · [`BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md`](./BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md) · 模板 `playbook/看板席位迁绑.md`
+回链：[`BOT_SEAT_BIND_TECH_P0.md`](./BOT_SEAT_BIND_TECH_P0.md) · [`BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md`](./BOT_TEAM_TEMPLATE_BRAINSTORM_P0.md) · **说明书** `bot-team-template`（根 README 唯一作业链 + `playbook/看板席位迁绑.md`）

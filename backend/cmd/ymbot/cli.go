@@ -53,7 +53,7 @@ func autosaveOn(flag bool) bool {
 }
 
 func remindAutosave() {
-	fmt.Fprintln(os.Stderr, "已写服务端（进度在服务端；续工用 whoami → handoff get，勿攒到最后 export）")
+	fmt.Fprintln(os.Stderr, "已写服务端（进度在服务端；主航线 team pull → seat enter → handoff get；勿攒到最后 export）")
 }
 
 func cmdWhoAmI(c *botclient.Client, args []string) error {
@@ -475,7 +475,7 @@ func cmdMemory(c *botclient.Client, args []string) error {
 
 func cmdHandoff(c *botclient.Client, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("用法: ymbot handoff get|export|import …\n续工先 whoami → handoff get（无文件）；进度写 memory/todo/comment，勿攒到最后 export\nexport 换机备份可选；日常续工不需要")
+		return fmt.Errorf("用法: ymbot handoff get|export|import …\n主航线③：handoff get（无文件；先 team pull → seat enter）\n进度写 memory/todo/comment；export/import 仅备份/救场")
 	}
 	switch args[0] {
 	case "get", "export":
@@ -564,7 +564,7 @@ func cmdHandoff(c *botclient.Client, args []string) error {
 
 func cmdTeam(c *botclient.Client, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("用法: ymbot team pull --uuid <team_uuid> [--full|--id|--json]\n按团队 UUID 幂等 ensure roster（不双建、不清 memory）")
+		return fmt.Errorf("用法: ymbot team pull --uuid <team_uuid> [--full|--id|--json]\n主航线①：按团队 UUID 拉班底（slug=席位；幂等 ensure；不清 memory）\n见 bot-team-template/playbook/看板席位迁绑.md")
 	}
 	switch args[0] {
 	case "pull":
@@ -601,7 +601,7 @@ func cmdTeam(c *botclient.Client, args []string) error {
 
 func cmdMigrate(c *botclient.Client, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("用法: ymbot migrate enter --role <slug> [--team <uuid>] [--force]\n同义: ymbot seat enter")
+		return fmt.Errorf("用法: ymbot migrate enter --role <slug> [--team <uuid>] [--force]\n= seat enter（别名）；主航线：team pull → seat enter → handoff get")
 	}
 	switch args[0] {
 	case "enter":
@@ -613,7 +613,7 @@ func cmdMigrate(c *botclient.Client, args []string) error {
 
 func cmdSeat(c *botclient.Client, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("用法: ymbot seat enter|leave|expand …\nenter：whoami→handoff→bind|--role claim；leave：unbind|release")
+		return fmt.Errorf("用法: ymbot seat enter|leave|expand …\n主航线：team pull → seat enter → handoff get（slug=席位）\nenter：进席 bind|claim；leave：unbind|release；expand：扩工补位")
 	}
 	switch args[0] {
 	case "enter":
@@ -629,7 +629,7 @@ func cmdSeat(c *botclient.Client, args []string) error {
 
 func cmdSeatEnter(c *botclient.Client, args []string) error {
 	fs := newFS("seat enter")
-	role := fs.String("role", "", "角色 slug（frontend/pm/qa/backend/wiki…）")
+	role := fs.String("role", "", "席位 slug（=模板角色；frontend/pm/qa/backend/wiki…）")
 	team := fs.String("team", "", "团队 UUID（有则走 seat bind；否则 role claim）")
 	force := fs.Bool("force", false, "接管已绑席（写 seat_takeover:<slug>）")
 	idKey := fs.String("idempotency-key", "", "")
@@ -638,7 +638,7 @@ func cmdSeatEnter(c *botclient.Client, args []string) error {
 		return err
 	}
 	if *role == "" {
-		return fmt.Errorf("用法: ymbot seat enter --role <slug> [--team <uuid>] [--force]\n冲突 409 显示占用者，禁止瞎抢")
+		return fmt.Errorf("用法: ymbot seat enter --role <slug> [--team <uuid>] [--force]\n主航线②：slug=席位；有 --team 走 bind；冲突 409 禁瞎抢\nmigrate enter = 本命令别名")
 	}
 	applyIDKey(c, *idKey)
 	v, err := c.SeatEnter(*role, botclient.SeatEnterOpts{TeamID: *team, Force: *force})

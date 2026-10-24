@@ -1,7 +1,8 @@
 # 席位迁绑 · 技术脑暴（接产品路径）
 
 > 2026-10-24 · Bot 记忆角色 → 总指挥  
-> 产品路径假定：席位迁绑 + `handoff get` 主路径 + 团队共享记忆墙  
+> 产品路径假定：**主航线** `team pull` → `seat enter` → `handoff get`（slug=席位）+ 团队共享记忆墙  
+> 与 bot-team-template 同一套说明书（非另一系统）。  
 > 现成形状见 `models/bot.go` · 续命 H1–H5 已勾 · mirror P0 已落地
 
 ---
@@ -10,7 +11,7 @@
 
 | 块 | 已有 | 缺口 |
 |----|------|------|
-| 续命 H1–H5 | whoami→handoff get；过程写 memory/comment；export 可选 | template 进场一键编排未做 |
+| 续命 / 进场 | 主航线 team pull→seat enter→handoff get；whoami 可选；export 可选 | 说明书已定序；真服务 T9/T10 待合入证据 |
 | mirror | 多 Key 只读冷备、失败跳过 | 未进 template；无「服务端不可达→读 latest」MCP |
 | 席位/角色 | `bot_roles` + **单活** claim（`released_at IS NULL`）；handoff 带 `claimed_role` | 无「席位 seat」一等公民；Cursor agent↔member↔Key 映射在仓外；换机发/吊销 Key 流程无 API |
 | 记忆 | `bot_memories` **归属 member**（可选 `role_id`）；UNIQUE(ws, member, key) | **无团队共享记忆墙表**；role_id 未当共享面用；跨项目/跨团队 list 未定 |
@@ -20,7 +21,7 @@
 
 ## 2. 席位绑定数据模型（建议）
 
-**席位 seat** ≈「可被一台 Cursor Agent / 一套 Key 占用的角色坑」。
+**席位 seat** = 模板角色 **slug**（可被一台 Cursor Agent / 一套 Key 占用；旧称「角色坑」=席位）。
 
 | 字段/关系 | 存哪 | 说明 |
 |-----------|------|------|
@@ -39,14 +40,17 @@
 ## 3. API / MCP 草图
 
 ```
-# 进场（主路径）
-board_whoami
-board_handoff_get
-board_role_claim { slug }          # 409 → 返回占用人，勿盲抢
+# 进场（主航线唯一；与 bot-team-template 同序）
+board_team_pull { team_uuid }      # ① 拉班底；slug=席位
+board_seat_enter { role, team_uuid? }  # ② 进席 bind|claim；409 勿盲抢
+board_handoff_get                  # ③ 续命；无文件
+# board_whoami 可选自检；migrate enter = seat enter
 
-# 迁绑（P0 通道编排，可先 CLI）
-ymbot seat enter --role <slug>     # whoami→get→claim；冲突一行中文
-ymbot seat leave --role <slug>     # release
+# CLI 同序
+ymbot team pull --uuid <team>
+ymbot seat enter --role <slug> [--team <uuid>]
+ymbot handoff get
+ymbot seat leave --role <slug>
 
 # 共享记忆墙（P1，产品「团队墙」）
 board_shared_memory_list { project_id? }
@@ -89,12 +93,12 @@ list 走共享看板 API，不绑本机 git；项目管理主轨= Issues/Cycles�
 
 ## 6. 与 H1–H5 / mirror
 
-- 主路径不变：`handoff get`。  
+- 主航线不变：`team pull` → `seat enter` → `handoff get`。  
 - mirror：冷备私有 handoff；**共享墙另备或不进默认镜像**。  
 - 席位迁绑：**先**同 member 换 Key；import/mirror 最后手段。
 
 ## 7. 三句收口
 
-1. 身份=`Key→member`；席位=`role claim` 单活；续命=`handoff get`。  
+1. 身份=`Key→member`；席位=`slug` 单活（seat enter / claim）；续命=`handoff get`；班底=`team pull`。  
 2. 共享记忆墙是 **ws/project 新面**，与 `bot_memories` 隔离，P1 表或先约定。  
 3. 冲突用 409 + 显式 leave；mirror 不仲裁、不写回。

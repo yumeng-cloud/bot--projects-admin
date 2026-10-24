@@ -119,7 +119,7 @@ func mcpTools() []map[string]any {
 	ids := map[string]any{"type": "boolean", "description": "附加裸 id"}
 	issueRef := map[string]any{"type": "string", "description": "YM-n 或 id"}
 	return []map[string]any{
-		{"name": "board_whoami", "description": "Bot 身份短文本；新会话先调用，再 board_handoff_get", "inputSchema": obj(map[string]any{"full": full, "ids": ids})},
+		{"name": "board_whoami", "description": "可选自检：Bot 身份短文本；主航线仍是 team_pull→seat_enter→handoff_get", "inputSchema": obj(map[string]any{"full": full, "ids": ids})},
 		{"name": "board_issue_list", "description": "Issue 瘦表 YM-n（无 UUID）；leaf_only=可领池", "inputSchema": obj(map[string]any{
 			"status": str, "assignee_id": str, "project_id": str, "q": str, "cycle_id": str, "label_id": str,
 			"leaf_only": bol, "full": full, "ids": ids,
@@ -144,20 +144,20 @@ func mcpTools() []map[string]any {
 		{"name": "board_memory_set", "description": "Upsert 记忆到服务端；勿攒到 export", "inputSchema": obj(map[string]any{
 			"key_name": str, "value_text": str, "tags": str, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "key_name", "value_text")},
-		{"name": "board_handoff_get", "description": "续命权威：服务端摘要无文件；新会话先调", "inputSchema": obj(map[string]any{"full": full, "ids": ids})},
+		{"name": "board_handoff_get", "description": "主航线③：续命权威（服务端摘要无文件）；先 team_pull→seat_enter", "inputSchema": obj(map[string]any{"full": full, "ids": ids})},
 		{"name": "board_handoff_import", "description": "从备份/外来包救场；非日常续工", "inputSchema": obj(map[string]any{
 			"handoff": map[string]any{"type": "object"}, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "handoff")},
-		{"name": "board_team_pull", "description": "按团队 UUID 幂等拉班底（ensure roster；不双建、不清 memory）；瘦表 slug/claim", "inputSchema": obj(map[string]any{
+		{"name": "board_team_pull", "description": "主航线①：按团队 UUID 拉班底（slug=席位；幂等 ensure；不清 memory）", "inputSchema": obj(map[string]any{
 			"team_uuid": str, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "team_uuid")},
-		{"name": "board_seat_enter", "description": "迁绑进场 whoami→handoff→bind|claim；有 team_uuid 走 bind；409 禁瞎抢", "inputSchema": obj(map[string]any{
+		{"name": "board_seat_enter", "description": "主航线②：进席（role slug=席位；有 team_uuid 走 bind；409 禁瞎抢）", "inputSchema": obj(map[string]any{
 			"role": str, "team_uuid": str, "force": bol, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "role")},
-		{"name": "board_seat_leave", "description": "离席：有 team_uuid 则 unbind，否则 role release", "inputSchema": obj(map[string]any{
+		{"name": "board_seat_leave", "description": "离席（slug=席位）：有 team_uuid 则 unbind，否则 release", "inputSchema": obj(map[string]any{
 			"role": str, "team_uuid": str, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "role")},
-		{"name": "board_seat_expand", "description": "未领叶子派空闲已绑席；禁改 in-progress；可 dry_run", "inputSchema": obj(map[string]any{
+		{"name": "board_seat_expand", "description": "扩工补位（挂主航线后）：未领叶子→空闲已绑席；禁改 in-progress", "inputSchema": obj(map[string]any{
 			"team_uuid": str, "project_id": str, "limit": map[string]any{"type": "number"}, "dry_run": bol, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "team_uuid")},
 	}
