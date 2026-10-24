@@ -54,15 +54,16 @@ Toast 说有 N 空席 → 关掉创建弹窗后，**当前队 = 新队**，主�
 - [x] **V3** 空席可一键入场复制 · 卡上入场链接/Bot提示词
 - [x] **V4** 箱截 · `seat-visibility-after-create.png`
 - [x] **V7** 绑席后卡立刻显示 Bot 名 · `seat-visibility-after-bind.png`（演员·Grok Bot）
-- [ ] **V5** QA 全覆盖
-- [ ] **V6** 产品关单
+- [x] **V5** QA 全覆盖 · PASS `3df4345` / `SEAT_VISIBILITY-V5-qa-retest-20261024.txt`（第二模板 N/A）
+- [x] **V6** 产品关单 · 整单关
 
 ## 进度注记
 
+- 2026-10-24 23:23 · **整单关** QA V5 PASS `3df4345`（对账 FAIL `6f47344`）；产品 V6。
 - 2026-10-24 23:23 · 用户怒「不会自动组班」→ 另开 [`NEXT_WAVE_DEBT_AUTO_CREW.md`](./NEXT_WAVE_DEBT_AUTO_CREW.md)：建队后一键全班入场包，禁逐席。
 - 2026-10-24 23:20 · **产品勾 V1–V4+V7** React `0c712cf`：建队后 5 空席可见；绑知识库→卡立刻「演员 · Grok Bot」。**待 V5 QA** 复测全覆盖（对账原 FAIL `6f47344`）。
 - 2026-10-24 23:14 · 定稿。首刀 React V1–V4；QA V5。
 
 ## 关单进度
 
-**进行中** · V1–V4+V7 产品勾 `0c712cf`；**待 V5 QA**；V6 等 V5。
+**已关** · React `0c712cf` + QA `3df4345`；V1–V7/V5/V6 全勾。
