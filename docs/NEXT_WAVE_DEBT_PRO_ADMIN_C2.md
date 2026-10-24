@@ -30,9 +30,9 @@
 
 ## 产品勾选
 
-- [x] **C2-1** 多选操作条 · FE @4534e4c（串行 `patchIssue`；无 batch status API）
+- [x] **C2-1** 多选操作条 · FE @a33651d（串行 `patchIssue`；无 batch status API）
 - [ ] **C2-2** API（若需）· **缺口**：无 `PATCH …/issues/batch-status`；FE 已串行 `patchIssue`，Issue 域可后补真批量
-- [x] **C2-3** 箱截 · `docs/qa-shots/pro-c-bulk.png` @4534e4c
+- [x] **C2-3** 箱截 · `docs/qa-shots/pro-c-bulk.png` @a33651d
 - [ ] **C2-4** QA
 - [ ] **C2-5** 关单
 
