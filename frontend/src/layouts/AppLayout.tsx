@@ -112,7 +112,7 @@ export default function AppLayout({ user, onLogout }: { user: User | null; onLog
           items={[
             { key: 'board', icon: <DashboardOutlined />, label: <Link to={projectId ? `${base}/board` : `/w/${wsId}/board`}>看板</Link> },
             { key: 'list', icon: <UnorderedListOutlined />, label: <Link to={projectId ? `${base}/issues` : `/w/${wsId}/list`}>列表</Link> },
-            { key: 'cycles', icon: <FieldTimeOutlined />, label: <Link to={projectId ? `${base}/cycles` : `/w/${wsId}/cycles`}>Cycles</Link> },
+            { key: 'cycles', icon: <FieldTimeOutlined />, label: <Link to={projectId ? `${base}/cycles` : `/w/${wsId}/cycles`}>周期</Link> },
             { key: 'timeline', icon: <ScheduleOutlined />, label: <Link to={projectId ? `${base}/timeline` : `/w/${wsId}/timeline`}>排期</Link> },
             { key: 'wiki', icon: <BookOutlined />, label: <Link to={`/w/${wsId}/wiki`}>Wiki</Link> },
             { key: 'time', icon: <ClockCircleOutlined />, label: <Link to={`/w/${wsId}/time`}>工时</Link> },

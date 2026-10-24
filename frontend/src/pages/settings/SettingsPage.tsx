@@ -98,44 +98,51 @@ export default function SettingsPage() {
             {
               key: 'members',
               label: `成员 (${members.length})`,
-              children: members.length ? (
-                <Table
-                  className="acb-list-table"
-                  size="small"
-                  rowKey="id"
-                  dataSource={members}
-                  pagination={false}
-                  columns={[
-                    {
-                      title: '名称',
-                      dataIndex: 'display_name',
-                      render: (v: string, row) => (
-                        <span>
-                          {v || '未命名'}
-                          {row.is_bot ? (
-                            <Tag color="purple" style={{ marginLeft: 8 }}>
-                              机器人
-                            </Tag>
-                          ) : null}
-                        </span>
-                      ),
-                    },
-                    {
-                      title: '邮箱',
-                      dataIndex: 'email',
-                      ellipsis: true,
-                      render: (v?: string | null) => v || '—',
-                    },
-                    {
-                      title: '角色',
-                      dataIndex: 'role',
-                      width: 110,
-                      render: (v: string) => roleLabel(v),
-                    },
-                  ]}
-                />
-              ) : (
-                empty('暂无成员或接口未就绪')
+              children: (
+                <>
+                  {members.length ? (
+                    <Table
+                      className="acb-list-table"
+                      size="small"
+                      rowKey="id"
+                      dataSource={members}
+                      pagination={false}
+                      columns={[
+                        {
+                          title: '名称',
+                          dataIndex: 'display_name',
+                          render: (v: string, row) => (
+                            <span>
+                              {v || '未命名'}
+                              {row.is_bot ? (
+                                <Tag color="purple" style={{ marginLeft: 8 }}>
+                                  机器人
+                                </Tag>
+                              ) : null}
+                            </span>
+                          ),
+                        },
+                        {
+                          title: '邮箱',
+                          dataIndex: 'email',
+                          ellipsis: true,
+                          render: (v?: string | null) => v || '—',
+                        },
+                        {
+                          title: '角色',
+                          dataIndex: 'role',
+                          width: 110,
+                          render: (v: string) => roleLabel(v),
+                        },
+                      ]}
+                    />
+                  ) : (
+                    empty('暂无成员或接口未就绪')
+                  )}
+                  <div className="acb-settings-tab-foot">
+                    成员含人类与 Bot。Bot 席位与入场码在「Bot」设置；API Key / Webhook 见其它标签。
+                  </div>
+                </>
               ),
             },
             {

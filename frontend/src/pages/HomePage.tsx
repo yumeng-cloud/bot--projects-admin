@@ -103,6 +103,9 @@ export default function HomePage({ onLogout }: { onLogout: () => void }) {
             },
           ]}
         />
+        <div className="acb-surface-panel-foot">
+          进入工作区后可用看板、列表、周期与 Wiki。种子账号见 README；无空间时请先跑 seed。
+        </div>
       </div>
     </div>
   )

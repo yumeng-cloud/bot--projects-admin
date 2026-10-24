@@ -108,7 +108,7 @@ export default function CyclesPage({ workspaceId, projectId }: CyclesPageProps) 
     <div className="acb-page">
       <MockBanner />
       <div className="acb-page-bar">
-        <Typography.Title level={4}>Cycles</Typography.Title>
+        <Typography.Title level={4}>周期</Typography.Title>
         <Button
           type="text"
           size="small"
@@ -152,7 +152,7 @@ export default function CyclesPage({ workspaceId, projectId }: CyclesPageProps) 
               locale={{
                 emptyText: (
                   <div className="acb-empty-panel" style={{ minHeight: 120 }}>
-                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无 Cycle" />
+                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无周期" />
                   </div>
                 ),
               }}
@@ -184,16 +184,19 @@ export default function CyclesPage({ workspaceId, projectId }: CyclesPageProps) 
                 )
               }}
             />
+            <div className="acb-cycles-panel-foot">
+              周期 = 时间盒容量。点选左侧查看估时占用；过载会标红。结束后 Issue 可划入下一周期。
+            </div>
           </div>
         </Col>
         <Col span={16}>
           {selected ? (
-            <div className="acb-cycles-panel">
+            <div className="acb-cycles-panel acb-cycles-panel--fill">
               <div className="acb-page-bar" style={{ marginBottom: 8, padding: 0 }}>
                 <Typography.Text strong>{selected.name}</Typography.Text>
                 {selected.status !== 'completed' ? (
                   <Button danger size="small" onClick={() => void completeCycle()}>
-                    结束 Cycle
+                    结束周期
                   </Button>
                 ) : null}
               </div>
@@ -230,7 +233,7 @@ export default function CyclesPage({ workspaceId, projectId }: CyclesPageProps) 
                 locale={{
                   emptyText: (
                     <div className="acb-empty-panel" style={{ minHeight: 120 }}>
-                      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="本 Cycle 暂无 Issue" />
+                      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="本周期暂无 Issue" />
                     </div>
                   ),
                 }}
@@ -271,9 +274,9 @@ export default function CyclesPage({ workspaceId, projectId }: CyclesPageProps) 
               />
             </div>
           ) : (
-            <div className="acb-cycles-panel">
+            <div className="acb-cycles-panel acb-cycles-panel--fill">
               <div className="acb-empty-panel" style={{ minHeight: 140 }}>
-                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="选择左侧 Cycle 查看容量与 Issue" />
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="选择左侧周期查看容量与 Issue" />
               </div>
             </div>
           )}
