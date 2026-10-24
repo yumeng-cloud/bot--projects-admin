@@ -40,3 +40,15 @@
 | 1 | N1 吊销 HTTP | **Go 后端** |
 | 2 | N1 吊销 UI | **React 前端**（等路由或并行 mock 后接真） |
 | 3 | N2 下发 FE | **React 前端**（可与 N1 UI 同波） |
+
+
+---
+
+## 产品勾选（2026-10-24 17:41 Asia/Shanghai）
+
+| 项 | 结果 | 证据 |
+| --- | --- | --- |
+| **N1** | [x] 关 | `ec1742d` + QA `debt-n1n2-ec1742d`（revoke 幂等/redeem 已吊销）+ `docs/qa-shots/N1-revoke-list.png` |
+| **N2** | [x] 关 | 同 commit + `N2-dispatch-seat.png`（负责人预填席位 Bot） |
+
+**清债**：J1「HTTP/FE 未挂」清；J7「下发 FE」清。仍欠：巡检例程 / 「立即推送」P0.5；J4 Issue 正文 comment P0.1。

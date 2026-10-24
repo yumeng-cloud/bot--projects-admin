@@ -115,19 +115,19 @@
 | **辅：轻量巡检** | 席位例程定时（如 5–15min）拉「指派给我且未读/todo」；**无变化安静** | Webhook 不可达、休眠机补漏；**禁止**当抢席/误叫旧 UUID |
 | **禁** | 总指挥对活跃席乱 `SendToAgent` 猜角色名；对已 leave 旧 Bot 再叫醒 | 只打名册 **active** 席位绑定 |
 
-产品面（P0.5，可后于 join）：团队/席位条「下发」= 建 Issue + assignee=席位 member + 可选「立即推送」；推送失败落巡检队列，不丢单。验收见 **J7**。
+产品面：席位条「下发」= 建 Issue + assignee=席位 member（`ec1742d` 已交）；可选「立即推送」+ 巡检队列仍 **P0.5**。验收见 **J7**。
 
 ## 5. 验收条（勾选）
 
 | ID | 标准 | 勾选 |
 |----|------|------|
-| **J1** | 入场码 ≠ UUID ≠ `ymk_`；Admin 可签发/吊销；兑换得正确 workspace+team | [x] 签发+兑换：`0685720` B3 + FE `5b15581` 复制码；吊销：svc+单测有、HTTP/FE 未挂（记债，不挡签发/兑换） |
+| **J1** | 入场码 ≠ UUID ≠ `ymk_`；Admin 可签发/吊销；兑换得正确 workspace+team | [x] 签发+兑换 `0685720`；吊销 HTTP/FE `ec1742d` · QA `debt-n1n2-ec1742d` + `docs/qa-shots/N1-revoke-list.png` |
 | **J2** | 空 Bot：贴 `ymk_` + 入场码 → 一次 `join` 完成 pull+合法 enter+handoff；箱内自测有记录 | [x] `6385eec` · `docs/qa-shots/ymbot-j2-evidence-20261024.txt` |
 | **J3** | 活跃席第二路 enter → 409；FE/CLI **无**顶替按钮；新人无空席 → 只加新席 | [x] J2 禁活跃 force + expand/no-expand；B2 `b2-force-409.json`；FE T3 无 force |
 | **J4** | 仅停工/离职席可 force/补位；成功留审计 comment | [x] J2_optional_stopped_force；审计=`seat.force_bind` activities；Issue 正文 comment → P0.1 补强 |
 | **J5** | 重复 join / 重复 pull **幂等**，不清 memory/todos | [x] J2_idempotent_rejoin（skipped_enter）；T9 pull×2 同 id |
 | **J6** | 硬规矩：箱 5174/CLI 证据；禁甩用户本机；进度只回总指挥 | [x] 证据均在箱 `docs/qa-shots/` + `/workspace/qa-shots/full-0685720/` |
-| **J7** | 下发唤醒：指派→Webhook 主路径（巡检补漏）；无变化安静；不误叫旧席 | [x] G6a/B4 filter_member·seat + B5 baseline；巡检/下发 FE 仍 P0.5 |
+| **J7** | 下发唤醒：指派→Webhook 主路径（巡检补漏）；无变化安静；不误叫旧席 | [x] Webhook G6a/B4/B5；**下发 FE** `ec1742d` · `N2-dispatch-seat.png`（预填 assignee）；巡检例程/「立即推送」仍 P0.5 |
 
 ---
 
