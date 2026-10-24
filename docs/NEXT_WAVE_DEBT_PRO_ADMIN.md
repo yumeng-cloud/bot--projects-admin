@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:21 · **C1 正式关** FE `8c0fe5a` + QA PASS† `0e76217` / `PRO_ADMIN-C1-qa-spotcheck-20261025.txt`。产品+QA 双过。C2–E/G 仍冻。
 - 2026-10-25 00:21 · **QA C1 抽验 PASS** `0e76217` / `PRO_ADMIN-C1-qa-spotcheck-20261025.txt`（默认关/开归档/其它筛/截全过）。**C1 关绿维持**。
 - 2026-10-25 00:19 · **产品勾 C1** `8c0fe5a`：滤镜「显示已归档」默认关；开→`include_archived`+弱标签灰行；其它筛保持；箱截 `pro-c-archived-toggle.png` 过。C2–E/G 仍冻。**下一刀 SEAT_LEAVE 开刀**。
 - 2026-10-25 00:18 · **C1 关绿** React `8c0fe5a`：列表滤镜「显示已归档」默认关；开→`include_archived=1`；归档行弱标签+灰态；其它筛保持；箱截 `pro-c-archived-toggle.png`；`tsc --noEmit` PASS。C2–E/G 仍冻；下一刀 SEAT_LEAVE。
@@ -166,4 +167,4 @@
 
 ## 关单进度
 
-**B 空态小包已关** · **C1 产品关** `8c0fe5a`；**SEAT_LEAVE 开刀**；C2–E/G 仍冻。
+**B 空态小包已关** · **C1 正式关** FE `8c0fe5a` + QA `0e76217`；**SEAT_LEAVE 开刀中**；C2–E/G 仍冻。
