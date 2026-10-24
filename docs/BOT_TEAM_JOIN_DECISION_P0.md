@@ -27,7 +27,7 @@
 | **席位** | 角色坑位（slug + 显示名 + 可选 playbook） | `team_seats`；可绑 `member` |
 | **Bot 身份** | 演员（Key 持有者） | `ymk_…` → `member_id` |
 | **入场码** | 定位「进哪个工作区·团队」的邀请 | **`ymt_…`** opaque；兑换 → `{workspace_id, team_id}`；可过期/吊销/限次 |
-| **停工/离职** | 席位可补位态 | P0：**已 unbind**（`bound_member_id` 空）且对应 role claim 已 `released`；P0.1 可加显式 `duty_status` |
+| **停工/离职** | 席位可补位态 | P0 起显式 **`team_seats.status`**：`active` / `empty` / `left` / `departed`（+可选 `left_at`）；**禁止**仅用 `released_at` 兼表「可补位」（通道+Go 对齐） |
 | **活跃** | 已绑 member 且 claim 未 release | **禁止**他人 bind/force |
 
 **两把钥匙**：`ymk_` = 我是谁；`ymt_` = 我进哪队。禁止混用、禁止用裸 UUID 当主输入。
@@ -89,9 +89,9 @@
 | 兑换 | `POST …/team-invites/redeem` `{code}` → `{workspace_id,team_id,roster?}` | Bot 持 `ymk_` 调用 |
 | 一键 join | 通道 `ymbot team join --code`（= redeem+ensure+bind+handoff get） | 产品封装，非第二套 claim |
 | **加新席** | `ensure` 带新 `role_slug`，或 `POST …/seats` | **≠** 现网 `expand`（expand=给空闲席派叶子 Issue） |
-| force 收窄 | `bind(force)`：**仅**目标席已 unbind/停工；活跃 → 硬 409 | 现网 force 可顶活跃，**产品废该行为** |
+| force 收窄 | `bind(force)`：**仅** `status∈{left,departed}`（或 empty 无需 force）；`active` → 硬 409 | 现网 force 可顶活跃，**改代码硬拒**（Go 已认） |
 | Webhook 接通 | Issue 创建/更新/指派 **必须** `DispatchEvent` | 现网有投递器，缺事件接线则本单补 |
-| 事件名 | 至少 `issue.created`、`issue.updated`（payload 含 `assignee_id`） | 席位例程按 assignee=本席 member 过滤 |
+| 事件名 | `issue.created` + **`issue.assigned`**（新建）或 `issue.updated`+assignee 过滤；写路径须调 `DispatchEvent`（现网 **零调用点**，Go 缺口） | 席位例程只收本席 member；**不**投已 left 席 |
 
 ---
 
@@ -129,7 +129,7 @@
 | 现网 `bind(force=true)` 仍可顶活跃 | Go：**改语义**为仅空/已解绑；单测改写；通道去掉活跃 force |
 | `DispatchEvent` 未挂 Issue 写路径 | Go：创建/更新/指派处接线；补投递测试 |
 | 「expand」词义混乱 | 文案：**加新席** vs **派活**；CLI 保持 `expand`=派活，加席走 ensure/seats |
-| 停工无显式字段 | P0 用 unbind=可补；P0.1 `duty_status` |
+| 停工语义含糊 | P0 上 `team_seats.status`；leave=清绑+release+status=left |
 | 入场码泄露 | 短 TTL、限次、可吊销；日志只留末四位 |
 | 双 Key 认知成本 | 向导文案固定：「身份钥匙 / 团队入场码」 |
 
@@ -147,3 +147,14 @@
 ---
 
 *本页为唯一拍板面；实施以本节为准，JOIN_KEY 为展开说明。*
+
+---
+
+## 9. 碰撞收口（记忆角色 · Go · 产品 · 2026-10-24）
+
+| 源 | 结论 | 拍板采纳 |
+|----|------|----------|
+| 记忆角色 | redeem 不碰 claim；要显式 status；否决活跃 force / 码=UUID·ymk_ / 无身份 join | ✅ |
+| Go | invite 缺表可加；join 封装即可；force 改代码；Webhook 缺 `DispatchEvent` 接线与 assigned 事件 | ✅ 列入 §4 净增 |
+| 产品 | 无异议；与总指挥用户稿（ymt_ + 显式停工 + ymk_ 必填）一致 | ✅ |
+
