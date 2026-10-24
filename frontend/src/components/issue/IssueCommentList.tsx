@@ -48,7 +48,9 @@ export function IssueCommentList({
         ) : (
           <div>
             {comments.map((c) => {
-              const author = memberName(c.author_id)
+              const author =
+                (c.author?.display_name && c.author.display_name.trim()) ||
+                memberName(c.author_id)
               return (
                 <div key={c.id} className="acb-issue-comment-item">
                   <div className="acb-issue-comment-head">

@@ -135,8 +135,21 @@ function activitySentence(action: string, payload: string | null | undefined): s
       if (p.label_ids !== undefined) return '更新了标签'
       return '更新了 Issue'
     }
-    case 'comment.created':
+    case 'comment.created': {
+      const text = [p.summary, p.comment, p.body]
+        .find((v) => typeof v === 'string' && String(v).trim())
+      if (typeof text === 'string' && text.trim()) {
+        const one = text.trim().replace(/\s+/g, ' ')
+        return one.length > 80 ? `评论：${one.slice(0, 80)}…` : `评论：${one}`
+      }
       return '加了评论'
+    }
+    case 'seat.force_bind': {
+      const text = [p.summary, p.comment, p.body]
+        .find((v) => typeof v === 'string' && String(v).trim())
+      if (typeof text === 'string' && text.trim()) return String(text).trim()
+      return '强制补位了席位'
+    }
     case 'comment.updated':
       return '更新了评论'
     case 'comment.deleted':
