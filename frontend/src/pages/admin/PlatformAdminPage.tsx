@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Alert,
   Button,
   Form,
   Input,
   Modal,
+  Select,
   Spin,
   Table,
   Tabs,
@@ -30,8 +31,12 @@ import {
 } from '../../api/admin'
 import { formatShanghai } from '../../utils/time'
 
+/** C4：工作区状态筛 */
+type WsStatusFilter = 'all' | 'enabled' | 'disabled'
+
 /**
  * 平台超管台（PRO_ADMIN A2）：顶栏标题+副文+主操作一排；工作区|用户对等；表区 hug。
+ * C4：工作区表顶名称搜索 + 状态筛（FE 滤）。
  */
 export default function PlatformAdminPage() {
   const nav = useNavigate()
@@ -49,6 +54,15 @@ export default function PlatformAdminPage() {
   const [userQuery, setUserQuery] = useState('')
   const [userQueryDebounced, setUserQueryDebounced] = useState('')
   const userSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** C4：工作区名称搜索 + 状态筛（FE 滤；API 无 q/status） */
+  const [searchParams] = useSearchParams()
+  const forceWsFilter = searchParams.get('qaWsFilter') === '1'
+  const [wsQuery, setWsQuery] = useState(forceWsFilter ? 'QA' : '')
+  const [wsQueryDebounced, setWsQueryDebounced] = useState(forceWsFilter ? 'QA' : '')
+  const wsSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [wsStatusFilter, setWsStatusFilter] = useState<WsStatusFilter>(
+    forceWsFilter ? 'enabled' : 'all',
+  )
 
   useEffect(() => {
     ;(async () => {
@@ -120,6 +134,16 @@ export default function PlatformAdminPage() {
   }, [userQuery])
 
   useEffect(() => {
+    if (wsSearchTimer.current) clearTimeout(wsSearchTimer.current)
+    wsSearchTimer.current = setTimeout(() => {
+      setWsQueryDebounced(wsQuery)
+    }, 300)
+    return () => {
+      if (wsSearchTimer.current) clearTimeout(wsSearchTimer.current)
+    }
+  }, [wsQuery])
+
+  useEffect(() => {
     if (!user?.is_platform_admin) return
     void loadWorkspaces()
   }, [user?.is_platform_admin])
@@ -182,6 +206,19 @@ export default function PlatformAdminPage() {
     }
   }
 
+
+  const isWsDisabled = (row: AdminWorkspace) => !!(row.disabled_at || row.status === 'disabled')
+
+  const filteredWorkspaces = workspaces.filter((row) => {
+    const q = wsQueryDebounced.trim().toLowerCase()
+    if (q && !row.name.toLowerCase().includes(q)) return false
+    if (wsStatusFilter === 'enabled' && isWsDisabled(row)) return false
+    if (wsStatusFilter === 'disabled' && !isWsDisabled(row)) return false
+    return true
+  })
+
+  const wsFilterActive = !!(wsQueryDebounced.trim() || wsStatusFilter !== 'all')
+
   const empty = (desc: string) => (
     <div className="acb-empty-panel" style={{ padding: 24, minHeight: 120 }}>
       <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={desc} />
@@ -221,9 +258,34 @@ export default function PlatformAdminPage() {
           items={[
             {
               key: 'workspaces',
-              label: `工作区${workspaces.length ? ` (${workspaces.length})` : ''}`,
+              label: `工作区${filteredWorkspaces.length ? ` (${filteredWorkspaces.length})` : ''}`,
               children: (
                 <>
+                  <Space wrap style={{ marginBottom: 12 }} size={8}>
+                    <Input.Search
+                      allowClear
+                      placeholder="搜索工作区名称"
+                      value={wsQuery}
+                      onChange={(e) => setWsQuery(e.target.value)}
+                      onSearch={(v) => {
+                        setWsQuery(v)
+                        setWsQueryDebounced(v)
+                      }}
+                      style={{ width: 240 }}
+                      aria-label="搜索工作区名称"
+                    />
+                    <Select
+                      value={wsStatusFilter}
+                      onChange={(v: WsStatusFilter) => setWsStatusFilter(v)}
+                      style={{ width: 120 }}
+                      aria-label="状态筛选"
+                      options={[
+                        { value: 'all', label: '全部' },
+                        { value: 'enabled', label: '启用' },
+                        { value: 'disabled', label: '停用' },
+                      ]}
+                    />
+                  </Space>
                   {wsErr ? (
                     <Alert
                       type="warning"
@@ -239,13 +301,13 @@ export default function PlatformAdminPage() {
                   ) : null}
 
                   <Spin spinning={wsLoading}>
-                    {workspaces.length ? (
+                    {filteredWorkspaces.length ? (
                       <Table
                         className="acb-list-table"
                         size="small"
                         rowKey="id"
                         pagination={false}
-                        dataSource={workspaces}
+                        dataSource={filteredWorkspaces}
                         columns={[
                           {
                             title: '名称',
@@ -278,7 +340,7 @@ export default function PlatformAdminPage() {
                             key: 'status',
                             width: 120,
                             render: (_, row) => {
-                              const disabled = !!(row.disabled_at || row.status === 'disabled')
+                              const disabled = isWsDisabled(row)
                               return (
                                 <Space size={8}>
                                   <Tag color={disabled ? 'default' : 'success'}>
@@ -301,7 +363,10 @@ export default function PlatformAdminPage() {
                         ]}
                       />
                     ) : (
-                      empty(wsErr || '还没有工作区')
+                      empty(
+                        wsErr ||
+                          (wsFilterActive ? '没有符合条件的工作区' : '还没有工作区'),
+                      )
                     )}
                   </Spin>
                 </>
