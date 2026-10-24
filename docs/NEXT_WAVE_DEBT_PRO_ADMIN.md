@@ -138,7 +138,8 @@
 
 ## 进度注记
 
-- 2026-10-25 01:03 · **SEAT_REFILL_BIND 整包关**后产品拍：**解冻仅 C2**（Issue 列表多选 + 批量改状态/归档）为下一 P0；**C3–D / E2 / G 仍冻**。席链 LEAVE→REFILL→BIND 齐关。React 首刀；批量 API 缺口找 Issue 域。
+- 2026-10-25 01:04 · **对齐总指挥**：仍冻 **C2–D / E2 / G**（明示）。撤回「解冻仅 C2」派工。SEAT_REFILL_BIND 关后下一刀 → [`NEXT_WAVE_DEBT_SEAT_REFILL_SHOT.md`](./NEXT_WAVE_DEBT_SEAT_REFILL_SHOT.md)（补位 Toast 箱截对齐 B3；软†收口）。
+- 2026-10-25 01:03 · （已撤回）曾拍解冻仅 C2；总指挥重申仍冻 C2–D 后收回。
 - 2026-10-25 00:54 · SEAT_REFILL 关后下一刀 **SEAT_REFILL_BIND**（冻项外）。**C2–D / E2 / G 仍冻**（明示）。
 - 2026-10-25 00:47 · **E3 正式关已落**；下一刀跳出 PRO_ADMIN → [`NEXT_WAVE_DEBT_SEAT_REFILL.md`](./NEXT_WAVE_DEBT_SEAT_REFILL.md)（停工席补位引导）。**C2–D / E2 / G 仍冻**（明示）。
 - 2026-10-25 00:46 · **E3 正式关** FE `41c6e88` + QA PASS† `a8e0635`。三态归档滤镜齐。**C2–D / E2 / G 仍冻**（明示）。PRO_ADMIN 本波可验项已尽；下一刀听拍（另开或解冻）。
@@ -179,4 +180,4 @@
 
 ## 关单进度
 
-**B/C1/SEAT_LEAVE/E1/E3 + SEAT_REFILL/BIND 正式关** · **下一刀仅 C2**；**C3–D / E2 / G 仍冻**。
+**B/C1/SEAT_LEAVE/E1/E3 + SEAT_REFILL/BIND 正式关** · **C2–D / E2 / G 仍冻**（明示）；下一刀 **SEAT_REFILL_SHOT**。

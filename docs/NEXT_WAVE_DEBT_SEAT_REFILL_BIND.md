@@ -50,7 +50,7 @@
 
 ## 进度注记
 
-- 2026-10-25 01:03 · **B4 PASS† → B5 关单** QA `c2b210b`：锚定停工 redeem 201 直绑；通码 V2；active 409；三测绿。soft† 非挡：R4 `seat-refill-after` Toast 旧于 B3（源码为准）。整包 **SEAT_REFILL_BIND 关**。下一刀：解冻 **仅 C2**（列表多选批量）；**C3–D / E2 / G 仍冻**。
+- 2026-10-25 01:03 · **B4 PASS† → B5 关单** QA `c2b210b`：锚定停工 redeem 201 直绑；通码 V2；active 409；三测绿。soft† 非挡：R4 `seat-refill-after` Toast 旧于 B3（源码为准）。整包 **SEAT_REFILL_BIND 关**。下一刀：[`SEAT_REFILL_SHOT`](./NEXT_WAVE_DEBT_SEAT_REFILL_SHOT.md)（Toast 箱截对齐）；**C2–D / E2 / G 仍冻**（总指挥重申）。
 - 2026-10-25 00:58 · **产品勾 B1/B2** Go `f7048a4`：锚定停工可绑；通码 V2；active 409。三测绿。开 QA B4。
 - 2026-10-25 00:57 · **产品勾 B3** FE `0c5f67b`：持码即占席、无 force 暗示。等 Go B1/B2 → QA B4。
 - 2026-10-25 00:56 · **React 交 B3** FE `0c5f67b`：Toast/席卡/交接抽屉「持补位码入场即占该席」；勿暗示须 force；`tsc --noEmit` PASS。Go B1/B2 并行；等 B4。
