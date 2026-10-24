@@ -1,4 +1,4 @@
-import { Button, DatePicker, Form, InputNumber, Select, Typography } from 'antd'
+import { Button, DatePicker, Form, InputNumber, Select } from 'antd'
 import type { FormInstance } from 'antd/es/form'
 import type {
   Cycle,
@@ -98,15 +98,13 @@ export function IssuePropertyRail({
       <Form form={form} size="small" requiredMark={false} colon={false} component="div">
         {archived ? (
           <IssuePropertyRow label="归档">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                已归档
-              </Typography.Text>
+            <div className="acb-property-archive">
+              <span className="acb-property-archive__state">已归档</span>
               {onUnarchive ? (
                 <Button
                   size="small"
                   type="link"
-                  style={{ padding: 0, height: 'auto' }}
+                  className="acb-property-archive__action"
                   loading={unarchiving}
                   onClick={() => onUnarchive()}
                 >

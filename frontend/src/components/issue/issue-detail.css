@@ -394,6 +394,33 @@
   opacity: 0.85;
 }
 
+/* PRO_ADMIN E1：归档态/解档与状态轨同节奏（单行 · 13px · 中文） */
+.acb-property-archive {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+  min-height: 26px;
+}
+.acb-property-archive__state {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 26px;
+  color: var(--acb-text-secondary);
+}
+.acb-property-archive__action.ant-btn {
+  padding: 0 2px !important;
+  height: 26px !important;
+  line-height: 26px !important;
+  font-size: 13px !important;
+  font-weight: 450;
+}
+.acb-property-archive__action.ant-btn-link {
+  color: var(--acb-primary, #5e6ad2);
+}
+
 /* R4: select arrows / date picker icons — quiet until row hover/focus */
 .acb-property-row .ant-select-arrow,
 .acb-property-row .ant-select-clear,
