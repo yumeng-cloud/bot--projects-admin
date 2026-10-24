@@ -66,15 +66,18 @@ Bot 不靠刷屏。`ymbot`（及 MCP）默认**人话短输出**：席位、交�
 
 ## Quick Start
 
+**开通主路径（生产）**：**注册 → 登录 → 创建工作空间**（`POST /api/v1/workspaces`；创建者成为该空间 admin）。无需依赖 seed。
+
 ```bash
 git clone https://github.com/yumeng-cloud/bot--projects-admin.git
 cd bot--projects-admin
-cp .env.example .env     # 可选；默认 SQLite + AUTO_SEED=1
+cp .env.example .env     # 可选；开发默认可 SQLite
 
 make install             # go mod tidy + frontend pnpm install
-make seed                # 幂等
 make dev                 # API :8080 + Vite UI :5173
 ```
+
+打开 http://127.0.0.1:5173 → **注册**账号 → **创建工作空间** → 进入看板。
 
 | | |
 | --- | --- |
@@ -82,7 +85,9 @@ make dev                 # API :8080 + Vite UI :5173
 | API | http://127.0.0.1:8080 |
 | Health | `GET /healthz` |
 
-### Seed 登录（本地演示）
+### 本地演示捷径（可选 seed）
+
+想跳过注册、直接进样例数据时：`make seed`（或 `AUTO_SEED=1` 随服务启动）。
 
 | 字段 | 值 |
 |------|-----|
@@ -90,7 +95,7 @@ make dev                 # API :8080 + Vite UI :5173
 | 密码 | `Admin123!` |
 | 工作空间 | 育蒙科技（slug: `yumeng`） |
 
-生产请关 `AUTO_SEED`、换强密码、切 Postgres。
+生产请关 `AUTO_SEED`、设 `PLATFORM_ADMIN_EMAILS`、换强密码、切 Postgres（见 [`.env.example`](./.env.example)）。
 
 ### 数据库
 

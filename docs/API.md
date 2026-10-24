@@ -23,28 +23,67 @@ JSON 字段：`snake_case`；时间：UTC ISO8601
 | POST | `/auth/register` | `{email,password,name?}` → `{token,user}` |
 | POST | `/auth/login` | 同上；有登录限流 |
 | POST | `/auth/logout` | 清除 session cookie |
-| GET | `/auth/me` | 当前用户（JWT） |
+| GET | `/auth/me` | 当前用户（JWT）；**实现待 SHA**：响应增 `is_platform_admin`（bool） |
 
 ## Workspaces
 
 | Method | Path | 说明 |
 |--------|------|------|
-| GET | `/workspaces` | 我的工作空间列表 |
-| POST | `/workspaces` | 创建（创建者成为 admin） |
-| GET | `/workspaces/current` | 第一个工作空间 |
-| GET | `/workspaces/{workspaceID}` | 详情（须为成员） |
+| GET | `/workspaces` | 我的工作空间列表（已落地） |
+| POST | `/workspaces` | 创建（JWT；创建者 → WS `admin`；body `{name, slug?}`；已落地） |
+| GET | `/workspaces/current` | 第一个工作空间（已落地） |
+| GET | `/workspaces/{workspaceID}` | 详情（须为成员；已落地） |
+| PATCH | `/workspaces/{workspaceID}` | **实现待 SHA**：WS admin 改 `{name?, slug?}` |
 
 也可传 Header `X-Workspace-Id`（与路径二选一，路径优先）。
+
+生产开通主路径：**注册 / 登录 → `POST /workspaces`**（无需 seed）。本地演示仍可用 `make seed` / `AUTO_SEED`。
 
 ## Members / Labels
 
 | Method | Path | 说明 |
 |--------|------|------|
-| GET | `/workspaces/{ws}/members` | 成员列表 |
-| POST | `/workspaces/{ws}/members` | Admin 邀请（已注册邮箱） |
-| PATCH/DELETE | `/workspaces/{ws}/members/{memberID}` | Admin |
+| GET | `/workspaces/{ws}/members` | 成员列表（已落地） |
+| POST | `/workspaces/{ws}/members` | WS Admin：`{email, role}` 直接入席（**仅已注册**邮箱；已落地） |
+| PATCH | `/workspaces/{ws}/members/{memberID}` | WS Admin：`{role?, display_name?}`（已落地；**实现待 SHA**：不可摘掉最后一个 admin） |
+| DELETE | `/workspaces/{ws}/members/{memberID}` | WS Admin 移除（已落地；**实现待 SHA**：末 admin 护栏） |
 | GET/POST | `/workspaces/{ws}/labels` | 标签 |
 | PATCH/DELETE | `/workspaces/{ws}/labels/{labelID}` | |
+
+### Workspace invites（人类邀请链 · 契约 / 实现待 SHA）
+
+> **勿与**队席入场码 `ymt_`（`POST …/teams/{id}/invites` · `/team-invites/redeem`）混淆。本段 = **工作区人类成员**邀请链接。
+
+| Method | Path | Body / 响应 | 鉴权 | 说明 |
+|--------|------|-------------|------|------|
+| POST | `/workspaces/{ws}/invites` | body `{email?, role, expires_at?}` → `{invite, code}`（**明文 `code` 仅此一次**） | WS Admin | 未注册邮箱亦可签发；对方注册/登录后 redeem |
+| GET | `/workspaces/{ws}/invites` | `{invites:[{id,email?,role,status,code_tail,use_count,expires_at,…}]}`（**无**明文 code/hash） | WS Admin | 列表 |
+| POST | `/workspaces/{ws}/invites/{inviteID}/revoke` | `{invite}` / `{ok:true}`；已吊销幂等 200 | WS Admin | 吊销 |
+| POST | `/workspace-invites/redeem` | `{code}` → `{workspace_id, role, member_id?}` | JWT（已登录用户） | 不在 ws 路径下；入席当前用户 |
+
+**字段 / 错误（约定）**
+
+| 项 | 约定 |
+|----|------|
+| `role` | `admin` \| `member` |
+| `status`（派生） | `active` \| `revoked` \| `expired` \| `exhausted` |
+| 未知/非法 code、已吊销/过期 | **400** 中文 |
+| 非 WS Admin 签发/列表/吊销 | **403** |
+| 非成员访问他 WS | **404**（不泄露） |
+
+### Platform admin（全站超管 · 契约 / 实现待 SHA）
+
+> Bootstrap：环境变量 `PLATFORM_ADMIN_EMAILS`（逗号分隔；见 [`.env.example`](../.env.example)）。冷启将匹配邮箱用户授 `users.is_platform_admin`；亦可 seed 升旗。非超管打 `/admin/*` → **403** 中文。
+
+| Method | Path | Body / 响应 | 说明 |
+|--------|------|-------------|------|
+| GET | `/admin/workspaces` | `{workspaces:[{id,name,slug,member_count,disabled_at?,created_at,…}]}` | 全站列表 |
+| POST | `/admin/workspaces` | `{name, slug?, owner_email\|owner_user_id}` → `{workspace,…}` | 代开；owner → 该 WS admin |
+| PATCH | `/admin/workspaces/{id}` | `{disabled?\|disabled_at?}` | 停用/恢复；停用后该 WS 成员业务 API → **403**「工作区已停用」 |
+| GET | `/admin/users` | `{users:[…]}`（含 `is_platform_admin`、所属 WS 摘要） | 全站用户 |
+| PATCH | `/admin/users/{id}` | `{is_platform_admin}` | 授/撤平台超管 |
+
+管理操作须写审计（activity 或等价日志；**实现待 SHA**）。
 
 ## Projects
 
