@@ -123,20 +123,20 @@ Bot 使用：`Authorization: Bearer ymk_…` → `actor_kind=bot`，绑定 `memb
 | POST | `/workspaces/{ws}/teams/{teamID}/invites/{inviteID}/revoke` | Admin 吊销；幂等已吊销仍 200 + `status=revoked` |
 | POST | `/team-invites/redeem` | `{code}` → `{workspace_id,team_id,allow_expand_seat,seat_slug?,role_hint?}`（不在 ws 路径下） |
 
-### Team templates（T7-R · 契约 / 实现待 SHA）
+### Team templates（T7-R · 已落地 `716c3d0`）
 
-> 权威开工单：[`NEXT_WAVE_DEBT_T7.md`](./NEXT_WAVE_DEBT_T7.md)（`95e27c6`）。手册索引：[`BOT_TEAM_TEMPLATE_INDEX.md`](./BOT_TEAM_TEMPLATE_INDEX.md)。  
+> 权威开工单：[`NEXT_WAVE_DEBT_T7.md`](./NEXT_WAVE_DEBT_T7.md)（契约基线 `0999576` / 债文 `95e27c6`）。手册索引：[`BOT_TEAM_TEMPLATE_INDEX.md`](./BOT_TEAM_TEMPLATE_INDEX.md)。  
 > **本波仅 R1–R2**（选模板 → 空席 + `playbook_ref` + 错误码）。**升版 dry-run/apply（T7-4/5）后置**，勿当本波必验。  
 > 验收对齐 [`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md) **T7-1 / T7-2 / T7-3 / T7-6 / T7-7**（非整表 T7）。
 
-**现状（只读）**：`POST …/teams` 已收 `template_key`；`POST …/roster/ensure` 已收 `seats[].playbook_ref`，且 `template_key` 空/`default` 时用内置五席（**无**自动绑 Key）。**尚无**「模板清单」与「一键按手册展开全席 playbook_ref」的完整 T7-R 路径 → 下文标 **实现待 SHA**。
+**现状（已落地 `716c3d0`）**：内置 `default` 嵌入；`GET …/team-templates` 可读清单；`POST …/teams` / `…/from-template` 带 `template_key` 幂等建空席（slug/显示名/`playbook_ref`，**无**自动绑 Key）；`POST …/roster/ensure` 仅 `template_key`、空 `seats` → 按模板展开。未知模板 / 非法 `playbook_ref` → **400** 中文。
 
 | Method | Path | Body / Query | 响应 | 说明 |
 |--------|------|--------------|------|------|
-| GET | `/workspaces/{ws}/team-templates` | — | `{templates:[{key,name,description?,seats:[{slug,display_name,playbook_ref}]}]}` | **待 SHA**：可读手册索引（内置 `default` + `bot-team-template` 等） |
-| POST | `/workspaces/{ws}/teams` | `{name, slug?, template_key}` | `{team}`（含 `template_key`） | 已有创建；T7-R：**从模板创建**时 `template_key` 必填且须为清单内 key |
-| POST | `/workspaces/{ws}/teams/{teamID}/roster/ensure` | `{template_key?, seats?:[{slug,name,playbook_ref}]}` | `{roster: seats[]}` | 已有幂等；T7-R：仅 `template_key`、空 `seats` → 按索引展开空席+`playbook_ref`（**待 SHA** 挂手册）；显式 `seats` 仍可用 |
-| POST | `/workspaces/{ws}/teams/from-template`（可选别名） | `{name, slug?, template_key}` | `{team, roster}` | **待 SHA**：创建+ensure 一次完成；无则客户端串两步亦可 |
+| GET | `/workspaces/{ws}/team-templates` | — | `{templates:[{key,name,description?,seats:[{slug,display_name,playbook_ref}]}]}` | **已落地 `716c3d0`**：可读内置清单（现网 `default`；`bot-team-template` 等键仍见索引约定） |
+| POST | `/workspaces/{ws}/teams` | `{name, slug?, template_key}` | `{team}`（含 `template_key`） | 已有创建；T7-R：**从模板创建**时 `template_key` 必填且须为清单内 key（`716c3d0`） |
+| POST | `/workspaces/{ws}/teams/{teamID}/roster/ensure` | `{template_key?, seats?:[{slug,name,playbook_ref}]}` | `{roster: seats[]}` | 已有幂等；T7-R：仅 `template_key`、空 `seats` → 按索引展开空席+`playbook_ref`（**已落地 `716c3d0`**）；显式 `seats` 仍可用 |
+| POST | `/workspaces/{ws}/teams/from-template`（可选别名） | `{name, slug?, template_key}` | `{team, roster}` | **已落地 `716c3d0`**：创建+ensure 一次完成；亦可客户端串两步 |
 
 **字段**
 

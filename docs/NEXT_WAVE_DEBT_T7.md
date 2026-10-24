@@ -1,7 +1,8 @@
 # 下一小包 · T7-R · 从模板创建团队（最小）
 
 > 2026-10-24 19:14 Asia/Shanghai · 产品体验 · T6 全文关后下一刀  
-> **本包：选模板 → 空席 + playbook_ref。升版 diff（T7-4/5）后置。**
+> **本包：选模板 → 空席 + playbook_ref。升版 diff（T7-4/5）后置。**  
+> **Go R1–R2 已落地 `716c3d0`**（契约正文基线 `0999576`）。
 
 ## 裁定
 
@@ -42,12 +43,13 @@
 
 ## 产品勾选
 
-- [ ] R1–R4 API/箱验 · 产品勾
-- [ ] R5 FE（可后）
+- [x] R1–R2 API · Go **`716c3d0`**（清单 + 从模板空席 + `playbook_ref` + 4xx）
+- [ ] R3–R4 箱验/证据 · 产品勾
+- [ ] R5 FE（可后；主线另有 `8cf4e59` 预览+创建，产品另勾）
 
 ## 文档回链
 
-- REST 契约：[`API.md`](./API.md)「Team templates（T7-R）」· **实现待 SHA**
+- REST 契约：[`API.md`](./API.md)「Team templates（T7-R）」· **已落地 `716c3d0`**（契约正文基线 `0999576`）
 - 手册索引：[`BOT_TEAM_TEMPLATE_INDEX.md`](./BOT_TEAM_TEMPLATE_INDEX.md)
 - 验收表：[`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md)（本波勾 T7-1/2/3/6/7；T7-4/5 后置）
 
