@@ -182,6 +182,13 @@ export default function BotsRosterPage() {
   }
 
   const freeBots = useMemo(() => bots.filter((b) => b.bot_enabled), [bots])
+  /** TEAM_SWITCH S2：有当前队时席网格只展示该队 roster 对应 roles，勿用 WS 全量 bot_roles */
+  const visibleRoles = useMemo(() => {
+    if (!teamId) return roles
+    const ids = new Set(teamSeats.map((s) => s.bot_role_id).filter(Boolean))
+    const slugs = new Set(teamSeats.map((s) => s.role_slug).filter(Boolean))
+    return roles.filter((r) => ids.has(r.id) || (r.slug && slugs.has(r.slug)))
+  }, [teamId, teamSeats, roles])
   const hasAnyBinding = useMemo(() => {
     if (forceEmpty) return false
     if (roles.some((r) => Boolean(r.claim?.member_id))) return true
@@ -530,9 +537,9 @@ export default function BotsRosterPage() {
 
       <TeamPinsPanel wsId={wsId} teamId={teamId} />
 
-      {roles.length ? (
+      {visibleRoles.length ? (
         <div className="acb-bots-seat-grid">
-          {roles.map((role) => {
+          {visibleRoles.map((role) => {
             const occ = seatOccForRole(role)
             const mid = occ.occupantId
             const bound = occ.occupantLabel || botName(mid)
@@ -629,7 +636,10 @@ export default function BotsRosterPage() {
         </div>
       ) : (
         <div className="acb-empty-panel">
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无席位">
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={teamId ? '本队暂无席位' : '暂无席位'}
+          >
             <Button type="primary" onClick={() => setJoinOpen(true)}>
               加入班底
             </Button>
