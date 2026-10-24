@@ -1,0 +1,454 @@
+=== WHEEL_FIX C3 Bot seat minimal enter smoke ===
+time_AsiaShanghai: 2026-10-24 21:12 Asia/Shanghai (box)
+result: PASS
+evidence_file: docs/qa-shots/WHEEL_FIX-C3-seat-enter-20261024.txt
+HEAD: 77adc7b5438c44f6ab69e0bcd3e601563c850ab1 (77adc7b)
+debt: docs/NEXT_WAVE_DEBT_WHEEL_FIX.md C3
+WS: ba1481c49148aba9553ba3811406b69f
+TEAM: ea918de1ac4d8116ed69651116a4acb9
+SEAT_SLUG: frontend
+KEY1_file: /tmp/ymbot_t2_key1.txt  prefix=ymk_19330f80  (same member as T2)
+KEY2_file: /tmp/ymbot_t2_key2.txt  prefix=ymk_91a528d9  (same member; used for re-enter)
+YMBOT_API_URL: http://127.0.0.1:8080
+YMBOT binary: /tmp/ymbot (go build ./cmd/ymbot)
+FOCUS_VALUE: WHEEL_FIX-C3-focus-1792847579
+NO_ymt_WS_invite_mixed: true  (Bot seat path only; no ymt_/WS human invite)
+healthz: {"db":true,"service":"ai-collab-board","status":"ok","time":"2026-10-24T13:12:59.513321259Z","timezone":"Asia/Shanghai"}
+
+## C3 标准
+绑席或 handoff get 可见 focus（last_focus）+ 至少一条开放 Issue。
+本证：Key1 写 focus → leave → Key2 migrate enter → 仅 handoff get/--full 见 focus+开放 Issue。
+
+## 关键命令（redact）
+memory set: /tmp/ymbot memory set --key frontend:last_focus --value WHEEL_FIX-C3-focus-1792847579
+leave:      /tmp/ymbot seat leave --role frontend --team ea918de1ac4d8116ed69651116a4acb9
+enter:      /tmp/ymbot migrate enter --role frontend --team ea918de1ac4d8116ed69651116a4acb9
+verify:     /tmp/ymbot handoff get  /  handoff get --full
+
+===== RAW LOG (redacted) =====
+
+===== whoami Key1 =====
++ YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot whoami
+bot  Grok Bot
+exit=0
+
+===== team pull Key1 =====
++ YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot team pull --uuid ea918de1ac4d8116ed69651116a4acb9 --json
+[
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "后端",
+    "playbook_ref": "bot-team-template@main:playbook/班底与补位.md",
+    "slug": "backend"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "前端",
+    "playbook_ref": "bot-team-template@main:roles/前端研发/",
+    "slug": "frontend"
+  },
+  {
+    "claim": "claimed",
+    "holder": "管理员",
+    "name": "j2-new",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "j2-new"
+  },
+  {
+    "claim": "claimed",
+    "holder": "QA Bot B",
+    "name": "N3强制补位审计",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "n3-force-audit-1792835295"
+  },
+  {
+    "claim": "empty",
+    "name": "N3可读强制审计",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "n3-readable-1792835492"
+  },
+  {
+    "claim": "claimed",
+    "holder": "QA Bot B",
+    "name": "N3可读强制审计",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "n3-readable-1792835532"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "ops-j2a",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "ops-j2a"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "产品经理",
+    "playbook_ref": "bot-team-template@main:playbook/班底与补位.md",
+    "slug": "pm"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "QA",
+    "playbook_ref": "bot-team-template@main:playbook/班底与补位.md",
+    "slug": "qa"
+  },
+  {
+    "claim": "claimed",
+    "holder": "QA Bot B",
+    "name": "QA Bind Seat ec1742d",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "qa-bind-ec1742d"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "QA Full Test Seat",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "qa-full-test-36"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "QA Left Path",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "qa-left-536"
+  },
+  {
+    "claim": "claimed",
+    "holder": "BotB J2",
+    "name": "SRE",
+    "playbook_ref": "docs/sre.md",
+    "slug": "sre"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "知识库",
+    "playbook_ref": "bot-team-template@main:playbook/班底与补位.md",
+    "slug": "wiki"
+  }
+]
+exit=0
+
+===== seat enter Key1 (pre-write) =====
++ YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot seat enter --role frontend --team ea918de1ac4d8116ed69651116a4acb9 --json
+{
+  "bind": {
+    "bound_at": "2026-10-24T13:12:59Z",
+    "claimed_at": "2026-10-24T13:12:59Z",
+    "holder": "Grok Bot",
+    "ok": true,
+    "playbook_ref": "bot-team-template@main:roles/前端研发/",
+    "slug": "frontend"
+  },
+  "claim": {
+    "ok": true,
+    "via": "bind"
+  },
+  "handoff": {
+    "claimed_role": "前端",
+    "issue_count": 6,
+    "issues": [
+      {
+        "identifier": "YM-12",
+        "status": "todo",
+        "title": "N4 立即推送演示"
+      },
+      {
+        "identifier": "YM-11",
+        "status": "todo",
+        "title": "N4 smoke"
+      },
+      {
+        "identifier": "YM-18",
+        "status": "todo",
+        "title": "N4 c947a76 立即推送 spot-check"
+      },
+      {
+        "identifier": "YM-17",
+        "status": "todo",
+        "title": "N3 readable force audit target"
+      },
+      {
+        "identifier": "YM-13",
+        "status": "todo",
+        "title": "N3 force bind audit target"
+      },
+      {
+        "identifier": "YM-9",
+        "status": "todo",
+        "title": "QA webhook match BOT_A updated"
+      }
+    ],
+    "member": "Grok Bot",
+    "memory_count": 5,
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "todo_count": 0
+  },
+  "memory_key_hint": "frontend:last_focus",
+  "playbook_ref": "bot-team-template@main:roles/前端研发/",
+  "role": "frontend",
+  "step": "whoami→handoff get→seat bind",
+  "whoami": {
+    "actor_kind": "bot",
+    "display_name": "Grok Bot"
+  }
+}
+exit=0
+
+===== memory set C3 focus Key1 =====
++ YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot memory set --key frontend:last_focus --value WHEEL_FIX-C3-focus-1792847579 --autosave
+已写服务端（进度在服务端；主航线 team pull → seat enter → handoff get；勿攒到最后 export）
+frontend:last_focus	2026-10-24T13:12:59Z	WHEEL_FIX-C3-focus-1792847579
+exit=0
+
+===== issue get YM-11 =====
++ YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot issue get YM-11 --json
+{
+  "assignee": "Grok Bot",
+  "identifier": "YM-11",
+  "priority": "none",
+  "status": "todo",
+  "title": "N4 smoke",
+  "updated_at": "2026-10-24T10:01:22Z",
+  "version": 2
+}
+exit=0
+YM-11 assignee=Grok Bot version=2
+YM-11 already assigned (Grok Bot); keep as open Issue evidence
+
+===== handoff get Key1 baseline =====
++ YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot handoff get
+role=前端  memories=5  todos=0  open_issues=6
+member=Grok Bot
+警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）
+  YM-12  N4 立即推送演示  todo
+  YM-11  N4 smoke  todo
+  YM-18  N4 c947a76 立即推送 spot-check  todo
+  YM-17  N3 readable force audit target  todo
+  YM-13  N3 force bind audit target  todo
+  YM-9  QA webhook match BOT_A updated  todo
+exit=0
+
+===== seat leave Key1 =====
++ YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot seat leave --role frontend --team ea918de1ac4d8116ed69651116a4acb9
+left role=frontend via=unbind
+exit=0
+
+===== team pull after leave =====
++ YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot team pull --uuid ea918de1ac4d8116ed69651116a4acb9 --json
+[
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "后端",
+    "playbook_ref": "bot-team-template@main:playbook/班底与补位.md",
+    "slug": "backend"
+  },
+  {
+    "claim": "empty",
+    "name": "前端",
+    "playbook_ref": "bot-team-template@main:roles/前端研发/",
+    "slug": "frontend"
+  },
+  {
+    "claim": "claimed",
+    "holder": "管理员",
+    "name": "j2-new",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "j2-new"
+  },
+  {
+    "claim": "claimed",
+    "holder": "QA Bot B",
+    "name": "N3强制补位审计",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "n3-force-audit-1792835295"
+  },
+  {
+    "claim": "empty",
+    "name": "N3可读强制审计",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "n3-readable-1792835492"
+  },
+  {
+    "claim": "claimed",
+    "holder": "QA Bot B",
+    "name": "N3可读强制审计",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "n3-readable-1792835532"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "ops-j2a",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "ops-j2a"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "产品经理",
+    "playbook_ref": "bot-team-template@main:playbook/班底与补位.md",
+    "slug": "pm"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "QA",
+    "playbook_ref": "bot-team-template@main:playbook/班底与补位.md",
+    "slug": "qa"
+  },
+  {
+    "claim": "claimed",
+    "holder": "QA Bot B",
+    "name": "QA Bind Seat ec1742d",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "qa-bind-ec1742d"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "QA Full Test Seat",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "qa-full-test-36"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "QA Left Path",
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "slug": "qa-left-536"
+  },
+  {
+    "claim": "claimed",
+    "holder": "BotB J2",
+    "name": "SRE",
+    "playbook_ref": "docs/sre.md",
+    "slug": "sre"
+  },
+  {
+    "claim": "bound",
+    "holder": "Grok Bot",
+    "name": "知识库",
+    "playbook_ref": "bot-team-template@main:playbook/班底与补位.md",
+    "slug": "wiki"
+  }
+]
+exit=0
+
+===== migrate enter Key2 =====
++ YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot migrate enter --role frontend --team ea918de1ac4d8116ed69651116a4acb9 --json
+{
+  "bind": {
+    "bound_at": "2026-10-24T13:12:59Z",
+    "claimed_at": "2026-10-24T13:12:59Z",
+    "holder": "Grok Bot",
+    "ok": true,
+    "playbook_ref": "bot-team-template@main:roles/前端研发/",
+    "slug": "frontend"
+  },
+  "claim": {
+    "ok": true,
+    "via": "bind"
+  },
+  "handoff": {
+    "claimed_role": "前端",
+    "issue_count": 6,
+    "issues": [
+      {
+        "identifier": "YM-12",
+        "status": "todo",
+        "title": "N4 立即推送演示"
+      },
+      {
+        "identifier": "YM-11",
+        "status": "todo",
+        "title": "N4 smoke"
+      },
+      {
+        "identifier": "YM-18",
+        "status": "todo",
+        "title": "N4 c947a76 立即推送 spot-check"
+      },
+      {
+        "identifier": "YM-17",
+        "status": "todo",
+        "title": "N3 readable force audit target"
+      },
+      {
+        "identifier": "YM-13",
+        "status": "todo",
+        "title": "N3 force bind audit target"
+      },
+      {
+        "identifier": "YM-9",
+        "status": "todo",
+        "title": "QA webhook match BOT_A updated"
+      }
+    ],
+    "member": "Grok Bot",
+    "memory_count": 5,
+    "playbook_warn": "警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）",
+    "todo_count": 0
+  },
+  "memory_key_hint": "frontend:last_focus",
+  "playbook_ref": "bot-team-template@main:roles/前端研发/",
+  "role": "frontend",
+  "step": "whoami→handoff get→seat bind",
+  "whoami": {
+    "actor_kind": "bot",
+    "display_name": "Grok Bot"
+  }
+}
+exit=0
+
+===== handoff get Key2 =====
++ YMBOT_API_KEY=ymk_***REDACTED*** YMBOT_WORKSPACE_ID=ba1481c49148aba9553ba3811406b69f YMBOT_API_URL=http://127.0.0.1:8080 /tmp/ymbot handoff get
+role=前端  memories=5  todos=0  open_issues=6
+member=Grok Bot
+警示：本席 playbook_ref 为空，无作业手册入口（勿回落硬编码流程）
+  YM-12  N4 立即推送演示  todo
+  YM-11  N4 smoke  todo
+  YM-18  N4 c947a76 立即推送 spot-check  todo
+  YM-17  N3 readable force audit target  todo
+  YM-13  N3 force bind audit target  todo
+  YM-9  QA webhook match BOT_A updated  todo
+exit=0
+
+===== handoff get --full Key2 (excerpt) =====
+claimed_role.slug= team:83d0f56de57ba8b78b4019e554d34062:frontend
+claimed_role.name= 前端
+memory_count= 5
+FOCUS_MEM alpha:last_focus = T6-A-focus-1792836329
+MEM decision = t7r-private-A-memory-20261024-192042
+FOCUS_MEM frontend:last_focus = WHEEL_FIX-C3-focus-1792847579
+FOCUS_MEM gamma:last_focus = T6-B-gamma-1792836341
+MEM qa.pin.iso = private-mem-from-A
+open_issue_count= 6
+OPEN YM-12 todo N4 立即推送演示
+OPEN YM-11 todo N4 smoke
+OPEN YM-18 todo N4 c947a76 立即推送 spot-check
+OPEN YM-17 todo N3 readable force audit target
+OPEN YM-13 todo N3 force bind audit target
+OPEN YM-9 todo QA webhook match BOT_A updated
+===== ASSERTIONS =====
+FOCUS_EXPECTED= WHEEL_FIX-C3-focus-1792847579
+focus_in_handoff_full= True
+open_issues_count= 6
+open_issues_ge1= True
+YM-11_present= True
+C3_PASS= True
+
+===== FINAL =====
+C3_PASS=PASS
+FOCUS_VALUE=WHEEL_FIX-C3-focus-1792847579
+focus_ok=True
+open_ok=True
+ym11=True
+count=6
