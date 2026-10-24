@@ -154,6 +154,12 @@ func mcpTools() []map[string]any {
 		{"name": "board_team_join", "description": "空手上场封装：redeem(ymt_)→team pull→seat enter→handoff get；活跃席禁顶替；身份靠 API Key", "inputSchema": obj(map[string]any{
 			"code": str, "role": str, "new_seat": str, "force": bol, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "code")},
+		{"name": "board_team_templates", "description": "内置班底模板清单（key/席位 slug；瘦输出）", "inputSchema": obj(map[string]any{
+			"full": full, "ids": ids,
+		})},
+		{"name": "board_team_create_from_template", "description": "从模板建队+空席（template_key+name；未知模板 400 人话）", "inputSchema": obj(map[string]any{
+			"template_key": str, "name": str, "slug": str, "idempotency_key": idKey, "full": full, "ids": ids,
+		}, "template_key", "name")},
 		{"name": "board_seat_enter", "description": "主航线②：进席（role slug=席位；有 team_uuid 走 bind；409 禁瞎抢）", "inputSchema": obj(map[string]any{
 			"role": str, "team_uuid": str, "force": bol, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "role")},
@@ -500,6 +506,46 @@ func callTool(c *botclient.Client, name string, args map[string]any) (string, er
 			return botclient.MarshalView(v), nil
 		}
 		return botclient.FormatTeamJoinText(v), nil
+	case "board_team_templates":
+		raw, err := c.TeamTemplatesList()
+		if err != nil {
+			return "", err
+		}
+		if opts.Full {
+			var v any
+			_ = json.Unmarshal(raw, &v)
+			return botclient.MarshalView(v), nil
+		}
+		items, err := botclient.ProjectTeamTemplates(raw, opts)
+		if err != nil {
+			return "", err
+		}
+		return botclient.FormatTeamTemplatesText(items), nil
+	case "board_team_create_from_template":
+		tk := strArg(args, "template_key")
+		if tk == "" {
+			tk = strArg(args, "template")
+		}
+		name := strArg(args, "name")
+		if tk == "" || name == "" {
+			return "", fmt.Errorf("需要 template_key 与 name")
+		}
+		raw, err := c.CreateTeamFromTemplate(botclient.CreateTeamFromTemplateOpts{
+			Name: name, Slug: strArg(args, "slug"), TemplateKey: tk,
+		})
+		if err != nil {
+			return "", err
+		}
+		if opts.Full {
+			var v any
+			_ = json.Unmarshal(raw, &v)
+			return botclient.MarshalView(v), nil
+		}
+		v, err := botclient.ProjectCreateTeamFromTemplate(raw, opts)
+		if err != nil {
+			return "", err
+		}
+		return botclient.FormatCreateTeamFromTemplateText(v), nil
 	case "board_seat_enter":
 		team := strArg(args, "team_uuid")
 		if team == "" {

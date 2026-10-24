@@ -35,7 +35,7 @@ func printHelp() {
   术语: 模板角色 slug = 席位（seat / role_slug）
   MCP:  board_team_pull → board_seat_enter → board_handoff_get
   空手上场: team join --code <ymt_…>（= redeem→pull→enter→handoff；封装非第二航线）
-  MCP 封装: board_team_join
+  MCP 封装: board_team_join · board_team_templates · board_team_create_from_template
   说明书: bot-team-template/playbook/看板席位迁绑.md · templates/ymbot/
   契约:   docs/BOT_TEAM_SEAT_P0.md · docs/BOT_TEAM_JOIN_KEY_P0.md
 whoami 可前置自检；migrate enter = seat enter（别名，非第二条主航线）。
@@ -54,6 +54,10 @@ whoami 可前置自检；migrate enter = seat enter（别名，非第二条主�
   team pull --uuid <team_uuid>              拉班底（幂等 ensure roster；不清 memory）
   team join --code <ymt_…> [--role] [--new-seat] [--force]
                                             空手上场封装；活跃席禁顶替；--force 仅停工/离职脏绑
+  template list [--full|--id|--json]        内置班底模板清单（= team templates）
+  team create --template default --name … [--slug …]
+                                            从模板建队+空席；未知模板 → 400 人话
+  MCP: board_team_templates / board_team_create_from_template
   seat enter --role <slug> [--team] [--force]
                                             进席（slug=席位；有 --team 走 bind；409 禁瞎抢）
   handoff get [--full|--id|--json]          续命权威：服务端摘要，无文件

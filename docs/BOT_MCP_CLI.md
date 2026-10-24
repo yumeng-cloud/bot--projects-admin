@@ -257,7 +257,7 @@ go run ./cmd/ymbot mcp-serve
 
 **MCP Inspector**：把 command/args/env 配成同上，连接后：
 
-1. `tools/list` 应含主航线：`board_team_pull`、`board_team_join`、`board_seat_enter`、`board_handoff_get`，以及 issue/comment/memory/whoami、`board_handoff_import`、`board_seat_leave`、`board_seat_expand` 等。  
+1. `tools/list` 应含主航线：`board_team_pull`、`board_team_join`、`board_team_templates`、`board_team_create_from_template`、`board_seat_enter`、`board_handoff_get`，以及 issue/comment/memory/whoami、`board_handoff_import`、`board_seat_leave`、`board_seat_expand` 等。  
 2. 冒烟：`board_whoami` → `board_issue_list` → `board_comment_create` → `board_memory_set`（写类可带 `idempotency_key`）。  
 3. 读类默认瘦文本 / 无 UUID；要全量传 `full=true`，要裸 id 传 `ids=true`（同 CLI `--full` / `--id`）。
 
@@ -315,3 +315,31 @@ ymbot pin delete --team "$TEAM_A" --key decision
 
 MCP：`tools/list` 含 `board_pin_list` / `board_pin_get` / `board_pin_set` / `board_pin_delete`（实现 `63e69c6`）。  
 **自检一句**：队 A set → 队 A get 见、队 B list/get 无/404（REST 箱验已 PASS；通道冒烟 list/get/set/delete 不 501）。
+
+### 11.6 Team templates（`board_team_templates` / `board_team_create_from_template`）
+
+> 对接 T7-R：内置手册清单 + 从模板建空席。REST 已绿 `716c3d0`（[`API.md`](./API.md)「Team templates」）。通道补 botclient / CLI / MCP；**不**挡关单。日常主航线仍 `team pull → seat enter → handoff get`；建队是前置。
+
+| | |
+|--|--|
+| **清单** | `GET …/team-templates` → `{templates:[{key,name,seats[]}]}`；内置至少 `default`（五席） |
+| **从模板创建** | `POST …/teams/from-template` 或 `POST …/teams` + `template_key` → `{team, roster}`；空席 + `playbook_ref`；**无**自动绑 Key |
+| **错误** | 未知 / 空 `template_key` → **400** 中文（如「未知模板：ghost」） |
+| **瘦输出** | 默认无裸 UUID；`--id`/`ids=true`、`--full`/`full=true` 同 §6 |
+| **环境仍只需** | `YMBOT_API_URL` · `YMBOT_API_KEY` · `YMBOT_WORKSPACE_ID` |
+
+| 能力 | MCP tool | CLI | REST | 入 / 出要点 |
+|------|----------|-----|------|-------------|
+| 列模板 | `board_team_templates` | `ymbot template list`（= `team templates`） | `GET …/team-templates` | 出：`key,name,seats_n,seats[slug…]` |
+| 从模板建队 | `board_team_create_from_template` | `ymbot team create --template default --name … [--slug …]` | `POST …/teams/from-template` | 入：`template_key,name,slug?`；出：team 瘦 + roster 席表 |
+
+```bash
+ymbot template list
+ymbot team create --template default --name "Demo-Tpl-$(date +%s)" --id
+# 未知模板期望 400 人话：
+ymbot team create --template ghost-nope --name x   # stderr: 未知模板：ghost-nope
+```
+
+MCP：`tools/list` 含 `board_team_templates` / `board_team_create_from_template`。  
+**自检一句**：list 见 `default` → create 得 5 空席 → 未知 key 400 中文。
+

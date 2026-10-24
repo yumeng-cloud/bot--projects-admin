@@ -42,6 +42,8 @@ func runCLI(args []string) error {
 		return cmdPatrol(c, args[1:])
 	case "pin":
 		return cmdPin(c, args[1:])
+	case "template":
+		return cmdTemplate(c, args[1:])
 	default:
 		return fmt.Errorf("未知命令: %s（ymbot --help）", args[0])
 	}
@@ -577,7 +579,7 @@ func cmdHandoff(c *botclient.Client, args []string) error {
 
 func cmdTeam(c *botclient.Client, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("用法: ymbot team pull|join …\njoin = 空手上场（redeem→pull→enter→handoff get）；主航线仍可写 pull→enter→handoff\n见 bot-team-template/playbook/看板席位迁绑.md")
+		return fmt.Errorf("用法: ymbot team pull|join|create|templates …\njoin = 空手上场；create --template 从模板建队；templates = template list\n见 bot-team-template/playbook/看板席位迁绑.md")
 	}
 	switch args[0] {
 	case "pull":
@@ -609,8 +611,12 @@ func cmdTeam(c *botclient.Client, args []string) error {
 		return nil
 	case "join":
 		return cmdTeamJoin(c, args[1:])
+	case "create":
+		return cmdTeamCreate(c, args[1:])
+	case "templates":
+		return cmdTemplateList(c, args[1:])
 	default:
-		return fmt.Errorf("未知 team 子命令: %s（pull|join）", args[0])
+		return fmt.Errorf("未知 team 子命令: %s（pull|join|create|templates）", args[0])
 	}
 }
 
@@ -644,6 +650,83 @@ func cmdTeamJoin(c *botclient.Client, args []string) error {
 		return nil
 	}
 	printView(opts, botclient.FormatTeamJoinText(v), v)
+	return nil
+}
+
+func cmdTeamCreate(c *botclient.Client, args []string) error {
+	fs := newFS("team create")
+	name := fs.String("name", "", "团队显示名")
+	slug := fs.String("slug", "", "可选 slug")
+	template := fs.String("template", "", "template_key（如 default）；从模板建空席")
+	fromTemplate := fs.String("from-template", "", "同 --template（别名）")
+	idKey := fs.String("idempotency-key", "", "")
+	full, ids, asJSON := viewFlags(fs)
+	if err := fs.Parse(reorderFlags(args)); err != nil {
+		return err
+	}
+	tk := strings.TrimSpace(*template)
+	if tk == "" {
+		tk = strings.TrimSpace(*fromTemplate)
+	}
+	if strings.TrimSpace(*name) == "" || tk == "" {
+		return fmt.Errorf("用法: ymbot team create --template default --name <名> [--slug …]\n从模板创建空席班底（POST …/teams/from-template）；未知模板 → 400 人话")
+	}
+	applyIDKey(c, *idKey)
+	raw, err := c.CreateTeamFromTemplate(botclient.CreateTeamFromTemplateOpts{
+		Name: *name, Slug: *slug, TemplateKey: tk,
+	})
+	if err != nil {
+		return err
+	}
+	opts := optsFrom(*full, *ids, *asJSON)
+	if opts.Full {
+		printRawFull(raw)
+		return nil
+	}
+	v, err := botclient.ProjectCreateTeamFromTemplate(raw, opts)
+	if err != nil {
+		return err
+	}
+	if opts.JSON {
+		printView(opts, botclient.MarshalView(v), v)
+		return nil
+	}
+	printView(opts, botclient.FormatCreateTeamFromTemplateText(v), v)
+	return nil
+}
+
+func cmdTemplate(c *botclient.Client, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("用法: ymbot template list\n内置班底模板清单（GET …/team-templates）")
+	}
+	switch args[0] {
+	case "list":
+		return cmdTemplateList(c, args[1:])
+	default:
+		return fmt.Errorf("未知 template 子命令: %s（list）", args[0])
+	}
+}
+
+func cmdTemplateList(c *botclient.Client, args []string) error {
+	fs := newFS("template list")
+	full, ids, asJSON := viewFlags(fs)
+	if err := fs.Parse(reorderFlags(args)); err != nil {
+		return err
+	}
+	opts := optsFrom(*full, *ids, *asJSON)
+	raw, err := c.TeamTemplatesList()
+	if err != nil {
+		return err
+	}
+	if opts.Full {
+		printRawFull(raw)
+		return nil
+	}
+	items, err := botclient.ProjectTeamTemplates(raw, opts)
+	if err != nil {
+		return err
+	}
+	printView(opts, botclient.FormatTeamTemplatesText(items), items)
 	return nil
 }
 
