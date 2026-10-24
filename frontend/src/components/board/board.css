@@ -513,7 +513,8 @@ html[data-theme='dark'] .acb-col {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 320px;
+  /* 首屏容纳默认五列 + Sprint 流，少滚 */
+  max-height: min(480px, 70vh);
   overflow-y: auto;
 }
 .acb-tpl-item {
@@ -522,7 +523,7 @@ html[data-theme='dark'] .acb-col {
   align-items: stretch;
   gap: 6px;
   text-align: left;
-  padding: 8px;
+  padding: 6px 8px;
   border-radius: 6px;
   border: 1px solid var(--acb-border);
   background: var(--acb-bg-container);

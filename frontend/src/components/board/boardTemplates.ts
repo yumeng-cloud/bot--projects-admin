@@ -39,6 +39,19 @@ export const BUILTIN_TEMPLATES: BuiltInTemplate[] = [
     columns: BOARD_COLUMNS.map((status) => ({ status })),
   },
   {
+    id: 'sprint-flow',
+    name: 'Sprint 流',
+    description: '待办池 → 待处理 → 进行中 → 评审中 → 已完成',
+    system: true,
+    columns: [
+      { status: 'backlog', label: '待办池' },
+      { status: 'todo', label: '待处理' },
+      { status: 'in_progress', label: '进行中' },
+      { status: 'in_review', label: '评审中' },
+      { status: 'done', label: '已完成' },
+    ],
+  },
+  {
     id: 'simple-3',
     name: '精简三列',
     description: '待处理 → 进行中 → 已完成',
@@ -59,19 +72,6 @@ export const BUILTIN_TEMPLATES: BuiltInTemplate[] = [
       { status: 'todo', label: '确认' },
       { status: 'in_progress', label: '修复中' },
       { status: 'done', label: '已关闭' },
-    ],
-  },
-  {
-    id: 'sprint-flow',
-    name: 'Sprint 流',
-    description: '待办池 → 待处理 → 进行中 → 评审中 → 已完成',
-    system: true,
-    columns: [
-      { status: 'backlog', label: 'Backlog' },
-      { status: 'todo', label: 'Todo' },
-      { status: 'in_progress', label: 'In Progress' },
-      { status: 'in_review', label: 'In Review' },
-      { status: 'done', label: 'Done' },
     ],
   },
 ]

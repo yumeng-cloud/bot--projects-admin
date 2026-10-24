@@ -28,11 +28,14 @@ import {
 import { ApiError, api } from '../../../api/client'
 import {
   createTeamInvite,
+  getRoster,
   inviteTail,
   isInviteServiceMissing,
   isSeatConflict,
   listTeams,
+  seatOccupancy,
   type TeamInvite,
+  type TeamSeat,
 } from '../../../api/teams'
 import { formatWikiTime } from '../../../utils/time'
 import JoinTeamWizard from './JoinTeamWizard'
@@ -73,6 +76,8 @@ export default function BotsRosterPage() {
   const [conflictOpen, setConflictOpen] = useState(false)
   const [conflictInfo, setConflictInfo] = useState<SeatConflictInfo | null>(null)
   const [teamId, setTeamId] = useState<string | null>(null)
+  /** 与向导同源的团队席位占用（N4 同步） */
+  const [teamSeats, setTeamSeats] = useState<TeamSeat[]>([])
   const [issuedInvites, setIssuedInvites] = useState<TeamInvite[]>([])
   const [inviteBusy, setInviteBusy] = useState(false)
   /** 签发当次明文，只存活到复制成功后的一次 Toast；列表只留末四 */
@@ -94,7 +99,16 @@ export default function BotsRosterPage() {
       setKeys((k.api_keys || []).filter((x) => !x.revoked_at))
       const tid = teams.teams?.[0]?.id || null
       setTeamId(tid)
-      // GET …/invites 尚未挂载（404）；不轮询，仅保留本页签发缓存
+      if (tid) {
+        try {
+          const rost = await getRoster(wsId, tid)
+          setTeamSeats(rost.roster || [])
+        } catch {
+          setTeamSeats([])
+        }
+      } else {
+        setTeamSeats([])
+      }
     } catch (e: unknown) {
       message.error(e instanceof Error ? e.message : '加载失败')
     } finally {
@@ -118,12 +132,35 @@ export default function BotsRosterPage() {
   }
 
   const freeBots = useMemo(() => bots.filter((b) => b.bot_enabled), [bots])
-  const hasAnyBinding = useMemo(
-    () => !forceEmpty && roles.some((r) => Boolean(r.claim?.member_id)),
-    [roles, forceEmpty],
-  )
+  const hasAnyBinding = useMemo(() => {
+    if (forceEmpty) return false
+    if (roles.some((r) => Boolean(r.claim?.member_id))) return true
+    return teamSeats.some((s) => seatOccupancy(s) === 'active')
+  }, [roles, teamSeats, forceEmpty])
 
   const openSeat = (role: BotRole) => setDrawerRole(role)
+
+  /** 角色卡占用：claim 或团队席位 active 任一即占用（与向导「占用中」对齐） */
+  const seatOccForRole = (role: BotRole) => {
+    const claimMid = role.claim?.member_id || null
+    const seat =
+      teamSeats.find((s) => s.bot_role_id && s.bot_role_id === role.id) ||
+      teamSeats.find((s) => s.role_slug && s.role_slug === role.slug)
+    const occ = seat ? seatOccupancy(seat) : null
+    const occupied = Boolean(claimMid) || occ === 'active'
+    const occupantId =
+      claimMid ||
+      seat?.bound_member_id ||
+      seat?.member_id ||
+      seat?.claim?.member_id ||
+      null
+    const occupantLabel =
+      (occupantId ? botName(occupantId) : null) ||
+      seat?.bound_display_name ||
+      null
+    return { occupied, occupantId, occupantLabel, seat }
+  }
+
 
   const onRelease = async (role: BotRole) => {
     try {
@@ -338,10 +375,12 @@ export default function BotsRosterPage() {
       {roles.length ? (
         <div className="acb-bots-seat-grid">
           {roles.map((role) => {
-            const mid = role.claim?.member_id
-            const bound = botName(mid)
+            const occ = seatOccForRole(role)
+            const mid = occ.occupantId
+            const bound = occ.occupantLabel || botName(mid)
             const hint = keyHintForMember(mid)
-            const busy = Boolean(mid)
+            const busy = occ.occupied
+            const name = roleDisplay(role)
             return (
               <Card
                 key={role.id}
@@ -350,19 +389,19 @@ export default function BotsRosterPage() {
                 className="acb-bots-seat-card"
                 onClick={() => openSeat(role)}
               >
-                {/* S1：角色名 + 态 + 末四同行 */}
+                {/* S1：中文席名 + 占用态（与向导同步）+ 末四 */}
                 <div className="acb-bots-seat-title-row" style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 36 }}>
                   <Typography.Text
                     strong
                     className="acb-bots-seat-title"
                     style={{ flex: 1, minWidth: 0 }}
                     ellipsis
-                    title={role.slug ? `CLI · ${role.slug}` : undefined}
+                    title={name}
                   >
-                    {roleDisplay(role)}
+                    {name}
                   </Typography.Text>
                   <Tag color={busy ? 'blue' : 'default'} style={{ margin: 0, flexShrink: 0 }}>
-                    {busy ? '已绑' : '空闲'}
+                    {busy ? '占用中' : '空闲'}
                   </Tag>
                   {hint ? (
                     <Typography.Text type="secondary" style={{ fontSize: 12, flexShrink: 0 }}>
@@ -374,7 +413,7 @@ export default function BotsRosterPage() {
                 <div className="acb-bots-seat-actor">
                   {busy ? (
                     <span>
-                      演员 · {bound}
+                      演员 · {bound || '已绑定'}
                       {role.claim?.claimed_at ? (
                         <Typography.Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
                           {formatWikiTime(role.claim.claimed_at)}
@@ -393,11 +432,11 @@ export default function BotsRosterPage() {
                   <Button size="small" type="link" style={{ padding: 0 }} onClick={() => openSeat(role)}>
                     查看交接
                   </Button>
-                  {busy ? (
+                  {busy && role.claim?.member_id ? (
                     <Button size="small" type="link" danger style={{ padding: 0 }} onClick={() => void onRelease(role)}>
                       释放
                     </Button>
-                  ) : (
+                  ) : !busy ? (
                     <Select
                       size="small"
                       placeholder="指派 Bot"
@@ -407,7 +446,7 @@ export default function BotsRosterPage() {
                       onChange={(v) => void onClaim(role, v)}
                       popupMatchSelectWidth={false}
                     />
-                  )}
+                  ) : null}
                 </div>
               </Card>
             )

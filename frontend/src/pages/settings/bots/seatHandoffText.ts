@@ -21,6 +21,7 @@ const STATUS_CN: Record<string, string> = {
   done: '已完成',
   canceled: '已取消',
   in_progress: '进行中',
+  in_review: '评审中',
   backlog: '待排期',
   done_status: '已完成',
   canceled_status: '已取消',

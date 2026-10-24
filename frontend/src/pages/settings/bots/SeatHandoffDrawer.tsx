@@ -120,9 +120,9 @@ export default function SeatHandoffDrawer({ open, onClose, wsId, role, bots, key
             </Typography.Text>
             <div
               style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}
-              title={role.slug ? `CLI · ${role.slug}` : undefined}
+              title={roleDisplay(role)}
             >
-              <Tag color={memberId ? 'blue' : 'default'}>{memberId ? `已绑 · ${boundLabel}` : '空闲'}</Tag>
+              <Tag color={memberId ? 'blue' : 'default'}>{memberId ? `占用中 · ${boundLabel}` : '空闲'}</Tag>
               {keyHint ? <Tag>{keyHint}</Tag> : null}
             </div>
             {role.claim?.claimed_at ? (
@@ -147,11 +147,9 @@ export default function SeatHandoffDrawer({ open, onClose, wsId, role, bots, key
                   绑定后再看交接。新机：打开同一工作区 → 贴 Key，或本机 seat enter 绑到席位「
                   {roleDisplay(role)}」→{' '}
                   <Typography.Text code>ymbot handoff get</Typography.Text>
-                  {role.slug ? (
-                    <Typography.Text type="secondary" style={{ display: 'block', marginTop: 6, fontSize: 12 }} title={`CLI · ${role.slug}`}>
-                      （高级 CLI 见名册「绑定此机」折叠区）
-                    </Typography.Text>
-                  ) : null}
+                  <Typography.Text type="secondary" style={{ display: 'block', marginTop: 6, fontSize: 12 }}>
+                    （高级 CLI 见名册「绑定此机」折叠区）
+                  </Typography.Text>
                 </span>
               }
             />
