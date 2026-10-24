@@ -50,7 +50,8 @@
 ## 进度注记
 
 - 2026-10-25 02:22 · B405+E4 关后总指挥建议；产品拍开。SOFT V2 claim 仍禁。
+- 2026-10-25 02:26 Asia/Shanghai · **React 交 V2G-1～V2G-3**：`JoinTeamWizard` 通码未绑+停工席 → Alert 人话；409「补位须走显式绑席」FE 改写；箱截 `docs/qa-shots/seat-v2-guide.png`；`tsc --noEmit` + `vite build` PASS。**禁**解冻静默补。勾选留给产品/QA（V2G-4/5）。
 
 ## 关单进度
 
-**开干** · 等 React V2G-1。
+**React 已交** · 等 QA V2G-4 / 产品 V2G-5。

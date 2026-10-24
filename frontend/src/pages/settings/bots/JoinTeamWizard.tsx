@@ -20,6 +20,11 @@ import {
   listTeams,
   isInviteServiceMissing,
   isSeatConflict,
+  isRefillNeedsExplicitBind,
+  humanizeRefillBindError,
+  rosterHasRefillableSeat,
+  SEAT_REFILL_GUIDE_TITLE,
+  SEAT_REFILL_GUIDE_DESC,
   maskKeyTail,
   redeemTeamInvite,
   seatDisplayName,
@@ -69,6 +74,8 @@ export default function JoinTeamWizard({
   const [serviceHint, setServiceHint] = useState<string | null>(null)
   const [revealToken, setRevealToken] = useState<string | null>(null)
   const [showOptionalKey, setShowOptionalKey] = useState(false)
+  /** Soft† V2G：通码未绑 + 有停工席 → 人话引导（禁静默补） */
+  const [refillGuide, setRefillGuide] = useState(false)
   /** 深链带入的 role/seat，仅用于 redeem body */
   const [prefRole, setPrefRole] = useState('')
   const [prefSeat, setPrefSeat] = useState('')
@@ -86,6 +93,7 @@ export default function JoinTeamWizard({
     setServiceHint(null)
     setRevealToken(null)
     setShowOptionalKey(false)
+    setRefillGuide(false)
     setPrefRole('')
     setPrefSeat('')
   }
@@ -137,6 +145,35 @@ export default function JoinTeamWizard({
     })
   }
 
+  const loadSeatsAfterRedeem = async (res: RedeemInviteResult): Promise<TeamSeat[]> => {
+    let seats = res.roster || []
+    if (!seats.length && res.team_id) {
+      try {
+        const r = await getRoster(wsId, res.team_id)
+        seats = r.roster || []
+      } catch {
+        /* roster 可后拉 */
+      }
+    }
+    return seats
+  }
+
+  /** V2G-1：通码成功未绑席 + 有停工/离职可补位席 → 人话引导，禁静默补 */
+  const applyUnboundRefillGuide = (res: RedeemInviteResult, seats: TeamSeat[]): boolean => {
+    if (res.seat_id) {
+      setRefillGuide(false)
+      return false
+    }
+    if (!rosterHasRefillableSeat(seats)) {
+      setRefillGuide(false)
+      return false
+    }
+    setRefillGuide(true)
+    setRoster(seats)
+    setStep('roster')
+    return true
+  }
+
   const onRedeem = async () => {
     const err = validateCode()
     if (err) {
@@ -145,6 +182,7 @@ export default function JoinTeamWizard({
     }
     setBusy(true)
     setServiceHint(null)
+    setRefillGuide(false)
     try {
       const botKey = ymk.trim() || null
       const res = await redeemTeamInvite(ymt.trim(), {
@@ -164,46 +202,33 @@ export default function JoinTeamWizard({
       if (issued && res.token) {
         setRevealToken(res.token)
         message.success('入场成功，已自动获得身份钥匙（仅此一次）')
-        let seats = res.roster || []
-        if (!seats.length && res.team_id) {
-          try {
-            const r = await getRoster(wsId, res.team_id)
-            seats = r.roster || []
-          } catch {
-            /* roster 可后拉 */
-          }
-        }
+        const seats = await loadSeatsAfterRedeem(res)
         setRoster(seats)
+        if (applyUnboundRefillGuide(res, seats)) {
+          finishEntered(res, seats)
+          return
+        }
         finishEntered(res, seats)
         return
       }
 
       // 续队（持钥）已定位/进席：无新 token
       if (botKey && res.member_id) {
-        let seats = res.roster || []
-        if (!seats.length && res.team_id) {
-          try {
-            const r = await getRoster(wsId, res.team_id)
-            seats = r.roster || []
-          } catch {
-            /* ignore */
-          }
-        }
+        const seats = await loadSeatsAfterRedeem(res)
         setRoster(seats)
+        if (applyUnboundRefillGuide(res, seats)) {
+          message.success('续队成功（未重发身份钥匙）')
+          finishEntered(res, seats)
+          return
+        }
         message.success('续队成功（未重发身份钥匙）')
         finishEntered(res, seats)
         handleClose()
         return
       }
 
-      let seats = res.roster || []
+      let seats = await loadSeatsAfterRedeem(res)
       if (!seats.length && res.team_id) {
-        try {
-          const r = await getRoster(wsId, res.team_id)
-          seats = r.roster || []
-        } catch {
-          /* roster 可后拉 */
-        }
         try {
           const ensured = await ensureRoster(wsId, res.team_id, undefined, crypto.randomUUID())
           seats = ensured.roster || seats
@@ -212,6 +237,9 @@ export default function JoinTeamWizard({
         }
       }
       setRoster(seats)
+      if (applyUnboundRefillGuide(res, seats)) {
+        return
+      }
       setStep('roster')
     } catch (e: unknown) {
       if (isInviteServiceMissing(e)) {
@@ -238,6 +266,13 @@ export default function JoinTeamWizard({
         } catch {
           /* 保持在入场码步 */
         }
+        return
+      }
+      // V2G-2：409「补位须走显式绑席…」→ 人话，勿甩技术句
+      const human = humanizeRefillBindError(e)
+      if (human || isRefillNeedsExplicitBind(e)) {
+        setRefillGuide(true)
+        message.warning(human || `${SEAT_REFILL_GUIDE_TITLE}。${SEAT_REFILL_GUIDE_DESC}`)
         return
       }
       const msg = e instanceof ApiError ? e.message : '兑换失败'
@@ -284,6 +319,12 @@ export default function JoinTeamWizard({
       }
       handleClose()
     } catch (e: unknown) {
+      const human = humanizeRefillBindError(e)
+      if (human || isRefillNeedsExplicitBind(e)) {
+        setRefillGuide(true)
+        message.warning(human || `${SEAT_REFILL_GUIDE_TITLE}。${SEAT_REFILL_GUIDE_DESC}`)
+        return
+      }
       if (isSeatConflict(e)) {
         setConflict({
           seatName: seatDisplayName(seat),
@@ -403,6 +444,14 @@ export default function JoinTeamWizard({
               ) : null}
             </div>
             {serviceHint ? <Alert type="info" showIcon message={serviceHint} /> : null}
+            {refillGuide ? (
+              <Alert
+                type="warning"
+                showIcon
+                message={SEAT_REFILL_GUIDE_TITLE}
+                description={SEAT_REFILL_GUIDE_DESC}
+              />
+            ) : null}
             <Button type="primary" block loading={busy} onClick={() => void onRedeem()}>
               兑换入场
             </Button>
@@ -411,8 +460,20 @@ export default function JoinTeamWizard({
 
         {step === 'roster' ? (
           <div>
+            {refillGuide ? (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message={SEAT_REFILL_GUIDE_TITLE}
+                description={SEAT_REFILL_GUIDE_DESC}
+              />
+            ) : null}
             <Typography.Paragraph type="secondary" style={{ marginBottom: 10, fontSize: 13 }}>
               空席可选进入；占用中灰显不可选（不能顶替）。无空席时申请新席（码未允许则失败）。
+              {refillGuide
+                ? ' 停工/离职席请持管理员签发的补位入场码入场，普通通码不能自动顶。'
+                : ''}
             </Typography.Paragraph>
             {busy && !roster.length ? (
               <div style={{ textAlign: 'center', padding: 24 }}>
@@ -526,6 +587,8 @@ export default function JoinTeamWizard({
         inviteCode={ymt.trim() || null}
         onClose={() => {
           setRevealToken(null)
+          // V2G：通码未绑且有停工席时留在选席步展示引导，勿关向导
+          if (refillGuide) return
           handleClose()
         }}
       />

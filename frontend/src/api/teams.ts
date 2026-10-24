@@ -396,6 +396,29 @@ export function isSeatConflict(err: unknown): boolean {
   return /占用|顶替|已绑定|conflict/i.test(err.message) || err.code === 'conflict'
 }
 
+/** Soft† V2G：通码踩停工席 → 人话引导（禁静默补） */
+export const SEAT_REFILL_GUIDE_TITLE = '普通入场码不能自动顶停工席'
+export const SEAT_REFILL_GUIDE_DESC =
+  '请向管理员要该席的补位入场码（班底页 · 停工席 · 复制补位码）；持补位码入场即占该席'
+
+/** roster 是否存在 stopped|left|departed 可补位席 */
+export function rosterHasRefillableSeat(seats: TeamSeat[]): boolean {
+  return seats.some((s) => seatOccupancy(s) === 'left')
+}
+
+/** 409「补位须走显式绑席…」类（BE invite_join）；勿原文甩技术句 */
+export function isRefillNeedsExplicitBind(err: unknown): boolean {
+  if (!(err instanceof ApiError) || err.status !== 409) return false
+  const m = err.message || ''
+  return /补位须走显式绑席|不自动补位|显式绑席/i.test(m)
+}
+
+/** 改写为 V2G 人话；非此类 409 返回 null */
+export function humanizeRefillBindError(err: unknown): string | null {
+  if (!isRefillNeedsExplicitBind(err)) return null
+  return `${SEAT_REFILL_GUIDE_TITLE}。${SEAT_REFILL_GUIDE_DESC}`
+}
+
 /** 推断席位态：显式 status 优先；否则 claim/bound → active，否则 empty */
 export function seatOccupancy(seat: TeamSeat): 'active' | 'empty' | 'left' {
   const st = (seat.status || '').toLowerCase()
