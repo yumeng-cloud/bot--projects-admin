@@ -1,0 +1,114 @@
+=== ONE_TAP E5 harsh verify — install → whoami → join（含 E4 子集）===
+time_AsiaShanghai: 2026-10-24 22:40 Asia/Shanghai (box)
+authority: docs/NEXT_WAVE_DEBT_ONE_TAP_JOIN.md E1–E5 + 总指挥轻验→E5 升档
+base_SHAs:
+  Go E1–E3: 4cdaa040bb6d967b1e659fd9c5622a463f293b94 (4cdaa04)
+  FE E4:    b76bfc00ec7b9c49c81fb1a65429239fac2ed54d (b76bfc0)
+  debt note: 944b63c9b704a92367777353deb9a00f698a7eed (944b63c)
+HEAD_at_verify: 1b6bbac53f01e299ce02447a27d135e5822cb057 (1b6bbac docs(ux): ONE_TAP E 复制即装产品关（E1–E4）)
+ancestors: merge-base --is-ancestor 4cdaa04 HEAD → yes; b76bfc0 → yes
+result: PASS† local / BLOCKED prod
+evidence_file: docs/qa-shots/ONE_TAP_E5-qa-retest-20261024.txt
+
+## Overall
+PASS† on local box (API rebuilt from current main containing 4cdaa04/b76bfc0).
+BLOCKED for production: this box cannot resolve/reach https://bot.api.sn.cn
+  (curl: Could not resolve host / Resolving timed out). Cannot prove prod
+  GET /install.sh is deployed. Owners must redeploy API with ≥4cdaa04 and
+  curl https://bot.api.sn.cn/install.sh → 200 from a network that reaches prod.
+
+## Tree / rebuild
+- git fetch; main == origin/main @ 1b6bbac
+- Pre-existing /tmp/ai-board-server mtime 22:07 CST PREDATED 4cdaa04 (22:33) →
+  GET /install.sh returned 404 "page not found"
+- Rebuilt: cd backend && go build -o /tmp/ai-board-server ./cmd/server (22:37 CST)
+- Restarted :8080 with .env (postgres); healthz → 200
+- unit: env -u DATABASE_URL go test ./internal/installscript/... ./internal/handlers/ -run 'Install|Script'
+  + ./internal/joinlink -run 'BuildBot|InstallCurl' → ok
+
+## E4 subset (copy prompt + GET /install.sh)
+
+### GET /install.sh
+| target | request | expect | got |
+| --- | --- | --- | --- |
+| local | GET http://127.0.0.1:8080/install.sh | 200 text/plain shell | **200** ctype=text/plain; charset=utf-8 size=3744 |
+| prod  | GET https://bot.api.sn.cn/install.sh | 200 (post-deploy) | **BLOCKED** DNS resolve timeout / host unresolved from box |
+
+Local body proof (first ~20 lines):
+```
+#!/usr/bin/env bash
+# ymbot one-shot installer — served at GET /install.sh (PUBLIC_API_BASE).
+# Idempotent, non-interactive. Failures print bilingual human messages.
+set -euo pipefail
+
+REPO_GIT="${YMBOT_REPO_GIT:-https://github.com/yumeng-cloud/bot--projects-admin.git}"
+GO_MODULE_INSTALL="${YMBOT_GO_INSTALL:-github.com/yumeng-tech/ai-collab-board/backend/cmd/ymbot@latest}"
+BIN_NAME="ymbot"
+…
+→ OS=Linux arch=x86_64
+→ Install target: …/.local/bin/ymbot
+```
+Route: backend/internal/server/router.go `r.Get("/install.sh", …)` (API root, NOT /api/v1).
+Handler: backend/internal/handlers/install.go Embed: backend/internal/installscript/install.sh
+
+### Copy-prompt contains curl + install.sh?
+**yes** — proven in three places (no Modal click required for light/E5):
+
+1. FE source `frontend/src/utils/oneTapJoin.ts` (b76bfc0):
+   - `installCurlLine` → `curl -fsSL ${api}/install.sh | bash`
+   - `buildBotJoinPrompt` leads with `installCurl` + §0 安装 + go install 备线 + whoami/join
+2. FE UI wire: `BotsRosterPage.tsx` → `buildBotJoinPrompt(...)` → `navigator.clipboard.writeText(prompt)`
+   (按钮「复制 Bot 提示词」/ Admin 一键)
+3. Go `/join` page live (api=http://127.0.0.1:8080):
+   - `<pre id="install">curl -fsSL http://127.0.0.1:8080/install.sh | bash</pre>`
+   - `<textarea id="prompt">` first line same curl|bash
+   - Go `joinlink.InstallCurlLine` / `BuildBotPrompt` (4cdaa04)
+
+sim_prod string (DEFAULT_PUBLIC_API_BASE): `curl -fsSL https://bot.api.sn.cn/install.sh | bash`
+
+## E5 flow（无预装 ymbot → install → whoami → join）
+
+Fixture:
+- admin@yumeng.tech (seed JWT)
+- WS ba1481c49148aba9553ba3811406b69f · TEAM ea918de1ac4d8116ed69651116a4acb9 (加速班底)
+- Bot actor: QA Bot B (member 92d530fb…) · ymk_ minted once via POST …/api-keys name=E5-qa-retest (prefix ymk_c799beec; plaintext not retained in evidence)
+- Invite: POST …/teams/{team}/invites {allow_expand_seat:false, role_hint:frontend, max_uses:5}
+  → code ymt_3477… (tail d0c8; redacted)
+
+| step | action | result |
+| --- | --- | --- |
+| 0 install | `bash` body of local GET /install.sh (HOME=/tmp/e5-ymbot-home) | PASS — go install module path failed → clone fallback → `OK installed ymbot → ~/.local/bin/ymbot`; `ymbot -h` works |
+| 1 whoami | `YMBOT_API_URL=http://127.0.0.1:8080 YMBOT_API_KEY=ymk_… YMBOT_WORKSPACE_ID=… ymbot whoami` | PASS — `bot  QA Bot B` |
+| 2 join prep | frontend seat held by Grok Bot → `ymbot seat leave --role frontend` (Grok key) | PASS — left via=unbind (fixture hygiene, not a product defect) |
+| 2 join | `ymbot team join --code ymt_… --role frontend` | PASS — redeem→pull→enter→handoff; bind ok holder=QA Bot B; exit 0 |
+| soft† | first join attempt before leave → HTTP 409 席位占用 | expected occupancy; not E5 defect |
+| soft† | expand invite role e5-verify → playbook_ref 不能为空 HTTP 400 | new-seat expand path needs playbook; not required for E5 happy path |
+
+Join stdout (redacted):
+```
+join role=frontend  redeem→team pull→seat enter→handoff get
+enter role=frontend  whoami→handoff get→seat bind
+whoami bot  QA Bot B
+handoff … memories=0  todos=0  open_issues=0
+bind ok=true  holder=QA Bot B
+```
+
+## PASS/FAIL table
+| ID | item | status |
+| --- | --- | --- |
+| E4-copy | Bot 提示词 / copy prompt 含 curl + install.sh | PASS (FE source + /join prompt) |
+| E4-route-local | GET /install.sh local 200 + shell body | PASS |
+| E4-route-prod | GET https://bot.api.sn.cn/install.sh 200 | **BLOCKED** (DNS/egress from QA box) |
+| E5-install | curl\|bash / install.sh installs ymbot | PASS (local script; clone fallback used) |
+| E5-whoami | ymbot whoami after install + key | PASS |
+| E5-join | ymbot team join with real ymt_ | PASS |
+| Soft† UI click | browser Modal「复制 Bot 提示词」click | Soft† skipped; source+API payload proven |
+
+## Defects / blockers
+1. **PROD BLOCKER (deploy):** Production `/install.sh` not verifiable from this box (bot.api.sn.cn DNS resolve timeout). Even if DNS worked, prior product note said prod needs API redeploy ≥4cdaa04 before https://bot.api.sn.cn/install.sh is live. Action: ops/Go 后端 redeploy API; then curl prod install.sh → 200 and re-spotcheck.
+2. none local for E4/E5 acceptance path.
+
+## Notes
+- Standing order: evidence committed + `git push origin/main` after this file lands.
+- No temp branches to delete (only main).
+- Local API left running: /tmp/ai-board-server :8080 healthz 200 (post-4cdaa04 binary).

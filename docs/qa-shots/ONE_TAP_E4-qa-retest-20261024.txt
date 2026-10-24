@@ -1,0 +1,11 @@
+=== ONE_TAP E4 light verify (subset; folded into E5) ===
+time_AsiaShanghai: 2026-10-24 22:40 Asia/Shanghai (box)
+target_commit: b76bfc0 (ancestor of HEAD)
+see_full: docs/qa-shots/ONE_TAP_E5-qa-retest-20261024.txt
+result: PASS† local / BLOCKED prod (same as E5)
+
+E4 checks:
+- Copy prompt contains `curl -fsSL …/install.sh | bash`: YES
+  proven: frontend/src/utils/oneTapJoin.ts installCurlLine + buildBotJoinPrompt;
+  BotsRosterPage clipboard.writeText(prompt); Go /join textarea#prompt
+- GET /install.sh → 200: local YES (rebuilt /tmp/ai-board-server); prod BLOCKED (DNS)
