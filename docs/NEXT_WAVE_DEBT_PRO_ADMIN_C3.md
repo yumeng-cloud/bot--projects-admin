@@ -30,9 +30,9 @@
 
 ## 产品勾选
 
-- [x] **C3-1** 列设置 · FE `990586a`
-- [x] **C3-2** 持久化 · `acb.list.columns.<ws>` · FE `990586a`
-- [x] **C3-3** 箱截 · `pro-c-columns.png` · FE `990586a`
+- [x] **C3-1** 列设置 · FE `260fd1f`
+- [x] **C3-2** 持久化 · `acb.list.columns.<ws>` · FE `260fd1f`
+- [x] **C3-3** 箱截 · `pro-c-columns.png` · FE `260fd1f`
 - [ ] **C3-4** QA
 - [ ] **C3-5** 关单
 
