@@ -102,6 +102,7 @@ POST …/team-invites/redeem  或  通道等价 ymbot team join
 
 ## 进度注记
 
+- 2026-10-24 23:45 · 上位 HUMAN_ONBOARD 已出**可投表决稿**（A–K + V1–V7）；本债 API 细案等投票后再开 B1。
 - 2026-10-24 23:40 · **全景冻结**：盲改暂停，等 HUMAN_ONBOARD H0+H1。
 - 2026-10-24 23:35 · **改向**：用户否决一键吐全班 `ymk_`；旧 B1 crew/batch 停。新 B1=入队/入席自动身份；Admin 只发 `ymt_` 入场包（AUTO_CREW）。已急停 React 全班钥实现。
 - 2026-10-24 23:33 · （废）人用习惯钉入旧吐钥口径。
