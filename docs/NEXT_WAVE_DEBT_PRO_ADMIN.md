@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 01:49 · **D1 正式关**后产品拍：**仅解冻 D2**（超管用户台：搜索防抖保留；所属 WS 芯片可点跳；空搜索提示）；**D3–D4 / E2 / G 仍冻**。见 [`PRO_ADMIN_D2`](./NEXT_WAVE_DEBT_PRO_ADMIN_D2.md)。
 - 2026-10-25 01:47 Asia/Shanghai · React 交 **D1-1～D1-3**（成员芯片+⋯折叠+邀请/表分块；`pro-d-members.png`）FE `f57c5c4`；等 QA/产品关。**D2–D4 / E2 / G 仍冻**。
 - 2026-10-25 01:36 · **C4+C5 正式关**（C 列表能力齐）后产品拍：**仅解冻 D1**（设置·成员表密度：角色芯片、操作折叠；邀请区与表分块）；**D2–D4 / E2 / G 仍冻**。见 [`PRO_ADMIN_D1`](./NEXT_WAVE_DEBT_PRO_ADMIN_D1.md)。
 - 2026-10-25 01:34 · **React 交 C4-1+C4-2** FE `516226d`：超管工作区名称搜索+状态筛（FE 滤）；箱截 `pro-c-admin-ws.png`（=C5 本刀份；C1/C2/C3 截已有）。等 QA/产品勾；**D / E2 / G 仍冻**。
@@ -187,4 +188,4 @@
 
 ## 关单进度
 
-**B/C1–C5/SEAT_LEAVE/E1/E3 + SEAT_REFILL/BIND/SHOT 正式关** · **下一刀仅 D1**；**D2–D4 / E2 / G 仍冻**。
+**B/C1–C5/D1/SEAT_LEAVE/E1/E3 + SEAT_REFILL/BIND/SHOT 正式关** · **下一刀仅 D2**；**D3–D4 / E2 / G 仍冻**。
