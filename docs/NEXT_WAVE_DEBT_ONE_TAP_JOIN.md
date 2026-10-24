@@ -157,6 +157,7 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 进度注记
 
+- 2026-10-25 00:12 · **产品勾 D1** `518a4b6`（对照 H4/ONE_TAP：席页一键主路径；env/mcp 附录非推荐）。D2 等 C1–C3。
 - 2026-10-24 23:56 · **D1 已交** 种子 `518a4b6`：BOT.md / README 主路径=席页「复制入场链接或提示词」；附录 env/mcp 标非推荐；对齐 HUMAN H4（入队自动 ymk_、入场包只 ymt_）。待 D2 产品关单。C1–C3 未动。
 
 - 2026-10-25 00:10 · **产品拍下一包（HUMAN/BATCH 已关）**：ONE_TAP **收口为下一 P0**。C1=登录态 join→预填 JoinWizard（React，对齐 HUMAN V3）；C2=记忆抽提示词 join；C3=QA 箱证；D1=种子对齐 HUMAN/H4。**公网 E5**：箱侧 DNS 超时 `bot.api.sn.cn`，redeploy/spotcheck **交总指挥运维**，不挡 C/D 代码收口；齐后 D2 关。PRO_ADMIN 整包不并行；建议后置只开 B2/B3 空态。
