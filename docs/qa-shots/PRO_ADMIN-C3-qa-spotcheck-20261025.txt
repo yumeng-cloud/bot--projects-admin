@@ -1,0 +1,68 @@
+PRO_ADMIN C3 QA spotcheck · 2026-10-25 01:24 Asia/Shanghai
+Overall: PASS†
+Feature SHA: 260fd1f6aef4ce0fb61e3356cdce365c5b6f58c4 (on origin/main; HEAD at verify df3fa40)
+Debt: docs/NEXT_WAVE_DEBT_PRO_ADMIN_C3.md
+Shot: docs/qa-shots/pro-c-columns.png (78134 B @260fd1f)
+Scope: C3 only. C4–D / E2 / G FROZEN — not verified.
+
+Method
+- git pull origin/main; confirm 260fd1f ancestor of HEAD; git show 260fd1f
+- Inspect frontend/src/utils/listColumns.ts + IssueListPage.tsx column visibility (源码)
+- Inspect list.css C3 popover styles
+- Read pro-c-columns.png as image
+- Soft† live FE Vite skipped (箱截+源码 suffice; localStorage key verified in source)
+
+Accept checklist
+1. List column settings entry (齿轮 / 「显示列」 Popover); toggle secondary …… PASS
+   - SettingOutlined + Button 「显示列」; Popover overlayClassName acb-list-columns-popover
+   - SECONDARY_COLUMN_OPTIONS: 标签 / 开始 / 截止 / 估时 (Checkbox → setSecondaryColumn)
+   - Shot: gear+显示列 open; 标签/开始 unchecked; 截止/估时 checked; 「恢复默认」 link
+
+2. Default professional subset (Linear density) …… PASS
+   - DEFAULT_LIST_COLUMN_VISIBILITY: labels/start_at/due_at/estimate all false
+   - Primary always in tableColumns: 标识 / 标题 / 状态 / 优先级 / 负责人 (not togglable)
+   - Hint text: 「默认：标识 · 标题 · 状态 · 优先 · 负责人」
+   - Shot: table shows primary + only enabled secondary (截止+估时); labels/开始 absent → not crowded-all
+
+3. Persistence localStorage `acb.list.columns.<ws>`; refresh does not lose …… PASS
+   - listColumnsStorageKey(ws) → `acb.list.columns.${workspaceId}`
+   - readListColumnVisibility / writeListColumnVisibility getItem/setItem that key
+   - Init useState + useEffect on workspaceId re-read; toggle writes immediately; 恢复默认 writes DEFAULT
+   - Soft† live refresh not run; source R/W path verified (standing Soft† optional)
+
+4. Instant show/hide on check …… PASS
+   - setSecondaryColumn → setColVis + writeListColumnVisibility in same updater
+   - tableColumns useMemo depends on colVis; secondary cols pushed only if colVis.* true
+
+5. 「恢复默认」 entry …… PASS
+   - Button type=link 「恢复默认」 → write DEFAULT + setColVis(DEFAULT)
+
+6. Chinese primary UI; shot matches …… PASS
+   - 显示列 / 默认：… / 标签 / 开始 / 截止 / 估时 / 恢复默认; filter+bulk zh intact
+   - Shot: zh throughout; Popover + table cols match seed (due_at+estimate on)
+
+7. Does not break C1/C2 filter/bulk chrome …… PASS
+   - Filter Space still: status/priority/assignee/labels/search/被阻塞/已逾期/归档筛选 + 显示列 at end
+   - Bulk bar still after filters when selectedRowKeys.length>0 (已选/批量改状态/批量归档/解档/取消选择)
+   - Shot: C1 filter row visible above table; no occlusion / no stack crush
+
+8. 不挤叠 …… PASS
+   - Default hides all secondary; secondary widths fixed (开始/截止 100, 估时 70)
+   - Shot: 6 rows clean; headers readable; Popover compact (min-width 168, gap 4–6)
+
+FAIL redlines hit? NONE
+- No column settings / cannot hide-show secondary — NO
+- Default shows all secondary or hides primary — NO
+- No localStorage persistence in source — NO
+- English-only / shot missing or wrong — NO
+
+Soft† notes
+- Live FE Vite skipped (standing Soft† optional; source+shot suffice)
+- localStorage key verified in source: acb.list.columns.<ws>
+- Seed helper frontend/public/qa-c3-seed.html writes acb.list.columns.ba1481… with due_at+estimate true + qaColumns=1 (matches shot state)
+- C4–D / E2 / G not opened
+
+Defects: (none blocking)
+
+Verdict: PASS† @260fd1f
+One-line → 产品+React+总指挥: C3-4 PASS†；显示列 Popover/次要四列勾选即时显隐/默认专业子集全隐/acb.list.columns.<ws> 源码读写/恢复默认/中文箱截/不挤叠/C1·C2 滤镜批量未破全绿；Soft† 活 FE 略；C4–D/E2/G 未验。
