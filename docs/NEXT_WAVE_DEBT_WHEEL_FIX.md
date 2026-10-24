@@ -89,17 +89,17 @@
 - [x] **A2** 开通进场冒烟 · E1 smoke login→WS + `ws-admin-a2-create-modal.png`
 - [x] **A3** redeem 抽核 · `ws-admin-b5-redeem.png`（`ymw_` 兑换模态）
 - [x] **B1** unarchive API · `43eee2c`
-- [x] **B2** FE 解档 · `175399c`（Drawer/PropertyRail「取消归档」；**B4 箱截仍待**）
+- [x] **B2** FE 解档 · `175399c`（Drawer/PropertyRail「取消归档」）
 - [x] **B3** Relations 剔已归档边 · `43eee2c`（`include_archived=1` 还原）
 - [x] **B4** 解档箱截 · `2277e1f` / `wheel-b-unarchive-1-archived.png` + `wheel-b-unarchive-2-restored.png`（YM-31 已归档+取消归档 → 回完成列 Pack 1/6）
 - [x] **C1** 顶栏切队回归 · `be0b8b2` / `wheel-c1-team-a/b.png`（A: YM-20/21 · B: YM-23）
 - [x] **C2** pins 跟队 · `be0b8b2` / `wheel-c2-pins-a/b.png`（A: `qa.pin.iso=from-A`；B: 本队暂无 pin）
 - [x] **C3** Bot 席入场 · `11144b3` / `WHEEL_FIX-C3-seat-enter-20261024.txt` PASS
-- [x] **D1** 用户搜索 · BE `aa1a004` + FE `21bc950`（Input.Search→`?q=`；**D3 箱截仍待**）
-- [x] **D2** 所属 WS · BE `aa1a004` + FE `21bc950`（列 `workspaces[]`；**D3 箱截仍待**）
+- [x] **D1** 用户搜索 · BE `aa1a004` + FE `21bc950`（Input.Search→`?q=`）
+- [x] **D2** 所属 WS · BE `aa1a004` + FE `21bc950`（列 `workspaces[]`）
 - [x] **D3** 超管箱截 · `2277e1f` / `wheel-d-users-search.png`（搜 admin + 所属工作区列）
 - [x] **E1** 全链路 smoke txt · `8916e4f` / `WHEEL_FIX-smoke-20261024.txt` PASS=24 FAIL=0
-- [x] **E2** QA 无阻塞 · 同证；软注仅 B4/D3 FE 箱截
+- [x] **E2** QA 无阻塞 · 同证
 - [x] **E3** 产品关单 · 2026-10-24 21:25 Asia/Shanghai
 
 ## 进度注记
