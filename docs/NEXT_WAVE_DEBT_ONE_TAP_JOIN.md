@@ -2,12 +2,13 @@
 
 > 2026-10-24 22:05 Asia/Shanghai · 产品体验  
 > **用户定调（总指挥转·怒）：** 停「教人配一堆 env / MCP」路线。只要看板后台 **一条 URL 或一段可粘贴提示词**，新 Bot 打开/粘贴后该有的都带好——**零心智负担**。  
+> **2026-10-24 22:30 再怒·复制即装：** 「复制 Bot 提示词 / 入场链接」**禁止假设本机已装 `ymbot`**。生成物必须内嵌 **一键安装**（`curl|bash` 或 `go install`）+ API 根 `https://bot.api.sn.cn` + join。  
 > **生产 API 根（默认写入链接/提示词）：** `https://bot.api.sn.cn`  
 > **承接：** 队席入场码 `ymt_` + `team join` / redeem 已有（[`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md)）；本波只做「一键带走」，不重做 claim。
 
 ## 一句话
 
-Admin 在 Bot 席页点一下 → 剪贴板里是 **入场链接** 或 **给 Cursor/Agent 的系统提示词**；对方打开/粘贴即知 API 根、入场码、席位角色，能自动 join 更好——**禁止再甩 YMBOT_* / 手改 mcp.json / 长安装文档**。
+Admin 在 Bot 席页点一下 → 剪贴板里是 **入场链接** 或 **给 Cursor/Agent 的系统提示词**；对方打开/粘贴即能 **装 CLI（若无）→ 连 API 根 → join**——**禁止假设已装 ymbot**，**禁止再甩 YMBOT_* / 手改 mcp.json / 长安装文档**。
 
 ## 现网可扩（勿重做）
 
@@ -54,10 +55,14 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 一段中文系统提示（可 Markdown），至少含：
 
-1. API 根：`https://bot.api.sn.cn`（或配置值）  
+0. **一键安装（强制·置顶）**：假设对方 **没有** `ymbot`。必须给可复制执行的安装命令（二选一或并列，主路径写死）：  
+   - **主：** `curl -fsSL https://bot.api.sn.cn/install.sh | bash`（宿主=`PUBLIC_API_BASE`；自托管随配置变）  
+   - **备：** `go install github.com/yumeng-tech/ai-collab-board/backend/cmd/ymbot@latest`（与 `go.mod` module 对齐；Go 落地时可改常量，FE 跟齐）  
+   装完自检：`ymbot version`（或 `-h`）一行即可。**禁止**只写 `ymbot team join` 而不给安装。  
+1. API 根：`https://bot.api.sn.cn`（或配置值）；安装后 join/whoami 用该根（`ymbot` 读配置或 `--api`，以 Go 落地为准，提示词写清一行）  
 2. 入场码：`ymt_…`  
 3. 目标角色：`role` / 显示名  
-4. 主航线硬指令：`board_whoami` / `ymbot whoami` → `team join --code … [--role …]` → `handoff get`；真相源在服务端  
+4. 主航线硬指令：**安装（若无）** → `board_whoami` / `ymbot whoami` → `team join --code … [--role …]` → `handoff get`；真相源在服务端  
 5. **禁止**让用户去改 mcp.json / 导出一长串 env；若通道需 Key：写「用本机已有 Bot Key / Vault，勿把 ymk_ 贴进聊天」
 
 ### 安全
@@ -95,6 +100,19 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 | **C2** | 通道：提示词内一行命令可 `team join` 成功（沿用 J2）；不新增必填 env 教学 | 记忆/通道抽 + QA |
 | **C3** | 箱证 txt 或截：链接 → join PASS | QA |
 
+
+### E · 复制即装（P0 热修 · Go+React）
+
+> 用户怒：生成物不得假设已装 CLI。包 B 已勾的提示词模板 **必须重写**；`/join` 页同步露出安装一行。
+
+| ID | 标准 | 谁 |
+| --- | --- | --- |
+| **E1** | `BuildBotPrompt`：主航线 **第 0 步=安装**；内嵌 curl\|bash（`{PUBLIC_API_BASE}/install.sh`）+ go install 备线；单测/golden 断言含 `install.sh` 与 `go install`，且 **不得**在无安装段时直接假设 `ymbot` 已在 PATH | Go |
+| **E2** | `GET /install.sh`（或约定等价）：可执行脚本，装好 `ymbot` 到 PATH（或打印 go install 回退）；默认指向生产 API 根；非法/失败人话 | Go |
+| **E3** | `GET /join` 页：除提示词/CLI join 外，**醒目展示**同一安装命令；禁只甩 join 一行 | Go |
+| **E4** | FE `buildBotJoinPrompt` / 席页复制：与 Go 模板对齐（同安装段+API 根+join）；重拍 `one-tap-copy-prompt.png`（可见安装段） | React |
+| **E5** | 入场链接落地仍可用；箱证：新环境无 ymbot → 按提示词安装 → join PASS（或脚本 dry-run + 提示词 golden） | QA |
+
 ### D · 文案收口
 
 | ID | 标准 | 谁 |
@@ -106,11 +124,11 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 | 角色 | 职责 |
 | --- | --- |
-| **Go 后端** | **与 React 并行首刀**：A1–A3 链接契约 + `/join` 宿主（或明确委托 FE） |
-| **React 前端** | **并行首刀**：B1–B5 两按钮 + 箱截；可选同源 `/join` |
+| **Go 后端** | **与 React 并行首刀**：A1–A3 链接契约 + `/join` 宿主（或明确委托 FE）；**热修 E1–E3** `/install.sh` + 提示词第 0 步 |
+| **React 前端** | **并行首刀**：B1–B5 两按钮 + 箱截；可选同源 `/join`；**热修 E4** 对齐安装段并重截 |
 | **Bot 记忆 / 通道** | C2 提示词航线与 `team join` 对齐；勿写回 env 教程 |
 | **种子与文档** | A3/D1 |
-| **QA** | A4/C3 |
+| **QA** | A4/C3；**E5** 无 CLI 新环境安装→join |
 | **产品体验** | 本裁定；D2 |
 
 ## 产品勾选
@@ -124,6 +142,11 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [x] **B3** role 带入
 - [x] **B4** 主 CTA 切换
 - [x] **B5** 箱截
+- [ ] **E1** BuildBotPrompt 第 0 步安装 · Go
+- [ ] **E2** `GET /install.sh` · Go
+- [ ] **E3** `/join` 页露安装 · Go
+- [ ] **E4** FE 提示词对齐+重截 · React
+- [ ] **E5** 无 CLI→装→join 箱证 · QA
 - [ ] **C1** 打开引导
 - [ ] **C2** 提示词航线 join
 - [ ] **C3** 打开即用箱证
@@ -131,6 +154,8 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [ ] **D2** 产品关单
 
 ## 进度注记
+
+- 2026-10-24 22:30 · **用户怒·复制即装**：提示词/链接生成物禁假设已装 ymbot；开 **E1–E5**（curl\|bash 主 + go install 备 + API 根 + join）。首刀 **Go E1–E3 + React E4** 并行。
 
 - 2026-10-24 22:20 · **产品勾包 B** React `b556e97`：席页主 CTA「复制入场链接」「复制 Bot 提示词」；Toast 末四+role；箱截 `one-tap-copy-link/prompt`。B1–B5 勾。待 C/D。
 
@@ -145,4 +170,4 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 关单进度
 
-**进行中** · **包 A+B 全勾**（B=`b556e97`）；待 C/D。
+**进行中** · 包 A+B 已勾；**E 复制即装 P0 热修**（禁假设已装 ymbot）；C/D 仍开。
