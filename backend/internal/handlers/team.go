@@ -180,6 +180,114 @@ func (h *TeamHandler) UnbindSeat(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, map[string]any{"seat": seat})
 }
 
+func (h *TeamHandler) CreateSeat(w http.ResponseWriter, r *http.Request) {
+	ws, _, ok := requireWorkspaceMember(h.DB, w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		Slug        string `json:"slug"`
+		RoleSlug    string `json:"role_slug"`
+		Name        string `json:"name"`
+		DisplayName string `json:"display_name"`
+		PlaybookRef string `json:"playbook_ref"`
+	}
+	if err := middleware.DecodeJSON(r, &req); err != nil {
+		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
+		return
+	}
+	slug := req.Slug
+	if slug == "" {
+		slug = req.RoleSlug
+	}
+	name := req.Name
+	if name == "" {
+		name = req.DisplayName
+	}
+	seat, err := h.Svc.CreateSeat(ws, r.PathValue("teamID"), botmem.EnsureSeatInput{
+		Slug: slug, Name: name, PlaybookRef: req.PlaybookRef,
+	})
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	middleware.JSON(w, http.StatusCreated, map[string]any{"seat": seat})
+}
+
+func (h *TeamHandler) StopSeat(w http.ResponseWriter, r *http.Request) {
+	ws, actor, ok := requireWorkspaceMember(h.DB, w, r)
+	if !ok {
+		return
+	}
+	if resolveMemberRole(h.DB, r, actor) != "admin" && middleware.ActorKind(r.Context()) != "bot" {
+		middleware.HandleError(w, apperr.Forbidden("需要管理员权限才能标记停工"))
+		return
+	}
+	seat, err := h.Svc.StopSeat(ws, r.PathValue("teamID"), r.PathValue("seatID"))
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	middleware.JSON(w, http.StatusOK, map[string]any{"seat": seat})
+}
+
+func (h *TeamHandler) CreateInvite(w http.ResponseWriter, r *http.Request) {
+	ws, actor, ok := requireWorkspaceMember(h.DB, w, r)
+	if !ok {
+		return
+	}
+	if resolveMemberRole(h.DB, r, actor) != "admin" {
+		middleware.HandleError(w, apperr.Forbidden("需要管理员权限才能签发入场码"))
+		return
+	}
+	var req struct {
+		AllowExpandSeat bool   `json:"allow_expand_seat"`
+		SeatSlug        string `json:"seat_slug"`
+		RoleHint        string `json:"role_hint"`
+		RoleSlug        string `json:"role_slug"`
+		MaxUses         *int   `json:"max_uses"`
+		ExpiresAt       string `json:"expires_at"`
+	}
+	if err := middleware.DecodeJSON(r, &req); err != nil {
+		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
+		return
+	}
+	hint := req.RoleHint
+	if hint == "" {
+		hint = req.RoleSlug
+	}
+	inv, err := h.Svc.CreateInvite(ws, r.PathValue("teamID"), botmem.CreateInviteInput{
+		AllowExpandSeat: req.AllowExpandSeat,
+		SeatSlug:        req.SeatSlug,
+		RoleHint:        hint,
+		MaxUses:         req.MaxUses,
+		ExpiresAt:       req.ExpiresAt,
+		CreatedBy:       actor,
+	})
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	middleware.JSON(w, http.StatusCreated, map[string]any{"invite": inv, "code": inv.Code})
+}
+
+func (h *TeamHandler) RedeemInvite(w http.ResponseWriter, r *http.Request) {
+	// AuthJWTOrAPIKey 已校验身份；无需 workspace 路径
+	var req struct {
+		Code string `json:"code"`
+	}
+	if err := middleware.DecodeJSON(r, &req); err != nil {
+		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
+		return
+	}
+	res, err := h.Svc.RedeemInvite(req.Code)
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	middleware.JSON(w, http.StatusOK, res)
+}
+
 func (h *TeamHandler) ExpandSeats(w http.ResponseWriter, r *http.Request) {
 	ws, _, ok := requireWorkspaceMember(h.DB, w, r)
 	if !ok {
@@ -200,7 +308,7 @@ func (h *TeamHandler) ExpandSeats(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, res)
 }
 
-// MountTeams 挂载 teams roster / seat bind / expand。auth 同 bots（workspace member + idempotency）。
+// MountTeams 挂载 teams roster / seat create·bind·stop / invites / expand。auth 同 bots。
 // onIssueEvent 可选：ExpandSeats 改派时扇出 Webhook（通常传 WebhookHandler.DispatchEvent）。
 func MountTeams(mux *http.ServeMux, db *sql.DB, wrap func(http.Handler) http.Handler, onIssueEvent ...func(workspaceID, event string, payload any)) {
 	h := NewTeamHandler(db)
@@ -218,10 +326,15 @@ func MountTeams(mux *http.ServeMux, db *sql.DB, wrap func(http.Handler) http.Han
 	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}", h.GetTeam)
 	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}/roster", h.GetRoster)
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/roster/ensure", h.Idempotent(h.EnsureRoster))
+	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/seats", h.Idempotent(h.CreateSeat))
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/seats/{seatID}/bind", h.Idempotent(h.BindSeat))
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/seats/{seatID}/unbind", h.Idempotent(h.UnbindSeat))
+	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/seats/{seatID}/stop", h.Idempotent(h.StopSeat))
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/seats/expand", h.Idempotent(h.ExpandSeats))
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/expand", h.Idempotent(h.ExpandSeats))
+	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/invites", h.Idempotent(h.CreateInvite))
+	// G3 redeem：不在 workspace 路径下（Bot 持 ymk_ 定位团队）
+	reg("POST /api/v1/team-invites/redeem", h.RedeemInvite)
 }
 
 func (h *TeamHandler) Idempotent(fn http.HandlerFunc) http.HandlerFunc {

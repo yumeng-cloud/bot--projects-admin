@@ -23,6 +23,8 @@ export AUTO_MIGRATE=1              # 执行 internal/db/postgres/*.sql（含 vec
 | `backend/internal/db/postgres/001_extensions.sql` | `CREATE EXTENSION IF NOT EXISTS vector;` |
 | `backend/internal/db/postgres/002_schema.sql` | 全业务表（Postgres 方言） |
 | `backend/internal/db/postgres/003_embeddings.sql` | `embedding_chunks`（维度默认 384，见 `docs/embed.md`） |
+| `…/007_teams.sql` | teams / team_seats |
+| `…/008_seat_status_invites_webhook.sql` | seat.status · team_invites(ymt_) · webhook filter_* |
 
 占位符：业务 SQL 仍写 `?`；Postgres 经 `postgres-rebind` 驱动自动 Rebind 为 `$1…`。`embedder.Store` 可继续直接写 `$n`。
 

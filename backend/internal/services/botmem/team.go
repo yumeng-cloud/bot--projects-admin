@@ -179,9 +179,9 @@ func (s *Service) EnsureRoster(workspaceID, teamID string, in EnsureRosterInput)
 		sid := idgen.New()
 		_, err = s.DB.Exec(`INSERT INTO team_seats
 			(id, team_id, workspace_id, role_slug, display_name, playbook_ref, bot_role_id,
-			 bound_member_id, bound_at, created_at, updated_at)
-			VALUES (?,?,?,?,?,?,?,NULL,NULL,?,?)`,
-			sid, teamID, workspaceID, slug, name, playbook, role.ID, now, now)
+			 bound_member_id, bound_at, status, created_at, updated_at)
+			VALUES (?,?,?,?,?,?,?,NULL,NULL,?,?,?)`,
+			sid, teamID, workspaceID, slug, name, playbook, role.ID, models.SeatStatusOpen, now, now)
 		if err != nil {
 			if db.IsUniqueViolation(err) {
 				continue
@@ -214,7 +214,8 @@ func (s *Service) GetRoster(workspaceID, teamID string) ([]models.TeamSeat, erro
 	}
 	rows, err := s.DB.Query(`
 		SELECT ts.id, ts.team_id, ts.workspace_id, ts.role_slug, ts.display_name, ts.playbook_ref,
-			ts.bot_role_id, ts.bound_member_id, ts.bound_at, ts.created_at, ts.updated_at,
+			ts.bot_role_id, ts.bound_member_id, ts.bound_at, COALESCE(NULLIF(ts.status,''), 'open'),
+			ts.created_at, ts.updated_at,
 			m.display_name,
 			c.member_id, c.claimed_at
 		FROM team_seats ts
@@ -248,12 +249,13 @@ func scanRosterRow(row interface{ Scan(dest ...any) error }) (models.TeamSeat, e
 	var playbook, botRoleID, boundMember, boundAt, boundDN, claimMember, claimAt sql.NullString
 	err := row.Scan(
 		&seat.ID, &seat.TeamID, &seat.WorkspaceID, &seat.RoleSlug, &seat.DisplayName,
-		&playbook, &botRoleID, &boundMember, &boundAt, &seat.CreatedAt, &seat.UpdatedAt,
+		&playbook, &botRoleID, &boundMember, &boundAt, &seat.Status, &seat.CreatedAt, &seat.UpdatedAt,
 		&boundDN, &claimMember, &claimAt,
 	)
 	if err != nil {
 		return seat, err
 	}
+	seat.Status = normalizeSeatStatus(seat.Status)
 	if playbook.Valid {
 		seat.PlaybookRef = &playbook.String
 	}
@@ -276,10 +278,28 @@ func scanRosterRow(row interface{ Scan(dest ...any) error }) (models.TeamSeat, e
 	return seat, nil
 }
 
+func normalizeSeatStatus(st string) string {
+	st = strings.ToLower(strings.TrimSpace(st))
+	switch st {
+	case models.SeatStatusActive, models.SeatStatusStopped, models.SeatStatusLeft, models.SeatStatusOpen:
+		return st
+	case "empty", "departed":
+		if st == "departed" {
+			return models.SeatStatusLeft
+		}
+		return models.SeatStatusOpen
+	case "":
+		return models.SeatStatusOpen
+	default:
+		return models.SeatStatusOpen
+	}
+}
+
 func (s *Service) getSeat(workspaceID, teamID, seatID string) (*models.TeamSeat, error) {
 	row := s.DB.QueryRow(`
 		SELECT ts.id, ts.team_id, ts.workspace_id, ts.role_slug, ts.display_name, ts.playbook_ref,
-			ts.bot_role_id, ts.bound_member_id, ts.bound_at, ts.created_at, ts.updated_at,
+			ts.bot_role_id, ts.bound_member_id, ts.bound_at, COALESCE(NULLIF(ts.status,''), 'open'),
+			ts.created_at, ts.updated_at,
 			m.display_name,
 			c.member_id, c.claimed_at
 		FROM team_seats ts
@@ -326,25 +346,29 @@ func (s *Service) BindSeat(workspaceID, teamID, seatID, memberID string, force b
 				return nil, apperr.Conflict("该席位占用中，禁止顶替")
 			}
 		}
-		if !force {
+		st := normalizeSeatStatus(seat.Status)
+		stoppedOrLeft := st == models.SeatStatusStopped || st == models.SeatStatusLeft
+		// 无 active claim 的残留 bound = 脏绑；stopped/left 可补位
+		if !force && !stoppedOrLeft {
 			msg := "该席位已绑定其他成员"
 			if seat.BoundDisplayName != nil {
 				msg = fmt.Sprintf("该席位已绑定其他成员（%s）", *seat.BoundDisplayName)
 			}
 			return nil, apperr.Conflict(msg)
 		}
-		// force 仅清「无 active claim 但残留 bound」的脏绑
 		dirtyFromMember = *seat.BoundMemberID
+		if force {
+			forceClearedDirty = true
+		}
 		_, err = s.DB.Exec(`UPDATE team_seats SET bound_member_id = NULL, bound_at = NULL, updated_at = ? WHERE id = ?`,
 			nowUTC(), seatID)
 		if err != nil {
 			return nil, err
 		}
-		forceClearedDirty = true
 	}
 	now := nowUTC()
-	_, err = s.DB.Exec(`UPDATE team_seats SET bound_member_id = ?, bound_at = ?, updated_at = ? WHERE id = ?`,
-		memberID, now, now, seatID)
+	_, err = s.DB.Exec(`UPDATE team_seats SET bound_member_id = ?, bound_at = ?, status = ?, updated_at = ? WHERE id = ?`,
+		memberID, now, models.SeatStatusActive, now, seatID)
 	if err != nil {
 		return nil, err
 	}
@@ -389,8 +413,8 @@ func (s *Service) UnbindSeat(workspaceID, teamID, seatID, memberID string, asAdm
 		return nil, apperr.Forbidden("只能解绑自己绑定的席位")
 	}
 	bound := *seat.BoundMemberID
-	_, err = s.DB.Exec(`UPDATE team_seats SET bound_member_id = NULL, bound_at = NULL, updated_at = ? WHERE id = ?`,
-		nowUTC(), seatID)
+	_, err = s.DB.Exec(`UPDATE team_seats SET bound_member_id = NULL, bound_at = NULL, status = ?, updated_at = ? WHERE id = ?`,
+		models.SeatStatusLeft, nowUTC(), seatID)
 	if err != nil {
 		return nil, err
 	}
@@ -398,6 +422,75 @@ func (s *Service) UnbindSeat(workspaceID, teamID, seatID, memberID string, asAdm
 		if active, aerr := s.activeClaim(*seat.BotRoleID); aerr == nil && active != nil && active.MemberID == bound {
 			_ = s.Release(workspaceID, *seat.BotRoleID)
 		}
+	}
+	return s.getSeat(workspaceID, teamID, seatID)
+}
+
+// CreateSeat 加新席（G2）；同 team+slug 幂等返回原席。
+func (s *Service) CreateSeat(workspaceID, teamID string, in EnsureSeatInput) (*models.TeamSeat, error) {
+	if _, err := s.GetTeam(workspaceID, teamID); err != nil {
+		return nil, err
+	}
+	slug := strings.TrimSpace(strings.ToLower(in.Slug))
+	name := strings.TrimSpace(in.Name)
+	if slug == "" {
+		return nil, apperr.BadRequest("席位 slug 不能为空")
+	}
+	if name == "" {
+		name = slug
+	}
+	var existingID string
+	err := s.DB.QueryRow(`SELECT id FROM team_seats WHERE team_id = ? AND role_slug = ?`, teamID, slug).Scan(&existingID)
+	if err == nil {
+		return s.getSeat(workspaceID, teamID, existingID)
+	}
+	if err != sql.ErrNoRows {
+		return nil, err
+	}
+	role, err := s.ensureWSRole(workspaceID, slug, name)
+	if err != nil {
+		return nil, err
+	}
+	var playbook any
+	if strings.TrimSpace(in.PlaybookRef) == "" {
+		playbook = nil
+	} else {
+		playbook = strings.TrimSpace(in.PlaybookRef)
+	}
+	now := nowUTC()
+	sid := idgen.New()
+	_, err = s.DB.Exec(`INSERT INTO team_seats
+		(id, team_id, workspace_id, role_slug, display_name, playbook_ref, bot_role_id,
+		 bound_member_id, bound_at, status, created_at, updated_at)
+		VALUES (?,?,?,?,?,?,?,NULL,NULL,?,?,?)`,
+		sid, teamID, workspaceID, slug, name, playbook, role.ID, models.SeatStatusOpen, now, now)
+	if err != nil {
+		if db.IsUniqueViolation(err) {
+			var id2 string
+			if e2 := s.DB.QueryRow(`SELECT id FROM team_seats WHERE team_id = ? AND role_slug = ?`, teamID, slug).Scan(&id2); e2 == nil {
+				return s.getSeat(workspaceID, teamID, id2)
+			}
+		}
+		return nil, err
+	}
+	return s.getSeat(workspaceID, teamID, sid)
+}
+
+// StopSeat 标记停工：清绑+释 claim，status=stopped（可 force 补位）。
+func (s *Service) StopSeat(workspaceID, teamID, seatID string) (*models.TeamSeat, error) {
+	seat, err := s.getSeat(workspaceID, teamID, seatID)
+	if err != nil {
+		return nil, err
+	}
+	if seat.BotRoleID != nil && *seat.BotRoleID != "" {
+		if active, aerr := s.activeClaim(*seat.BotRoleID); aerr == nil && active != nil {
+			_ = s.Release(workspaceID, *seat.BotRoleID)
+		}
+	}
+	_, err = s.DB.Exec(`UPDATE team_seats SET bound_member_id = NULL, bound_at = NULL, status = ?, updated_at = ? WHERE id = ?`,
+		models.SeatStatusStopped, nowUTC(), seatID)
+	if err != nil {
+		return nil, err
 	}
 	return s.getSeat(workspaceID, teamID, seatID)
 }

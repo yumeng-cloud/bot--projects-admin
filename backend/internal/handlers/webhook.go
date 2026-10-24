@@ -31,13 +31,15 @@ func (h *WebhookHandler) client() *http.Client {
 }
 
 type webhookDTO struct {
-	ID          string          `json:"id"`
-	WorkspaceID string          `json:"workspace_id"`
-	URL         string          `json:"url"`
-	Events      json.RawMessage `json:"events"`
-	Enabled     bool            `json:"enabled"`
-	CreatedAt   string          `json:"created_at"`
-	UpdatedAt   string          `json:"updated_at"`
+	ID             string          `json:"id"`
+	WorkspaceID    string          `json:"workspace_id"`
+	URL            string          `json:"url"`
+	Events         json.RawMessage `json:"events"`
+	Enabled        bool            `json:"enabled"`
+	FilterMemberID *string         `json:"filter_member_id,omitempty"`
+	FilterSeatID   *string         `json:"filter_seat_id,omitempty"`
+	CreatedAt      string          `json:"created_at"`
+	UpdatedAt      string          `json:"updated_at"`
 }
 
 func (h *WebhookHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +49,7 @@ func (h *WebhookHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 	wsID := middleware.WorkspaceID(r.Context())
 	rows, err := h.DB.Query(`
-		SELECT id, workspace_id, url, events, enabled, created_at, updated_at
+		SELECT id, workspace_id, url, events, enabled, filter_member_id, filter_seat_id, created_at, updated_at
 		FROM webhooks WHERE workspace_id=? ORDER BY created_at DESC`, wsID)
 	if err != nil {
 		middleware.HandleError(w, err)
@@ -59,12 +61,19 @@ func (h *WebhookHandler) List(w http.ResponseWriter, r *http.Request) {
 		var wh webhookDTO
 		var en int
 		var events string
-		if err := rows.Scan(&wh.ID, &wh.WorkspaceID, &wh.URL, &events, &en, &wh.CreatedAt, &wh.UpdatedAt); err != nil {
+		var fMem, fSeat sql.NullString
+		if err := rows.Scan(&wh.ID, &wh.WorkspaceID, &wh.URL, &events, &en, &fMem, &fSeat, &wh.CreatedAt, &wh.UpdatedAt); err != nil {
 			middleware.HandleError(w, err)
 			return
 		}
 		wh.Enabled = en == 1
 		wh.Events = json.RawMessage(events)
+		if fMem.Valid && fMem.String != "" {
+			wh.FilterMemberID = &fMem.String
+		}
+		if fSeat.Valid && fSeat.String != "" {
+			wh.FilterSeatID = &fSeat.String
+		}
 		list = append(list, wh)
 	}
 	middleware.JSON(w, http.StatusOK, map[string]any{"webhooks": list})
@@ -77,9 +86,11 @@ func (h *WebhookHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	wsID := middleware.WorkspaceID(r.Context())
 	var req struct {
-		URL    string          `json:"url"`
-		Secret string          `json:"secret"`
-		Events json.RawMessage `json:"events"`
+		URL            string          `json:"url"`
+		Secret         string          `json:"secret"`
+		Events         json.RawMessage `json:"events"`
+		FilterMemberID *string         `json:"filter_member_id"`
+		FilterSeatID   *string         `json:"filter_seat_id"`
 	}
 	if err := middleware.DecodeJSON(r, &req); err != nil {
 		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
@@ -101,8 +112,23 @@ func (h *WebhookHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	id := idgen.New()
 	now := time.Now().UTC().Format(time.RFC3339Nano)
-	_, err := h.DB.Exec(`INSERT INTO webhooks (id, workspace_id, url, secret, events, enabled, created_at, updated_at)
-		VALUES (?,?,?,?,?,1,?,?)`, id, wsID, req.URL, secret, string(req.Events), now, now)
+	var fMem, fSeat any
+	if req.FilterMemberID != nil && strings.TrimSpace(*req.FilterMemberID) != "" {
+		v := strings.TrimSpace(*req.FilterMemberID)
+		fMem = v
+		req.FilterMemberID = &v
+	} else {
+		req.FilterMemberID = nil
+	}
+	if req.FilterSeatID != nil && strings.TrimSpace(*req.FilterSeatID) != "" {
+		v := strings.TrimSpace(*req.FilterSeatID)
+		fSeat = v
+		req.FilterSeatID = &v
+	} else {
+		req.FilterSeatID = nil
+	}
+	_, err := h.DB.Exec(`INSERT INTO webhooks (id, workspace_id, url, secret, events, enabled, filter_member_id, filter_seat_id, created_at, updated_at)
+		VALUES (?,?,?,?,?,1,?,?,?,?)`, id, wsID, req.URL, secret, string(req.Events), fMem, fSeat, now, now)
 	if err != nil {
 		middleware.HandleError(w, err)
 		return
@@ -110,7 +136,8 @@ func (h *WebhookHandler) Create(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusCreated, map[string]any{
 		"webhook": webhookDTO{
 			ID: id, WorkspaceID: wsID, URL: req.URL, Events: req.Events,
-			Enabled: true, CreatedAt: now, UpdatedAt: now,
+			Enabled: true, FilterMemberID: req.FilterMemberID, FilterSeatID: req.FilterSeatID,
+			CreatedAt: now, UpdatedAt: now,
 		},
 		"secret": secret, // 仅创建时返回
 	})
@@ -137,10 +164,12 @@ func (h *WebhookHandler) Patch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		URL     *string          `json:"url"`
-		Events  *json.RawMessage `json:"events"`
-		Enabled *bool            `json:"enabled"`
-		Secret  *string          `json:"secret"`
+		URL            *string          `json:"url"`
+		Events         *json.RawMessage `json:"events"`
+		Enabled        *bool            `json:"enabled"`
+		Secret         *string          `json:"secret"`
+		FilterMemberID *string          `json:"filter_member_id"`
+		FilterSeatID   *string          `json:"filter_seat_id"`
 	}
 	if err := middleware.DecodeJSON(r, &req); err != nil {
 		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
@@ -160,23 +189,51 @@ func (h *WebhookHandler) Patch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	now := time.Now().UTC().Format(time.RFC3339Nano)
+	var fMem, fSeat sql.NullString
+	_ = h.DB.QueryRow(`SELECT filter_member_id, filter_seat_id FROM webhooks WHERE id=?`, wid).Scan(&fMem, &fSeat)
+	if req.FilterMemberID != nil {
+		if strings.TrimSpace(*req.FilterMemberID) == "" {
+			fMem = sql.NullString{}
+		} else {
+			fMem = sql.NullString{String: strings.TrimSpace(*req.FilterMemberID), Valid: true}
+		}
+	}
+	if req.FilterSeatID != nil {
+		if strings.TrimSpace(*req.FilterSeatID) == "" {
+			fSeat = sql.NullString{}
+		} else {
+			fSeat = sql.NullString{String: strings.TrimSpace(*req.FilterSeatID), Valid: true}
+		}
+	}
+	var fMemVal, fSeatVal any
+	if fMem.Valid {
+		fMemVal = fMem.String
+	}
+	if fSeat.Valid {
+		fSeatVal = fSeat.String
+	}
 	if req.Secret != nil && strings.TrimSpace(*req.Secret) != "" {
-		_, err = h.DB.Exec(`UPDATE webhooks SET url=?, events=?, enabled=?, secret=?, updated_at=? WHERE id=?`,
-			url, events, en, strings.TrimSpace(*req.Secret), now, wid)
+		_, err = h.DB.Exec(`UPDATE webhooks SET url=?, events=?, enabled=?, secret=?, filter_member_id=?, filter_seat_id=?, updated_at=? WHERE id=?`,
+			url, events, en, strings.TrimSpace(*req.Secret), fMemVal, fSeatVal, now, wid)
 	} else {
-		_, err = h.DB.Exec(`UPDATE webhooks SET url=?, events=?, enabled=?, updated_at=? WHERE id=?`,
-			url, events, en, now, wid)
+		_, err = h.DB.Exec(`UPDATE webhooks SET url=?, events=?, enabled=?, filter_member_id=?, filter_seat_id=?, updated_at=? WHERE id=?`,
+			url, events, en, fMemVal, fSeatVal, now, wid)
 	}
 	if err != nil {
 		middleware.HandleError(w, err)
 		return
 	}
-	middleware.JSON(w, http.StatusOK, map[string]any{
-		"webhook": webhookDTO{
-			ID: wid, WorkspaceID: wsID, URL: url, Events: json.RawMessage(events),
-			Enabled: en == 1, CreatedAt: created, UpdatedAt: now,
-		},
-	})
+	dto := webhookDTO{
+		ID: wid, WorkspaceID: wsID, URL: url, Events: json.RawMessage(events),
+		Enabled: en == 1, CreatedAt: created, UpdatedAt: now,
+	}
+	if fMem.Valid {
+		dto.FilterMemberID = &fMem.String
+	}
+	if fSeat.Valid {
+		dto.FilterSeatID = &fSeat.String
+	}
+	middleware.JSON(w, http.StatusOK, map[string]any{"webhook": dto})
 }
 
 func (h *WebhookHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -266,16 +323,18 @@ func (h *WebhookHandler) DispatchEvent(workspaceID, event string, payload any) {
 }
 
 func (h *WebhookHandler) dispatchSync(workspaceID, event string, payload any) {
+	enriched := enrichWebhookPayload(h.DB, workspaceID, payload)
 	body, err := json.Marshal(map[string]any{
 		"event":        event,
 		"workspace_id": workspaceID,
 		"occurred_at":  time.Now().UTC().Format(time.RFC3339Nano),
-		"data":         payload,
+		"data":         enriched,
 	})
 	if err != nil {
 		return
 	}
-	rows, err := h.DB.Query(`SELECT id, url, secret, events FROM webhooks WHERE workspace_id=? AND enabled=1`, workspaceID)
+	assigneeID, seatID := extractAssigneeSeat(enriched)
+	rows, err := h.DB.Query(`SELECT id, url, secret, events, filter_member_id, filter_seat_id FROM webhooks WHERE workspace_id=? AND enabled=1`, workspaceID)
 	if err != nil {
 		return
 	}
@@ -283,11 +342,22 @@ func (h *WebhookHandler) dispatchSync(workspaceID, event string, payload any) {
 	var targets []target
 	for rows.Next() {
 		var id, url, secret, eventsJSON string
-		if err := rows.Scan(&id, &url, &secret, &eventsJSON); err != nil {
+		var fMem, fSeat sql.NullString
+		if err := rows.Scan(&id, &url, &secret, &eventsJSON, &fMem, &fSeat); err != nil {
 			continue
 		}
 		if !eventMatch(eventsJSON, event) {
 			continue
+		}
+		if fMem.Valid && fMem.String != "" {
+			if assigneeID == "" || assigneeID != fMem.String {
+				continue
+			}
+		}
+		if fSeat.Valid && fSeat.String != "" {
+			if seatID == "" || seatID != fSeat.String {
+				continue
+			}
 		}
 		targets = append(targets, target{id: id, url: url, secret: secret})
 	}
@@ -295,6 +365,66 @@ func (h *WebhookHandler) dispatchSync(workspaceID, event string, payload any) {
 	for _, t := range targets {
 		h.deliverOne(t.id, t.url, t.secret, event, body)
 	}
+}
+
+// enrichWebhookPayload 尽量附带 assignee / team_id / seat_id（G6a）。
+func enrichWebhookPayload(db *sql.DB, workspaceID string, payload any) any {
+	if payload == nil || db == nil {
+		return payload
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return payload
+	}
+	var top map[string]any
+	if err := json.Unmarshal(raw, &top); err != nil {
+		return payload
+	}
+	issueObj := top
+	if iss, ok := top["issue"].(map[string]any); ok {
+		issueObj = iss
+	}
+	assignee := ""
+	if v, ok := issueObj["assignee_id"].(string); ok {
+		assignee = strings.TrimSpace(v)
+	}
+	if assignee == "" {
+		return payload
+	}
+	top["assignee_id"] = assignee
+	var seatID, teamID string
+	_ = db.QueryRow(`SELECT id, team_id FROM team_seats WHERE workspace_id=? AND bound_member_id=? LIMIT 1`,
+		workspaceID, assignee).Scan(&seatID, &teamID)
+	if seatID != "" {
+		top["seat_id"] = seatID
+		top["team_id"] = teamID
+	}
+	return top
+}
+
+func extractAssigneeSeat(payload any) (assigneeID, seatID string) {
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return "", ""
+	}
+	var top map[string]any
+	if err := json.Unmarshal(raw, &top); err != nil {
+		return "", ""
+	}
+	if v, ok := top["assignee_id"].(string); ok {
+		assigneeID = strings.TrimSpace(v)
+	}
+	if v, ok := top["seat_id"].(string); ok {
+		seatID = strings.TrimSpace(v)
+	}
+	if assigneeID == "" {
+		if iss, ok := top["issue"].(map[string]any); ok {
+			if v, ok := iss["assignee_id"].(string); ok {
+				assigneeID = strings.TrimSpace(v)
+			}
+		}
+	}
+	return assigneeID, seatID
 }
 
 func eventMatch(eventsJSON, event string) bool {

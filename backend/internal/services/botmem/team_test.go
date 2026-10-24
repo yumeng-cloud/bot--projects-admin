@@ -223,3 +223,114 @@ func TestExpandSeatsAssignsUnassignedLeaves(t *testing.T) {
 		t.Fatalf("assignees missing: %+v %+v", got1.AssigneeID, got2.AssigneeID)
 	}
 }
+
+func TestCreateSeatIdempotentAndStop(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "G2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops", Name: "运维"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s1.Status != "open" {
+		t.Fatalf("status=%s want open", s1.Status)
+	}
+	s2, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops", Name: "运维改名忽略"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s2.ID != s1.ID {
+		t.Fatalf("idempotent seat id %s vs %s", s2.ID, s1.ID)
+	}
+	bound, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bound.Status != "active" {
+		t.Fatalf("after bind status=%s", bound.Status)
+	}
+	// active force by other → 409
+	_, err = svc.BindSeat(ws, team.ID, s1.ID, m2, true)
+	if err == nil {
+		t.Fatal("expected 409")
+	}
+	stopped, err := svc.StopSeat(ws, team.ID, s1.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stopped.Status != "stopped" {
+		t.Fatalf("status=%s", stopped.Status)
+	}
+	if stopped.BoundMemberID != nil {
+		t.Fatalf("bound should clear: %+v", stopped.BoundMemberID)
+	}
+	// stopped 可补位（无需 force）
+	re, err := svc.BindSeat(ws, team.ID, s1.ID, m2, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if re.BoundMemberID == nil || *re.BoundMemberID != m2 || re.Status != "active" {
+		t.Fatalf("rebind: %+v", re)
+	}
+}
+
+func TestTeamInviteRedeem(t *testing.T) {
+	svc, ws, m1, _ := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "Inv"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	max := 2
+	inv, err := svc.CreateInvite(ws, team.ID, botmem.CreateInviteInput{
+		AllowExpandSeat: true,
+		RoleHint:        "frontend",
+		MaxUses:         &max,
+		CreatedBy:       m1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inv.Code == "" || !strings.HasPrefix(inv.Code, "ymt_") {
+		t.Fatalf("code=%q", inv.Code)
+	}
+	code := inv.Code
+	res, err := svc.RedeemInvite(code)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.WorkspaceID != ws || res.TeamID != team.ID || !res.AllowExpandSeat {
+		t.Fatalf("redeem: %+v", res)
+	}
+	if res.RoleHint == nil || *res.RoleHint != "frontend" {
+		t.Fatalf("role_hint=%v", res.RoleHint)
+	}
+	// second use ok
+	if _, err := svc.RedeemInvite(code); err != nil {
+		t.Fatal(err)
+	}
+	// third hits max
+	_, err = svc.RedeemInvite(code)
+	if err == nil {
+		t.Fatal("expected max uses")
+	}
+	ae, ok := err.(*apperr.AppError)
+	if !ok || ae.Code != "forbidden" {
+		t.Fatalf("want forbidden %#v", err)
+	}
+	if err := svc.RevokeInvite(ws, team.ID, inv.ID); err != nil {
+		// already at max; create fresh to revoke
+		inv2, err2 := svc.CreateInvite(ws, team.ID, botmem.CreateInviteInput{CreatedBy: m1})
+		if err2 != nil {
+			t.Fatal(err2)
+		}
+		if err := svc.RevokeInvite(ws, team.ID, inv2.ID); err != nil {
+			t.Fatal(err)
+		}
+		_, err = svc.RedeemInvite(inv2.Code)
+		if err == nil {
+			t.Fatal("expected revoked")
+		}
+	}
+}

@@ -24,3 +24,4 @@ backend/ymbot
 scripts/handoff-sidecar/bot-keys.local
 scripts/handoff-sidecar/*.local
 **/handoff-mirror/
+.ymbot.env

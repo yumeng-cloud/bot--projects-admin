@@ -43,3 +43,16 @@ func requireWorkspaceMember(db *sql.DB, w http.ResponseWriter, r *http.Request) 
 	}
 	return workspaceID, memberID, true
 }
+
+// resolveMemberRole 上下文优先，否则查 members.role（ServeMux teams 路由无 RequireWorkspaceMember）。
+func resolveMemberRole(db *sql.DB, r *http.Request, memberID string) string {
+	if role := middleware.MemberRole(r.Context()); role != "" {
+		return role
+	}
+	if memberID == "" {
+		return ""
+	}
+	var role string
+	_ = db.QueryRow(`SELECT role FROM members WHERE id = ?`, memberID).Scan(&role)
+	return role
+}

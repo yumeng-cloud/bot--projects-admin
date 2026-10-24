@@ -114,7 +114,46 @@ type TeamSeat struct {
 	MemberID         *string        `json:"member_id,omitempty"` // alias of bound_member_id
 	BoundAt          *string        `json:"bound_at,omitempty"`
 	BoundDisplayName *string        `json:"bound_display_name,omitempty"`
+	// Status: open | active | stopped | left（空串读出时按 open）
+	Status           string         `json:"status"`
 	CreatedAt        string         `json:"created_at"`
 	UpdatedAt        string         `json:"updated_at"`
 	Claim            *TeamSeatClaim `json:"claim,omitempty"`
+}
+
+// Seat status 常量（G2）
+const (
+	SeatStatusOpen    = "open"
+	SeatStatusActive  = "active"
+	SeatStatusStopped = "stopped"
+	SeatStatusLeft    = "left"
+)
+
+// TeamInvite 团队加入密钥（ymt_）；库内只存 hash，明文仅签发时返回一次。
+type TeamInvite struct {
+	ID              string  `json:"id"`
+	WorkspaceID     string  `json:"workspace_id"`
+	TeamID          string  `json:"team_id"`
+	TokenPrefix     string  `json:"token_prefix,omitempty"`
+	AllowExpandSeat bool    `json:"allow_expand_seat"`
+	SeatSlug        *string `json:"seat_slug,omitempty"`
+	RoleHint        *string `json:"role_hint,omitempty"`
+	MaxUses         *int    `json:"max_uses,omitempty"`
+	UseCount        int     `json:"use_count"`
+	ExpiresAt       *string `json:"expires_at,omitempty"`
+	RevokedAt       *string `json:"revoked_at,omitempty"`
+	CreatedBy       *string `json:"created_by,omitempty"`
+	CreatedAt       string  `json:"created_at"`
+	UpdatedAt       string  `json:"updated_at"`
+	// Code 仅 CreateInvite 响应明文，不落库
+	Code string `json:"code,omitempty"`
+}
+
+// TeamInviteRedeemResult 兑换响应（无明文、无 hash）
+type TeamInviteRedeemResult struct {
+	WorkspaceID     string  `json:"workspace_id"`
+	TeamID          string  `json:"team_id"`
+	AllowExpandSeat bool    `json:"allow_expand_seat"`
+	RoleHint        *string `json:"role_hint,omitempty"`
+	SeatSlug        *string `json:"seat_slug,omitempty"`
 }
