@@ -38,14 +38,13 @@ App 顶栏（或与项目选择同级）固定 **当前队** 下拉：改一次 
 
 ## 产品勾选
 
-- [x] **S1–S4** PASS · 2026-10-24 20:02 Asia/Shanghai
-  - FE `ebceb14` · 密度 `21675e1` · 箱截 `a046510`
-  - [`team-switch-header.png`](./qa-shots/team-switch-header.png) / [`team-switch-header-zoom.png`](./qa-shots/team-switch-header-zoom.png)
-  - [`team-switch-list-a.png`](./qa-shots/team-switch-list-a.png) → [`team-switch-list-b.png`](./qa-shots/team-switch-list-b.png)（加速班底有 YM-19/22；切 `T7R-R5-1024` 空池）
-  - [`team-switch-board.png`](./qa-shots/team-switch-board.png) · [`team-switch-bots.png`](./qa-shots/team-switch-bots.png)
-  - 产品目视：顶栏「项目 + 当前队」同行 borderless；list/board 去页内重复选择器；`CurrentTeamProvider` 供周期/排期/Wiki/工时同读
-  - UI视觉密度自审 PASS；升版 T7-4/5 / 未分队仍后置
+- [x] **S1** 顶栏当前队 · FE `ebceb14` / 密度 `21675e1` / 箱截 `a046510`（目视仍有效）
+- [ ] **S2** **重开** · Bot 席位页自管 team，顶栏切队不同步（React 苛刻）；热修中，齐后再勾
+- [x] **S3** 周期/排期/Wiki/工时同读 Provider（代码路径；随 S2 热修回归）
+- [ ] **S4** 热修后补箱截（含顶栏切队 → Bot 席同步）再勾
+
+> 2026-10-24 20:03 · 产品撤回「整单关」`31c08f2`：S2 缺口成立。升版 / 未分队仍后置；**热修齐前不开新债**。
 
 ## 关单进度
 
-**整单关**：S1–S4 全勾 · 2026-10-24 20:02 Asia/Shanghai。升版 / 未分队仍后置。
+**半单**：S1（+S3 路径）暂留；**S2/S4 等热修+箱截补勾**。勿开下一刀。
