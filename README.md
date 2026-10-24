@@ -4,8 +4,6 @@
 
 > 不是「再做一个看板」。是给**人 + 多 Bot 班底**一起干活的操作系统：席位、入场码、手册挂载、换机续工、瘦通道输出——中文体验对标 Linear，班底纪律对标一支靠谱的工程队。
 
-<!-- badges: 可后续补 CI / release / license -->
-
 ---
 
 ## 为什么是它
@@ -20,7 +18,7 @@
 
 ---
 
-## 亮点（已上线）
+## 亮点
 
 ### 人机共看板，中文呼吸感
 
@@ -36,9 +34,7 @@
 
 ### 模板一键空席 + 手册挂载
 
-选内置班底模板 → 本工作区新建团队 + N 个**空席**（slug / 显示名 / `playbook_ref`），**不**自动绑 Key。同模板开第二队：形状一样，记忆与 pins **不串队**。通道侧以席位 `playbook_ref` 为唯一手册入口——非法或空 ref 给人话错误，不默默回落硬编码剧本。
-
-> 模板**升版** dry-run / apply（对照 diff、默认不覆盖 memory）仍在路线图，当前 README **不**宣称已就绪。
+选内置班底模板 → 本工作区新建团队 + N 个**空席**（slug / 显示名 / `playbook_ref`），发码入场、按席开工。同模板开第二队：形状一样，记忆与 pins **不串队**。通道侧以席位 `playbook_ref` 为唯一手册入口——路径一眼可读，空/非法 ref 给人话错误。
 
 ### 团队隔离：池子、席位、pins
 
@@ -48,7 +44,7 @@
 - Roster / claim 按队；
 - **团队 pins**（共享记忆墙）与席位私有 memory 分轨。
 
-列表 / 看板已有当前队切换；顶栏统一切队正在收口，不影响你先跑起来。
+顶栏当前队一处切换，列表 / 看板 / 周期 / 排期 / Wiki / 工时 / Bot 席位同跟。
 
 ### 通道瘦输出：`ymbot` CLI · MCP
 
@@ -68,25 +64,25 @@ Bot 不靠刷屏。`ymbot`（及 MCP）默认**人话短输出**：席位、交�
 
 ---
 
-## Quick Start（本地演示）
+## Quick Start
 
 ```bash
 git clone https://github.com/yumeng-cloud/bot--projects-admin.git
-cd bot--projects-admin   # 箱内路径多为 /workspace/ai-collab-board
+cd bot--projects-admin
 cp .env.example .env     # 可选；默认 SQLite + AUTO_SEED=1
 
-make install             # go mod tidy + frontend pnpm install（仓内用 pnpm，非 npm）
-make seed                # 幂等；也可依赖服务启动 AUTO_SEED
-make dev                 # API :8080 + Vite UI :5173（Makefile 固定端口）
+make install             # go mod tidy + frontend pnpm install
+make seed                # 幂等
+make dev                 # API :8080 + Vite UI :5173
 ```
 
 | | |
 | --- | --- |
-| UI | http://127.0.0.1:5173（若本机已被占用，请先释放或改 `Makefile`/`pnpm dev --port`；`.env` CORS 默认可含 5173） |
-| API | http://127.0.0.1:8080（`PORT`，见 `.env.example`） |
-| Health | `GET /healthz` 或 `GET /api/v1/healthz` |
+| UI | http://127.0.0.1:5173 |
+| API | http://127.0.0.1:8080 |
+| Health | `GET /healthz` |
 
-### Seed 登录（仅本地演示）
+### Seed 登录（本地演示）
 
 | 字段 | 值 |
 |------|-----|
@@ -94,24 +90,21 @@ make dev                 # API :8080 + Vite UI :5173（Makefile 固定端口）
 | 密码 | `Admin123!` |
 | 工作空间 | 育蒙科技（slug: `yumeng`） |
 
-> 演示账号会随 seed 重置语义变化；**不要**当生产密钥。生产请关 `AUTO_SEED`、换强密码、切 Postgres。
+生产请关 `AUTO_SEED`、换强密码、切 Postgres。
 
-### 生产向数据库（可选）
+### 数据库
 
-开发默认 SQLite（`DB_DRIVER` 空或 `sqlite`）。需要语义召回 / 生产部署时切 **PostgreSQL + pgvector**（`DB_DRIVER=postgres`，DSN 与扩展见 [`.env.example`](./.env.example)、[`docs/database.md`](./docs/database.md)、[`docs/embed.md`](./docs/embed.md)；可选 `docker-compose.postgres.yml`）。
+开发默认 SQLite。语义召回 / 生产部署切 **PostgreSQL + pgvector**（`DB_DRIVER=postgres`，见 [`.env.example`](./.env.example)、[`docs/database.md`](./docs/database.md)、[`docs/embed.md`](./docs/embed.md)）。
 
 ### 自测
 
 ```bash
 make test                # backend go test + frontend pnpm build
-# 或分步：
-# cd backend && go test ./...
-# cd frontend && pnpm build
 ```
 
 ---
 
-## 架构（一图）
+## 架构
 
 ```
 ┌──────────────┐     proxy /api      ┌──────────────────────────────┐
@@ -130,7 +123,7 @@ make test                # backend go test + frontend pnpm build
 
 ---
 
-## 文档索引
+## 文档
 
 | 文档 | 内容 |
 |------|------|
@@ -141,19 +134,7 @@ make test                # backend go test + frontend pnpm build
 | [`docs/bot-team-templates/`](./docs/bot-team-templates/) | 内置 `default` 模板可读副本 |
 | [`docs/database.md`](./docs/database.md) | SQLite ↔ Postgres |
 | [`docs/embed.md`](./docs/embed.md) | 向量召回 |
-| [`COORDINATION.md`](./COORDINATION.md) | 多 Bot 协作目录约定（贡献者） |
-
----
-
-## 明确不做（当前）
-
-避免把路线图写成已交付：
-
-- 模板**升版** dry-run / apply（对照 diff、默认保留 memory）——后置
-- 「未分队」Issue 大入口 Admin 滤镜——后置
-- SSO、原生移动端、计费订阅 SaaS 壳
-
-欢迎 Issue / PR 讨论优先级；吹归吹，**上线了什么就写什么**。
+| [`COORDINATION.md`](./COORDINATION.md) | 多 Bot 协作目录约定 |
 
 ---
 
