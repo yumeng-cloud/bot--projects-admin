@@ -110,4 +110,4 @@ POST …/team-invites/redeem  或  通道等价 ymbot team join
 
 ## 关单进度
 
-**改向已定 · 刀冻结** · 旧吐钥作废；等 HUMAN_ONBOARD 冻结后再开 B1。
+**改向已定 · 已开干** · HUMAN_ONBOARD 用户全认推荐 @`b6614ff`；Go 做 redeem 自动身份（=原 B1）。旧吐钥仍废。
