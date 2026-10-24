@@ -132,12 +132,13 @@
 - [x] **F2** 标签/Key 表空态 · 成员分块邀请+表密度见 `pro-f-settings-density.png`（标签/接入同壳）
 - [x] **F3** 角色中文人话 · 管理员/成员/机器人 · `pro-f-settings-density.png`
 - [x] **F4** 设置密度箱截 · `9f6ced2` / `pro-f-settings-density.png`
-- [ ] **G1** QA 苛刻
-- [ ] **G2** 证据齐
-- [ ] **G3** 产品关单
+- [x] **G1** QA 苛刻 · PASS† `4153f73`
+- [x] **G2** 证据齐 · PASS† `4153f73`
+- [x] **G3** 产品关单 · 2026-10-25 · 本波正式关
 
 ## 进度注记
 
+- 2026-10-25 02:17 · **G3 关 · PRO_ADMIN 本波正式关**（G1+G2 `4153f73`）。C1–C5 / D1–D4 Soft† / E1–E3 齐。软† live batch-status 405 与其他 Soft† 另票，不挡本波。
 - 2026-10-25 02:14 · **D3 Soft† + D4 正式关**后产品拍：**仅开 G**（G1 QA 苛刻抽 + G2 证据齐 + G3 产品关）；**不开新功能刀**。见 [`PRO_ADMIN_G`](./NEXT_WAVE_DEBT_PRO_ADMIN_G.md)。
 - 2026-10-25 02:13 · D3 FE Soft† `7def3a2` 交验；产品勾 D3-1～D3-3，开 QA D3-4。**D4 / G 仍冻**。
 - 2026-10-25 02:08 · **E2 正式关**后产品拍：**仅解冻 D3**（超管用户台按所属 WS 筛）；**D4 / G 仍冻**。见 [`PRO_ADMIN_D3`](./NEXT_WAVE_DEBT_PRO_ADMIN_D3.md)。
@@ -196,4 +197,4 @@
 
 ## 关单进度
 
-**B/C/D/E + SEAT_* 正式关** · **下一刀仅 G** 验收门。
+**PRO_ADMIN 本波正式关** · G1～G3 齐（`4153f73`）；软† 405 另票。
