@@ -152,10 +152,12 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [ ] **C1** 打开引导
 - [ ] **C2** 提示词航线 join
 - [ ] **C3** 打开即用箱证
-- [ ] **D1** 文档主路径改口
+- [x] **D1** 文档主路径改口 · `518a4b6` BOT.md 主路径=席页复制入场链接/提示词；env/mcp 降附录非推荐；README 轻对齐
 - [ ] **D2** 产品关单
 
 ## 进度注记
+
+- 2026-10-24 23:56 · **D1 已交** 种子 `518a4b6`：BOT.md / README 主路径=席页「复制入场链接或提示词」；附录 env/mcp 标非推荐；对齐 HUMAN H4（入队自动 ymk_、入场包只 ymt_）。待 D2 产品关单。C1–C3 未动。
 
 - 2026-10-25 00:10 · **产品拍下一包（HUMAN/BATCH 已关）**：ONE_TAP **收口为下一 P0**。C1=登录态 join→预填 JoinWizard（React，对齐 HUMAN V3）；C2=记忆抽提示词 join；C3=QA 箱证；D1=种子对齐 HUMAN/H4。**公网 E5**：箱侧 DNS 超时 `bot.api.sn.cn`，redeploy/spotcheck **交总指挥运维**，不挡 C/D 代码收口；齐后 D2 关。PRO_ADMIN 整包不并行；建议后置只开 B2/B3 空态。
 - 2026-10-24 22:42 · **E5 PASS† local** QA `e1b3f26`：装→whoami→join 绿；**prod BLOCKED** DNS/未部署。产品勾本地；生产关等重部署 spotcheck。
@@ -181,4 +183,4 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 关单进度
 
-**下一 P0 收口中** · A/B/E(local) 已绿；**开 C1–C3 + D1 → D2**；prod E5 等运维 redeploy（DNS 现不可达）。
+**下一 P0 收口中** · A/B/E(local)/D1 已绿；**开 C1–C3 → D2**；prod E5 等运维 redeploy（DNS 现不可达）。
