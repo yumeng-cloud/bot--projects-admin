@@ -41,3 +41,4 @@
 ## 进度追记
 
 - 2026-10-25 02:22 · V2 仍搁置静默补；另开 FE 文案刀 [`SEAT_V2_GUIDE`](./NEXT_WAVE_DEBT_SEAT_V2_GUIDE.md)。
+- 2026-10-25 02:31 · **SEAT_V2_GUIDE 正式关**（FE `6cd3fd3` + QA `4ad5486`）。V2 静默补仍搁置禁解冻。
