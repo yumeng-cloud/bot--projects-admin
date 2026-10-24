@@ -33,8 +33,8 @@
 - [x] **C3-1** 列设置 · FE `260fd1f` · 产品勾
 - [x] **C3-2** 持久化 · `acb.list.columns.<ws>` · FE `260fd1f` · 产品勾
 - [x] **C3-3** 箱截 · `pro-c-columns.png` · FE `260fd1f` · 产品勾
-- [ ] **C3-4** QA
-- [ ] **C3-5** 关单
+- [x] **C3-4** QA · PASS† `f65edc1` · 产品勾
+- [x] **C3-5** 关单 · 2026-10-25
 
 ## 派工
 
@@ -46,10 +46,11 @@
 
 ## 进度注记
 
+- 2026-10-25 01:24 · **C3-4 PASS† → C3-5 关单** QA `f65edc1` @ FE `260fd1f`：默认子集/显隐/持久/恢复默认/中文/不挤叠全绿。整包 **PRO_ADMIN C3 关**。下一刀：**仅 C4**（超管 WS 名称搜索+状态筛）；**C5 箱截并入 C4**；**D / E2 / G 仍冻**。
 - 2026-10-25 01:22 · **产品勾 C3-1～C3-3** FE `260fd1f`：显示列 Popover（标签/开始/截止/估时）；默认专业子集；按 ws localStorage；箱截过。顺记 C2-2 热修 `cc5a041`（batch-status+fallback）。开 QA C3-4。
 - 2026-10-25 01:18 · C2 关后产品拍开本刀；C4–D/E2/G 仍冻。
 - 2026-10-25 01:22 Asia/Shanghai · React 交 C3-1～C3-3：滤镜「显示列」Popover 勾次要列（标签/开始/截止/估时）；默认专业子集全隐；`acb.list.columns.<ws>` localStorage；箱截 `pro-c-columns.png`；`tsc --noEmit` PASS。C4–D/E2/G 仍冻。
 
 ## 关单进度
 
-**开干** · C3-1～C3-3 已勾；等 QA C3-4 → C3-5。
+**整包关** · C3-1～C3-5 齐（FE `260fd1f` + QA `f65edc1`）。
