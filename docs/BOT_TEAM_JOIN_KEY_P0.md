@@ -127,7 +127,7 @@
 | **J4** | 仅停工/离职席可 force/补位；成功留审计 comment | [x] **P0.1 已清** `3c698b5`：force→`seat.force_bind` 人话 + 开放 Issue comment（Go 箱证） |
 | **J5** | 重复 join / 重复 pull **幂等**，不清 memory/todos | [x] J2_idempotent_rejoin（skipped_enter）；T9 pull×2 同 id |
 | **J6** | 硬规矩：箱 5174/CLI 证据；禁甩用户本机；进度只回总指挥 | [x] 证据均在箱 `docs/qa-shots/` + `/workspace/qa-shots/full-0685720/` |
-| **J7** | 下发唤醒：指派→Webhook 主路径（巡检补漏）；无变化安静；不误叫旧席 | [x] Webhook+下发 FE+**立即推送** `c947a76`/`N4-dispatch-push.png`；**巡检 P0.5** `1562389` `docs/qa-shots/ymbot-patrol-p05-20261024.txt` · `docs/BOT_PATROL_P05.md` |
+| **J7** | 下发唤醒：指派→Webhook 主路径（巡检补漏）；无变化安静；不误叫旧席 | [x] Webhook+下发 FE+**立即推送** `c947a76`/`N4-dispatch-push.png`；**巡检 P0.5** `e6e4402` · `docs/qa-shots/ymbot-patrol-p05-20261024.txt` · `docs/BOT_PATROL_P05.md` |
 
 ---
 
