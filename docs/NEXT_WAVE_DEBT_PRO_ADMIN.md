@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:19 · **产品勾 C1** `8c0fe5a`：滤镜「显示已归档」默认关；开→`include_archived`+弱标签灰行；其它筛保持；箱截 `pro-c-archived-toggle.png` 过。C2–E/G 仍冻。**下一刀 SEAT_LEAVE 开刀**。
 - 2026-10-25 00:18 · **C1 关绿** React `8c0fe5a`：列表滤镜「显示已归档」默认关；开→`include_archived=1`；归档行弱标签+灰态；其它筛保持；箱截 `pro-c-archived-toggle.png`；`tsc --noEmit` PASS。C2–E/G 仍冻；下一刀 SEAT_LEAVE。
 - 2026-10-25 00:53 · **对齐总指挥**：本波认 **C1 归档显隐**（@`2e328dd`）先关；SEAT_LEAVE 排 C1 关后下一刀（债已落 `71e9b4a`，不丢）。C2–E/G 仍冻。
 - 2026-10-25 00:50 · **C1（曾短暂让路 SEAT_LEAVE，已对齐回先关）**：总指挥拍下一 P0=SEAT_LEAVE；C–E/G 仍冻。见 [`NEXT_WAVE_DEBT_SEAT_LEAVE.md`](./NEXT_WAVE_DEBT_SEAT_LEAVE.md)。
@@ -164,4 +165,4 @@
 
 ## 关单进度
 
-**B 空态小包已关** · **C1 关绿** `8c0fe5a`；下一刀 SEAT_LEAVE；C2–E/G 仍冻。
+**B 空态小包已关** · **C1 产品关** `8c0fe5a`；**SEAT_LEAVE 开刀**；C2–E/G 仍冻。
