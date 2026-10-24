@@ -99,7 +99,15 @@
 ### D7 文档对齐（2026-10-24 · Asia/Shanghai）
 
 §1/§6 表曾滞后仍 `[ ]`，已与 §7 5174 关单对齐。**不重开大单**。
-派 React 优先级：**低于** `NEXT_WAVE` D1–D5；仅顺手去掉标题残留 `letter-spacing:-0.01em`（防 P1 复现）。
+
+### D7-min 本波（2026-10-24 17:26 · 用户催 · 已派 React）
+
+| 做 | 不做 |
+| --- | --- |
+| 箱 5174 五条回归自截：P1 标题 / P3 关联安静 / P4 空描述 / P6 删 hover / P7 活动折叠 → `docs/qa-shots/d7-regression-*` | 重做 P2–P8 功能 |
+| 仅 FAIL 才改码；P1 现网已是 `letter-spacing:0` + pad 4px | 为「有 diff」而改 |
+
+- [ ] React 交五条证据后产品勾关
 
 
 续：样式第二轮见 [`ISSUE_DETAIL_POLISH_R2.md`](./ISSUE_DETAIL_POLISH_R2.md)。
