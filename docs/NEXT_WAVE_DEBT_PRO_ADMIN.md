@@ -124,7 +124,7 @@
 - [ ] **D2** 用户台 WS 芯片
 - [ ] **D3** 用户按 WS 筛
 - [ ] **D4** 成员/用户箱截
-- [x] **E1** 属性轨节奏 · FE `75fb14a` · 产品勾 / `pro-e-drawer-rail.png`
+- [x] **E1** 属性轨节奏 · FE `75fb14a` + QA `5fd8775` · 正式关 / `pro-e-drawer-rail.png`
 - [ ] **E2** 看板归档入口
 - [ ] **E3** 仅归档视图入口
 - [ ] **E4** Issue 箱截
@@ -138,6 +138,7 @@
 
 ## 进度注记
 
+- 2026-10-25 00:36 · **E1 正式关** FE `75fb14a` + 视觉放行 + QA PASS† `5fd8775` / `PRO_ADMIN-E1-qa-spotcheck-20261025.txt`。C2–D / E2–E3 / G 仍冻。
 - 2026-10-25 00:35 · **视觉抽 E1 放行** `pro-e-drawer-rail.png` / FE `75fb14a`：属性轨同节奏、主栏留白、非 Form。等 QA 齐后正式关。
 - 2026-10-25 00:34 · **产品勾 E1** FE `75fb14a`：属性轨「归档」单行与状态/优先同节奏（已归档 + 取消归档）；主栏留白；箱截 `pro-e-drawer-rail.png` 过。等视觉抽 + QA。C2–D / E2–E3 / G 仍冻。
 - 2026-10-25 00:35 · **E1 关绿** React `75fb14a`：Drawer 属性轨归档态/解档改为与状态/优先同节奏单行（13px·中文·label|value）；主栏居中留白保持；箱截 `pro-e-drawer-rail.png`；`tsc --noEmit` PASS。C2–D / E2–E3 / G 仍冻。
@@ -171,4 +172,4 @@
 
 ## 关单进度
 
-**B/C1/SEAT_LEAVE/E1 已关** · C2–D / E2–E3 / G 仍冻。
+**B/C1/SEAT_LEAVE/E1 正式关** · C2–D / E2–E3 / G 仍冻；下一刀听拍。
