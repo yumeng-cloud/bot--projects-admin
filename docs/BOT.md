@@ -1,6 +1,6 @@
 # Bot 连续性（记忆 / 角色 / Handoff）
 
-> Bot 领席位入场包（`ymt_`）→ **入场时自动得**身份（`ymk_`）→ CLI/MCP 开干。REST / 记忆 / handoff 见下文；通道规格 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md)；向量召回 [`embed.md`](./embed.md)。
+> **主路径：** 人类 Admin 在 Bot **席页**点「复制入场链接」或「复制 Bot 提示词」→ 对方打开/粘贴 → 装 CLI（若无）→ join → **自动得** `ymk_` → 开干。REST / 记忆 / handoff 见下文；通道规格 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md)；向量召回 [`embed.md`](./embed.md)。手配 `YMBOT_*` / `mcp.json` 见文末附录，**非推荐**新人入场。
 
 ## 职责
 
@@ -18,11 +18,18 @@ Bot **不得**将 Issue 自动流转到 `done`（需人类确认）。
 
 | 前缀 | 含义 |
 |------|------|
-| `ymt_` | 队席入场码（人从建队入场包复制） |
-| `ymk_` | Bot 身份钥匙（join/redeem **无钥时自动签发**，当次回入队方） |
+| `ymt_` | 队席入场码（人从席页复制入场链接 / 提示词 / 入场包发出；链与提示词只带 `ymt_`） |
+| `ymk_` | Bot 身份钥匙（join/redeem **无钥时自动签发**，当次回入队方；日常可转发提示词**禁止**嵌 `ymk_`） |
 | `ymw_` | 人类工作区邀请（与 Bot 分轨；见 [`API.md`](./API.md)） |
 
-主路径：`ymbot team join --code ymt_…`（或通道等价）→ 响应里的 `ymk_` 写入 `YMBOT_API_KEY` → `whoami` / `handoff get`。设置里 Admin 单把签 `ymk_` 是旁路，不是建队主路径。公开 `/join` 只是说明页，redeem/得钥在成功响应。
+**主路径（ONE_TAP · 席页一键）：**
+
+1. 人类 Admin 浏览器建队 → 在 Bot **席页**点 **「复制入场链接」** 或 **「复制 Bot 提示词」**（裸 `ymt_` 入场包可留次要）。
+2. 链接形如：`https://bot.api.sn.cn/join?code=ymt_…&role=…`（生产默认 API 根；自托管随 `PUBLIC_API_BASE`）。
+3. 提示词内嵌：**一键安装**（主 `curl -fsSL https://bot.api.sn.cn/install.sh | bash`，备 `go install …/ymbot@latest`）+ API 根 + `ymt_` + role + 主航线：装（若无）→ join → `whoami` / `handoff get`。
+4. Bot 粘贴提示词或打开链接 → 按需安装 → join → **自动得** `ymk_` → 开干。
+
+公开 `/join` 只是说明页（安装 + 复制提示词）；redeem / 得钥在 CLI、通道或向导的**成功响应**。设置里 Admin 单把签 `ymk_` 是旁路，不是建队主路径。
 
 ### 排期叶子领取（与角色认领区分）
 
@@ -141,32 +148,44 @@ API client：`frontend/src/api/bots.ts`（snake_case）。
 
 规格与验收：[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md)。与 REST 关系：**不改业务语义**，仅 HTTP 调现有接口。
 
-```bash
-export YMBOT_API_URL=http://127.0.0.1:8080
-# 空手：先 join 拿自动签发的 ymk_；续队/换机：导出已有钥匙
-# go run ./cmd/ymbot team join --code ymt_*** --role frontend
-export YMBOT_API_KEY=ymk_***
-export YMBOT_WORKSPACE_ID=<ws>
-# 可选：YMBOT_MEMBER_ID（缺省 GET …/bots/me）
-# 可选：YMBOT_IDEMPOTENCY_KEY=<uuid>（写操作未传 --idempotency-key 时）
+**入场先走席页一键**（上节「复制入场链接 / 复制 Bot 提示词」）；装好后日常命令：
 
-go run ./cmd/ymbot --help
-go run ./cmd/ymbot whoami
-go run ./cmd/ymbot issue list --assignee me          # 默认文本表：YM-n / title / status…
-go run ./cmd/ymbot issue get YM-12                   # 入参接受 YM-n 或 UUID
-go run ./cmd/ymbot comment list --issue YM-12        # 默认摘要；--full 才全量
-go run ./cmd/ymbot comment create --issue YM-12 -m "进展…" --idempotency-key <uuid>
-go run ./cmd/ymbot memory list                       # key + 值摘要
-go run ./cmd/ymbot memory set --key last_focus --value "…" --idempotency-key <uuid>
-go run ./cmd/ymbot handoff get                       # 续工：服务端摘要（无文件）
-go run ./cmd/ymbot handoff export --out /tmp/handoff.json   # 换机备份可选；日常不需要
-go run ./cmd/ymbot mcp-serve   # Cursor stdio MCP；tools: board_*；full/ids 同 --full/--id
+```bash
+ymbot whoami
+ymbot issue list --assignee me          # 默认文本表：YM-n / title / status…
+ymbot issue get YM-12                   # 入参接受 YM-n 或 UUID
+ymbot comment list --issue YM-12        # 默认摘要；--full 才全量
+ymbot comment create --issue YM-12 -m "进展…" --idempotency-key <uuid>
+ymbot memory list                       # key + 值摘要
+ymbot memory set --key last_focus --value "…" --idempotency-key <uuid>
+ymbot handoff get                       # 续工：服务端摘要（无文件）
+ymbot handoff export --out /tmp/handoff.json   # 换机备份可选；日常不需要
 ```
 
 通道 DX（省 token / 少 UUID）：[`BOT_CHANNEL_DX_P0.md`](./BOT_CHANNEL_DX_P0.md)。默认无 32 位 hex；`--id` 附加裸 id；`--full` 接近 REST。Issue 可读名：优先嵌套 `assignee.display_name`，否则 `members` 映射 `assignee_id`；入参 `YM-n`→id 由通道解析。
 
 共享客户端：`internal/botclient`（Bearer；Idempotency-Key：CLI/MCP 参数 → env → 自动 UUID；一行中文错误含吊销/无效；Bot 禁 `status=done`）。
 干活鉴权：入场后的 **`ymk_`**（Bearer）；人用浏览器 JWT。设置里单把签钥是旁路。
+
+## 附录 · env / MCP（非推荐）
+
+> **主路径用席页一键链接/提示词。** 手配 `export YMBOT_*` / 手改 `mcp.json` / 长安装文档 **仅救场或自托管**，**非推荐**新人入场。
+
+本地调试或自托管救场时，可显式导出（生产 Bot 应由席页提示词带好 API 根与 join，勿把下列清单当 onboard）：
+
+```bash
+export YMBOT_API_URL=http://127.0.0.1:8080   # 或 https://bot.api.sn.cn
+# 空手：先 join 拿自动签发的 ymk_；续队/换机：导出已有钥匙
+# ymbot team join --code ymt_*** --role frontend
+export YMBOT_API_KEY=ymk_***
+export YMBOT_WORKSPACE_ID=<ws>
+# 可选：YMBOT_MEMBER_ID（缺省 GET …/bots/me）
+# 可选：YMBOT_IDEMPOTENCY_KEY=<uuid>
+
+ymbot mcp-serve   # Cursor stdio MCP；tools: board_*；full/ids 同 --full/--id
+```
+
+MCP 通道能力与工具表见 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md)，勿再以「先配齐 env 再 mcp-serve」当主入场叙事。
 
 ## 边界
 
@@ -182,6 +201,7 @@ go run ./cmd/ymbot mcp-serve   # Cursor stdio MCP；tools: board_*；full/ids �
 - 续命验收 H1–H5：[`BOT_HANDOFF_CONTINUITY_P0.md`](./BOT_HANDOFF_CONTINUITY_P0.md)
 
 - 人用入场锚点：[`NEXT_WAVE_DEBT_HUMAN_ONBOARD.md`](./NEXT_WAVE_DEBT_HUMAN_ONBOARD.md) §H4
+- 一键入场文案债（D1）：[`NEXT_WAVE_DEBT_ONE_TAP_JOIN.md`](./NEXT_WAVE_DEBT_ONE_TAP_JOIN.md) §D1
 - 班底席位 / 入场码：[`BOT_TEAM_SEAT_P0.md`](./BOT_TEAM_SEAT_P0.md) · [`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md)（`seat.status`=`open|active|stopped|left`；`GET/POST …/teams/{id}/invites`）
 - **T7-3 执行源（已落地 `d9e5a3c`）**：席位作业手册 = `playbook_ref`；roster / bind / handoff 回包含该字段；空或非法 → **400** 中文；升版 T7-4/5 仍后置。开工单 [`NEXT_WAVE_DEBT_T73.md`](./NEXT_WAVE_DEBT_T73.md)（通道 MCP 人话投影见记忆席进度）
 - **Issue 归档（实现待 SHA）**：`POST …/issues/archive`；`issue list` 默认无已归档；`include_archived` / `archived=only`（债 [`NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md`](./NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md)）
