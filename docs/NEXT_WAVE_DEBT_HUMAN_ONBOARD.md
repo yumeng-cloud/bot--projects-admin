@@ -169,6 +169,7 @@ H0+H1 过 → 产品回写 §6 勾选 → 派全员开干。其余 V4–V7 / 场
 - **Go：** redeem 现只定位；自动身份主挂 redeem；危险=无钥重复造第二人、补位静默、换机无钥 bootstrap、同码并发。  
 - **React：** V3 JoinWizard 主路径只贴 ymt_；成功有 token→IdentityKeyReveal；V4 提示词两态；V5 文案已合。  
 - **记忆：** 换机必须同 member；自动造人只 empty；已鉴权禁再造第二人；空 focus 明示。
+- **可选软债·api-keys 路径（搁置）：** list/create 在 ws 嵌套，revoke 在 `/api/v1/api-keys/{id}`；嵌套 revoke→404。顶层 OK，不挡 Q12。
 - **可选软债·V6 签发侧（搁置）：** 同 active slug 仍可再签第二把 ymt_；兑换门禁 409 已绿。若要「一席一码签发」另开刀。
 - **可选软债·V2 orphan（搁置）：** stopped 席 redeem 可造人发钥但不绑席；席未自动补位已绿。是否禁 orphan 另议。
 - **可选软债·兼岗 focus（搁置）：** handoff 摘要取裸/`*:last_focus` 首个未必=当前席；不挡 A/E；`--full` 可见席键。  
