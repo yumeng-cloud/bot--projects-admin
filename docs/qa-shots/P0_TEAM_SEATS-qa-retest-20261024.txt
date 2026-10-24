@@ -1,0 +1,106 @@
+=== P0 FULL COVER · 建队(N空席) → 自动切队 → 席位页可见 N → 绑 Key → 卡立即「已绑定」===
+time_AsiaShanghai: 2026-10-24 23:18 Asia/Shanghai (box)
+result: Overall=FAIL
+evidence_file: docs/qa-shots/P0_TEAM_SEATS-qa-retest-20261024.txt
+HEAD_at_run: 4d2c90f01fa8b8c37ea02596d6794aa84bc299f5
+  (4d2c90f docs(ux): 开 SEAT_VISIBILITY——建队后 N 空席必须可见)
+note_debt: SEAT_VISIBILITY V5 另波；本报不挡/不替 React V1–V4。工作树另有未提交 BotsRosterPage WIP（SEAT_VISIBILITY 试刀），本证 **不** 把它算绿，也不纳入本 commit。
+API: http://127.0.0.1:8080  healthz ok · binary /tmp/ai-board-server
+FE: http://127.0.0.1:5174 (vite) · computerUse/ browser 本执行器不可用 → 席位页/绑后卡态用 API 包 + FE 代码路径硬证；Modal 点击 soft† 不挡，**空席不可见 / 绑后仍「等待绑定」= hard FAIL**
+actor: admin@yumeng.tech (JWT) + Bot ymk_ bind
+WS: ba1481c49148aba9553ba3811406b69f
+
+## Fixtures
+N: 5  (template_key=default · N≥2)
+team_id: c8862a9cafa85a9264e28489e88a3068
+team_name: P0-Seats-231530
+create: POST …/teams {name, template_key:default} → HTTP 201
+create_roster_len: 5
+seat_ids:
+  backend 1a0a9de6ba516eda42889f30cbfae101 bot_role=05dba75d… status=open
+  frontend c0c57e8973ceb73f1b2aed22b6377858 bot_role=f0e2486c…
+  pm 2d4095947c17469cfc4cbe9e7fd4a33e
+  qa 8c95ad50b3905ce3bb7e3a790532a66f
+  wiki 8d57c7cc563472ff1879ca40c6876fc4
+GET …/roster after create: len=5 all unbound all have bot_role_id
+GET …/bot-roles: 本队 5 个 bot_role_id 均在清单（visibleRoles 过滤本可命中 5）
+
+Bind fixtures:
+  qa ← BotB J2 (e317fc48…) via Bearer ymk_ → HTTP 200 status=active bound_display_name=BotB J2
+  frontend ← Grok Bot (094acad4…) via Bearer ymk_ → HTTP 200 status=active bound_display_name=Grok Bot
+
+## Steps
+
+### 1 Create team N empty seats — API PASS
+- Request: POST /api/v1/workspaces/{ws}/teams
+  body: {"name":"P0-Seats-231530","template_key":"default"}
+- Response: 201 team + roster[5] status=open bound_member_id=null
+- Field names: roster[].role_slug / display_name / bot_role_id / status（非 seat_count 标量；N=len(roster)）
+- Toast FE 文案源: CreateTeamFromTemplateModal
+  `已创建团队「${team.name}」· ${roster.length || tmpl.seats.length} 空席（未绑 Key）`
+  → 本例 roster.length=5 → Toast N=5（与 API 一致）
+  ※ 潜伏: roster.length===0 时仍用 tmpl.seats.length 报 N（Toast 可撒谎）— 本跑未触发
+
+### 2 Auto-switch to new team — CODE YES (FE)
+- CreateTeamFromTemplateModal onCreated(team, roster)
+- BotsRosterPage onTeamCreatedFromTemplate → setTeamId(team.id)（写 acb.team.<ws>）
+- HEAD 提交态丢弃 _roster，只 setTeamId+load()；WIP 另 seed roster（未合并，本证不算）
+- 无浏览器截顶栏；以 setTeamId 调用为自动切队证 → Auto-switch: yes（代码路径）
+
+### 3 席位页可见 N 空席 — FAIL（toast≠page / 误空态）
+- Toast/API N = 5
+- 席位页路由: /w/{ws}/settings/bots · BotsRosterPage
+- HEAD 提交态缺陷（产品已写 SEAT_VISIBILITY）:
+  hasAnyBinding 只认 roles[].claim 或 teamSeats active
+  → 纯空席（open/empty）→ hasAnyBinding=false
+  → 主区走 F1.1 空态 description="尚未绑定席位"，席网格 **不渲染**
+  → 用户所见: Toast「5 空席」+ 页「尚未绑定席位」= **0 席卡**
+- 交叉: GET roster=5 且 bot_role_id∈bot_roles；若仅跑 visibleRoles 过滤可得 5，
+  但被 hasAnyBinding 空态短路，网格不到。
+- toast vs page: **5 vs 0（空态）** → hard FAIL
+- owner: **React 前端**（SEAT_VISIBILITY V1–V2；Go API 本步绿，非 Go）
+- shots: （无 computerUse）未出 seat-visibility-after-create.png；API 包见 /tmp/p0_create_team.json · /tmp/p0_roster*.json（箱内，不入库）
+
+### 4 Bind Key — API PASS / UI 立即翻卡 FAIL
+- 产品绑路径: 席卡「指派 Bot」→ claimBotRole；或加入班底向导 → bindSeat；或 Bot Bearer ymk_ → bindSeat
+- API 证（ymk_ bind）:
+  BEFORE frontend: status=open bound=null → 卡态仿真 Tag=空闲 / actor=等待绑定
+  AFTER  bind HTTP 200: status=active bound_display_name=Grok Bot
+  GET roster 对齐: occupied 含 frontend + qa
+  Toast 成功（FE onClaim）: `已将「{bot}」绑到席位「{role}」`
+- UI 立即翻卡（无整页刷新）— **FAIL**:
+  onClaim / JoinTeamWizard onEntered 成功后仅 `void load()`（listBots/listBotRoles/api-keys）
+  **不** getRoster / setTeamSeats
+  seatOccForRole 优先 teamSeats + seatOccupancy(seat)；
+  stale seat status=open → seatOccupancy 返回 'empty'（truthy）→ kind=empty，
+  **忽略** load() 后 role.claim.member_id
+  → Toast 已成功，卡仍「空闲 / 等待绑定」，不出现「占用中」+「演员 · {Bot名}」
+  仿真: STALE_UI_after_toast=空闲/等待绑定；FRESH_roster_UI=占用中 + 演员 · Grok Bot
+- Bind Key API: PASS
+- Bind Key UI immediate flip: FAIL
+- owner: **React 前端**（绑后缺 roster refetch / 乐观更新 teamSeats）
+
+## Explicit toast≠page check
+Toast N=5 且页列出 0 席（「尚未绑定席位」）→ Overall FAIL（本条命中）
+
+## Summary table
+| Step | Result |
+| --- | --- |
+| 1 Create N empty | PASS (API N=5) |
+| 2 Auto-switch | YES (setTeamId) |
+| 3 Seats page N | FAIL (toast 5 / page 0 空态) |
+| 4 Bind Key API | PASS |
+| 4b Card flip after bind | FAIL (stale teamSeats → 仍等待绑定) |
+| Overall | FAIL |
+
+## Defects
+1. React 前端 · SEAT_VISIBILITY: hasAnyBinding 误伤纯空席 → Toast N 但页「尚未绑定席位」（对账 docs/NEXT_WAVE_DEBT_SEAT_VISIBILITY.md；V5 另波）
+2. React 前端 · 绑后卡态: onClaim/onEntered 不刷新 teamSeats → Toast 成功后卡仍「等待绑定」（本波加测 P0）
+3. （观察，非本 FAIL 主因）CreateTeamFromTemplateModal toast `roster.length \|\| tmpl.seats.length` 在 roster 空时会虚报 N
+Go 后端: create/list/bind 本跑绿 — 不派 Go
+
+## Screenshots
+(none — executor 无 computerUse；硬证为 API JSON + BotsRosterPage/CreateTeamFromTemplateModal 代码路径)
+
+## Pushed?
+见本轮 git 结果（仅证据文件；不含 WIP FE）
