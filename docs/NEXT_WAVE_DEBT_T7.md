@@ -43,9 +43,12 @@
 
 ## 产品勾选
 
-- [x] R1–R2 API · Go **`716c3d0`**（清单 + 从模板空席 + `playbook_ref` + 4xx）
-- [x] R3 箱验/证据 · 记忆 `docs/qa-shots/T7R-template-create-20261024.txt`（R1 顺带；R4 产品勾另开）
-- [ ] R5 FE（可后；主线另有 `8cf4e59` 预览+创建，产品另勾）
+- [x] **R1–R4** API/箱验 PASS · 2026-10-24 19:19 Asia/Shanghai
+  - Go `716c3d0` · 证据 [`qa-shots/T7R-template-create-20261024.txt`](./qa-shots/T7R-template-create-20261024.txt) · `07de587`
+  - from-template → 5 空席 + playbook_ref；未知模板 400 中文；双队形状同、seat id 不交、pins/memory 不串；无自动 Key
+  - 产品抽跑 `go test … botmem -run Template|FromTemplate|CreateTeamFrom` ok
+  - T7-4/5 升版仍后置不勾
+- [ ] **R5** FE 最小预览+创建（代码 `8cf4e59`；正式勾待 5174 箱截）
 
 ## 文档回链
 
@@ -53,3 +56,7 @@
 - 手册索引：[`BOT_TEAM_TEMPLATE_INDEX.md`](./BOT_TEAM_TEMPLATE_INDEX.md)
 - 验收表：[`BOT_TEAM_TEMPLATE_T6_T7.md`](./BOT_TEAM_TEMPLATE_T6_T7.md)（本波勾 T7-1/2/3/6/7；T7-4/5 后置）
 
+
+## 关单进度
+
+半单：R1–R4 已勾。整单待 R5 FE 箱截。升版 T7-4/5 仍后置。
