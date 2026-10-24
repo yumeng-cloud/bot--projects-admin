@@ -44,7 +44,7 @@
   - `81-workspace-home.png`：入口「周期」；surface hug + 底注
   - `81-settings-recheck.png`：成员 Tab hug+脚注
 
-- [ ] 刀 B T6-R
+- [x] 刀 B T6-R（同 T6 最小 · `97ca3b4`）
 
 ## 交件注（刀 B · Bot 记忆）
 
