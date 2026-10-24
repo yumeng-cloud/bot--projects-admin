@@ -163,13 +163,18 @@ const (
 	InviteStatusExhausted = "exhausted"
 )
 
-// TeamInviteRedeemResult 兑换响应（无明文、无 hash）
+// TeamInviteRedeemResult 兑换响应（无 hash；token 仅 bootstrap 当次明文）
 type TeamInviteRedeemResult struct {
 	WorkspaceID     string  `json:"workspace_id"`
 	TeamID          string  `json:"team_id"`
 	AllowExpandSeat bool    `json:"allow_expand_seat"`
 	RoleHint        *string `json:"role_hint,omitempty"`
 	SeatSlug        *string `json:"seat_slug,omitempty"`
+	SeatID          string  `json:"seat_id,omitempty"`
+	MemberID        string  `json:"member_id,omitempty"`
+	RoleSlug        string  `json:"role_slug,omitempty"`
+	Token           string  `json:"token,omitempty"`
+	TokenIssued     bool    `json:"token_issued,omitempty"`
 }
 
 // TeamPin 团队共享记忆墙条目（与 bot_memories 分表；UNIQUE(team_id, key)）。

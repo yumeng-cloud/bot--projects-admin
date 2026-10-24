@@ -389,6 +389,8 @@ CREATE TABLE IF NOT EXISTS team_invites (
 CREATE INDEX IF NOT EXISTS idx_team_invites_ws_team ON team_invites(workspace_id, team_id);
 CREATE INDEX IF NOT EXISTS idx_team_invites_hash ON team_invites(token_hash);
 
+ALTER TABLE team_invites ADD COLUMN IF NOT EXISTS bootstrapped_member_id TEXT;
+
 ALTER TABLE webhooks ADD COLUMN IF NOT EXISTS filter_member_id TEXT;
 ALTER TABLE webhooks ADD COLUMN IF NOT EXISTS filter_seat_id TEXT;
 

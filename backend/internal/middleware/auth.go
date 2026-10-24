@@ -146,6 +146,16 @@ func extractBearer(r *http.Request) string {
 	return ""
 }
 
+// BearerToken 读 Authorization: Bearer …（无则空串）。
+func BearerToken(r *http.Request) string {
+	return extractBearer(r)
+}
+
+// AuthenticateAPIKey 校验 ymk_ 并注入 bot 上下文（供可选鉴权路由）。
+func AuthenticateAPIKey(ctx context.Context, db *sql.DB, rawKey string) (context.Context, error) {
+	return authenticateAPIKey(ctx, db, rawKey)
+}
+
 func writeErr(w http.ResponseWriter, e *apperr.AppError) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(e.StatusCode)

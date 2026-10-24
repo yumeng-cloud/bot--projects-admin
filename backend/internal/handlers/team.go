@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
+	"strings"
 
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/middleware"
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/pkg/apperr"
@@ -349,20 +350,55 @@ func (h *TeamHandler) CreateInvite(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TeamHandler) RedeemInvite(w http.ResponseWriter, r *http.Request) {
-	// AuthJWTOrAPIKey 已校验身份；无需 workspace 路径
+	// 可选鉴权：无 Bearer → bootstrap；ymk_ → 幂等不重发；人类 JWT → 只定位不造 Bot
 	var req struct {
-		Code string `json:"code"`
+		Code        string `json:"code"`
+		Role        string `json:"role"`
+		Seat        string `json:"seat"`
+		DisplayName string `json:"display_name"`
 	}
 	if err := middleware.DecodeJSON(r, &req); err != nil {
 		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
 		return
 	}
-	res, err := h.Svc.RedeemInvite(req.Code)
+	in := botmem.RedeemJoinInput{
+		Code:        req.Code,
+		Role:        req.Role,
+		SeatID:      req.Seat,
+		DisplayName: req.DisplayName,
+	}
+	token := middleware.BearerToken(r)
+	kind := middleware.ActorKind(r.Context())
+	switch {
+	case kind == "bot":
+		in.ExistingMemberID = middleware.MemberID(r.Context())
+		in.ExistingWorkspaceID = middleware.WorkspaceID(r.Context())
+	case strings.HasPrefix(token, "ymk_"):
+		ctx, err := middleware.AuthenticateAPIKey(r.Context(), h.DB, token)
+		if err != nil {
+			middleware.HandleError(w, err)
+			return
+		}
+		r = r.WithContext(ctx)
+		in.ExistingMemberID = middleware.MemberID(r.Context())
+		in.ExistingWorkspaceID = middleware.WorkspaceID(r.Context())
+	case kind == "human":
+		in.Provision = false
+	case token == "":
+		in.Provision = true
+	default:
+		in.Provision = false
+	}
+	res, err := h.Svc.RedeemInviteAndJoin(in)
 	if err != nil {
 		middleware.HandleError(w, err)
 		return
 	}
-	middleware.JSON(w, http.StatusOK, res)
+	status := http.StatusOK
+	if res.TokenIssued {
+		status = http.StatusCreated
+	}
+	middleware.JSON(w, status, res)
 }
 
 func (h *TeamHandler) ExpandSeats(w http.ResponseWriter, r *http.Request) {
@@ -414,8 +450,8 @@ func MountTeams(mux *http.ServeMux, db *sql.DB, wrap func(http.Handler) http.Han
 	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}/invites", h.ListInvites)
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/invites", h.Idempotent(h.CreateInvite))
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/invites/{inviteID}/revoke", h.Idempotent(h.RevokeInvite))
-	// G3 redeem：不在 workspace 路径下（Bot 持 ymk_ 定位团队）
-	reg("POST /api/v1/team-invites/redeem", h.RedeemInvite)
+	// G3/HUMAN_ONBOARD redeem：不走强制鉴权 wrap（允许无 Bearer bootstrap）
+	mux.Handle("POST /api/v1/team-invites/redeem", http.HandlerFunc(h.RedeemInvite))
 	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}/pins", h.ListPins)
 	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}/pins/{key}", h.GetPin)
 	reg("PUT /api/v1/workspaces/{workspaceID}/teams/{teamID}/pins", h.Idempotent(h.PutPin))

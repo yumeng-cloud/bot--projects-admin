@@ -399,6 +399,9 @@ CREATE TABLE IF NOT EXISTS team_invites (
 CREATE INDEX IF NOT EXISTS idx_team_invites_ws_team ON team_invites(workspace_id, team_id);
 CREATE INDEX IF NOT EXISTS idx_team_invites_hash ON team_invites(token_hash);
 
+-- HUMAN_ONBOARD V1: 该码已 bootstrap 过则拒二次无钥造人
+ALTER TABLE team_invites ADD COLUMN bootstrapped_member_id TEXT;
+
 ALTER TABLE webhooks ADD COLUMN filter_member_id TEXT;
 ALTER TABLE webhooks ADD COLUMN filter_seat_id TEXT;
 
