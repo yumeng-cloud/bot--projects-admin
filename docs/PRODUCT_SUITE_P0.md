@@ -132,7 +132,7 @@ Linear：主内容留白 + Property 轨；克制灰阶；`--acb-*`、细边框�
 
 - [x] **I1** 看板 / 列表 / Timeline 点击 Issue → 同一 IssueDrawer。
 - [x] **I2** 抽屉 Property 可改 start/due；Timeline 拖改期同源字段。
-- [ ] **I3** 抽屉附件上传/预览/下载仍可用（§C）· 箱截清单见 [`ATTACH_I3_BOX_CHECKLIST.md`](./ATTACH_I3_BOX_CHECKLIST.md)。
+- [x] **I3** 抽屉附件上传/预览/下载仍可用（§C）· 箱截 [`ATTACH_I3_BOX_CHECKLIST`](./ATTACH_I3_BOX_CHECKLIST.md) A1–A5 · `c749195`/`I3-*.png`（§C 全表仍等 QA）。
 - [x] **I4** 包装头 Cycle chip ↔ Cycles（BoardPackStrip）。
 - [x] **I5** 无独立 Dashboard；进度挂看板头。
 - [x] **I6** Bot 领叶子后，看板/Timeline/抽屉 assignee 一致。（通道：`issue claim` 写共享字段 `assignee_id`；claim 响应 / GET / `list --assignee me` 本机一致；FE 三视图读同一字段即可。）
