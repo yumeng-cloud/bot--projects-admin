@@ -119,11 +119,11 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [x] **A2** `/join` 解析页 · `GET /join` HTML；非法 code 中文 400；不 redeem/claim
 - [x] **A3** 默认 API 根可配 · `PUBLIC_API_BASE`=`https://bot.api.sn.cn`；可选 `PUBLIC_BOARD_BASE`
 - [x] **A4** 签发→URL→join 箱证 · QA `docs/qa-shots/ONE_TAP_A4-qa-retest-20261024.txt` PASS
-- [ ] **B1** 复制入场链接
-- [ ] **B2** 复制 Bot 提示词
-- [ ] **B3** role 带入
-- [ ] **B4** 主 CTA 切换
-- [ ] **B5** 箱截
+- [x] **B1** 复制入场链接
+- [x] **B2** 复制 Bot 提示词
+- [x] **B3** role 带入
+- [x] **B4** 主 CTA 切换
+- [x] **B5** 箱截
 - [ ] **C1** 打开引导
 - [ ] **C2** 提示词航线 join
 - [ ] **C3** 打开即用箱证
@@ -131,6 +131,8 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 - [ ] **D2** 产品关单
 
 ## 进度注记
+
+- 2026-10-24 22:20 · **产品勾包 B** React `b556e97`：席页主 CTA「复制入场链接」「复制 Bot 提示词」；Toast 末四+role；箱截 `one-tap-copy-link/prompt`。B1–B5 勾。待 C/D。
 
 - 2026-10-24 22:10 · 产品确认 A4 PASS（`3397218` / ONE_TAP_A4-qa-retest）；包 A 全勾。
 
@@ -143,4 +145,4 @@ https://bot.api.sn.cn/join?code={ymt_…}&role={seat_slug}
 
 ## 关单进度
 
-**进行中** · **包 A 全勾**；待 React B + C/D。
+**进行中** · **包 A+B 全勾**（B=`b556e97`）；待 C/D。
