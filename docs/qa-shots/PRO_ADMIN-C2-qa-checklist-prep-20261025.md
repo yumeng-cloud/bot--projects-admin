@@ -1,9 +1,9 @@
 # PRO_ADMIN C2 苛刻抽验清单（备）
 
 > 2026-10-25 01:03 Asia/Shanghai · QA  
-> 债：[`NEXT_WAVE_DEBT_PRO_ADMIN.md`](../NEXT_WAVE_DEBT_PRO_ADMIN.md) §C2  
-> 产品拍：**仅解冻 C2**；**C3–D / E2 / G 仍冻**（勿验）。  
-> 总指挥：有 FE SHA 即验；对齐会可能另开 HUMAN 软债/Toast — 随时接。
+> 债：[`NEXT_WAVE_DEBT_PRO_ADMIN_C2.md`](../NEXT_WAVE_DEBT_PRO_ADMIN_C2.md) @`defe88c`  
+> 产品短票：**C2 重开（∥ SEAT_REFILL_SHOT）**；**C3–D / E2 / G 仍冻**。  
+> SHOT S3 对读可选、不挡 C2。有 FE SHA + `pro-c-bulk.png` 即验。
 
 ## 范围
 
@@ -59,7 +59,6 @@
 - 等 React 交 C2 FE SHA + `pro-c-bulk.png`（或等价箱截）
 - HUMAN 软债 / Toast 抽验：对齐会开则另接，不堵 C2
 
+## REVIVED
 
-## VOID
-
-2026-10-25 01:04 Asia/Shanghai · **作废勿验**。总指挥重申 C2–D 仍冻；产品撤回 C2 开刀。下一刀见 `docs/NEXT_WAVE_DEBT_SEAT_REFILL_SHOT.md`。
+2026-10-25 01:05 Asia/Shanghai · **复活可验**。产品短票统一重开 C2（∥ SHOT）；VOID 作废。等 React 交 C2-1/C2-3 FE SHA 后跑 C2-4。
