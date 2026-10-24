@@ -48,7 +48,11 @@
   - from-template → 5 空席 + playbook_ref；未知模板 400 中文；双队形状同、seat id 不交、pins/memory 不串；无自动 Key
   - 产品抽跑 `go test … botmem -run Template|FromTemplate|CreateTeamFrom` ok
   - T7-4/5 升版仍后置不勾
-- [ ] **R5** FE 最小预览+创建（代码 `8cf4e59`；正式勾待 5174 箱截）
+- [x] **R5** FE 最小预览+创建 PASS · 2026-10-24 19:44 Asia/Shanghai
+  - FE `8cf4e59` · 箱截 `bebe847`
+  - [`t7r-r5-wizard-open.png`](./qa-shots/t7r-r5-wizard-open.png) · [`t7r-r5-wizard-preview.png`](./qa-shots/t7r-r5-wizard-preview.png) · [`t7r-r5-wizard-created.png`](./qa-shots/t7r-r5-wizard-created.png)
+  - 产品目视：弹窗选「默认班底」→ 五席预览（slug/显示名/playbook_ref）→ 创建队 `T7R-R5-1024` Toast「5 空席 (未绑 Key)」
+  - 升版 T7-4/5 仍后置不勾
 
 ## 文档回链
 
@@ -59,4 +63,8 @@
 
 ## 关单进度
 
-半单：R1–R4 已勾。整单待 R5 FE 箱截。升版 T7-4/5 仍后置。
+**整单关**：R1–R5 全勾 · 2026-10-24 19:44 Asia/Shanghai。升版 T7-4/5 仍后置。
+
+### 旁路抽核（不挡本单）
+
+同批 `bebe847`：[`t6i-side-cycles-team.png`](./qa-shots/t6i-side-cycles-team.png) / [`t6i-side-timeline-team.png`](./qa-shots/t6i-side-timeline-team.png) / [`t6i-side-wiki-team.png`](./qa-shots/t6i-side-wiki-team.png) / [`t6i-side-time-team.png`](./qa-shots/t6i-side-time-team.png) · 周期/排期/Wiki/工时在队上下文可开，无「未分队」大入口；wiki/time `75d49eb` · cycles/timeline `5a178b1`。
