@@ -272,7 +272,7 @@ go run ./cmd/ymbot mcp-serve
 | **切队怎么做** | **换入参**，无 `YMBOT_TEAM_ID` sticky。CLI：`team pull --uuid`（队 A 或 B）；`seat enter` / `leave` / `expand --team <uuid>`。MCP：`board_team_pull.team_uuid`；`board_seat_*` / `board_seat_expand` 的 `team_uuid` |
 | **环境仍只需** | `YMBOT_API_URL` · `YMBOT_API_KEY` · `YMBOT_WORKSPACE_ID`（同 §11.1/11.3） |
 | **REST 作用域** | `/workspaces/{ws}/teams/{teamID}/roster` · `…/seats` · … — path 上的 `teamID` 即隔离边界 |
-| **本切片不做** | pins tool；`board_issue_list` 按 team 过滤；FE 切换器 |
+| **本切片不做** | pins tool（**pins 契约见 §11.5**，实现待 SHA）；`board_issue_list` 按 team 过滤；FE 切换器 |
 
 ```bash
 # 同 WS 两队（把 A/B 换成真实 team UUID）
@@ -284,3 +284,34 @@ ymbot team pull --uuid "$TEAM_B" --json > /tmp/roster-b.json
 MCP 等价：Inspector 对 `board_team_pull` 各传一次不同 `team_uuid`（可加 `ids=true` 看裸 id）。  
 **自检一句**：双 pull 席位组不串 → T6-R 通道文档验收过；**不**因此勾满 `BOT_TEAM_SEAT_P0` T6 全文。
 
+### 11.5 Team pins（`board_pin_*` · 契约）
+
+> 对接 T6 余债 **共享记忆墙**。权威开工单：[`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md)。REST 契约：[`API.md`](./API.md)「Team pins」。  
+> **状态：契约已齐、实现待 SHA**——下文 tool / CLI 名与入参对齐债务单；**未**宣称已挂载；**勿勾** P1–P5，等实现 commit SHA 后再箱验。
+
+| | |
+|--|--|
+| **与私有 memory 分界** | pins = 队共享短结论；`board_memory_*` / `bot_memories` = 席位私有。同名 `key` **不**互相覆盖；**不**用 pin 替代 `handoff get` |
+| **切队** | 同 §11.4：换入参 `team_uuid`（无 sticky env）。CLI/MCP 每次带本队 UUID |
+| **环境仍只需** | `YMBOT_API_URL` · `YMBOT_API_KEY` · `YMBOT_WORKSPACE_ID` |
+| **REST** | `GET/PUT/DELETE /workspaces/{ws}/teams/{teamID}/pins`（及 `…/pins/{key}`）；鉴权本队成员或 Admin；错队 → **404** |
+| **瘦输出** | 默认文本友好 / 无裸 UUID；`--full`/`full=true`、`--id`/`ids=true` 同 §6 / DX |
+
+| 能力 | MCP tool | CLI（契约） | REST | 入 / 出要点 |
+|------|----------|-------------|------|-------------|
+| 列本队 | `board_pin_list` | `ymbot pin list --team <uuid>` | `GET …/teams/{teamID}/pins` | 入：`team_uuid`；出：`pins[]`（瘦：`key,value` 摘要） |
+| 读一条 | `board_pin_get` | `ymbot pin get --team <uuid> --key <k>` | `GET …/pins/{key}` | 入：`team_uuid, key`；无 → 404 一行中文 |
+| 写入 | `board_pin_set` | `ymbot pin set --team <uuid> --key <k> --value <v>` | `PUT …/pins` `{key,value}` | upsert；可选 `idempotency_key`；出：`pin` |
+
+可选同期（非债务硬门槛）：`board_pin_delete` / `ymbot pin delete` → `DELETE …/pins/{key}`。
+
+```bash
+# 契约示意（实现落地后才可跑；占位勿当已通）
+# ymbot pin set --team "$TEAM_A" --key decision --value "采用方案 B"
+# ymbot pin list --team "$TEAM_A"
+# ymbot pin list --team "$TEAM_B"   # 不应出现队 A 的 decision
+# ymbot pin get  --team "$TEAM_B" --key decision   # 期望 404
+```
+
+MCP：Inspector 在实现挂载后应 `tools/list` 含 `board_pin_list` / `board_pin_get` / `board_pin_set`；冒烟对两队各 `list`/`set` 验隔离。  
+**自检一句（落地后）**：队 A set → 队 A get 见、队 B list/get 无/404 → 可对 [`NEXT_WAVE_DEBT_PINS.md`](./NEXT_WAVE_DEBT_PINS.md) 勾 P1–P2；**本文档本身不勾验收**。

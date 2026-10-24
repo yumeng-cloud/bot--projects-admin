@@ -38,6 +38,12 @@
 | **产品** | 清单对齐 + 勾关 |
 | **QA** | P4 苛刻复测 |
 
+## 文档回链（种子）
+
+- REST 契约：[`API.md`](./API.md)「Team pins」
+- 通道：[`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md) §11.5 `board_pin_*`
+- **契约已齐、实现待 SHA**；本文 P1–P5 待实现落地后再勾。
+
 ## 关单
 
 产品勾本文 + `BOT_TEAM_SEAT_P0` T6 注「pins PASS」或整勾 T6（若 Issue 池仍欠则脚注）。
