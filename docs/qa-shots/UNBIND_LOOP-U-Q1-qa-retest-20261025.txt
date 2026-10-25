@@ -1,0 +1,124 @@
+=== UNBIND_LOOP U-Q1 · QA 全链路自测 retest ===
+time_AsiaShanghai: 2026-10-25 08:36 Asia/Shanghai (box)
+result: Overall=PASS†
+evidence_file: docs/qa-shots/UNBIND_LOOP-U-Q1-qa-retest-20261025.txt
+checklist: docs/qa-shots/UNBIND_LOOP-U-Q1-checklist.md
+debt: docs/NEXT_WAVE_DEBT_UNBIND_LOOP.md
+HEAD_at_run: e88747d (e88747da480a9b7911128db3c9b5264e15aff762)
+  ancestors: 9d49bdd (Go U-G1～U-G4) YES · 1065066 (U-M1) YES · 091dd71 (U-R1/U-R2) YES · 4f7e558 (开 QA U-Q1) YES
+feat_go: 9d49bdd fix(unbind): U-G1–U-G4 移除级联清席 + 脏绑可清 + 占用人话
+feat_ymbot: 1065066 feat(ymbot): U-M1 seat leave 清本地+透传「席位绑定已失效，已清理」
+feat_fe: 091dd71 feat(fe): UNBIND_LOOP U-R1/U-R2 解绑闭环人话与席态即时清
+API: http://127.0.0.1:8080 healthz ok
+  binary: rebuilt /tmp/ai-board-server-ug from main incl. 9d49bdd @ 2026-10-25 08:35 Asia/Shanghai
+  (prior /tmp/ai-board-server mtime 02:19 PREDATED U-G → restarted for this gate)
+FE: source soft† (091dd71)；U-R1/U-R2 按产品 steering 源码核对，未重截
+actor: admin@yumeng.tech / Admin123! (JWT) + redeem no-Bearer newcomers + Bot ymk_
+WS: ba1481c49148aba9553ba3811406b69f
+TEAM: 819b928377a7059aa75924acb92c055f (UQ1-UnbindLoop-083643 · template_key=default · 5→6 seats)
+Frozen: Soft 三件（V2 静默补 / V6 / 嵌套 revoke）；LOGIN_REFRESH / MOBILE_RESPONSIVE 并行不挡
+
+########## Method ##########
+1. Confirm U-G/U-M/U-R ancestors of HEAD; product opened U-Q1 @4f7e558
+2. go test UG1–UG4 + botclient SeatLeave*；rebuild+restart API
+3. Live curl/Python matrix UQ1-1～8 + 7a/7b；FE UQ1-10/11 源码对照
+4. Write this report; on PASS† commit+push origin/main
+
+########## Go / ymbot unit ##########
+go test ./internal/services/botmem/ -count=1 -run 'UG1|UG2|UG3|UG4|StopSeat|UnbindSeat.*Admin' -v
+  PASS TestStopSeatActiveAdminPath
+  PASS TestUnbindSeatActiveAdminPath
+  PASS TestStopSeatWritesVisibleAudit
+  PASS TestUnbindSeatWritesVisibleAudit
+  PASS TestUG1CascadeUnbindOnMemberRemove
+  PASS TestUG2StaleBoundUnbindClears
+  PASS TestUG3AliveOccupantForbiddenMessage
+  PASS TestUG4UnboundIdempotentUnbind
+go test ./internal/botclient/ -count=1 -run 'SeatLeave|FormatSeatLeave' -v
+  PASS TestFormatSeatLeaveTextTransmitsStaleNote
+  PASS TestSeatLeaveUnbindSuccessClearsCacheAndPassesMessage
+  PASS TestSeatLeaveForbiddenDirtyBindTreatedAsStaleCleared
+  PASS TestSeatLeaveForbiddenLiveOtherKeepsU6
+  PASS TestSeatLeaveAlreadyUnboundViaServer200
+
+########## Live API matrix ##########
+
+UQ1-1 入场→本人 leave
+  INVITE seat_slug=frontend → ymt_… REDEEM_NO_BEARER → 201 member=cee4d859… seat=774ffe03… ymk_
+  ROSTER frontend status=active bound=cee4d859… name=frontend
+  BotA POST …/unbind → 200；ROSTER status=left bound=None
+  无「只能解绑自己绑定的席位」
+  UQ1-1=PASS
+
+UQ1-2 Admin 停工后再 leave
+  Bot redeem+bind frontend → active
+  Admin POST …/stop → 200 status=stopped bound=None
+  Bot unbind → 200 幂等（U4）；无旧 403 句
+  UQ1-2=PASS
+
+UQ1-3 Admin 离职解绑后再 leave
+  Bot active → Admin POST …/unbind → 200 status=left bound=None
+  Bot leave → 200 幂等
+  UQ1-3=PASS
+
+UQ1-4 Admin 移除成员级联（根因刀 · 主证）
+  BotA redeem+bind backend → active bound=01fe5b93…
+  Admin DELETE …/members/{BotA} → 200「成员已移除」
+  ROSTER backend status=left bound=None name=None  → **无脏绑**（U-G1）
+  原钥 unbind → 401「无效的 API Key」（成员/钥随移除失效，预期）
+  Admin unbind 同席 → 200 幂等；全程 **未**出现「只能解绑自己绑定的席位」
+  soft†：级联已清绑，本路径未再触达 U5 活句「席位绑定已失效，已清理」；U5 由 TestUG2StaleBoundUnbindClears + botclient dirty-bind 单测覆盖
+  UQ1-4=PASS
+
+UQ1-5 他人存活占用 → 403 新人话（U6）
+  BotA 占 pm（bound_display_name=pm）；BotB（qa 身份）POST …/seats/{pm}/unbind
+  → HTTP **403** message=席位由「pm」占用；请对方离席，或让管理员停工/离职解绑
+  holder 不变；无旧句「只能解绑自己…」
+  UQ1-5=PASS
+
+UQ1-6 清后再补位；活跃禁顶替
+  frontend left → 锚定 seat_slug=frontend invite+redeem → 201 seat_id=同席 status=active
+  对仍 active 的 pm：redeem → **409**「该席位占用中，禁止顶替」；force bind → **409** 同句
+  UQ1-6=PASS
+
+UQ1-7a 回归 SEAT_LEAVE 硬条
+  qa active→Admin stop→锚定新人 redeem 可补 active；扩编 designer_* → 201；active 仍 409
+  对照 SEAT_LEAVE-L5-qa-retest-20261025.txt 口径
+  UQ1-7a=PASS
+
+UQ1-7b 回归 SEAT_REFILL_BIND
+  锚定补 left/stopped → 成功（UQ1-6）；role_hint-only unanchored redeem → seat_id=null（V2 禁静默补）
+  对照 SEAT_REFILL_BIND-B4-qa-spotcheck-20261025.txt
+  UQ1-7b=PASS
+
+UQ1-8 U4 无 bound 幂等
+  Admin unbind 已 left/unbound backend → 200；无旧 403 句
+  UQ1-8=PASS
+
+UQ1-9 U-M1 CLI 本地收尾
+  botclient seat_leave_test ×5 PASS（清缓存 + 透传 U5 句 + U6 占用 + U4 200）
+  soft†：箱内 PATH 无 ymbot 二进制；以 API leave（UQ1-1/2/3）+ 单测代活 CLI
+  UQ1-9=PASS†
+
+UQ1-10 U-R1 FE 移除后席态（源码对照 · 产品 steering 不必重截）
+  SettingsPage.onRemove → emitMemberRemoved(wsId, row.id) 事件名 acb:member-removed
+  BotsRosterPage 监听 MEMBER_REMOVED_EVENT：乐观 status=left + bound_*=null + claim=null + reload roster
+  成功 Toast：「已移除…；相关席位绑定已清理」
+  UQ1-10=PASS†（source）
+
+UQ1-11 U-R2 FE 文案对齐 U6（源码对照）
+  humanizeSeatLeaveError：透传 U6「席位由「…」占用…」；403/409 旧句改写为 U6
+  onStop / onLeaveUnbind → handleSeatLeaveError → humanizeSeatLeaveError；U4/U5 isSeatLeaveEffectiveSuccess 当成功
+  UQ1-11=PASS†（source）
+
+########## Soft† notes ##########
+- U5 活句未在 UQ1-4 主路径出现：U-G1 级联已先清绑（根因已灭）；单测 UG2 + botclient dirty 覆盖 U5
+- U-M1 无箱内 ymbot 二进制；API+单测代
+- FE 未新截图：产品 steering「抽 U-R1/U-R2 时按此核对源码即可，不必重截」
+
+########## Overall ##########
+Overall=PASS†
+UQ1-1 PASS · UQ1-2 PASS · UQ1-3 PASS · UQ1-4 PASS · UQ1-5 PASS
+UQ1-6 PASS · UQ1-7a PASS · UQ1-7b PASS · UQ1-8 PASS
+UQ1-9 PASS† · UQ1-10 PASS† · UQ1-11 PASS†
+禁甩用户；可交产品 U-P1 关单。

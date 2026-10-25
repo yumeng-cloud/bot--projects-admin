@@ -1,8 +1,8 @@
-# UNBIND_LOOP U-Q1 · 全链路验收清单（骨架·等码）
+# UNBIND_LOOP U-Q1 · 全链路验收清单（活点·PASS†）
 
 > 2026-10-25 08:31 Asia/Shanghai · QA 骨架  
 > **债：** [`docs/NEXT_WAVE_DEBT_UNBIND_LOOP.md`](../NEXT_WAVE_DEBT_UNBIND_LOOP.md) @`e229c8e`  
-> **门禁：** 等 Go **U-G1～U-G4** + Bot 记忆 **U-M1** + React **U-R1～U-R2** 推 origin/main 后再跑活点。  
+> **门禁：** Go `9d49bdd` + ymbot `1065066` + FE `091dd71` 已入 main → 活点已跑。  
 > **本阶段：** 只写骨架；**不**宣称 PASS；**不**跑未就绪全链路。  
 > **硬约束：** 禁甩用户测；V2G 静默补仍冻；测绿后 spotcheck 可 push origin/main。
 
@@ -14,8 +14,8 @@
 
 | 项 | 值 / 门禁 |
 | --- | --- |
-| 债文 | `docs/NEXT_WAVE_DEBT_UNBIND_LOOP.md` @`e229c8e`（或含该文的后续 HEAD） |
-| API | 本地 `http://127.0.0.1:8080`；二进制须含 U-G1～U-G4（交件 SHA 待填） |
+| 债文 | `docs/NEXT_WAVE_DEBT_UNBIND_LOOP.md` · HEAD@run `e88747d`（含 U-G/U-M/U-R） |
+| API | 本地 `http://127.0.0.1:8080`；二进制含 U-G `9d49bdd`（`/tmp/ai-board-server-ug` 08:35 重建） |
 | Admin | `admin@yumeng.tech` / seed → JWT |
 | Bot | redeem 无 Bearer → `ymk_`（挂 HUMAN Q1）；`POST …/seats/{id}/bind` / `unbind` / `stop` |
 | 成员移除 | `DELETE /api/v1/workspaces/{ws}/members/{memberID}`（Admin） |
@@ -59,18 +59,18 @@ GET  …/teams/$TEAM/seats                （或 roster 等价）→ bound_membe
 
 | # | 覆盖 | 前置 | 步骤（API 优先） | 期望 HTTP / 文案 / 态 | 证据落点 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **UQ1-1** | §QA-1 入场→本人 leave | 空席或新建队；BotA redeem+bind | ① BotA `POST …/bind`→active ② BotA `POST …/unbind`（或 `ymbot seat leave`） ③ GET seats | ② **200**；席 `status=left`、`bound_member_id=null`；CLI/本地队·席缓存已清（U7/U-M1） | `docs/qa-shots/UNBIND_LOOP-U-Q1-qa-retest-YYYYMMDD.txt` §1；可选 CLI 输出摘录 | **骨架·等码**（U-G4 幂等底 + U-M1） |
-| **UQ1-2** | §QA-2 Admin 停工后再 leave | BotA active | ① Admin `POST …/stop`→`stopped`+清绑 ② BotA 再 `unbind`/`seat leave` | ① **200** `stopped` ② **200** 幂等（U4）；无 403「只能解绑自己…」 | 同上 §2 | **骨架·等码** |
-| **UQ1-3** | §QA-3 Admin 离职解绑后再 leave | BotA active | ① Admin `POST …/unbind`→`left`+清绑 ② BotA 再 leave | 同 UQ1-2；审计 `seat.unbind` 可抽（SEAT_LEAVE L2 口径） | 同上 §3 | **骨架·等码** |
-| **UQ1-4** | §QA-4 Admin **移除成员**级联（根因刀） | BotA active；记下 `seat_id`+`member_id`+`ymk_` | ① Admin `DELETE …/members/{BotA}`→200 ② GET seats：**无**脏绑（bound≠已删 id） ③ 原钥或新身份对该席 `unbind` | ① 成员行删+席 `left`+claim release（U-G1 同事务/等价） ② bound=∅ ③ **200** 成功或 **「席位绑定已失效，已清理」**（U5）；**不得**再出现「只能解绑自己绑定的席位」 | 同上 §4（本刀主证）；可附 JSON 摘录 | **骨架·等码**（**等 U-G1+U-G2**） |
-| **UQ1-5** | §QA-5 他人存活占用→403 新人话 | BotA active；BotB 另身份 | BotB（第三人）`POST …/seats/{A席}/unbind` | **403**；人话含占用者**显示名**：`席位由「{BotA显示名}」占用；请对方离席，或让管理员停工/离职解绑`（U6/U-G3）；holder 不变 | 同上 §5 | **骨架·等码**（**等 U-G3**） |
-| **UQ1-6** | §QA-6 清后再补位；活跃禁顶替 | 接 UQ1-2/3/4 后席为 `stopped\|left`；另留一席仍 active | ① 新人持**锚定补位码** redeem/bind → 成功占 `stopped\|left` ② 对仍 **active** 席 redeem/bind（含 force） | ① **200** active（SEAT_REFILL_BIND） ② **409** 禁顶替；**不**静默补 stopped（V2 Soft 冻） | 同上 §6 | **骨架·等码**（回归为主；U-G 交后复跑） |
-| **UQ1-7a** | §QA-7 回归 SEAT_LEAVE | 对照 L5 三硬条 | 复跑摘要：active→Admin stop→新人可补；active 仍 409；扩编新席不挤 | 与 `SEAT_LEAVE-L5-qa-retest-20261025.txt` 同口径 PASS | 同上 §7a；引用旧证 + 本轮 curl | **骨架·等码** |
-| **UQ1-7b** | §QA-7 回归 SEAT_REFILL_BIND | 对照 B4 | 锚定码绑 stopped\|left；未锚定不静默补；active 409 | 与 `SEAT_REFILL_BIND-B4-qa-spotcheck-20261025.txt` 同口径 | 同上 §7b | **骨架·等码** |
-| **UQ1-8** | U4 无 bound 幂等（单点） | 席已 `left`/`open` 且 bound=∅ | 任意合法身份（Bot 原钥或 Admin）`unbind` | **200**；席态不变；无错误 Toast | 同上 §8 | **骨架·等码**（U-G4） |
-| **UQ1-9** | U-M1 CLI 本地收尾 | U-M1 交件；UQ1-1/4 场景 | `ymbot seat leave` 在 U4/U5 成功路径 | 退出 0；本地队·席缓存清；透传新人话；**不**要求用户再点一次 | 同上 §9 + CLI stdout 摘 | **骨架·等码**（**等 U-M1**） |
-| **UQ1-10** | U-R1 FE 移除后席态 | U-R1 交件；箱 FE | 设置页移除 Bot 成员 → 回席页/roster | 席卡即时无脏绑（非「占用中·已删人」）；错误 Toast 用人话 | 同上 §10；可选 `docs/qa-shots/unbind-loop-remove-*.png` | **骨架·等码**（**等 U-R1**） |
-| **UQ1-11** | U-R2 FE 文案对齐 U6 | U-R2 交件 | 席页他人占用时 stop/unbind 失败路径（若 FE 暴露） | Toast/文案含占用者显示名，对齐 U6；无旧句「只能解绑自己…」 | 同上 §11 | **骨架·等码**（**等 U-R2**） |
+| **UQ1-1** | §QA-1 入场→本人 leave | 空席或新建队；BotA redeem+bind | ① BotA `POST …/bind`→active ② BotA `POST …/unbind`（或 `ymbot seat leave`） ③ GET seats | ② **200**；席 `status=left`、`bound_member_id=null`；CLI/本地队·席缓存已清（U7/U-M1） | `docs/qa-shots/UNBIND_LOOP-U-Q1-qa-retest-YYYYMMDD.txt` §1；可选 CLI 输出摘录 | **PASS**（见 retest） |
+| **UQ1-2** | §QA-2 Admin 停工后再 leave | BotA active | ① Admin `POST …/stop`→`stopped`+清绑 ② BotA 再 `unbind`/`seat leave` | ① **200** `stopped` ② **200** 幂等（U4）；无 403「只能解绑自己…」 | 同上 §2 | **PASS**（见 retest） |
+| **UQ1-3** | §QA-3 Admin 离职解绑后再 leave | BotA active | ① Admin `POST …/unbind`→`left`+清绑 ② BotA 再 leave | 同 UQ1-2；审计 `seat.unbind` 可抽（SEAT_LEAVE L2 口径） | 同上 §3 | **PASS**（见 retest） |
+| **UQ1-4** | §QA-4 Admin **移除成员**级联（根因刀） | BotA active；记下 `seat_id`+`member_id`+`ymk_` | ① Admin `DELETE …/members/{BotA}`→200 ② GET seats：**无**脏绑（bound≠已删 id） ③ 原钥或新身份对该席 `unbind` | ① 成员行删+席 `left`+claim release（U-G1 同事务/等价） ② bound=∅ ③ **200** 成功或 **「席位绑定已失效，已清理」**（U5）；**不得**再出现「只能解绑自己绑定的席位」 | 同上 §4（本刀主证）；可附 JSON 摘录 | **PASS**（见 retest） |
+| **UQ1-5** | §QA-5 他人存活占用→403 新人话 | BotA active；BotB 另身份 | BotB（第三人）`POST …/seats/{A席}/unbind` | **403**；人话含占用者**显示名**：`席位由「{BotA显示名}」占用；请对方离席，或让管理员停工/离职解绑`（U6/U-G3）；holder 不变 | 同上 §5 | **PASS**（见 retest） |
+| **UQ1-6** | §QA-6 清后再补位；活跃禁顶替 | 接 UQ1-2/3/4 后席为 `stopped\|left`；另留一席仍 active | ① 新人持**锚定补位码** redeem/bind → 成功占 `stopped\|left` ② 对仍 **active** 席 redeem/bind（含 force） | ① **200** active（SEAT_REFILL_BIND） ② **409** 禁顶替；**不**静默补 stopped（V2 Soft 冻） | 同上 §6 | **PASS**（见 retest） |
+| **UQ1-7a** | §QA-7 回归 SEAT_LEAVE | 对照 L5 三硬条 | 复跑摘要：active→Admin stop→新人可补；active 仍 409；扩编新席不挤 | 与 `SEAT_LEAVE-L5-qa-retest-20261025.txt` 同口径 PASS | 同上 §7a；引用旧证 + 本轮 curl | **PASS**（见 retest） |
+| **UQ1-7b** | §QA-7 回归 SEAT_REFILL_BIND | 对照 B4 | 锚定码绑 stopped\|left；未锚定不静默补；active 409 | 与 `SEAT_REFILL_BIND-B4-qa-spotcheck-20261025.txt` 同口径 | 同上 §7b | **PASS**（见 retest） |
+| **UQ1-8** | U4 无 bound 幂等（单点） | 席已 `left`/`open` 且 bound=∅ | 任意合法身份（Bot 原钥或 Admin）`unbind` | **200**；席态不变；无错误 Toast | 同上 §8 | **PASS**（见 retest） |
+| **UQ1-9** | U-M1 CLI 本地收尾 | U-M1 交件；UQ1-1/4 场景 | `ymbot seat leave` 在 U4/U5 成功路径 | 退出 0；本地队·席缓存清；透传新人话；**不**要求用户再点一次 | 同上 §9 + CLI stdout 摘 | **PASS†** · unit+API soft† |
+| **UQ1-10** | U-R1 FE 移除后席态 | U-R1 交件；箱 FE | 设置页移除 Bot 成员 → 回席页/roster | 席卡即时无脏绑（非「占用中·已删人」）；错误 Toast 用人话 | 同上 §10；可选 `docs/qa-shots/unbind-loop-remove-*.png` | **PASS†** · source soft† |
+| **UQ1-11** | U-R2 FE 文案对齐 U6 | U-R2 交件 | 席页他人占用时 stop/unbind 失败路径（若 FE 暴露） | Toast/文案含占用者显示名，对齐 U6；无旧句「只能解绑自己…」 | 同上 §11 | **PASS†** · source soft† |
 
 ## Go 单测挂点（交件后顺手）
 
@@ -113,9 +113,9 @@ cd backend && go test ./internal/services/botmem/ -count=1 \
 
 | ID | 状态 |
 | --- | --- |
-| U-Q1 checklist | **骨架·等码**（本文件） |
-| U-Q1 活点 | **WAITING** Go U-G1～U-G4 → 可先 API 矩阵；+ U-M1 + U-R1/U-R2 后补 CLI/FE |
-| Overall | **未跑**（禁 PASS） |
+| U-Q1 checklist | **活点完成**（本文件 + retest） |
+| U-Q1 活点 | **PASS†** @2026-10-25 08:36 Asia/Shanghai · HEAD `e88747d` · binary rebuilt w/ `9d49bdd` |
+| Overall | **PASS†**（UQ1-9/10/11 soft†：无箱内 ymbot 二进制；FE 源码对照不重截；U5 活句由级联+单测覆盖） |
 
 ## 下一步（谁交件才能开跑）
 
@@ -123,3 +123,12 @@ cd backend && go test ./internal/services/botmem/ -count=1 \
 2. **Bot 记忆**交 U-M1 → 补 UQ1-9。  
 3. **React**交 U-R1/U-R2 → 补 UQ1-10/11（可与 API 矩阵并行，不挡主证 UQ1-4）。  
 4. 全绿写 retest → 产品 **U-P1** 关单。
+
+## 活点笔记（2026-10-25 08:36 Asia/Shanghai）
+
+- 交件齐：Go `9d49bdd` · ymbot `1065066` · FE `091dd71`；产品开跑 @`4f7e558`。
+- 先验：旧 `/tmp/ai-board-server` mtime 02:19 **早于** U-G → 重建 `/tmp/ai-board-server-ug` 后跑矩阵。
+- 主证 UQ1-4：DELETE member → 席 `left`+bound=∅；原钥 401；**无**「只能解绑自己…」。
+- UQ1-5 人话实锤：`席位由「pm」占用；请对方离席，或让管理员停工/离职解绑`。
+- FE U-R：`emitMemberRemoved`→`acb:member-removed` 乐观清席；`humanizeSeatLeaveError`（产品 steering 源码核对即可）。
+- 证据：`docs/qa-shots/UNBIND_LOOP-U-Q1-qa-retest-20261025.txt`
