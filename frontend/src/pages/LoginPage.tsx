@@ -1,17 +1,36 @@
 import { useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Button, Card, Form, Input, Typography, message, Tabs } from 'antd'
 import { login as apiLogin, register as apiRegister } from '../api/auth'
 import './login.css'
 
+function safeReturnPath(from: unknown): string {
+  if (typeof from !== 'string' || !from.startsWith('/') || from.startsWith('//')) return '/'
+  // Stay on login / landing only if that was the intent; default home.
+  if (from === '/login') return '/'
+  return from
+}
+
 export default function LoginPage({ onAuth }: { onAuth: () => void }) {
   const [loading, setLoading] = useState(false)
+  const location = useLocation()
+  const nav = useNavigate()
+  const stateFrom = (location.state as { from?: unknown } | null)?.from
+
+  const finishAuth = () => {
+    onAuth()
+    // Only bounce when this page owns /login. Embedded in /join keeps JoinPage flow.
+    if (location.pathname === '/login') {
+      nav(safeReturnPath(stateFrom), { replace: true })
+    }
+  }
 
   const login = async (v: { email: string; password: string }) => {
     setLoading(true)
     try {
       await apiLogin(v)
       message.success('登录成功')
-      onAuth()
+      finishAuth()
     } catch (e: unknown) {
       message.error(e instanceof Error ? e.message : '登录失败')
     } finally {
@@ -24,7 +43,7 @@ export default function LoginPage({ onAuth }: { onAuth: () => void }) {
     try {
       await apiRegister(v)
       message.success('注册成功')
-      onAuth()
+      finishAuth()
     } catch (e: unknown) {
       message.error(e instanceof Error ? e.message : '注册失败')
     } finally {

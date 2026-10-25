@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
+import Landing from './pages/Landing'
 import HomePage from './pages/HomePage'
 import JoinPage from './pages/JoinPage'
 import AppLayout from './layouts/AppLayout'
@@ -13,6 +14,13 @@ import { logout, me, type User } from './api/auth'
 import SettingsPage from './pages/settings/SettingsPage'
 import { BotsRosterPage, BotDetailPage } from './pages/settings/bots'
 import PlatformAdminPage from './pages/admin/PlatformAdminPage'
+
+/** Unauthed hit on protected path → /login, keep deep-link intent. */
+function RedirectToLogin() {
+  const location = useLocation()
+  const from = `${location.pathname}${location.search}${location.hash}`
+  return <Navigate to="/login" replace state={{ from }} />
+}
 
 export default function App() {
   const [token, setTok] = useState(() => getToken())
@@ -46,10 +54,15 @@ export default function App() {
         {/* ONE_TAP C1：同源 /join 深链（登录→预填向导；未登录→短引导） */}
         <Route path="/join" element={<JoinPage authed={authed} onAuth={onAuth} />} />
         {!authed ? (
-          <Route path="*" element={<LoginPage onAuth={onAuth} />} />
+          <>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<LoginPage onAuth={onAuth} />} />
+            <Route path="*" element={<RedirectToLogin />} />
+          </>
         ) : (
           <>
             <Route path="/" element={<HomePage onLogout={onLogout} />} />
+            <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="/admin" element={<PlatformAdminPage />} />
             <Route path="/admin/*" element={<PlatformAdminPage />} />
             <Route path="/w/:wsId" element={<AppLayout user={user} onLogout={onLogout} />}>

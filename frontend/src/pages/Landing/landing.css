@@ -1,0 +1,165 @@
+/* SITE_LANDING — quiet product gate (docs/SITE_LANDING_VISUAL_BASELINE.md @170085f)
+ * Scope: .acb-landing-* only. Same tokens as app / login gate. No Google Fonts, no dark hero, no pill eyebrow.
+ */
+.acb-landing {
+  min-height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: var(--acb-bg-layout);
+  color: var(--acb-text);
+}
+
+.acb-landing-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  border-bottom: 1px solid var(--acb-border-secondary);
+  background: var(--acb-bg-container);
+}
+
+.acb-landing-brand {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--acb-text);
+  letter-spacing: 0.01em;
+  text-decoration: none;
+}
+
+.acb-landing-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.acb-landing-main {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 48px 32px 40px;
+  box-sizing: border-box;
+}
+
+.acb-landing-hero {
+  margin-bottom: 40px;
+}
+
+/* 眉题：纯文一行 · 13–14 · secondary · 禁 pill */
+.acb-landing-eyebrow {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--acb-text-secondary);
+}
+
+.acb-landing-title {
+  margin: 0 0 12px;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--acb-text);
+  letter-spacing: 0.01em;
+}
+
+.acb-landing-subtitle {
+  margin: 0 0 24px;
+  max-width: 36em;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--acb-text-tertiary);
+}
+
+.acb-landing-cta-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.acb-landing-cta-row .ant-btn-primary {
+  height: 36px;
+  padding: 0 20px;
+  font-weight: 500;
+  border-radius: 8px;
+}
+
+.acb-landing-cta-secondary {
+  font-size: 13px;
+  color: var(--acb-text-secondary);
+  text-decoration: none;
+}
+
+.acb-landing-cta-secondary:hover {
+  color: var(--acb-primary);
+}
+
+.acb-landing-values {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.acb-landing-value {
+  background: var(--acb-bg-container);
+  border: 1px solid var(--acb-border);
+  border-radius: 8px;
+  padding: 20px 18px;
+}
+
+.acb-landing-value-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--acb-text);
+}
+
+.acb-landing-value-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--acb-text-secondary);
+}
+
+.acb-landing-foot {
+  padding: 20px 32px;
+  border-top: 1px solid var(--acb-border-secondary);
+  text-align: center;
+  font-size: 12px;
+  color: var(--acb-text-tertiary);
+}
+
+.acb-landing-foot a {
+  color: var(--acb-text-secondary);
+  text-decoration: none;
+}
+
+.acb-landing-foot a:hover {
+  color: var(--acb-primary);
+}
+
+@media (max-width: 719px) {
+  .acb-landing-top {
+    padding: 14px 16px;
+  }
+
+  .acb-landing-main {
+    padding: 32px 16px 32px;
+  }
+
+  .acb-landing-title {
+    font-size: 28px;
+  }
+
+  .acb-landing-values {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .acb-landing-foot {
+    padding: 16px;
+  }
+}
