@@ -7,6 +7,7 @@
 > **打回补钉（2026-10-25 21:10）**：主人打回首屏气质——第一眼像弱项目看板演示、没兴趣用 → 状态：**重开 · 首屏气质**。  
 > **前次真图包作废：** L-R3‡ FE @`301f49c`、资产 @`b200881` **作废**——勿交 QA / 勿勾 SL-V3。  
 > **打回补钉（2026-10-25 21:43）**：主人认 GenerateImage 样张、打回现实现 → 资产 @`96e104f`（HTML→PNG 伪图）**作废**；规补 [`LANDING_TRUE_ART_PROMPTS`](./LANDING_TRUE_ART_PROMPTS.md) / 专册 @`9bf8eb2`：**禁 HTML→PNG**；须 **GenerateImage 真插画** 再接线。双帧旁证 `1f5b0b6` 同废。  
+> **参考图包（2026-10-25 22:20）**：主人交 16 张官网视觉参考，要求入库并记下「后面按这套图做官网」。去重后 13 张在 `frontend/src/pages/Landing/assets/refs/`，清单 [`refs/README.md`](../frontend/src/pages/Landing/assets/refs/README.md)。**本笔记只入库，不改现页接线**；下次做官网以这套图为画面参照。  
 > **前次图文关单作废：** L-P1 @`46f3040` / SL-V3 @`e7da310` / FE 锁句 @`675a300`（及 FE 图文 `f0fe24f`）**作废**——主人骂 CSS 假框。  
 > **承接：** 主人怒——总指挥自写落地页难看；总指挥停笔；产品定气质+文案，UI视觉·审图执刀（必要时 React）。  
 > **视觉尺子（锁）：** [`SITE_LANDING_VISUAL_BASELINE.md`](./SITE_LANDING_VISUAL_BASELINE.md) @`8e5ca0b` + 本文「真图硬门」+「首屏气质硬门」——示意≥4 · 左右交替≥2 · Hero=**产品英雄图** · **每段真插图**；废稿黑名单与浅色 token **跟专册**，勿另皮。  
@@ -196,6 +197,8 @@
 - 2026-10-25 21:10 · **主人打回首屏气质** → **重开 · 首屏气质**。首屏对标飞书/Notion 介绍页；禁教学作业/凑合演示/杂乱截图堆/课堂三列卡；Hero=产品英雄图；叙事人+Agent 一支队/多机认领/统一调度；真插图仍硬（禁 CSS mock）。**作废** L-R3‡ FE @`301f49c`、资产 @`b200881`——**勿交 QA / 勿勾 SL-V3**。回退勾选：L-R3‡ / 审图 / SL-V* / L-Q1 / L-P1；**L-V-SPEC† 已勾** @`8e5ca0b`（视觉总监提示词+专册）。待：**重生图落盘 → 接线 → 审图 → SL-V3**（勿开 QA）。Soft 仍冻；INVITE 勿动。
 
 - 2026-10-25 21:43 · **打回 HTML→PNG 伪图** → 资产 @`96e104f` + 双帧旁证 `1f5b0b6` **作废**（主人认 GenerateImage 样张、打回现实现）。规补禁令 @`9bf8eb2`：**禁 HTML→PNG**；须箱内 GenerateImage 真插画。已喊审图重生、React 停接伪图（可另加厚 Hero 布局等新图接线）。**勿开 QA / 勿勾 SL-V3**。Soft 仍冻；INVITE 勿动。
+
+- 2026-10-25 22:20 · **主人参考图包入库（未开工做官网）**。16 张交图，3 对字节相同各留 1 张，13 张落 `frontend/src/pages/Landing/assets/refs/`。需求：后面做官网时按这套图参照（Hero 流水线、痛点对照、同一工作区、统一调度、席位产品界面、四步、上下文圆桌）。**本笔记不改** `Landing/index.tsx`、不替换在线 `landing-*.png`、不勾 L-R3‡ / SL-V* / L-Q1 / L-P1。清单：[`frontend/src/pages/Landing/assets/refs/README.md`](../frontend/src/pages/Landing/assets/refs/README.md)。
 
 ## 关单进度
 

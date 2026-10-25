@@ -14,3 +14,5 @@
 | `landing-flow-steps.png` | 四步流程 |
 
 禁 CSS mock / HTML→PNG 冒充。接线用 `<img src={...}>`；有 `.webp` 优先 webp。
+
+主人 2026-10-25 交来的官网参考图在 `refs/`（13 张，未接线）。后续按这套图重做官网，说明见 `refs/README.md`。
