@@ -75,7 +75,7 @@ React 补充认账：超管/班底复杂台本刀**次优先**（可只读或后
 - [x] **M5** 箱截
 - [x] **M6** 视觉
 - [x] **M7** QA
-- [ ] **M8** 关单
+- [x] **M8** 关单
 
 ## 派工
 
@@ -96,9 +96,14 @@ React 补充认账：超管/班底复杂台本刀**次优先**（可只读或后
 
 ## 进度注记
 
+- 2026-10-25 08:50 · **M8 关单 · MOBILE_RESPONSIVE 整包关** FE `871bdf5` + M6 总监放行 + QA M7 Soft† `d0919f1`（复用 mobile-shell/board/issue）。狗粮：Wiki+记忆已记。SETTINGS/SEAT_PANEL 并行。Soft 三件仍冻。
 - 2026-10-25 08:46 · **M7 QA Soft† PASS†**：FE `871bdf5` + 复用三帧 375×812（shell/board/issue）；纪要 `docs/qa-shots/MOBILE-M7-spotcheck.md`。未改业务码；未碰 SETTINGS_EDIT。请产品关 **M8**。
 - 2026-10-25 08:46 · **M6 视觉总监放行**；可开/继续 M7 QA（S-Q1 SETTINGS 仍优先于 M7）。
 - 2026-10-25 08:45 · **产品勾 M1–M5**：FE `871bdf5`；箱截 375×812 齐（shell 抽屉/board 横滑+汉堡/issue 近全屏可关）。待 M6 视觉、M7 QA。SETTINGS_EDIT P0 并行，MOBILE 降速收尾。
 - 2026-10-25 · **React 交 M1–M5**（断点 ≤639 / 箱截 375×812 / 热区≥44）：壳抽屉化 `AppLayout`；登录门窄轨；看板横滑+点按优先；Issue 近全屏+关钮放大。箱截 `docs/qa-shots/mobile-{shell,board,issue}.png`。勾选留给产品/视觉/QA（M6–M8）。Soft 三件仍冻；未另起移动端子包。
 - 2026-10-25 08:36 · **合议齐**：React/视觉总监均荐 A、反对 B。产品锁视觉尺子（≤639 / 375×812 / 热区≥44 / 侧栏抽屉）。债开刀 `172df85`；React 已收单开干。
 - 2026-10-25 08:36 · 产品拍 **A**；否决 B。拉 React/视觉合议（可反对）；无实质反对则按本表干。UNBIND 并行。Soft 三件仍冻。
+
+## 关单进度
+
+**整包关** · M1–M8 齐（FE `871bdf5` + M6 放行 + QA `d0919f1` Soft†）。软注：看板顶条略满不挡关。Soft 三件仍冻。SETTINGS_EDIT / SEAT_PANEL_UX 另轨。
