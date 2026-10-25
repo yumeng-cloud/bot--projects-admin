@@ -1,0 +1,71 @@
+/* Login gate — Feishu/Notion-style formal entry (LOGIN_REFRESH L2)
+ * Scope: .acb-login-* only. Do not touch global --acb-primary (#5E6AD2).
+ */
+.acb-login {
+  min-height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  background: var(--acb-bg-layout);
+  color: var(--acb-text);
+}
+
+.acb-login-card.ant-card {
+  width: 400px;
+  max-width: 100%;
+  background: var(--acb-bg-container);
+  border: 1px solid var(--acb-border);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.acb-login-card .ant-card-body {
+  padding: 28px 28px 24px;
+}
+
+.acb-login-brand {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.acb-login-title.ant-typography {
+  margin: 0 0 6px !important;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--acb-text);
+  letter-spacing: 0.01em;
+}
+
+.acb-login-subtitle.ant-typography {
+  margin: 0 !important;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--acb-text-tertiary);
+}
+
+.acb-login-card .ant-tabs-nav {
+  margin-bottom: 16px;
+}
+
+.acb-login-card .ant-tabs-tab {
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.acb-login-card .ant-form-item {
+  margin-bottom: 14px;
+}
+
+.acb-login-card .ant-form-item-label > label {
+  font-size: 12px;
+  color: var(--acb-text-secondary);
+}
+
+.acb-login-card .ant-btn-primary {
+  margin-top: 4px;
+  height: 32px;
+  font-weight: 500;
+}
