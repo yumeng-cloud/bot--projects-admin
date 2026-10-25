@@ -1,4 +1,4 @@
-/* SITE_LANDING — quiet product gate (docs/SITE_LANDING_VISUAL_BASELINE.md @170085f)
+/* SITE_LANDING — thickened A–F + A2 (docs/SITE_LANDING_VISUAL_BASELINE.md @710df9f)
  * Scope: .acb-landing-* only. Same tokens as app / login gate. No Google Fonts, no dark hero, no pill eyebrow.
  */
 .acb-landing {
@@ -36,17 +36,21 @@
 .acb-landing-main {
   flex: 1 1 auto;
   width: 100%;
-  max-width: 880px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 48px 32px 40px;
+  padding: 48px 32px 56px;
   box-sizing: border-box;
 }
 
+/* —— A Hero —— */
 .acb-landing-hero {
-  margin-bottom: 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 32px;
+  align-items: center;
+  margin-bottom: 48px;
 }
 
-/* 眉题：纯文一行 · 13–14 · secondary · 禁 pill */
 .acb-landing-eyebrow {
   margin: 0 0 12px;
   font-size: 13px;
@@ -79,7 +83,8 @@
   flex-wrap: wrap;
 }
 
-.acb-landing-cta-row .ant-btn-primary {
+.acb-landing-cta-row .ant-btn-primary,
+.acb-landing-bottom-cta .ant-btn-primary {
   height: 36px;
   padding: 0 20px;
   font-weight: 500;
@@ -96,6 +101,88 @@
   color: var(--acb-primary);
 }
 
+/* Quiet seat-bar diagram */
+.acb-landing-hero-viz {
+  min-width: 0;
+}
+
+.acb-landing-seat-bar {
+  background: var(--acb-bg-container);
+  border: 1px solid var(--acb-border);
+  border-radius: 8px;
+  padding: 16px 18px;
+}
+
+.acb-landing-seat-bar-label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: var(--acb-text-tertiary);
+}
+
+.acb-landing-seat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.acb-landing-seat-chip {
+  display: inline-block;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: 8px;
+  border: 1px solid var(--acb-border);
+  background: var(--acb-bg-layout);
+  color: var(--acb-text-secondary);
+}
+
+.acb-landing-seat-chip.is-human {
+  border-color: color-mix(in srgb, var(--acb-primary, #5E6AD2) 35%, var(--acb-border));
+  color: var(--acb-text);
+  background: color-mix(in srgb, var(--acb-primary, #5E6AD2) 8%, var(--acb-bg-container));
+}
+
+.acb-landing-seat-chip.is-agent {
+  color: var(--acb-text);
+}
+
+.acb-landing-seat-chip.is-empty {
+  color: var(--acb-text-tertiary);
+  border-style: dashed;
+  background: transparent;
+}
+
+/* —— Shared section —— */
+.acb-landing-block {
+  margin-bottom: 48px;
+}
+
+.acb-landing-section-title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--acb-text);
+}
+
+.acb-landing-section-body {
+  margin: 0;
+  max-width: 42em;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--acb-text-secondary);
+}
+
+/* A2 */
+.acb-landing-why {
+  padding: 20px 22px;
+  background: var(--acb-bg-container);
+  border: 1px solid var(--acb-border);
+  border-radius: 8px;
+}
+
+/* B values */
 .acb-landing-values {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -110,7 +197,7 @@
 }
 
 .acb-landing-value-title {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   font-size: 14px;
   font-weight: 600;
   line-height: 1.4;
@@ -120,8 +207,136 @@
 .acb-landing-value-body {
   margin: 0;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--acb-text-secondary);
+}
+
+/* C steps */
+.acb-landing-steps-list {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.acb-landing-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--acb-bg-container);
+  border: 1px solid var(--acb-border);
+  border-radius: 8px;
+  padding: 16px 14px;
+}
+
+.acb-landing-step-n {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--acb-primary, #5E6AD2);
+  background: color-mix(in srgb, var(--acb-primary, #5E6AD2) 10%, var(--acb-bg-container));
+}
+
+.acb-landing-step-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--acb-text);
+}
+
+.acb-landing-step-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--acb-text-secondary);
+}
+
+/* D dist viz */
+.acb-landing-dist-viz {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  position: relative;
+}
+
+.acb-landing-machine {
+  background: var(--acb-bg-container);
+  border: 1px solid var(--acb-border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.acb-landing-machine-name {
+  font-size: 12px;
+  color: var(--acb-text-tertiary);
+}
+
+.acb-landing-machine-role {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--acb-text);
+}
+
+.acb-landing-dist-hub {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--acb-primary, #5E6AD2);
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--acb-primary, #5E6AD2) 8%, var(--acb-bg-container));
+  border: 1px solid color-mix(in srgb, var(--acb-primary, #5E6AD2) 22%, var(--acb-border));
+  border-radius: 8px;
+}
+
+/* E */
+.acb-landing-how-start {
+  margin: 16px 0 0;
+  max-width: 42em;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--acb-text-secondary);
+  background: var(--acb-bg-container);
+  border: 1px solid var(--acb-border);
+  border-radius: 8px;
+}
+
+.acb-landing-how-start strong {
+  font-weight: 600;
+  color: var(--acb-text);
+}
+
+/* F bottom CTA */
+.acb-landing-bottom-cta {
+  text-align: center;
+  padding: 32px 24px;
+  background: var(--acb-bg-container);
+  border: 1px solid var(--acb-border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.acb-landing-close {
+  margin: 0 0 20px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--acb-text);
 }
 
 .acb-landing-foot {
@@ -141,22 +356,45 @@
   color: var(--acb-primary);
 }
 
+@media (max-width: 899px) {
+  .acb-landing-hero {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .acb-landing-steps-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 719px) {
   .acb-landing-top {
     padding: 14px 16px;
   }
 
   .acb-landing-main {
-    padding: 32px 16px 32px;
+    padding: 32px 16px 40px;
   }
 
   .acb-landing-title {
     font-size: 28px;
   }
 
+  .acb-landing-block {
+    margin-bottom: 40px;
+  }
+
   .acb-landing-values {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .acb-landing-steps-list {
+    grid-template-columns: 1fr;
+  }
+
+  .acb-landing-dist-viz {
+    grid-template-columns: 1fr;
   }
 
   .acb-landing-foot {
