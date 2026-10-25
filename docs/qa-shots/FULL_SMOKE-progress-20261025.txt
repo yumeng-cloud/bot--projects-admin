@@ -1,0 +1,30 @@
+FULL_SMOKE_20261025 · progress log (empty template)
+================================================================
+wave: FULL_SMOKE_20261025
+checklist: docs/qa-shots/FULL_SMOKE-checklist-20261025.md
+checklist_write_HEAD: 8d34c77
+task_baseline_SHA: bc215de
+remote: origin/main (bot--projects-admin)
+written_at: 2026-10-25 14:52 Asia/Shanghai
+env_probe:
+  vite: http://127.0.0.1:5175 → 200
+  api_healthz: http://127.0.0.1:8080/healthz → 200 {"status":"ok"}
+seed: admin@yumeng.tech (dogfood; NEVER owner)
+overall: PENDING
+browser_run: NOT STARTED (checklist skeleton only)
+================================================================
+
+# Append one block per run / retest. Do not invent PASS† without evidence.
+
+# --- run template ---
+# time_AsiaShanghai:
+# HEAD_at_run: <git rev-parse --short HEAD>
+# tester: QA (seed/dogfood only)
+# groups_touched: A|B|C|D|E|F|G|H
+# rows:
+#   <ID> PENDING|PASS†|FAIL — evidence: <png/txt path> — note:
+# blockers:
+# next:
+# --- end block ---
+
+# (no runs yet)
