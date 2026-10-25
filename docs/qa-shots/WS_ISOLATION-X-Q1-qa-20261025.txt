@@ -1,0 +1,62 @@
+WS_ISOLATION · X-Q1 全表 PASS† 纪要（A1–A6 + B1）
+时间：2026-10-25 10:28 Asia/Shanghai
+判定：**PASS†**（全表 A1–A6 / B1 / X-I1 / X-M1）
+================================================================
+基线
+  API 证据 commit：007bc6b（docs/qa-shots/WS_ISOLATION-X-Q1-A2A5-qa-20261025.txt）
+  Go+FE 修复：fae4e48（X-G* assertMemberInWorkspace + X-R1～R3 remount/清态/项目滤）
+  Issue 契约：f7474d9（X-I1）；通道 annotate：47f0c73（X-M1）
+  债/锤：dadd8e9 + 34ece64；探针 f169699 / 0c39d38
+  API：http://127.0.0.1:8080 · FE Vite :5175 · DB postgres seed
+  种子：admin@yumeng.tech / Admin123!
+
+对象
+  WS1 育蒙科技      ba1481c49148aba9553ba3811406b69f
+  WS2 QA Invite WS  1b62eb739b167cf21cb62d109bda2690
+  MID Grok Bot      094acad4a3f0aaef2ee6370e790912b4（仅 WS1）
+  P1 YM·示例项目    b1e996fb8ba9c350e249f7a862425a67
+  P2 SQ1A·SQ1-UI-Proj-202610250906  ade1ded229f481d2fa6dadcb770cfd55
+  （债文「项目 07」本环境无此名；用可用第二项目 P2 等价覆盖 B1）
+
+码表（产品）
+  member∉ws 读写 → 404（禁 200 空 / 禁 201）
+  调用方非成员   → 403
+
+----------------------------------------------------------------
+全表结果
+----------------------------------------------------------------
+| 行 | 期望 | 实得 | 判定 | 证据 |
+| --- | --- | --- | --- | --- |
+| A1 UI 切仓零残留 | BotDetail/记忆/handoff 无 WS1 残留 | WS1 育蒙科技 Bot handoff 见 YM-9/11/12/13/17/18；切 QA Invite WS →「请先选择团队」/「尚未绑定席位」，零 YM*/Grok 残留 | PASS† | WS_ISOLATION-X-Q1-A1-ws1-20261025.png · WS_ISOLATION-X-Q1-A1-ws2-20261025.png |
+| A2 GET WS2/bots/{MID}/memories\|todos | 404 | 404 成员不存在 | PASS† | A2A5 @007bc6b |
+| A3 GET …/handoff | 404 | 404 成员不存在 | PASS† | A2A5 @007bc6b |
+| A4 POST/PATCH 错仓 | 404（禁 201） | POST/PATCH mem\|todo 均 404；无 201 | PASS† | A2A5 @007bc6b |
+| A5 非成员业务读 | 403 | outsider JWT→403；WS1 ymk_→WS2→403 | PASS† | A2A5 @007bc6b |
+| A6 脏写后 GET | N/A 或仍 404 | A4 无 201；GET 仍 404 | PASS† | A2A5 @007bc6b |
+| B1 UI 切项目滤 | 屏仅当前项目 | P1 YM·示例项目 board 见 YM-24/27/28/30/31/32；切 P2 SQ1A·SQ1-UI-Proj-202610250906 → 空板，上述 YM 消失（无「07」项目，用可用第二项目） | PASS† | WS_ISOLATION-X-Q1-B1-20261025.png |
+| B · API project_id | 列表仅该项目 | P1 n=27 全 P1；P2 n=0 | PASS† | A2A5 @007bc6b |
+| X-I1 GetIssue 错仓 / ListIssues(WS2) | 404 / 不含 WS1 id | 404 Issue 不存在；List n=0 contains=False | PASS† | A2A5 @007bc6b |
+| X-M1 ymbot 错仓 | 403/404 人话，禁软吞「无记忆」 | WS1 ymk_+WS2 → 403 带「工作区隔离…」；正确仓 list OK | PASS† | A2A5 @007bc6b |
+
+Console：仅 favicon 404（无业务/隔离相关错误）。
+
+----------------------------------------------------------------
+截图索引（Asia/Shanghai 2026-10-25）
+----------------------------------------------------------------
+  docs/qa-shots/WS_ISOLATION-X-Q1-A1-ws1-20261025.png  — A1 切仓前（WS1 handoff YM-*）
+  docs/qa-shots/WS_ISOLATION-X-Q1-A1-ws2-20261025.png  — A1 切仓后（WS2 零残留）
+  docs/qa-shots/WS_ISOLATION-X-Q1-B1-20261025.png      — B1 切项目后空板（P2）
+  docs/qa-shots/WS_ISOLATION-X-Q1-A2A5-qa-20261025.txt — API/curl 详证 @007bc6b
+  docs/qa-shots/WS_ISOLATION-X-Q1-checklist-20261025.txt — 全勾 PASS†
+
+----------------------------------------------------------------
+FE 静态（fae4e48）
+----------------------------------------------------------------
+X-R1 AppLayout key={wsId} remount
+X-R2 BotDetailPage clearBotData on ws/member change
+X-R3 SeatHandoffDrawer filter i.project_id === projectId
+
+----------------------------------------------------------------
+关单
+----------------------------------------------------------------
+X-Q1 全表 PASS†。产品债关单 X-P1 交产品（本纪要不改 X-P1）。
