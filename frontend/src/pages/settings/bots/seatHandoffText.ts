@@ -1,4 +1,5 @@
 import type { BotHandoff, BotMemory, BotRole, BotTodo, HandoffIssue } from '../../../api/bots'
+import { cleanSeatSlug, isDirtySeatKey } from '../../../utils/seatLabels'
 import { formatShanghai } from '../../../utils/time'
 
 /** 从 memories 取出人话焦点：优先 slug:last_focus，再 last_focus */
@@ -80,7 +81,12 @@ export function buildHandoffCardText(opts: {
 }
 
 export function roleDisplay(role: BotRole): string {
-  return role.name || role.slug || '未命名席位'
+  const name = (role.name || '').trim()
+  if (name && !isDirtySeatKey(name)) return name
+  const clean = cleanSeatSlug(role.slug)
+  // 人话优先；短 slug 仅作无 name 时的兜底，永不渲染 team:uuid:…
+  if (clean) return clean
+  return '未命名席位'
 }
 
 /** SEAT_PANEL_UX P-R1：席卡三态（只认本队 roster；禁可补≈空闲） */

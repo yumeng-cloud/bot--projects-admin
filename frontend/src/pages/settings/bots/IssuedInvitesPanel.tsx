@@ -11,6 +11,7 @@ import {
   workspaceInviteTail,
   type WorkspaceInvite,
 } from '../../../api/workspaceInvites'
+import { seatGroupLabel } from '../../../utils/seatLabels'
 
 type Props = {
   teamInvites: TeamInvite[]
@@ -42,23 +43,6 @@ function seatGroupKey(inv: TeamInvite): string {
   return (inv.role_hint || inv.seat_slug || '').trim() || '__none__'
 }
 
-/** INVITE_ON_DEMAND I-R3：脏串 / 对不上席表 →「未命名席」；永不渲染 team:uuid:slug */
-function isDirtySeatKey(key: string): boolean {
-  if (!key || key === '__none__') return false
-  if (/^team:/i.test(key)) return true
-  if (/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(key)) {
-    return true
-  }
-  return false
-}
-
-function seatGroupLabel(key: string, seats: TeamSeat[]): string {
-  if (key === '__none__') return '未指定席'
-  if (isDirtySeatKey(key)) return '未命名席'
-  const hit = seats.find((s) => s.role_slug === key)
-  if (!hit) return '未命名席'
-  return hit.display_name || hit.role_slug || '未命名席'
-}
 
 function InviteRow(props: {
   tail: string

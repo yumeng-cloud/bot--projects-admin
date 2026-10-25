@@ -85,6 +85,11 @@ import {
   parseJoinSearchParams,
 } from '../../../utils/oneTapJoin'
 import { emptySeatsForPack } from '../../../utils/autoCrewPack'
+import {
+  cleanSeatSlug,
+  humanSeatLabel,
+  resolveSeatCleanSlug,
+} from '../../../utils/seatLabels'
 import { readStoredProjectId } from '../../../utils/currentProject'
 import type { CrewPackResult } from '../../../utils/autoCrewPack'
 import CrewPackRevealModal from '../../../components/common/CrewPackRevealModal'
@@ -362,8 +367,8 @@ export default function BotsRosterPage() {
           code: undefined,
           code_tail: tail,
           code_prefix: inv.code_prefix || `ymt_····${tail}`,
-          role_hint: inv.role_hint || row.slug || null,
-          seat_slug: inv.seat_slug || row.slug || null,
+          role_hint: cleanSeatSlug(inv.role_hint) || cleanSeatSlug(row.slug) || null,
+          seat_slug: cleanSeatSlug(inv.seat_slug) || cleanSeatSlug(row.slug) || null,
         }
         const idx = next.findIndex((x) => x.id === inv.id)
         if (idx >= 0) next[idx] = stripped
@@ -434,17 +439,29 @@ export default function BotsRosterPage() {
       if (hit) {
         if (seen.has(hit.id)) continue
         seen.add(hit.id)
-        out.push(hit)
+        const cleanSlug = cleanSeatSlug(s.role_slug) || cleanSeatSlug(hit.slug)
+        // 保留 bot_role id/claim；slug 用人话短码（禁 team:uuid: 脏串直出）
+        out.push(
+          cleanSlug && cleanSlug !== hit.slug
+            ? { ...hit, slug: cleanSlug, name: hit.name || s.display_name || cleanSlug }
+            : hit,
+        )
         continue
       }
       const sid = s.bot_role_id || `seat:${s.id}`
       if (seen.has(sid)) continue
       seen.add(sid)
+      const cleanSlug = cleanSeatSlug(s.role_slug)
+      const seatName =
+        (s.display_name || '').trim() && !/^team:/i.test(s.display_name || '')
+          ? s.display_name
+          : cleanSlug || '未命名席位'
       out.push({
         id: sid,
         workspace_id: s.workspace_id || wsId,
-        name: s.display_name || s.role_slug || '未命名席位',
-        slug: s.role_slug || s.id,
+        name: seatName,
+        // 短 slug；禁把 team:uuid:… / 席 UUID 写入 role.slug
+        slug: cleanSlug || '',
         responsibilities: '',
         skills: '',
         default_project_ids: '',
@@ -827,24 +844,95 @@ export default function BotsRosterPage() {
     }
   }
 
-  type InviteRoleCtx = { slug?: string | null; displayName?: string | null }
+  type InviteRoleCtx = {
+    slug?: string | null
+    displayName?: string | null
+    /** BotRole.id 或合成 `seat:{seatId}`；与 seatOccForRole 同源匹配 */
+    roleId?: string | null
+  }
+
+  type IssueInviteOutcome =
+    | { outcome: 'plain'; code: string }
+    | { outcome: 'minted-opaque' }
+    | { outcome: 'aborted' }
 
   const isInviteActive = (inv: TeamInvite): boolean => {
     const st = (inv.status || (inv.revoked_at ? 'revoked' : 'active')).toLowerCase()
     return st !== 'revoked' && st !== 'expired' && st !== 'exhausted'
   }
 
+  /** 与 seatOccForRole 同源：bot_role_id / seat:id / 干净 role_slug / claim */
+  const resolveSeatForInviteCtx = (roleCtx?: InviteRoleCtx): TeamSeat | undefined => {
+    if (!roleCtx) return undefined
+    const roleId = (roleCtx.roleId || '').trim()
+    const rawSlug = (roleCtx.slug || '').trim()
+    const clean = cleanSeatSlug(rawSlug)
+    if (roleId) {
+      const byBotRole = teamSeats.find((s) => s.bot_role_id && s.bot_role_id === roleId)
+      if (byBotRole) return byBotRole
+      if (roleId.startsWith('seat:')) {
+        const byId = teamSeats.find((s) => s.id === roleId.slice(5))
+        if (byId) return byId
+      }
+    }
+    if (clean) {
+      const byClean = teamSeats.find((s) => cleanSeatSlug(s.role_slug) === clean)
+      if (byClean) return byClean
+    }
+    if (rawSlug) {
+      const byRaw = teamSeats.find((s) => (s.role_slug || '').trim() === rawSlug)
+      if (byRaw) return byRaw
+    }
+    return undefined
+  }
+
+  const inviteCtxHumanName = (roleCtx?: InviteRoleCtx, seat?: TeamSeat | null) =>
+    humanSeatLabel({
+      displayName: roleCtx?.displayName,
+      seat: seat || undefined,
+      slug: roleCtx?.slug,
+      seats: teamSeats,
+    })
+
+  /** 在席判定与席卡同源（含 claim 补齐） */
+  const isActiveForInviteCtx = (
+    roleCtx?: InviteRoleCtx,
+  ): { active: boolean; name: string; seat?: TeamSeat } => {
+    const roleId = (roleCtx?.roleId || '').trim()
+    if (roleId) {
+      const role =
+        visibleRoles.find((r) => r.id === roleId) ||
+        roles.find((r) => r.id === roleId) ||
+        null
+      if (role) {
+        const occ = seatOccForRole(role)
+        return {
+          active: occ.kind === 'active',
+          name: inviteCtxHumanName(roleCtx, occ.seat),
+          seat: occ.seat,
+        }
+      }
+    }
+    const seat = resolveSeatForInviteCtx(roleCtx)
+    if (seat && seatOccupancy(seat) === 'active') {
+      return { active: true, name: inviteCtxHumanName(roleCtx, seat), seat }
+    }
+    return { active: false, name: inviteCtxHumanName(roleCtx, seat), seat }
+  }
+
   const findActiveInviteForSeat = (slug: string): TeamInvite | undefined =>
     issuedInvites.find((inv) => {
       if (!isInviteActive(inv)) return false
       const key = (inv.seat_slug || inv.role_hint || '').trim()
-      if (slug) return key === slug
-      return !key
+      if (!slug) return !key
+      if (key === slug) return true
+      return cleanSeatSlug(key) === slug
     })
 
   const cacheIssuedInvite = (invite: TeamInvite, slug: string) => {
     const plain = invite.code || null
     const tail = inviteTail(invite)
+    const clean = cleanSeatSlug(slug) || (slug && !slug.includes(':') ? slug : '')
     if (plain) invitePlainByIdRef.current.set(invite.id, plain)
     setIssuedInvites((prev) => [
       {
@@ -852,8 +940,8 @@ export default function BotsRosterPage() {
         code: undefined,
         code_tail: tail,
         code_prefix: invite.code_prefix || `ymt_····${tail}`,
-        role_hint: invite.role_hint || slug || null,
-        seat_slug: invite.seat_slug || slug || null,
+        role_hint: cleanSeatSlug(invite.role_hint) || clean || null,
+        seat_slug: cleanSeatSlug(invite.seat_slug) || clean || null,
       },
       ...prev.filter((x) => x.id !== invite.id),
     ])
@@ -861,45 +949,50 @@ export default function BotsRosterPage() {
   }
 
   const mintInvitePlain = async (slug: string): Promise<string | null> => {
+    const clean = cleanSeatSlug(slug) || ''
     const { invite } = await createTeamInvite(
       wsId,
       teamId!,
       {
         allow_expand_seat: true,
-        ...(slug ? { role_hint: slug, seat_slug: slug } : {}),
+        ...(clean ? { role_hint: clean, seat_slug: clean } : {}),
       },
       crypto.randomUUID(),
     )
-    return cacheIssuedInvite(invite, slug)
+    return cacheIssuedInvite(invite, clean)
   }
 
   /**
-   * INVITE_ON_DEMAND I-R2：
-   * - 在席（active）禁 mint 顶替
+   * INVITE_ON_DEMAND I-R2 + IQ1-5：
+   * - 在席（active）禁 mint 顶替；守卫与席卡占用同源
    * - 该席已有有效码 → 复用复制（本会话明文）或「吊销后再发」；禁静默加堆
+   * - 签发尽量带干净短 slug（wiki），勿写 team:uuid:…
    */
-  const issueInvitePlain = async (roleCtx?: InviteRoleCtx): Promise<string | null> => {
+  const issueInvitePlain = async (roleCtx?: InviteRoleCtx): Promise<IssueInviteOutcome> => {
     if (!teamId) {
       message.warning('尚无团队，请先创建或加入班底')
-      return null
+      return { outcome: 'aborted' }
     }
-    const slug = (roleCtx?.slug || '').trim()
-    if (slug) {
-      const seat = teamSeats.find((s) => (s.role_slug || '').trim() === slug)
-      if (seat && seatOccupancy(seat) === 'active') {
-        const name = roleCtx?.displayName || seat.display_name || slug
-        message.warning(
-          `席「${name}」已有人在席，禁止签发顶替入场码。请用新人新席，或走停工席补位。`,
-        )
-        return null
-      }
+
+    const gate = isActiveForInviteCtx(roleCtx)
+    if (gate.active) {
+      message.warning(
+        `席「${gate.name}」已有人在席，禁止签发顶替入场码。请用新人新席，或走停工席补位。`,
+      )
+      return { outcome: 'aborted' }
     }
+
+    const seat = gate.seat || resolveSeatForInviteCtx(roleCtx)
+    const slug =
+      resolveSeatCleanSlug(seat, roleCtx?.slug) ||
+      cleanSeatSlug(roleCtx?.slug) ||
+      ''
 
     const existing = findActiveInviteForSeat(slug)
     if (existing) {
       const tail = inviteTail(existing)
       const cached = invitePlainByIdRef.current.get(existing.id) || null
-      const seatLabel = roleCtx?.displayName || slug || '未指定席'
+      const seatLabel = inviteCtxHumanName(roleCtx, seat)
       const choice = await new Promise<'reuse' | 'replace' | 'cancel'>((resolve) => {
         let settled = false
         const finish = (v: 'reuse' | 'replace' | 'cancel') => {
@@ -962,13 +1055,13 @@ export default function BotsRosterPage() {
         })
       })
 
-      if (choice === 'cancel') return null
+      if (choice === 'cancel') return { outcome: 'aborted' }
       if (choice === 'reuse') {
         if (!cached) {
           message.info(`该席已有有效码（末四 ·${tail}），本会话无明文可复制`)
-          return null
+          return { outcome: 'aborted' }
         }
-        return cached
+        return { outcome: 'plain', code: cached }
       }
       // replace：先吊销再发
       try {
@@ -998,12 +1091,14 @@ export default function BotsRosterPage() {
         } else {
           message.error(e instanceof ApiError ? e.message : '吊销旧码失败')
         }
-        return null
+        return { outcome: 'aborted' }
       }
-      return mintInvitePlain(slug)
+      const plain = await mintInvitePlain(slug)
+      return plain ? { outcome: 'plain', code: plain } : { outcome: 'minted-opaque' }
     }
 
-    return mintInvitePlain(slug)
+    const plain = await mintInvitePlain(slug)
+    return plain ? { outcome: 'plain', code: plain } : { outcome: 'minted-opaque' }
   }
 
   const rememberPlainBriefly = (plain: string) => {
@@ -1011,24 +1106,49 @@ export default function BotsRosterPage() {
     window.setTimeout(() => setLastPlainInvite(null), 0)
   }
 
+  const warnInviteActiveConflict = (e: unknown, roleCtx?: InviteRoleCtx) => {
+    if (!(e instanceof ApiError) || e.status !== 409) return false
+    const name = inviteCtxHumanName(roleCtx)
+    const msg =
+      e.message && !/team:|[0-9a-f]{8}-[0-9a-f]{4}/i.test(e.message)
+        ? e.message
+        : `席「${name}」已有人在席，禁止签发顶替入场码`
+    message.warning(msg)
+    return true
+  }
+
   /** B1：签发 + 剪贴板完整入场链接；Toast 含末四；提示勿发公开群 */
   const onCopyJoinLink = async (roleCtx?: InviteRoleCtx) => {
     setInviteBusy(true)
     try {
-      const plain = await issueInvitePlain(roleCtx)
-      if (!plain) {
+      const gate = isActiveForInviteCtx(roleCtx)
+      if (roleCtx && gate.active) {
+        message.warning(
+          `席「${gate.name}」已有人在席，禁止签发顶替入场码。请用新人新席，或走停工席补位。`,
+        )
+        return
+      }
+      const result = await issueInvitePlain(roleCtx)
+      if (result.outcome === 'aborted') return
+      if (result.outcome === 'minted-opaque') {
         message.success('已签发入场码（服务未返回明文，请查已签发列表末四）')
         return
       }
-      const role = (roleCtx?.slug || '').trim() || undefined
-      const url = buildJoinUrl({ code: plain, role })
+      const plain = result.code
+      const seat = gate.seat || resolveSeatForInviteCtx(roleCtx)
+      const clean =
+        resolveSeatCleanSlug(seat, roleCtx?.slug) || cleanSeatSlug(roleCtx?.slug) || undefined
+      const url = buildJoinUrl({ code: plain, role: clean })
       await navigator.clipboard.writeText(url)
       rememberPlainBriefly(plain)
       const tail = inviteCodeTail(plain)
-      const roleHint = role ? ` · 席 ${role}` : ' · 通用码（未绑席）'
+      const label = inviteCtxHumanName(roleCtx, seat)
+      const roleHint = roleCtx ? ` · 席 ${label}` : ' · 通用码（未绑席）'
       message.success(`已复制入场链接（末四 ·${tail}${roleHint}）。勿发公开群`)
     } catch (e: unknown) {
-      if (isInviteServiceMissing(e)) {
+      if (warnInviteActiveConflict(e, roleCtx)) {
+        /* 409 人话 */
+      } else if (isInviteServiceMissing(e)) {
         message.warning('入场码服务尚未开通')
       } else {
         message.error(e instanceof ApiError ? e.message : e instanceof Error ? e.message : '复制入场链接失败')
@@ -1042,24 +1162,38 @@ export default function BotsRosterPage() {
   const onCopyBotPrompt = async (roleCtx?: InviteRoleCtx) => {
     setInviteBusy(true)
     try {
-      const plain = await issueInvitePlain(roleCtx)
-      if (!plain) {
+      const gate = isActiveForInviteCtx(roleCtx)
+      if (roleCtx && gate.active) {
+        message.warning(
+          `席「${gate.name}」已有人在席，禁止签发顶替入场码。请用新人新席，或走停工席补位。`,
+        )
+        return
+      }
+      const result = await issueInvitePlain(roleCtx)
+      if (result.outcome === 'aborted') return
+      if (result.outcome === 'minted-opaque') {
         message.success('已签发入场码（服务未返回明文，请查已签发列表末四）')
         return
       }
-      const role = (roleCtx?.slug || '').trim() || undefined
+      const plain = result.code
+      const seat = gate.seat || resolveSeatForInviteCtx(roleCtx)
+      const clean =
+        resolveSeatCleanSlug(seat, roleCtx?.slug) || cleanSeatSlug(roleCtx?.slug) || undefined
+      const label = inviteCtxHumanName(roleCtx, seat)
       const prompt = buildBotJoinPrompt({
         code: plain,
-        role,
-        roleDisplayName: roleCtx?.displayName || undefined,
+        role: clean,
+        roleDisplayName: label !== '未命名席' ? label : undefined,
       })
       await navigator.clipboard.writeText(prompt)
       rememberPlainBriefly(plain)
       const tail = inviteCodeTail(plain)
-      const roleHint = role ? ` · 席 ${role}` : ' · 通用码（未绑席）'
+      const roleHint = roleCtx ? ` · 席 ${label}` : ' · 通用码（未绑席）'
       message.success(`已复制入场提示词（末四 ·${tail}${roleHint}；仅含入场码 ymt_）。勿发公开群`)
     } catch (e: unknown) {
-      if (isInviteServiceMissing(e)) {
+      if (warnInviteActiveConflict(e, roleCtx)) {
+        /* 409 */
+      } else if (isInviteServiceMissing(e)) {
         message.warning('入场码服务尚未开通')
       } else {
         message.error(e instanceof ApiError ? e.message : e instanceof Error ? e.message : '复制入场提示词失败')
@@ -1073,16 +1207,27 @@ export default function BotsRosterPage() {
   const onCopyBareInvite = async (roleCtx?: InviteRoleCtx) => {
     setInviteBusy(true)
     try {
-      const plain = await issueInvitePlain(roleCtx)
-      if (!plain) {
+      const gate = isActiveForInviteCtx(roleCtx)
+      if (roleCtx && gate.active) {
+        message.warning(
+          `席「${gate.name}」已有人在席，禁止签发顶替入场码。请用新人新席，或走停工席补位。`,
+        )
+        return
+      }
+      const result = await issueInvitePlain(roleCtx)
+      if (result.outcome === 'aborted') return
+      if (result.outcome === 'minted-opaque') {
         message.success('已签发入场码（服务未返回明文，请查已签发列表末四）')
         return
       }
+      const plain = result.code
       await navigator.clipboard.writeText(plain)
       rememberPlainBriefly(plain)
       message.success(`已复制裸入场码（末四 ·${inviteCodeTail(plain)}）。建议改用入场链接/提示词；勿发公开群`)
     } catch (e: unknown) {
-      if (isInviteServiceMissing(e)) {
+      if (warnInviteActiveConflict(e, roleCtx)) {
+        /* 409 */
+      } else if (isInviteServiceMissing(e)) {
         message.warning('入场码服务尚未开通')
       } else {
         message.error(e instanceof ApiError ? e.message : e instanceof Error ? e.message : '签发失败')
@@ -1100,7 +1245,9 @@ export default function BotsRosterPage() {
         message.warning('尚无团队，请先创建或加入班底')
         return
       }
-      const slug = (roleCtx.slug || '').trim()
+      const seat = resolveSeatForInviteCtx(roleCtx)
+      const slug =
+        resolveSeatCleanSlug(seat, roleCtx.slug) || cleanSeatSlug(roleCtx.slug) || ''
       if (!slug) {
         message.warning('该席无 slug，无法签发补位入场码')
         return
@@ -1124,8 +1271,8 @@ export default function BotsRosterPage() {
           code: undefined,
           code_tail: tail,
           code_prefix: invite.code_prefix || `ymt_····${tail}`,
-          role_hint: invite.role_hint || slug || null,
-          seat_slug: invite.seat_slug || slug || null,
+          role_hint: cleanSeatSlug(invite.role_hint) || slug || null,
+          seat_slug: cleanSeatSlug(invite.seat_slug) || slug || null,
         },
         ...prev.filter((x) => x.id !== invite.id),
       ])
@@ -1135,12 +1282,14 @@ export default function BotsRosterPage() {
       }
       await navigator.clipboard.writeText(plain)
       rememberPlainBriefly(plain)
-      const name = roleCtx.displayName || slug
+      const name = inviteCtxHumanName(roleCtx, seat)
       message.success(
         `已复制补位入场码（末四 ·${inviteCodeTail(plain)} · 席 ${name}）。持补位码入场即占该席；非扩编新席。勿发公开群`,
       )
     } catch (e: unknown) {
-      if (isInviteServiceMissing(e)) {
+      if (warnInviteActiveConflict(e, roleCtx)) {
+        /* 409 */
+      } else if (isInviteServiceMissing(e)) {
         message.warning('入场码服务尚未开通')
       } else {
         message.error(e instanceof ApiError ? e.message : e instanceof Error ? e.message : '复制补位入场码失败')
@@ -1168,72 +1317,101 @@ export default function BotsRosterPage() {
     primary?: boolean
     /** 席卡内紧凑链接按钮 */
     compact?: boolean
+    /** 在席：禁用一键 mint（仍可点出人话 warning） */
+    occupied?: boolean
   }) => {
     const size = opts?.size || 'small'
     const roleCtx = opts?.roleCtx
-    const tipRole = roleCtx?.slug
-      ? `带席位 ${roleCtx.slug}`
+    const occupied = Boolean(opts?.occupied)
+    const tipLabel = roleCtx
+      ? `带席位 ${inviteCtxHumanName(roleCtx)}`
       : '通用码（未选席；Bot 入场时自动选空席）。也可先点席卡上的一键按钮'
+    const occupiedTip = roleCtx
+      ? `席「${inviteCtxHumanName(roleCtx)}」已有人在席，禁止签发顶替入场码。请走停工席补位。`
+      : '该席已有人在席，禁止签发顶替入场码'
+    const onOccupiedClick = () => {
+      message.warning(occupiedTip)
+    }
     if (opts?.compact) {
       return (
         <Space size={4} wrap onClick={(e) => e.stopPropagation()}>
-          <Tooltip title={`复制入场链接 · ${tipRole}；勿发公开群`}>
+          <Tooltip title={occupied ? occupiedTip : `复制入场链接 · ${tipLabel}；勿发公开群`}>
             <Button
               size="small"
               type="link"
               style={{ padding: 0 }}
               icon={<LinkOutlined />}
               loading={inviteBusy}
-              onClick={() => void onCopyJoinLink(roleCtx)}
+              disabled={occupied}
+              onClick={() => (occupied ? onOccupiedClick() : void onCopyJoinLink(roleCtx))}
             >
               入场链接
             </Button>
           </Tooltip>
-          <Tooltip title={`复制入场提示词（含入场码 ymt_，不含身份钥匙）· ${tipRole}`}>
+          <Tooltip
+            title={
+              occupied
+                ? occupiedTip
+                : `复制入场提示词（含入场码 ymt_，不含身份钥匙）· ${tipLabel}`
+            }
+          >
             <Button
               size="small"
               type="link"
               style={{ padding: 0 }}
               icon={<FileTextOutlined />}
               loading={inviteBusy}
-              onClick={() => void onCopyBotPrompt(roleCtx)}
+              disabled={occupied}
+              onClick={() => (occupied ? onOccupiedClick() : void onCopyBotPrompt(roleCtx))}
             >
               入场提示词
             </Button>
           </Tooltip>
-          <Dropdown menu={inviteMoreMenu(roleCtx)} trigger={['click']}>
-            <Button size="small" type="link" style={{ padding: 0 }} icon={<MoreOutlined />} aria-label="更多入场选项" />
-          </Dropdown>
+          {!occupied ? (
+            <Dropdown menu={inviteMoreMenu(roleCtx)} trigger={['click']}>
+              <Button size="small" type="link" style={{ padding: 0 }} icon={<MoreOutlined />} aria-label="更多入场选项" />
+            </Dropdown>
+          ) : null}
         </Space>
       )
     }
     return (
       <Space size={8} wrap>
-        <Tooltip title={`Admin 一键入场链接 · ${tipRole}；勿发公开群`}>
+        <Tooltip title={occupied ? occupiedTip : `Admin 一键入场链接 · ${tipLabel}；勿发公开群`}>
           <Button
             size={size}
             icon={<LinkOutlined />}
             loading={inviteBusy}
-            onClick={() => void onCopyJoinLink(roleCtx)}
+            disabled={occupied}
+            onClick={() => (occupied ? onOccupiedClick() : void onCopyJoinLink(roleCtx))}
           >
             复制入场链接
           </Button>
         </Tooltip>
-        <Tooltip title={`复制入场提示词（含入场码 ymt_，不含身份钥匙）· ${tipRole}；勿发公开群`}>
+        <Tooltip
+          title={
+            occupied
+              ? occupiedTip
+              : `复制入场提示词（含入场码 ymt_，不含身份钥匙）· ${tipLabel}；勿发公开群`
+          }
+        >
           <Button
             size={size}
             icon={<FileTextOutlined />}
             loading={inviteBusy}
-            onClick={() => void onCopyBotPrompt(roleCtx)}
+            disabled={occupied}
+            onClick={() => (occupied ? onOccupiedClick() : void onCopyBotPrompt(roleCtx))}
           >
             复制入场提示词
           </Button>
         </Tooltip>
-        <Dropdown menu={inviteMoreMenu(roleCtx)} trigger={['click']}>
-          <Tooltip title="次要：仅复制裸 ymt_ 码">
-            <Button size={size} icon={<MoreOutlined />} aria-label="更多入场选项" />
-          </Tooltip>
-        </Dropdown>
+        {!occupied ? (
+          <Dropdown menu={inviteMoreMenu(roleCtx)} trigger={['click']}>
+            <Tooltip title="次要：仅复制裸 ymt_ 码">
+              <Button size={size} icon={<MoreOutlined />} aria-label="更多入场选项" />
+            </Tooltip>
+          </Dropdown>
+        ) : null}
       </Space>
     )
   }
@@ -1505,7 +1683,8 @@ export default function BotsRosterPage() {
                           loading={inviteBusy}
                           onClick={() =>
                             void onCopyRefillInvite({
-                              slug: role.slug || undefined,
+                              roleId: role.id,
+                              slug: cleanSeatSlug(role.slug) || role.slug || undefined,
                               displayName: roleDisplay(role),
                             })
                           }
@@ -1523,11 +1702,13 @@ export default function BotsRosterPage() {
                         popupMatchSelectWidth={false}
                       />
                     </>
-                  ) : (
+                  ) : busy ? null : (
                     renderOneTapActions({
                       compact: true,
+                      occupied: false,
                       roleCtx: {
-                        slug: role.slug || undefined,
+                        roleId: role.id,
+                        slug: cleanSeatSlug(role.slug) || role.slug || undefined,
                         displayName: roleDisplay(role),
                       },
                     })
@@ -1751,7 +1932,8 @@ export default function BotsRosterPage() {
           drawerRole
             ? () =>
                 void onCopyRefillInvite({
-                  slug: drawerRole.slug || undefined,
+                  roleId: drawerRole.id,
+                  slug: cleanSeatSlug(drawerRole.slug) || drawerRole.slug || undefined,
                   displayName: roleDisplay(drawerRole),
                 })
             : undefined

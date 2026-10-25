@@ -1,3 +1,4 @@
+import { cleanSeatSlug } from './seatLabels'
 /**
  * AUTO_CREW · 全班入场包：对每个空席签发带 role 的 ymt_，打成一份 Markdown。
  * 循环现有 POST …/teams/{id}/invites（role_hint/seat_slug）；禁嵌 ymk_。
@@ -84,7 +85,7 @@ export async function issueCrewPack(params: {
   const failed: CrewPackSeatFail[] = []
 
   for (const seat of targets) {
-    const slug = (seat.role_slug || '').trim()
+    const slug = cleanSeatSlug(seat.role_slug) || ''
     const displayName = seatDisplayName(seat)
     if (!slug) {
       failed.push({ slug: seat.id, displayName, reason: '缺少席位 slug' })

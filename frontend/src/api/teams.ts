@@ -520,7 +520,22 @@ export function seatOccupancy(seat: TeamSeat): 'active' | 'empty' | 'left' {
 }
 
 export function seatDisplayName(seat: TeamSeat): string {
-  return seat.display_name || seat.role_slug || '未命名席位'
+  const name = (seat.display_name || '').trim()
+  if (name && !/^team:/i.test(name) && !/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(name)) {
+    return name
+  }
+  const slug = (seat.role_slug || '').trim()
+  if (slug && !/^team:/i.test(slug) && !/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(slug)) {
+    return slug
+  }
+  // team:uuid:wiki → wiki
+  if (/^team:/i.test(slug)) {
+    const last = slug.split(':').pop()?.trim() || ''
+    if (last && !/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(last)) {
+      return last
+    }
+  }
+  return '未命名席位'
 }
 
 export function inviteTail(inv: TeamInvite): string {
