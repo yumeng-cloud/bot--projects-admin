@@ -19,7 +19,7 @@
   --acb-issue-main-padding-y: 32px;
   --acb-props-rail-width: 312px;
   --acb-issue-drawer-wide: 940px;
-  --acb-font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+  --acb-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   color-scheme: light;
 }
