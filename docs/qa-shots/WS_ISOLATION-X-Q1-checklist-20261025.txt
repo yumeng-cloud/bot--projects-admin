@@ -1,16 +1,16 @@
-WS_ISOLATION · X-Q1 验收骨架 2026-10-25
-债：docs/NEXT_WAVE_DEBT_WS_ISOLATION.md @dadd8e9
+WS_ISOLATION · X-Q1 验收骨架 2026-10-25（对齐债 dadd8e9 + 补锤 34ece64）
 探针：f169699（读）+ 0c39d38（写污染 201）
-码表：调用方非成员 403；member∉ws 404（禁 200 空）
+码表：调用方非成员 403；member∉ws 读写 404（禁 200 空 / 禁 201）
 ================================================================
 前置：Go X-G* + React X-R* 可跑后再全表自点；禁主人测。
 
 A · 跨仓
-[ ] A1 双仓成员切 WS1→WS2：Bots/记忆/handoff 屏零 WS1 残留（截图）
+[ ] A1 双仓成员切 WS1→WS2：Bots/记忆/handoff 屏零 WS1 残留（截图；含 BotDetail remount）
 [ ] A2 GET …/{WS2}/bots/{MID_ws1}/memories|todos → 404（非 200 空）
 [ ] A3 同上 handoff → 404
-[ ] A4 POST/PATCH 错配 mid 写 memories/todos → 404（回归 0c39d38 写污染）
+[ ] A4 错配 mid POST/PATCH memories/todos → 404（禁 201；回归 0c39d38）
 [ ] A5 非成员业务读 → 403
+[ ] A6 若曾脏写：写后同路径 GET 不得变 200 有内容
 
 B · 跨项目（同仓）
 [ ] B1 切项目「07」（或第二项目）看 handoff/Issue 主视图：默认仅当前项目；他项目不混（或人话标明范围）
