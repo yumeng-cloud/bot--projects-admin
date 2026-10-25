@@ -1,0 +1,73 @@
+INVITE_ON_DEMAND · I-G1 API QA @a034a15
+时间：2026-10-25 11:13 Asia/Shanghai
+判定：**PASS†**（本文件五项 live 全绿）
+================================================================
+基线
+  Go sha：a034a152a1fd171ef3c97a816a7c7ba392e39d90
+         feat(invite): I-G1 LookupEntry + Create seat/role gate + replace + List filter/label
+  Live：/tmp/ai-board-server-xq1 rebuilt+restart this run · :8080
+  DB：postgres DB_DRIVER=postgres DATABASE_URL=…/ai_collab
+  Actor：admin@yumeng.tech / Admin123!（JWT；箱测种子管理员，非「主人账号作 tester」禁令对象）
+  WS：育蒙科技 ba1481c49148aba9553ba3811406b69f
+  Fresh team：IG1-API-QA-20261025 / dfe2af0151d42ecdefb3c259d8ebf77f（roster ensure n=5）
+  Occupied：SQ1-UI-Team-202610250906 / ea918de1ac4d8116ed69651116a4acb9 · seat backend active · Grok Bot
+  债：docs/NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md · I-G1
+  Soft V2 / SEAT_REFILL：未解冻、未测
+
+Method
+  git pull → already up to date（a034a15 ⊂ HEAD）
+  go build -o /tmp/ai-board-server-xq1 ./cmd/server；restart with DB_DRIVER=postgres
+  binary strings contain LookupEntry
+  curl/urllib JWT matrix below
+
+----------------------------------------------------------------
+逐项
+----------------------------------------------------------------
+1) POST invites without seat_slug/role → 400 …… **PASS†**
+   POST /api/v1/workspaces/{ws}/teams/{fresh}/invites
+   body {"max_uses":1} → HTTP 400
+   {"code":"bad_request","message":"须指定 seat_slug 或 role_hint/role_slug"}
+   body {} → HTTP 400 同文案
+
+2) POST invites on active occupied seat → 409 …… **PASS†**
+   team ea918de1… SQ1-UI-Team · seat_slug=backend（在席 Grok Bot）
+   POST …/invites {"seat_slug":"backend","max_uses":1} → HTTP 409
+   {"code":"conflict","message":"席位已有人在席，禁止签发顶替入场码"}
+   POST …/invites {"role_hint":"backend"} → HTTP 409 同文案
+   （对照 FE Soft† IQ1-5：脏 slug 绕过是 FE 守卫问题；短 slug 后端闸已 409）
+
+3) GET …/teams/{id}/entry Lookup …… **PASS†**（路由存在）
+   GET …/entry（无参）→ 400 「须指定 seat_slug 或 role_slug」
+   GET …/entry?seat_slug=backend（fresh 无码）→ 404 「该席位暂无可用入场凭证」
+   先 POST invite seat_slug=backend → 201 ymt_… label=后端
+   GET …/entry?seat_slug=backend → 200
+     entry.kind=ymt_ invite_id=… code_tail=3373 status=active seat_slug=backend
+     （响应无 code 明文）
+   GET …/entry?role_slug=backend → 200 同 kind=ymt_
+
+4) replace=true …… **PASS†**
+   POST …/invites {"seat_slug":"backend","replace":true} → 201（新码）
+   GET …/invites?seat_slug=backend&status=active → n=1（旧码 revoked，仅 1 active）
+   active label=后端 seat_slug=backend
+
+5) List has label …… **PASS†**
+   GET …/invites → 每条含 label（后端 / 后端）；active+revoked 均有
+   明文 code 未泄漏进 List（plain not in body）
+   过滤：?seat_slug=&status=active 可用
+
+----------------------------------------------------------------
+FAIL redlines hit? NONE（本 API 五项）
+----------------------------------------------------------------
+  missing seat 非 400 — NO
+  active 非 409 — NO（短 slug）
+  entry 路由不存在 — NO
+  replace 后 active>1 — NO
+  list 无 label — NO
+
+Notes
+  - 重启须设 DB_DRIVER=postgres（缺省 sqlite；曾误开 sqlite 文件 backend/postgres:… 不提交）
+  - FE Soft† IQ1-3/5 缺陷不挡本 I-G1 API PASS†；产品勾 I-G1 可参考本纪要 + 单测 TestInviteOnDemandIG1HTTP
+  - 不交 I-P1；不改债勾选框（交产品）
+
+Verdict: **PASS†** @a034a15 · live :8080
+One-line → Go+产品+总指挥：I-G1 API PASS† @a034a15；缺 seat/role→400；活跃席短 slug→409；GET …/entry Lookup 通；replace=true 后 active=1；List+filter 含 label；明文不泄漏。

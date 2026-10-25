@@ -1,7 +1,7 @@
 INVITE_ON_DEMAND · I-Q1 验收骨架 2026-10-25（对齐债 docs/NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md · 开刀 d7c35c4 / 挂钩 297bfc5）
 气质：入场码是钥匙不是海报——要一把才开一把。
-判定：_未跑_ · 全行未勾 · 等 FE I-R1～R4 + Go I-G1 可跑 SHA 后再箱自测
-FE sha：_待填_ · Go sha：_待填_ · 全纪要：_待填（自跑后写）_
+判定：**Soft†**（FE 非全绿；IQ1-3/5 FAIL · IQ1-4 PARTIAL；Go I-G1 API PASS† 另见 IG1 纪要）· 2026-10-25 11:13 Asia/Shanghai
+FE sha：b0a4d3de5b95d9f8671e03d527f04f2a66e3be93 · Go sha：a034a152a1fd171ef3c97a816a7c7ba392e39d90 · 全纪要：INVITE_ON_DEMAND-I-Q1-FE-qa-20261025.txt + INVITE_ON_DEMAND-I-Q1-IG1-api-qa-20261025.txt
 ================================================================
 前置：
 - React I-R1～R4 + Go I-G1 入 main 且可跑后再全表自点。
@@ -21,38 +21,38 @@ FE sha：_待填_ · Go sha：_待填_ · 全纪要：_待填（自跑后写）_
 | I-P1 | 产品关 | 全绿后交产品（本清单不勾） |
 
 A · 建队默认不堆码（I-R1 主凶）
-[ ] IQ1-1 建队（模板有空席）成功同帧：**不**自动 setCrewPackOpen；**不**强制 CrewPackRevealModal；**不** auto issueCrewPack 循环 POST …/invites
+[x] IQ1-1 PASS† 建队（模板有空席）成功同帧：**不**自动 setCrewPackOpen；**不**强制 CrewPackRevealModal；**不** auto issueCrewPack 循环 POST …/invites
     期望：无 ≈模板空席数～叠历史≈18 的 ymt_ 墙；无「一开队就全班吐码」
     证据：箱截 INVITE_ON_DEMAND-I-Q1-create-no-wall-*.png + 网络无批量 invites
     附：若仍见「全班入场包」入口 → 须为二级，且勾选空席确认后才签（I-R4；禁无确认一键 N 签）
 
 B · 按需一码（I-R2 / I-G1 Create）
-[ ] IQ1-2 指定团队+角色/席：用户显式「发一把」→ **仅 1** 枚 invite（ymt_）；禁静默加堆
+[x] IQ1-2 PASS† 指定团队+角色/席：用户显式「发一把」→ **仅 1** 枚 invite（ymt_）；禁静默加堆
     期望：一次点击 / 一次 CTA = 一码；List 该席有效增量 ≤1（或替换见 IQ1-4）
     证据：箱截 + POST …/invites 单次 1 响应；禁 invites/batch
 
 C · 列表人话（I-R3 / I-G1 List label）
-[ ] IQ1-3 IssuedInvitesPanel（或等价列表）显示人话 label（席显示名 / 角色中文）；脏串永不渲染
+[ ] IQ1-3 FAIL IssuedInvitesPanel（或等价列表）显示人话 label（席显示名 / 角色中文）；脏串永不渲染
     期望：禁裸 `team:uuid:slug` / 脏 role_hint；对不上席表 →「未命名席」（或产品定稿等价文案）
     证据：箱截 INVITE_ON_DEMAND-I-Q1-list-labels-*.png
 
 D · K 状态机 + 活跃席（I-R2 / I-G1 / 主人硬约束）
-[ ] IQ1-4 指定团队+角色状态机
+[ ] IQ1-4 PARTIAL 指定团队+角色状态机
     · 有可用平台券 K（ymk_）→ Lookup/复用/inspect，**不** mint 新码
     · 无 K → 生成一枚（ymt_ 入场，或按需另开 ymk_；路径分家）
     · 显式「替换」→ 先吊旧再发新 1；不替换可直接发新 1（勿堆垃圾）
     · **优先平台 K**；ymt_/ymk_/ymw_ 三分轨勿混
     证据：箱截或 API Lookup/Create 旁证；纪要写明 FE/Go SHA
-[ ] IQ1-5 活跃席禁顶替：occupancy=active 再 invite → **409**（或 UI 明确禁 mint）；**永不** displace active seat
+[ ] IQ1-5 FAIL 活跃席禁顶替：occupancy=active 再 invite → **409**（或 UI 明确禁 mint）；**永不** displace active seat
     证据：箱截/响应码；禁顶替成功路径
 
 E · 全班包二级（I-R4 · 非删入口）
-[ ] IQ1-6 「全班入场包」若保留：二级入口 + 勾选空席确认后才签发；无确认不得 N 签；不物理删除入口
+[x] IQ1-6 PASS† 「全班入场包」若保留：二级入口 + 勾选空席确认后才签发；无确认不得 N 签；不物理删除入口
     证据：箱截确认步 + 确认前后 invites 计数
 
 F · 纪律 / 证据门
-[ ] IQ1-7 **Forbidden**：全程禁用主人账号作 tester；用狗粮/箱测账号
-[ ] IQ1-8 自跑完成后：本目录箱截齐套 + 纪要 txt/md 写清 FE sha · Go sha · 逐行 PASS†/FAIL；全绿再交产品 I-P1
+[x] IQ1-7 PASS† **Forbidden**：全程禁用主人账号作 tester；用狗粮/箱测账号
+[ ] IQ1-8 Soft†纪要已写非全绿 自跑完成后：本目录箱截齐套 + 纪要 txt/md 写清 FE sha · Go sha · 逐行 PASS†/FAIL；全绿再交产品 I-P1
 
 关：全绿 PASS† 纪要 + 箱截后交产品 I-P1。（本清单不改 I-P1）
-状态：骨架就绪 · **等待 FE/Go 可跑 SHA** · 未自跑 · 全行 [ ]
+状态：FE Soft† 自跑完 · I-G1 API PASS† · **不交 I-P1**（IQ1-3/5 红）

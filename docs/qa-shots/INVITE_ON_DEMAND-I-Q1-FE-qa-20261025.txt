@@ -1,0 +1,112 @@
+INVITE_ON_DEMAND · I-Q1 FE Soft† 纪要（computerUse @b0a4d3d）
+时间：2026-10-25 11:13 Asia/Shanghai
+判定：**Soft†**（FE 非全绿 PASS†；Go I-G1 另见 IG1-api 纪要）
+================================================================
+基线
+  FE sha：b0a4d3de5b95d9f8671e03d527f04f2a66e3be93
+         fix(fe): INVITE_ON_DEMAND I-R1～R4 按需入场码
+  Go sha（旁证/同仓）：a034a152a1fd171ef3c97a816a7c7ba392e39d90（I-G1；本文件不代验 API）
+  债：docs/NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md
+  清单：docs/qa-shots/INVITE_ON_DEMAND-I-Q1-checklist-20261025.txt
+  证据源：FE computerUse 自测（shots 命名 IQ1-* / INVITE_ON_DEMAND-I-Q1-*）
+  禁主人：本 FE 跑用狗粮/箱测账号路径（非主人）
+
+Shot 索引（computerUse 落箱；命名对齐）
+  INVITE_ON_DEMAND-I-Q1-create-no-wall-20261025.png   ≈ IQ1-NoWall-20261025
+  INVITE_ON_DEMAND-I-Q1-one-code-20261025.png
+  INVITE_ON_DEMAND-I-Q1-list-labels-20261025.png
+  INVITE_ON_DEMAND-I-Q1-crewpack-confirm-20261025.png
+  （注：QA 写纪要时 png 可能已被他 agent 清出 working tree；判决以 computerUse 当场结果为准）
+
+----------------------------------------------------------------
+逐行（IQ1-1～IQ1-6）
+----------------------------------------------------------------
+| 行 | 判定 | 摘要 |
+| --- | --- | --- |
+| IQ1-1 | PASS† | 建队无墙：不自动 setCrewPackOpen / 不 auto issueCrewPack；无 ≈模板空席数 ymt_ 墙 |
+| IQ1-2 | PASS† | 显式发一把 → 仅 1 枚；caveat：toast 露脏 slug team:…:wiki；toast 席尾 ≠ 列表人话 |
+| IQ1-3 | FAIL | 列表新人话失败 + toast/tooltip 脏串（详见复现） |
+| IQ1-4 | PARTIAL | 复用/吊销后再发 dialog OK；ymk Lookup UI 尚未接（等 I-G1 entry） |
+| IQ1-5 | FAIL | 活跃席「入场链接」仍 mint 成功（守卫绕过）；占用人未 displace 但码已签 |
+| IQ1-6 | PASS† | 全班包二级 + 勾选空席确认后才签 |
+
+IQ1-7 Forbidden 主人 tester：本 FE Soft† 跑未用主人账号作 tester → 记 PASS†（纪律）
+IQ1-8 纪要+箱截：本文件 + Soft†（非全绿）→ 未交 I-P1
+
+----------------------------------------------------------------
+IQ1-3 FAIL 复现路径（交 React）
+----------------------------------------------------------------
+团队：IQ1-OnDemand-20261025
+  team id：ed8191600070ebff42b1b8b03ff7945a
+席：知识库（短 slug 应为 wiki）
+
+控件 / 露点：
+  1) 席卡按钮「入场链接」点击后的 **toast**
+  2) 同一按钮的 **tooltip**（复制入场链接 · 带席位 ${roleCtx.slug}）
+脏串例（实得）：
+  team:ed8191600070ebff42b1b8b03ff7945a:wiki
+列表侧：
+  - 新建码分组显示「未命名席」而非「知识库」
+  - 列表本身未直接渲染 uuid:slug（I-R3 seatGroupLabel 脏键→未命名席 生效）
+  - 但人话应对上席表 display_name=知识库；对不上 → 未命名席（因 role_hint/seat_slug 被写成脏串，席表 role_slug=wiki 匹配失败）
+旁证（API List @live postgres，写纪要时）：
+  status=active | label=未命名席 | role_hint=team:ed819160…:wiki | seat_slug=同脏串 | code_tail=7fcd
+
+根因口径（源码 @b0a4d3d，非猜）：
+  - 席卡 roleCtx.slug = role.slug；bot_roles.slug 可为 team:{teamId}:{short}
+  - toast：已复制入场链接（末四 ·tail · 席 ${role}）直接拼 roleCtx.slug
+  - tooltip：带席位 ${roleCtx.slug}
+  - mint 把脏 slug 写入 role_hint/seat_slug → List 对不上短 slug 席表 →「未命名席」
+  - IssuedInvitesPanel 列表分组已禁裸渲染脏串，但未把脏键解析回「知识库」
+
+修复建议（React，本纪要不改码）：
+  - toast / tooltip / mint 一律走短 slug（cleanSeatSlug）+ humanSeatLabel（display_name）
+  - 禁把 team:uuid:slug 写入 role_hint/seat_slug 与用户可见文案
+
+----------------------------------------------------------------
+IQ1-5 FAIL 复现路径（交 React）
+----------------------------------------------------------------
+队：SQ1-UI-Team（名 SQ1-UI-Team-202610250906）
+  team id：ea918de1ac4d8116ed69651116a4acb9
+席：后端 · 状态「在席 · Grok Bot」（occupancy/status=active）
+
+入口：席卡「入场链接」
+实得：
+  - 仍成功 POST …/invites（toast 末四 ·2bcb）
+  - toast/slug 侧见脏串形 team:…:backend
+  - 占用人未变（未 displace）——但 **mint 成功**（违反「活跃席禁 mint」）
+
+根因口径（源码 @b0a4d3d）：
+  issueInvitePlain 守卫：
+    teamSeats.find((s) => (s.role_slug || '').trim() === slug)
+  仅当 role_slug === slug；席表短 slug=backend，roleCtx.slug 脏=team:{id}:backend
+  → find 失败 → 跳过 active 禁 mint → 继续 mintInvitePlain
+  （Go I-G1 @a034a15 对短 seat_slug=backend 已回 409；本 FAIL 是 FE 脏 slug 绕过 + computerUse 当场结果）
+
+修复建议（React）：
+  - 守卫与 mint 前 cleanSeatSlug(roleCtx.slug) / resolveSeatCleanSlug(seat, slug)
+  - 比较短 slug；active 则 warning 返回 null，禁 POST
+
+----------------------------------------------------------------
+IQ1-4 PARTIAL
+----------------------------------------------------------------
+  复用 dialog（有有效码 → 复制现有 / 吊销后再发 / 取消）OK
+  ymk Lookup UI：席卡侧尚无接 GET …/teams/{id}/entry；记 PARTIAL（等接 I-G1 Lookup）
+
+----------------------------------------------------------------
+Defects → React（阻塞全绿）
+----------------------------------------------------------------
+  D1 IQ1-3：toast + tooltip 渲染脏 team:uuid:slug；列表分组「未命名席」未解析为「知识库」
+  D2 IQ1-5：active 守卫只比 role_slug===slug，脏 slug 绕过 → 入场链接仍 mint
+  D3 IQ1-2 caveat / 同根：toast 席尾用脏 slug（与列表人话不一致）
+  D4 IQ1-4：ymk Lookup UI 未接（非阻塞 I-R1～R4 主刀，但挡状态机 UI 全绿）
+
+----------------------------------------------------------------
+Verdict
+----------------------------------------------------------------
+**Soft†** @ FE b0a4d3d
+  PASS†：IQ1-1 · IQ1-2（caveat）· IQ1-6 · IQ1-7
+  PARTIAL：IQ1-4
+  FAIL：IQ1-3 · IQ1-5
+  非全绿 → **不交 I-P1**（本清单不改 I-P1）
+One-line → React+产品+总指挥：I-Q1 FE Soft† @b0a4d3d；建队无墙/一码/全班确认 PASS†；IQ1-3 toast+tooltip 脏串+列表「未命名席」≠知识库 FAIL；IQ1-5 活跃席入场链接脏 slug 绕过守卫仍 mint FAIL；IQ1-4 复用 OK / Lookup UI 未接 PARTIAL。
