@@ -690,7 +690,15 @@ func ProjectTeamRoster(raw json.RawMessage, opts ViewOpts) ([]map[string]any, er
 				}
 			}
 		}
+		// SEAT_PANEL_UX：stopped|left|departed 无活跃绑 → refillable（停工可补），禁与 empty（空闲/未进席）混
+		st := strings.ToLower(strings.TrimSpace(strField(m, "status")))
+		if claimState == "empty" && (st == "stopped" || st == "left" || st == "departed") {
+			claimState = "refillable"
+		}
 		item["claim"] = claimState
+		if st != "" {
+			item["status"] = st
+		}
 		if holder != "" {
 			item["holder"] = holder
 		}
@@ -708,7 +716,37 @@ func ProjectTeamRoster(raw json.RawMessage, opts ViewOpts) ([]map[string]any, er
 	return out, nil
 }
 
+// RosterOccupancyLabel 人话三态：占用中·名 / 空闲/未进席 / 停工可补（禁可补≈空闲）。
+func RosterOccupancyLabel(claimState, holder string) string {
+	switch strings.ToLower(strings.TrimSpace(claimState)) {
+	case "claimed", "bound", "active":
+		h := strings.TrimSpace(holder)
+		if h != "" && h != "claimed" && h != "bound" {
+			return "占用中·" + h
+		}
+		return "占用中"
+	case "refillable", "stopped", "left", "departed":
+		return "停工可补"
+	default: // empty / open / 从未占用
+		return "空闲/未进席"
+	}
+}
+
+// FormatUnboundBotsHint 诚实条：WS 有 Bot 成员却未占本队任一席（禁画成占用中）。
+func FormatUnboundBotsHint(names []string) string {
+	n := len(names)
+	if n == 0 {
+		return ""
+	}
+	label := strings.Join(names, "、")
+	if n == 1 {
+		return fmt.Sprintf("提示：本工作区有 1 个 Bot 尚未占本队席（%s）\n", label)
+	}
+	return fmt.Sprintf("提示：本工作区有 %d 个 Bot 尚未占本队席（%s）\n", n, label)
+}
+
 // FormatTeamRosterText 班底表（YM 风格瘦输出，无默认 UUID）。
+// 第三列为人话占用态（占用中·名 / 空闲/未进席 / 停工可补）；机器态仍在投影 claim 字段。
 func FormatTeamRosterText(items []map[string]any) string {
 	if len(items) == 0 {
 		return "(空班底)\n"
@@ -716,14 +754,13 @@ func FormatTeamRosterText(items []map[string]any) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "seats=%d\n", len(items))
 	for _, it := range items {
+		claim := strField(it, "claim")
+		holder := strField(it, "holder")
 		fmt.Fprintf(&b, "%s\t%s\t%s",
 			dash(strField(it, "slug")),
 			dash(strField(it, "name")),
-			dash(strField(it, "claim")),
+			RosterOccupancyLabel(claim, holder),
 		)
-		if h := strField(it, "holder"); h != "" {
-			fmt.Fprintf(&b, "\t%s", h)
-		}
 		if p := strField(it, "playbook_ref"); p != "" {
 			fmt.Fprintf(&b, "\t%s", p)
 		} else if w := strField(it, "playbook_warn"); w != "" {
@@ -1016,7 +1053,7 @@ func ClassifySeatOccupancy(seat map[string]any, myMemberID string) string {
 		return "empty"
 	}
 	st := strings.ToLower(strings.TrimSpace(strField(seat, "status")))
-	if st == "stopped" || st == "left" {
+	if st == "stopped" || st == "left" || st == "departed" {
 		return st
 	}
 	myMemberID = strings.TrimSpace(myMemberID)

@@ -50,6 +50,55 @@ func TestProjectTeamRosterSlimNoUUID(t *testing.T) {
 	}
 }
 
+func TestProjectTeamRosterThreeStateOccupancy(t *testing.T) {
+	raw := json.RawMessage(`{"roster":[
+		{"role_slug":"frontend","display_name":"前端","status":"active","bound_member_id":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","bound_display_name":"BotFE","claim":{"member_id":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","claimed_at":"2026-10-24T01:00:00Z"}},
+		{"role_slug":"backend","display_name":"后端","status":"open","claim":null},
+		{"role_slug":"pm","display_name":"产品","status":"stopped","claim":null},
+		{"role_slug":"qa","display_name":"QA","status":"left","claim":null},
+		{"role_slug":"wiki","display_name":"知识库","status":"departed","claim":null}
+	]}`)
+	items, err := ProjectTeamRoster(raw, ViewOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 5 {
+		t.Fatalf("len=%d", len(items))
+	}
+	if items[0]["claim"] != "claimed" || items[0]["holder"] != "BotFE" {
+		t.Fatalf("active %#v", items[0])
+	}
+	if items[1]["claim"] != "empty" {
+		t.Fatalf("open never-bound %#v", items[1])
+	}
+	for i, want := range []string{"refillable", "refillable", "refillable"} {
+		if items[i+2]["claim"] != want {
+			t.Fatalf("seat%d claim=%v want %s", i+2, items[i+2]["claim"], want)
+		}
+	}
+	txt := FormatTeamRosterText(items)
+	if !strings.Contains(txt, "占用中·BotFE") {
+		t.Fatalf("missing active label: %s", txt)
+	}
+	if !strings.Contains(txt, "空闲/未进席") {
+		t.Fatalf("missing empty label: %s", txt)
+	}
+	if !strings.Contains(txt, "停工可补") {
+		t.Fatalf("missing refillable label: %s", txt)
+	}
+	// 禁：停工席被说成 empty/空闲 字面机态
+	if strings.Contains(txt, "\tempty\t") || strings.Contains(txt, "\tclaimed\t") {
+		t.Fatalf("raw machine claim leaked into human text: %s", txt)
+	}
+	hint := FormatUnboundBotsHint([]string{"产品体验", "QA"})
+	if !strings.Contains(hint, "2 个 Bot 尚未占本队席") || !strings.Contains(hint, "产品体验") {
+		t.Fatalf("hint=%q", hint)
+	}
+	if FormatUnboundBotsHint(nil) != "" {
+		t.Fatal("empty hint")
+	}
+}
+
 func TestProjectTeamRosterIdempotentShape(t *testing.T) {
 	// 两次 ensure 同形：同 slug 不双建（投影侧用 slug 去重检查辅助）
 	raw := json.RawMessage(`{"seats":[
