@@ -346,6 +346,43 @@ export async function createTeamInvite(
   return res
 }
 
+/** I-G1 / IQ1-4：查用入场凭证（优先未吊销 ymk_，否则 active ymt_）；无明文 */
+export type TeamEntryLookup = {
+  kind: 'ymk_' | 'ymt_'
+  key_id?: string
+  token_prefix?: string
+  token_tail?: string
+  member_id?: string
+  display_name?: string
+  invite_id?: string
+  code_tail?: string
+  status?: string
+  seat_slug?: string
+}
+
+/**
+ * GET …/teams/{teamId}/entry?seat_slug= | ?role_slug=（二选一必填）
+ * 调用方应传 cleanSeatSlug 后的短 slug；都无 → 本地 400；服务无凭证 → 404。
+ */
+export function lookupTeamEntry(
+  workspaceId: string,
+  teamId: string,
+  query: { seat_slug?: string; role_slug?: string },
+) {
+  const params = new URLSearchParams()
+  const seat = (query.seat_slug || '').trim()
+  const role = (query.role_slug || '').trim()
+  if (seat) params.set('seat_slug', seat)
+  if (role) params.set('role_slug', role)
+  if (!seat && !role) {
+    return Promise.reject(new ApiError('须指定 seat_slug 或 role_slug', 'bad_request', 400))
+  }
+  return api<{ entry: TeamEntryLookup }>(
+    `${ws(workspaceId)}/teams/${teamId}/entry?${params.toString()}`,
+    { skipToast: true } as ApiRequestInit,
+  )
+}
+
 export function listTeamInvites(workspaceId: string, teamId: string) {
   return api<{ invites: TeamInvite[] }>(`${ws(workspaceId)}/teams/${teamId}/invites`, {
     skipToast: true,

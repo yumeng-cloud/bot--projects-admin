@@ -50,6 +50,7 @@ import {
   isSeatConflict,
   isSeatLeaveEffectiveSuccess,
   listTeamInvites,
+  lookupTeamEntry,
   MEMBER_REMOVED_EVENT,
   revokeTeamInvite,
   seatOccupancy,
@@ -58,6 +59,7 @@ import {
   unbindSeat,
   type MemberRemovedDetail,
   type Team,
+  type TeamEntryLookup,
   type TeamInvite,
   type TeamSeat,
 } from '../../../api/teams'
@@ -963,9 +965,10 @@ export default function BotsRosterPage() {
   }
 
   /**
-   * INVITE_ON_DEMAND I-R2 + IQ1-5：
-   * - 在席（active）禁 mint 顶替；守卫与席卡占用同源
-   * - 该席已有有效码 → 复用复制（本会话明文）或「吊销后再发」；禁静默加堆
+   * INVITE_ON_DEMAND I-R2 + IQ1-4/5：
+   * - 有 slug → 先 Lookup（GET …/entry）再决定：ymk_ 查用 / ymt_ 复用 / 404 再 Create
+   * - 在席（active）禁 mint 顶替（IQ1-5）；Lookup 回 ymk_ 走「有 K 用」展示
+   * - Lookup 网络/其它错：友好 error，禁静默 Create 堆码
    * - 签发尽量带干净短 slug（wiki），勿写 team:uuid:…
    */
   const issueInvitePlain = async (roleCtx?: InviteRoleCtx): Promise<IssueInviteOutcome> => {
@@ -975,24 +978,18 @@ export default function BotsRosterPage() {
     }
 
     const gate = isActiveForInviteCtx(roleCtx)
-    if (gate.active) {
-      message.warning(
-        `席「${gate.name}」已有人在席，禁止签发顶替入场码。请用新人新席，或走停工席补位。`,
-      )
-      return { outcome: 'aborted' }
-    }
-
     const seat = gate.seat || resolveSeatForInviteCtx(roleCtx)
     const slug =
       resolveSeatCleanSlug(seat, roleCtx?.slug) ||
       cleanSeatSlug(roleCtx?.slug) ||
       ''
+    const seatLabel = inviteCtxHumanName(roleCtx, seat)
 
-    const existing = findActiveInviteForSeat(slug)
-    if (existing) {
-      const tail = inviteTail(existing)
-      const cached = invitePlainByIdRef.current.get(existing.id) || null
-      const seatLabel = inviteCtxHumanName(roleCtx, seat)
+    const promptYmtReuse = async (
+      inviteId: string,
+      tail: string,
+    ): Promise<IssueInviteOutcome> => {
+      const cached = invitePlainByIdRef.current.get(inviteId) || null
       const choice = await new Promise<'reuse' | 'replace' | 'cancel'>((resolve) => {
         let settled = false
         const finish = (v: 'reuse' | 'replace' | 'cancel') => {
@@ -1063,18 +1060,24 @@ export default function BotsRosterPage() {
         }
         return { outcome: 'plain', code: cached }
       }
-      // replace：先吊销再发
+      // replace：在席仍禁 mint
+      if (gate.active) {
+        message.warning(
+          `席「${seatLabel}」已有人在席，禁止签发顶替入场码。请用新人新席，或走停工席补位。`,
+        )
+        return { outcome: 'aborted' }
+      }
       try {
         const { invite: revoked } = await revokeTeamInvite(
           wsId,
           teamId,
-          existing.id,
+          inviteId,
           crypto.randomUUID(),
         )
-        invitePlainByIdRef.current.delete(existing.id)
+        invitePlainByIdRef.current.delete(inviteId)
         setIssuedInvites((prev) =>
           prev.map((x) =>
-            x.id === existing.id
+            x.id === inviteId
               ? {
                   ...x,
                   ...revoked,
@@ -1095,6 +1098,99 @@ export default function BotsRosterPage() {
       }
       const plain = await mintInvitePlain(slug)
       return plain ? { outcome: 'plain', code: plain } : { outcome: 'minted-opaque' }
+    }
+
+    const showYmkLookup = (entry: TeamEntryLookup) => {
+      const rawDn = (entry.display_name || '').trim()
+      const actor =
+        rawDn && !/team:|[0-9a-f]{8}-[0-9a-f]{4}/i.test(rawDn) ? rawDn : seatLabel
+      const tail =
+        (entry.token_tail || '').trim() ||
+        (entry.token_prefix || '').replace(/^ymk_/i, '').slice(-4) ||
+        '····'
+      const prefixHint = (entry.token_prefix || '').trim()
+        ? entry.token_prefix
+        : `ymk_····${tail}`
+      Modal.info({
+        title: '已有身份钥匙可查用',
+        icon: null,
+        content: (
+          <div>
+            <Typography.Paragraph style={{ marginBottom: 8 }}>
+              席「{seatLabel}」已有未吊销平台钥（演员 {actor} · 末四 ·{tail}
+              {prefixHint ? ` · ${prefixHint}` : ''}）。
+              已有身份钥匙可查用，勿再堆入场码。
+            </Typography.Paragraph>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              平台钥无明文可复制属预期；勿再 CreateInvite 堆码。若须换钥，请走设置里显式重签。
+            </Typography.Text>
+          </div>
+        ),
+        okText: '知道了',
+      })
+    }
+
+    // IQ1-4：有干净 slug 时先 Lookup（服务端真相）
+    if (slug) {
+      try {
+        const { entry } = await lookupTeamEntry(wsId, teamId, { seat_slug: slug })
+        if (entry?.kind === 'ymk_') {
+          showYmkLookup(entry)
+          return { outcome: 'aborted' }
+        }
+        if (entry?.kind === 'ymt_' && entry.invite_id) {
+          const tail = (entry.code_tail || '').trim() || '····'
+          setIssuedInvites((prev) => {
+            if (prev.some((x) => x.id === entry.invite_id)) return prev
+            return [
+              {
+                id: entry.invite_id!,
+                team_id: teamId,
+                workspace_id: wsId,
+                code_tail: tail,
+                code_prefix: `ymt_····${tail}`,
+                status: (entry.status as TeamInvite['status']) || 'active',
+                seat_slug: cleanSeatSlug(entry.seat_slug) || slug || null,
+                role_hint: cleanSeatSlug(entry.seat_slug) || slug || null,
+              },
+              ...prev,
+            ]
+          })
+          return promptYmtReuse(entry.invite_id, tail)
+        }
+      } catch (e: unknown) {
+        if (e instanceof ApiError && e.status === 404) {
+          // 无凭证 → 下落 mint（仍守在席禁 mint）
+        } else if (e instanceof ApiError && e.status === 400) {
+          message.error(e.message || '查用入场凭证参数无效')
+          return { outcome: 'aborted' }
+        } else if (isInviteServiceMissing(e)) {
+          // Lookup 未开通时降级本地列表 / mint，勿挡主路径
+        } else {
+          message.error(
+            e instanceof ApiError
+              ? e.message || '查用入场凭证失败'
+              : e instanceof Error
+                ? e.message
+                : '查用入场凭证失败',
+          )
+          return { outcome: 'aborted' }
+        }
+      }
+    }
+
+    // IQ1-5：在席禁 mint（Lookup 未命中 ymk_/ymt_ 之后）
+    if (gate.active) {
+      message.warning(
+        `席「${seatLabel}」已有人在席，禁止签发顶替入场码。请用新人新席，或走停工席补位。`,
+      )
+      return { outcome: 'aborted' }
+    }
+
+    // 无 slug 或 Lookup 404/未开通：本地有效码兜底
+    const existing = findActiveInviteForSeat(slug)
+    if (existing) {
+      return promptYmtReuse(existing.id, inviteTail(existing))
     }
 
     const plain = await mintInvitePlain(slug)
@@ -1121,13 +1217,8 @@ export default function BotsRosterPage() {
   const onCopyJoinLink = async (roleCtx?: InviteRoleCtx) => {
     setInviteBusy(true)
     try {
+      // IQ1-4/5：在席/查用分支由 issueInvitePlain（Lookup→ymk_/ymt_/404）统一处理
       const gate = isActiveForInviteCtx(roleCtx)
-      if (roleCtx && gate.active) {
-        message.warning(
-          `席「${gate.name}」已有人在席，禁止签发顶替入场码。请用新人新席，或走停工席补位。`,
-        )
-        return
-      }
       const result = await issueInvitePlain(roleCtx)
       if (result.outcome === 'aborted') return
       if (result.outcome === 'minted-opaque') {
@@ -1162,13 +1253,8 @@ export default function BotsRosterPage() {
   const onCopyBotPrompt = async (roleCtx?: InviteRoleCtx) => {
     setInviteBusy(true)
     try {
+      // IQ1-4/5：在席/查用分支由 issueInvitePlain（Lookup→ymk_/ymt_/404）统一处理
       const gate = isActiveForInviteCtx(roleCtx)
-      if (roleCtx && gate.active) {
-        message.warning(
-          `席「${gate.name}」已有人在席，禁止签发顶替入场码。请用新人新席，或走停工席补位。`,
-        )
-        return
-      }
       const result = await issueInvitePlain(roleCtx)
       if (result.outcome === 'aborted') return
       if (result.outcome === 'minted-opaque') {
@@ -1207,13 +1293,8 @@ export default function BotsRosterPage() {
   const onCopyBareInvite = async (roleCtx?: InviteRoleCtx) => {
     setInviteBusy(true)
     try {
+      // IQ1-4/5：在席/查用分支由 issueInvitePlain（Lookup→ymk_/ymt_/404）统一处理
       const gate = isActiveForInviteCtx(roleCtx)
-      if (roleCtx && gate.active) {
-        message.warning(
-          `席「${gate.name}」已有人在席，禁止签发顶替入场码。请用新人新席，或走停工席补位。`,
-        )
-        return
-      }
       const result = await issueInvitePlain(roleCtx)
       if (result.outcome === 'aborted') return
       if (result.outcome === 'minted-opaque') {
