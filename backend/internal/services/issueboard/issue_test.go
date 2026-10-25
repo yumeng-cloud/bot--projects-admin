@@ -1620,3 +1620,78 @@ func TestBatchStatusIssues_EmptyIDsAndCrossWS(t *testing.T) {
 		t.Fatalf("cross-ws must not mutate, got %s", got.Status)
 	}
 }
+
+// X-I1：跨仓 Issue Get/List 契约 — 错仓 Get → 404；List 不含他仓 id（同 key_prefix YM 撞脸仍 id 不同）。
+func TestXI1_CrossWorkspaceGet404AndListIsolated(t *testing.T) {
+	svc, ws1, pid1, tid1 := setup(t)
+
+	ws2 := idgen.New()
+	if _, err := svc.DB.Exec(`INSERT INTO workspaces (id, name, slug) VALUES (?,?,?)`, ws2, "T2", "t2-"+ws2[:8]); err != nil {
+		t.Fatal(err)
+	}
+	tid2 := idgen.New()
+	if _, err := svc.DB.Exec(`INSERT INTO teams (id, workspace_id, name, slug) VALUES (?,?,?,?)`,
+		tid2, ws2, "Team2", "team-"+tid2[:8]); err != nil {
+		t.Fatal(err)
+	}
+	proj2, err := svc.CreateProject(ws2, issueboard.CreateProjectInput{Name: "P2", KeyPrefix: "YM"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// WS1 also uses a YM-prefix project so identifiers can collide while ids differ.
+	pid1YM, err := svc.CreateProject(ws1, issueboard.CreateProjectInput{Name: "P1YM", KeyPrefix: "YM"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	iss1, err := svc.CreateIssue(ws1, issueboard.CreateIssueInput{
+		ProjectID: pid1YM.ID, TeamID: tid1, Title: "ws1-secret", ActorKind: "human",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	iss2, err := svc.CreateIssue(ws2, issueboard.CreateIssueInput{
+		ProjectID: proj2.ID, TeamID: tid2, Title: "ws2-own", ActorKind: "human",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = pid1 // setup project unused beyond scaffolding
+
+	_, err = svc.GetIssue(ws2, iss1.ID)
+	ae, ok := err.(*apperr.AppError)
+	if !ok || ae.StatusCode != 404 {
+		t.Fatalf("X-I1: GetIssue cross-ws want 404, got %v", err)
+	}
+	_, err = svc.GetIssueInTeam(ws2, iss1.ID, tid2)
+	ae, ok = err.(*apperr.AppError)
+	if !ok || ae.StatusCode != 404 {
+		t.Fatalf("X-I1: GetIssueInTeam cross-ws want 404, got %v", err)
+	}
+
+	list2, err := svc.ListIssues(ws2, issueboard.ListIssuesFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, iss := range list2 {
+		if iss.ID == iss1.ID {
+			t.Fatalf("X-I1: ListIssues(WS2) leaked WS1 issue id %s", iss1.ID)
+		}
+	}
+	foundOwn := false
+	for _, iss := range list2 {
+		if iss.ID == iss2.ID {
+			foundOwn = true
+		}
+	}
+	if !foundOwn {
+		t.Fatal("X-I1: ListIssues(WS2) missing own issue")
+	}
+	if iss1.ID == iss2.ID {
+		t.Fatal("X-I1: issue ids must differ across workspaces")
+	}
+	// Same key_prefix YM may collide on identifier face; isolation is by id + workspace_id.
+	if !strings.HasPrefix(iss1.Identifier, "YM-") || !strings.HasPrefix(iss2.Identifier, "YM-") {
+		t.Fatalf("X-I1: want YM- prefix collision face, got %q / %q", iss1.Identifier, iss2.Identifier)
+	}
+}
