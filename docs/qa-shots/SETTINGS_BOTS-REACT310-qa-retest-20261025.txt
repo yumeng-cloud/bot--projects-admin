@@ -1,0 +1,19 @@
+SETTINGS_BOTS · React #310 复测 PASS† 2026-10-25 09:55 CST
+================================================================
+修：ba10158 fix(frontend): move ymtGroups useMemo before early return
+证：IssuedInvitesPanel — 全部 useMemo 在 `if (total === 0) return null` 之前；静态扫描 early return 后 0× useMemo。
+
+自点（Vite :5175 · seed admin · 本地）
+- empty→has：QA B1 UI Empty 建队 QA310-hooks → 全班入场包弹出「已签发 5 · 有效 5」；切 QA310-switch 同路径。席卡在，无白屏。
+- has→empty：QA310-hooks 逐条吊销 有效 5→…→「暂无有效」。席卡在。面板因吊销行仍占 total 未卸载（预期）；真·total=0 卸载路径由源码钩子恒定覆盖。
+- F5：育蒙科技席页（已签发 26）与 QA310-switch（已签发 10）均无 #310。
+
+Console：无 React #310 / hooks 文案；仅 favicon 404 + antd deprecation 黄字。
+
+截图：
+- docs/qa-shots/settings-bots-R310-retest-seats.png（席页）
+- docs/qa-shots/settings-bots-R310-retest-console.webp（签发后控制台）
+- docs/qa-shots/settings-bots-R310-retest-revoked.webp（吊销后）
+
+结论：PASS† @ba10158。产线需跟部署（用户机 bot.api.sn.cn 仍可能是旧 bundle，至 CDN/构建含 ba10158）。
+侧效：测造团队 QA310-hooks / QA310-switch；SQ1-UI-Team 吊销 1 码（有效 22→21）。
