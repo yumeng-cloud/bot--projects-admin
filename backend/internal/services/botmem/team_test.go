@@ -1,6 +1,7 @@
 package botmem_test
 
 import (
+	"database/sql"
 	"strings"
 	"testing"
 
@@ -433,7 +434,7 @@ func TestBindSeatLeftForceActive(t *testing.T) {
 	if !ok || ae.Code != "conflict" {
 		t.Fatalf("want conflict %#v", err)
 	}
-	left, err := svc.UnbindSeat(ws, team.ID, s1.ID, m1, false)
+	left, _, err := svc.UnbindSeat(ws, team.ID, s1.ID, m1, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -561,7 +562,7 @@ func TestBindSeatLeftForceWritesVisibleAudit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.UnbindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+	if _, _, err := svc.UnbindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
 		t.Fatal(err)
 	}
 	beforeAct := countForceBindActivities(t, svc, ws)
@@ -878,17 +879,18 @@ func TestUnbindSeatActiveAdminPath(t *testing.T) {
 	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
 		t.Fatal(err)
 	}
-	// 非 Admin 解他人 → 中文 Forbidden
-	_, err = svc.UnbindSeat(ws, team.ID, s1.ID, m2, false)
+	// 非 Admin 解他人存活占用 → U6 中文 Forbidden（含占用者显示名）
+	_, _, err = svc.UnbindSeat(ws, team.ID, s1.ID, m2, false)
 	if err == nil {
 		t.Fatal("expected forbidden")
 	}
 	ae, ok := err.(*apperr.AppError)
-	if !ok || ae.Code != "forbidden" || ae.Message != "只能解绑自己绑定的席位" {
-		t.Fatalf("want 中文 forbidden %#v", err)
+	wantMsg := "席位由「BotA」占用；请对方离席，或让管理员停工/离职解绑"
+	if !ok || ae.Code != "forbidden" || ae.Message != wantMsg {
+		t.Fatalf("want U6 forbidden %q, got %#v", wantMsg, err)
 	}
 	before := countActionActivities(t, svc, ws, "seat.unbind")
-	left, err := svc.UnbindSeat(ws, team.ID, s1.ID, m2, true) // Admin 代解
+	left, _, err := svc.UnbindSeat(ws, team.ID, s1.ID, m2, true) // Admin 代解
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -902,7 +904,7 @@ func TestUnbindSeatActiveAdminPath(t *testing.T) {
 		t.Fatal("want +1 seat.unbind activity")
 	}
 	// 幂等：已解绑再解 → OK、不追加审计
-	again, err := svc.UnbindSeat(ws, team.ID, s1.ID, m2, true)
+	again, _, err := svc.UnbindSeat(ws, team.ID, s1.ID, m2, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -993,7 +995,7 @@ func TestUnbindSeatWritesVisibleAudit(t *testing.T) {
 	beforeAct := countActionActivities(t, svc, ws, "seat.unbind")
 	beforeCmt := countBodyComments(t, svc, iss.ID, "%离职解绑%")
 
-	if _, err := svc.UnbindSeat(ws, team.ID, s1.ID, m2, true); err != nil {
+	if _, _, err := svc.UnbindSeat(ws, team.ID, s1.ID, m2, true); err != nil {
 		t.Fatal(err)
 	}
 	if countActionActivities(t, svc, ws, "seat.unbind") != beforeAct+1 {
@@ -1013,5 +1015,198 @@ func TestUnbindSeatWritesVisibleAudit(t *testing.T) {
 	}
 	if countBodyComments(t, svc, iss.ID, "%离职解绑%") != beforeCmt+1 {
 		t.Fatal("want Issue comment 人话审计")
+	}
+}
+
+// TestUG1CascadeUnbindOnMemberRemove U-G1：移除成员前级联清席→left + release claim + 审计。
+func TestUG1CascadeUnbindOnMemberRemove(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "UG1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "fe", Name: "前端", PlaybookRef: "bot-team-template@main:playbook/fe.md"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	if s1.BotRoleID == nil || *s1.BotRoleID == "" {
+		t.Fatal("seat missing bot_role_id")
+	}
+	roleID := *s1.BotRoleID
+	var claimMember string
+	err = svc.DB.QueryRow(`SELECT member_id FROM bot_role_claims WHERE role_id=? AND released_at IS NULL`, roleID).Scan(&claimMember)
+	if err != nil || claimMember != m1 {
+		t.Fatalf("want active claim by m1: member=%q err=%v", claimMember, err)
+	}
+	before := countActionActivities(t, svc, ws, "seat.unbind")
+	n, err := svc.CascadeUnbindSeatsForMember(ws, m1, m2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Fatalf("cascade n=%d want 1", n)
+	}
+	// 幂等 get：无 bound 的 UnbindSeat 返回当前席态
+	seat, _, err := svc.UnbindSeat(ws, team.ID, s1.ID, m2, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if seat.Status != "left" {
+		t.Fatalf("status=%s want left", seat.Status)
+	}
+	if seat.BoundMemberID != nil {
+		t.Fatalf("bound should clear: %+v", seat.BoundMemberID)
+	}
+	if countActionActivities(t, svc, ws, "seat.unbind") != before+1 {
+		t.Fatal("want +1 seat.unbind audit")
+	}
+	var still int
+	_ = svc.DB.QueryRow(`SELECT COUNT(*) FROM bot_role_claims WHERE role_id=? AND released_at IS NULL`, roleID).Scan(&still)
+	if still != 0 {
+		t.Fatalf("claim should be released, still=%d", still)
+	}
+	// 再删成员行：席应仍无脏绑（级联已清；FK SET NULL 兜底）
+	if _, err := svc.DB.Exec(`DELETE FROM members WHERE id=? AND workspace_id=?`, m1, ws); err != nil {
+		t.Fatal(err)
+	}
+	var bound sql.NullString
+	if err := svc.DB.QueryRow(`SELECT bound_member_id FROM team_seats WHERE id=?`, s1.ID).Scan(&bound); err != nil {
+		t.Fatal(err)
+	}
+	if bound.Valid && bound.String != "" {
+		t.Fatalf("after DELETE members still dirty bound: %q", bound.String)
+	}
+}
+
+// TestUG2StaleBoundUnbindClears U-G2：脏绑（bound→已删 member）unbind 成功+人话。
+func TestUG2StaleBoundUnbindClears(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "UG2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "be", Name: "后端", PlaybookRef: "bot-team-template@main:playbook/be.md"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	// 模拟历史脏绑：关 FK 后删成员，bound 残留指向已删 id
+	if _, err := svc.DB.Exec(`PRAGMA foreign_keys=OFF`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.DB.Exec(`DELETE FROM members WHERE id=?`, m1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.DB.Exec(`PRAGMA foreign_keys=ON`); err != nil {
+		t.Fatal(err)
+	}
+	var bound string
+	if err := svc.DB.QueryRow(`SELECT bound_member_id FROM team_seats WHERE id=?`, s1.ID).Scan(&bound); err != nil {
+		t.Fatal(err)
+	}
+	if bound != m1 {
+		t.Fatalf("dirty bind not preserved: bound=%q want %s", bound, m1)
+	}
+	// 非 Admin、非原绑人（m2）也可清脏绑；禁再抛「只能解绑自己」
+	left, msg, err := svc.UnbindSeat(ws, team.ID, s1.ID, m2, false)
+	if err != nil {
+		t.Fatalf("stale unbind: %v", err)
+	}
+	if msg != botmem.UnbindSeatMsgStaleBound {
+		t.Fatalf("msg=%q want %q", msg, botmem.UnbindSeatMsgStaleBound)
+	}
+	if left.Status != "left" {
+		t.Fatalf("status=%s want left", left.Status)
+	}
+	if left.BoundMemberID != nil {
+		t.Fatalf("bound should clear: %+v", left.BoundMemberID)
+	}
+	if strings.Contains(msg, "只能解绑自己") {
+		t.Fatal("must not reuse old forbidden copy")
+	}
+}
+
+// TestUG3AliveOccupantForbiddenMessage U-G3：他人存活占用 → 403 新人话含显示名。
+func TestUG3AliveOccupantForbiddenMessage(t *testing.T) {
+	svc, ws, m1, m2 := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "UG3"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "qa", Name: "QA", PlaybookRef: "bot-team-template@main:playbook/qa.md"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	_, msg, err := svc.UnbindSeat(ws, team.ID, s1.ID, m2, false)
+	if err == nil {
+		t.Fatal("expected forbidden")
+	}
+	if msg != "" {
+		t.Fatalf("msg should be empty on err, got %q", msg)
+	}
+	ae, ok := err.(*apperr.AppError)
+	want := "席位由「BotA」占用；请对方离席，或让管理员停工/离职解绑"
+	if !ok || ae.Code != "forbidden" || ae.Message != want {
+		t.Fatalf("want %q, got %#v", want, err)
+	}
+	if strings.Contains(ae.Message, "只能解绑自己") {
+		t.Fatal("old copy must be gone")
+	}
+}
+
+// TestUG4UnboundIdempotentUnbind U-G4：无 bound 幂等 unbind 回归。
+func TestUG4UnboundIdempotentUnbind(t *testing.T) {
+	svc, ws, m1, _ := setup(t)
+	team, err := svc.CreateTeam(ws, botmem.CreateTeamInput{Name: "UG4"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err := svc.CreateSeat(ws, team.ID, botmem.EnsureSeatInput{Slug: "ops", Name: "运维", PlaybookRef: "bot-team-template@main:playbook/ops.md"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 从未绑定
+	before := countActionActivities(t, svc, ws, "seat.unbind")
+	seat, msg, err := svc.UnbindSeat(ws, team.ID, s1.ID, m1, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if msg != "" {
+		t.Fatalf("idempotent msg should be empty, got %q", msg)
+	}
+	if seat.BoundMemberID != nil {
+		t.Fatalf("unexpected bound: %+v", seat.BoundMemberID)
+	}
+	if countActionActivities(t, svc, ws, "seat.unbind") != before {
+		t.Fatal("idempotent unbind must not write audit")
+	}
+	// bind → unbind → 再 unbind 幂等
+	if _, err := svc.BindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := svc.UnbindSeat(ws, team.ID, s1.ID, m1, false); err != nil {
+		t.Fatal(err)
+	}
+	after := countActionActivities(t, svc, ws, "seat.unbind")
+	again, msg2, err := svc.UnbindSeat(ws, team.ID, s1.ID, m1, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if msg2 != "" {
+		t.Fatalf("second idempotent msg=%q", msg2)
+	}
+	if again.Status != "left" {
+		t.Fatalf("status=%s", again.Status)
+	}
+	if countActionActivities(t, svc, ws, "seat.unbind") != after {
+		t.Fatal("second unbind must not duplicate audit")
 	}
 }

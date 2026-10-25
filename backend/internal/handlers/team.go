@@ -205,7 +205,8 @@ func (h *TeamHandler) UnbindSeat(w http.ResponseWriter, r *http.Request) {
 		MemberID string `json:"member_id"`
 	}
 	_ = middleware.DecodeJSON(r, &req)
-	asAdmin := middleware.MemberRole(r.Context()) == "admin"
+	// ServeMux teams 未挂 RequireWorkspaceMember：用 resolveMemberRole 回落查库（与 StopSeat 一致）
+	asAdmin := resolveMemberRole(h.DB, r, actor) == "admin"
 	memberID := req.MemberID
 	if memberID == "" {
 		memberID = actor
@@ -214,12 +215,16 @@ func (h *TeamHandler) UnbindSeat(w http.ResponseWriter, r *http.Request) {
 		memberID = actor
 		asAdmin = false
 	}
-	seat, err := h.Svc.UnbindSeat(ws, r.PathValue("teamID"), r.PathValue("seatID"), memberID, asAdmin)
+	seat, msg, err := h.Svc.UnbindSeat(ws, r.PathValue("teamID"), r.PathValue("seatID"), memberID, asAdmin)
 	if err != nil {
 		middleware.HandleError(w, err)
 		return
 	}
-	middleware.JSON(w, http.StatusOK, map[string]any{"seat": seat})
+	out := map[string]any{"seat": seat}
+	if msg != "" {
+		out["message"] = msg
+	}
+	middleware.JSON(w, http.StatusOK, out)
 }
 
 func (h *TeamHandler) CreateSeat(w http.ResponseWriter, r *http.Request) {

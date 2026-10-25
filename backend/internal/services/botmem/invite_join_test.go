@@ -191,7 +191,7 @@ func TestRedeemJoinV2NoAutoFillLeftStopped(t *testing.T) {
 				t.Fatal(err)
 			}
 		} else {
-			if _, err := svc.UnbindSeat(ws, tm.ID, seat.ID, m1, false); err != nil {
+			if _, _, err := svc.UnbindSeat(ws, tm.ID, seat.ID, m1, false); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -286,7 +286,7 @@ func TestRedeemJoinAnchoredRefillBindStopped(t *testing.T) {
 	if _, err := svc.BindSeat(ws, tm.ID, seat2.ID, m1, false); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.UnbindSeat(ws, tm.ID, seat2.ID, m1, false); err != nil {
+	if _, _, err := svc.UnbindSeat(ws, tm.ID, seat2.ID, m1, false); err != nil {
 		t.Fatal(err)
 	}
 	inv2, err := svc.CreateInvite(ws, tm.ID, botmem.CreateInviteInput{

@@ -600,39 +600,112 @@ func (s *Service) writeSeatForceIssueComments(workspaceID, authorID, fromMember,
 	}
 }
 
-func (s *Service) UnbindSeat(workspaceID, teamID, seatID, memberID string, asAdmin bool) (*models.TeamSeat, error) {
+// UnbindSeatMsgStaleBound U5：脏绑（bound 指向已删 member）清理成功时的人话。
+const UnbindSeatMsgStaleBound = "席位绑定已失效，已清理"
+
+func (s *Service) memberExists(workspaceID, memberID string) bool {
+	if memberID == "" {
+		return false
+	}
+	var one int
+	err := s.DB.QueryRow(`SELECT 1 FROM members WHERE id = ? AND workspace_id = ?`, memberID, workspaceID).Scan(&one)
+	return err == nil
+}
+
+// UnbindSeat 解绑席位 → status=left。
+// 返回 optionalMessage：脏绑清理时为人话 UnbindSeatMsgStaleBound，其余为空。
+// asAdmin：Admin 可代解他人存活占用；Bot/非 Admin 仅能解自己的绑（U2/U6）。
+func (s *Service) UnbindSeat(workspaceID, teamID, seatID, memberID string, asAdmin bool) (*models.TeamSeat, string, error) {
 	seat, err := s.getSeat(workspaceID, teamID, seatID)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	prevStatus := normalizeSeatStatus(seat.Status)
-	// 幂等：已无绑定（含已 left/stopped 清绑）直接返回
+	// U4/U-G4 幂等：已无绑定（含已 left/stopped 清绑）直接返回
 	if seat.BoundMemberID == nil || *seat.BoundMemberID == "" {
-		return seat, nil
-	}
-	if !asAdmin && memberID != "" && *seat.BoundMemberID != memberID {
-		return nil, apperr.Forbidden("只能解绑自己绑定的席位")
-	}
-	if !asAdmin && memberID == "" {
-		return nil, apperr.BadRequest("member_id 不能为空")
+		return seat, "", nil
 	}
 	bound := *seat.BoundMemberID
-	_, err = s.DB.Exec(`UPDATE team_seats SET bound_member_id = NULL, bound_at = NULL, status = ?, updated_at = ? WHERE id = ?`,
-		models.SeatStatusLeft, nowUTC(), seatID)
+	stale := !s.memberExists(workspaceID, bound)
+	// U5：脏绑（bound→已删 member）允许清成功，禁再抛「只能解绑自己」
+	if stale {
+		if err := s.clearSeatBinding(workspaceID, seat, bound, memberID, prevStatus, models.SeatStatusLeft, "seat.unbind"); err != nil {
+			return nil, "", err
+		}
+		out, err := s.getSeat(workspaceID, teamID, seatID)
+		return out, UnbindSeatMsgStaleBound, err
+	}
+	if !asAdmin && memberID != "" && bound != memberID {
+		name := s.memberDisplayName(workspaceID, bound)
+		if name == "" {
+			name = bound
+		}
+		return nil, "", apperr.Forbidden(fmt.Sprintf("席位由「%s」占用；请对方离席，或让管理员停工/离职解绑", name))
+	}
+	if !asAdmin && memberID == "" {
+		return nil, "", apperr.BadRequest("member_id 不能为空")
+	}
+	if err := s.clearSeatBinding(workspaceID, seat, bound, memberID, prevStatus, models.SeatStatusLeft, "seat.unbind"); err != nil {
+		return nil, "", err
+	}
+	out, err := s.getSeat(workspaceID, teamID, seatID)
+	return out, "", err
+}
+
+// clearSeatBinding 清绑 + 释 claim + 审计（unbind/级联共用）。
+func (s *Service) clearSeatBinding(workspaceID string, seat *models.TeamSeat, bound, actorID, prevStatus, toStatus, action string) error {
+	if seat == nil {
+		return nil
+	}
+	_, err := s.DB.Exec(`UPDATE team_seats SET bound_member_id = NULL, bound_at = NULL, status = ?, updated_at = ? WHERE id = ?`,
+		toStatus, nowUTC(), seat.ID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if seat.BotRoleID != nil && *seat.BotRoleID != "" {
-		if active, aerr := s.activeClaim(*seat.BotRoleID); aerr == nil && active != nil && active.MemberID == bound {
+		if active, aerr := s.activeClaim(*seat.BotRoleID); aerr == nil && active != nil && (bound == "" || active.MemberID == bound) {
 			_ = s.Release(workspaceID, *seat.BotRoleID)
 		}
 	}
-	actorID := memberID
 	if actorID == "" {
 		actorID = bound
 	}
-	s.writeSeatLeaveAudit(workspaceID, actorID, "seat.unbind", seat, bound, prevStatus, models.SeatStatusLeft)
-	return s.getSeat(workspaceID, teamID, seatID)
+	s.writeSeatLeaveAudit(workspaceID, actorID, action, seat, bound, prevStatus, toStatus)
+	return nil
+}
+
+// CascadeUnbindSeatsForMember U-G1：Admin 移除成员前，将该 member 占用的席清绑→left + release claim + 审计。
+// 返回清理席位数。与随后 DELETE members 构成等价原子（先清席再删行；FK SET NULL 为兜底）。
+func (s *Service) CascadeUnbindSeatsForMember(workspaceID, memberID, actorID string) (int, error) {
+	if memberID == "" {
+		return 0, nil
+	}
+	rows, err := s.DB.Query(`SELECT id, team_id FROM team_seats WHERE workspace_id = ? AND bound_member_id = ?`,
+		workspaceID, memberID)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	type seatRef struct{ id, teamID string }
+	var refs []seatRef
+	for rows.Next() {
+		var r seatRef
+		if err := rows.Scan(&r.id, &r.teamID); err != nil {
+			return 0, err
+		}
+		refs = append(refs, r)
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	n := 0
+	for _, r := range refs {
+		if _, _, err := s.UnbindSeat(workspaceID, r.teamID, r.id, actorID, true); err != nil {
+			return n, err
+		}
+		n++
+	}
+	return n, nil
 }
 
 // CreateSeat 加新席（G2）；同 team+slug 幂等返回原席。

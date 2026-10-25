@@ -9,6 +9,7 @@ import (
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/middleware"
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/pkg/apperr"
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/pkg/idgen"
+	"github.com/yumeng-tech/ai-collab-board/backend/internal/services/botmem"
 )
 
 type MemberHandler struct {
@@ -184,7 +185,8 @@ func (h *MemberHandler) Remove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	mid := r.PathValue("memberID")
-	if mid == middleware.MemberID(r.Context()) {
+	actor := middleware.MemberID(r.Context())
+	if mid == actor {
 		middleware.HandleError(w, apperr.BadRequest("不能移除自己"))
 		return
 	}
@@ -199,6 +201,12 @@ func (h *MemberHandler) Remove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := guardLastAdmin(h.DB, wsID, mid, targetRole, "", true); err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	// U-G1：先级联清该成员占用席（left + release claim + 审计），再删成员行
+	svc := botmem.New(h.DB)
+	if _, err := svc.CascadeUnbindSeatsForMember(wsID, mid, actor); err != nil {
 		middleware.HandleError(w, err)
 		return
 	}
