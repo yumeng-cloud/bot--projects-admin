@@ -50,7 +50,7 @@
 | --- | --- | --- |
 | **X-G1** | `assertMemberInWorkspace` → 挂 List/Create/Patch/Delete Memories & Todos（及 Upsert 入口）；与 Handoff 对齐 404 | Go |
 | **X-G2** | 单测：错仓 mid 读/写 → 404；同仓 200 | Go |
-| **X-G3** | （核对）MountBots/Teams 与 chi 一致包 `RequireWorkspaceMember`；`resolveMember` 上下文 mid 必核 `workspace_id`（通道已报洞，Go 核后修） | Go |
+| **X-G3** | MountBots/Teams/**Wiki/Time** wrap 改为 `authAny(wsMem(next))`（与 chi/测试 mux 齐）；`resolveMember` 有 mid 仍核 `members.workspace_id=path` | Go |
 | **X-M1** | 通道旁路：文档/人话不挡；若 CLI/MCP 有错仓软吞一并跟 X-G1 | Bot 记忆 |
 | **X-R1** | 切仓零残留：**首选** `AppLayout`/主内容树（含 `CurrentTeamProvider`）`key={wsId}` remount；并行 effect 发请求前 `setX([])/null`；点名清 `BotDetail`/`SeatHandoffDrawer`；顺手 `projectId` → `acb.project.<wsId>` | React |
 | **X-R2** | `BotDetailPage`：切仓丢旧 `memberId` 或重导航；queryKey 含 `wsId` | React |
@@ -90,5 +90,6 @@
 
 ## 进度注记
 
+- 2026-10-25 10:20 · Go 三点洞属实确认入 X-G3（含 MountWiki/Time）；写 IDOR 优先堵。
 - 2026-10-25 10:19 · **补锤**：写路径 IDOR `@0c39d38`（POST 201）；FE 拍死 `key={wsId}` remount 为首选（React 合议）。
 - 2026-10-25 10:18 · **拍板开刀**。探针 `f169699`；码表 403/404 齐 Go 建议。明文泄漏未复现；UI 主修 FE + memories/todos 硬门。
