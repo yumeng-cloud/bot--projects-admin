@@ -1,0 +1,80 @@
+INVITE_ON_DEMAND · IQ1-4 UI retest fixture（GET …/entry kind 矩阵）
+时间：2026-10-25 11:24 Asia/Shanghai
+用途：FE IQ1-4 Lookup UI 复测前置——确保 live 有 ymk_ / ymt_ / 404→Create 三态
+判定：fixture READY（本文件 curl 矩阵已录；未跑 browser）
+================================================================
+基线
+  FE sha：7f1e576  fix(fe): IQ1-4 Lookup UI — entry 先查再用/复用/签发
+  Go / I-G1：a034a15  LookupEntry 优先未吊销 ymk_，否则 active ymt_，都无 404
+  Live：/tmp/ai-board-server-xq1 · :8080 · DB postgres ai_collab
+  Actor：admin@yumeng.tech（箱测种子管理员；禁主人作 tester）
+  WS：育蒙科技 ba1481c49148aba9553ba3811406b69f
+  债：docs/NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md · IQ1-4 / I-G1 Lookup
+  禁：本文件不含 ymk_/ymt_ 明文；浏览器复测另开
+
+----------------------------------------------------------------
+主 fixture 团队（本跑新建）
+----------------------------------------------------------------
+  team_name：IQ14-EntryFixture-20261025
+  team_id  ：7fee125cabf4c81ca1a6825283fed8f4
+  准备：
+    · seat backend：POST invite → POST /team-invites/redeem（无 Bearer bootstrap）
+      → roster status=active · Bot display_name=backend · 未吊销 api-key
+    · seat frontend：POST invite · 不 redeem → 仅 active ymt_
+    · seat pm：不发码、不占席 → 空席
+
+----------------------------------------------------------------
+期望 entry.kind（UI 状态机）
+----------------------------------------------------------------
+| case | team_id | seat_slug | expected HTTP | expected entry.kind | UI 路径 |
+| --- | --- | --- | --- | --- | --- |
+| A 有 K 查用 | 7fee125cabf4c81ca1a6825283fed8f4 | backend | 200 | ymk_ | 查用展示；禁 mint / 禁堆码 |
+| B 仅 ymt_ 复用 | 7fee125cabf4c81ca1a6825283fed8f4 | frontend | 200 | ymt_ | 复用 Modal / 对齐已有码 |
+| C 空席 404→Create | 7fee125cabf4c81ca1a6825283fed8f4 | pm | 404 | （无 entry） | 再 Create 签发一枚 |
+
+备用空席（同队，同 404）：qa · wiki
+
+----------------------------------------------------------------
+curl 实录（JWT admin；无明文）
+----------------------------------------------------------------
+GET /api/v1/workspaces/ba1481c49148aba9553ba3811406b69f/teams/7fee125cabf4c81ca1a6825283fed8f4/entry?seat_slug=backend
+  → HTTP 200
+  → entry.kind=ymk_ key_id=71af8414aaf7cb480ffbb90ae0cf2194 token_prefix=ymk_4b9966c7 token_tail=66c7
+    member_id=149d486542fe8a337014ec304a4086cf display_name=backend
+  （响应无 token 明文）
+
+GET …/entry?seat_slug=frontend
+  → HTTP 200
+  → entry.kind=ymt_ invite_id=529e2dac5ec54947945270dc1705f343 code_tail=5469 status=active seat_slug=frontend
+  （响应无 code 明文）
+
+GET …/entry?seat_slug=pm
+  → HTTP 404
+  → {"code":"not_found","message":"该席位暂无可用入场凭证"}
+
+----------------------------------------------------------------
+旁证 / 复用既有队（可选，不挡主 fixture）
+----------------------------------------------------------------
+  A' ymk_：SQ1-UI-Team-202610250906 / ea918de1ac4d8116ed69651116a4acb9 · seat_slug=backend
+     （在席 Grok Bot · 多枚未吊销 ymk_；亦用于 IQ1-5 在席禁 mint）
+  B' ymt_：IQ1-OnDemand-20261025 / ed8191600070ebff42b1b8b03ff7945a · seat_slug=frontend
+  C' 404 ：IQ1-OnDemand-20261025 / ed8191600070ebff42b1b8b03ff7945a · seat_slug=backend
+     或 IG1-API-QA-20261025 / dfe2af0151d42ecdefb3c259d8ebf77f · seat_slug=frontend
+
+----------------------------------------------------------------
+UI 复测提示（本文件不跑 browser）
+----------------------------------------------------------------
+  打开 BotsRoster / 席面板 → 队 IQ14-EntryFixture-20261025
+  · 点 backend「入场」类 CTA → 应走 Lookup ymk_ 查用，网络 GET …/entry 200 kind=ymk_，无 POST invites
+  · 点 frontend → GET …/entry 200 kind=ymt_ → 复用 Modal（不静默再签）
+  · 点 pm → GET …/entry 404 → 再 Create（单次 POST invites）
+  · backend 在席仍守 IQ1-5：禁 mint 顶替（409 / UI 隐入口）
+
+----------------------------------------------------------------
+Notes
+  - Go Lookup 优先：active 席 + bound Bot + 未吊销 api_keys → ymk_；否则 active team_invites → ymt_；都无 → 404
+  - 重启服务勿切回 sqlite；须 DB_DRIVER=postgres
+  - 不交 I-P1；本文件只备 fixture + curl 旁证
+
+Verdict: fixture READY @ FE 7f1e576 · Go a034a15 · team 7fee125cabf4c81ca1a6825283fed8f4
+One-line → QA/React：IQ1-4 entry 三态 fixture READY；team=7fee125c… backend→ymk_ / frontend→ymt_ / pm→404；curl 已录；可开 UI 复测。
