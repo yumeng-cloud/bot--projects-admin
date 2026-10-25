@@ -36,3 +36,14 @@ API 明文跨仓泄漏（把 WS1 记忆内容经 WS2 URL 读出）：本探针 *
 债文请拆两行验收：跨仓隔离 + 跨项目可见性。推荐 API：非本仓成员一律 403（与 handoff 对齐用 404 也可，但勿 200 空）。
 
 结论交产品主持席合议；PASS† 前勿关。
+
+--- 写路径污染（Go 点名补探）2026-10-25 10:18 CST ---
+POST /workspaces/{WS2}/bots/{MID_ws1}/memories  → **201**
+  写入行 workspace_id=WS2, member_id=MID_ws1, key=xws-probe-*
+GET  同路径 memories → **200 且可见刚写入**（写后读穿）
+GET  /workspaces/{WS1}/bots/{MID_ws1}/memories → 不见该 key（按 WS1 过滤）
+
+POST /workspaces/{WS1}/bots/{MID_ws2_human}/memories → **201**（他仓人类 member_id 写入本仓）
+
+结论升级：跨仓 **写污染 IDOR 成立**（201）；修前须 member∈ws 硬门（产品已拍 404）。
+探针行已尝试 DELETE 清理。
