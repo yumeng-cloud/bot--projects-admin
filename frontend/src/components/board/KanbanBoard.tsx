@@ -70,7 +70,14 @@ export function KanbanBoard({
   const [overId, setOverId] = useState<string | null>(null)
   const [assigneeNames, setAssigneeNames] = useState<Record<string, string>>({})
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  // MOBILE_RESPONSIVE：抬高激活距，窄屏点按优先开卡、不挡横滑
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches ? 14 : 6,
+      },
+    }),
+  )
 
   const visibleCols = useMemo(() => {
     if (columns && columns.length > 0) {

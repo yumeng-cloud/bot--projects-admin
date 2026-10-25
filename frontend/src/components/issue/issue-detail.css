@@ -1130,3 +1130,29 @@ button.acb-issue-attachment-name-btn:hover {
   line-height: 18px;
   border-radius: 4px;
 }
+
+/* MOBILE_RESPONSIVE M4 — 近全屏 + 关钮热区 ≥44 */
+@media (max-width: 639px) {
+  .acb-drawer.acb-issue-drawer .ant-drawer-header {
+    padding: 8px 8px 8px 14px !important;
+    min-height: 52px;
+  }
+  .acb-drawer.acb-issue-drawer .ant-drawer-close {
+    width: 44px !important;
+    height: 44px !important;
+    margin-inline-end: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .acb-issue-drawer .ant-drawer-extra .ant-btn-default,
+  .acb-issue-drawer .ant-drawer-extra .ant-btn-primary {
+    height: 44px !important;
+    min-width: 44px;
+    padding-inline: 12px;
+  }
+  .acb-property-row {
+    min-height: 44px;
+  }
+}

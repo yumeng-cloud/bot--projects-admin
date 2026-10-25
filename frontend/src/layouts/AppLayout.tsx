@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { Layout, Menu, Typography, Button, Space, Spin, theme } from 'antd'
+import { Layout, Menu, Typography, Button, Space, Spin, theme, Drawer } from 'antd'
 import {
   DashboardOutlined,
   UnorderedListOutlined,
@@ -14,6 +14,7 @@ import {
   BulbOutlined,
   MoonOutlined,
   CrownOutlined,
+  MenuOutlined,
 } from '@ant-design/icons'
 import { listMyWorkspaces, type Workspace } from '../api/workspaces'
 import { listProjects, type Project } from '../api/projects'
@@ -24,6 +25,24 @@ import { ProjectPoolSelect } from '../components/common/ProjectPoolSelect'
 import { CurrentTeamProvider, useCurrentTeam } from '../hooks/useCurrentTeam'
 
 const { Header, Sider, Content } = Layout
+
+/** MOBILE_RESPONSIVE：与 Issue 窄轨一致 ≤639 */
+const MOBILE_MQ = '(max-width: 639px)'
+
+function useIsMobileNarrow(): boolean {
+  const [narrow, setNarrow] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia(MOBILE_MQ).matches : false,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_MQ)
+    const onChange = () => setNarrow(mq.matches)
+    onChange()
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return narrow
+}
+
 
 function AppHeaderTeam() {
   const { wsId } = useParams()
@@ -53,6 +72,13 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
   const [projects, setProjects] = useState<Project[]>([])
   const [projectId, setProjectId] = useState<string | undefined>(routeProjectId)
   const [loading, setLoading] = useState(true)
+  const isMobile = useIsMobileNarrow()
+  const [navOpen, setNavOpen] = useState(false)
+
+  // 路由变化时关抽屉，避免窄屏导航后挡主区
+  useEffect(() => {
+    setNavOpen(false)
+  }, [loc.pathname])
 
   const reloadProjects = async (preferId?: string) => {
     if (!wsId) return [] as Project[]
@@ -150,66 +176,98 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
     )
   }
 
+  const navItems = [
+    { key: 'board', icon: <DashboardOutlined />, label: <Link to={projectId ? `${base}/board` : `/w/${wsId}/board`}>看板</Link> },
+    { key: 'list', icon: <UnorderedListOutlined />, label: <Link to={projectId ? `${base}/issues` : `/w/${wsId}/list`}>列表</Link> },
+    { key: 'cycles', icon: <FieldTimeOutlined />, label: <Link to={projectId ? `${base}/cycles` : `/w/${wsId}/cycles`}>周期</Link> },
+    { key: 'timeline', icon: <ScheduleOutlined />, label: <Link to={projectId ? `${base}/timeline` : `/w/${wsId}/timeline`}>排期</Link> },
+    { key: 'wiki', icon: <BookOutlined />, label: <Link to={`/w/${wsId}/wiki`}>Wiki</Link> },
+    { key: 'time', icon: <ClockCircleOutlined />, label: <Link to={`/w/${wsId}/time`}>工时</Link> },
+    { type: 'divider' as const },
+    { key: 'settings', icon: <SettingOutlined />, label: <Link to={`/w/${wsId}/settings`}>设置</Link> },
+    { key: 'bots', icon: <RobotOutlined />, label: <Link to={`/w/${wsId}/settings/bots`}>Bot</Link> },
+  ]
+
+  const siderBrand = (
+    <div
+      style={{
+        height: 48,
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 14px',
+        borderBottom: `1px solid ${t.colorBorderSecondary}`,
+      }}
+    >
+      <Typography.Text strong ellipsis style={{ fontSize: 13 }}>
+        {ws?.name || '工作区'}
+      </Typography.Text>
+    </div>
+  )
+
+  const siderFoot =
+    user?.is_platform_admin ? (
+      <div className="acb-sider-foot">
+        <Link
+          to="/admin"
+          className={`acb-sider-foot-link${loc.pathname.startsWith('/admin') ? ' is-active' : ''}`}
+          title="平台管理（仅超管）"
+          onClick={() => setNavOpen(false)}
+        >
+          <CrownOutlined style={{ fontSize: 12 }} />
+          <span>平台管理</span>
+        </Link>
+      </div>
+    ) : null
+
+  const navMenu = (
+    <Menu
+      mode="inline"
+      selectedKeys={selected}
+      className="acb-sider-menu"
+      style={{ border: 'none', marginTop: 4 }}
+      items={navItems}
+      onClick={() => setNavOpen(false)}
+    />
+  )
+
   return (
-    <Layout style={{ height: '100%', overflow: 'hidden' }}>
-      <Sider
-        width={240}
-        breakpoint="lg"
-        collapsedWidth={64}
-        theme="light"
-        className="acb-sider"
-        style={{
-          borderRight: `1px solid ${t.colorBorderSecondary}`,
-          height: '100%',
-          overflow: 'hidden',
-        }}
-      >
-        <div
+    <Layout style={{ height: '100%', overflow: 'hidden' }} className={isMobile ? 'acb-layout-mobile' : undefined}>
+      {!isMobile ? (
+        <Sider
+          width={240}
+          theme="light"
+          className="acb-sider"
           style={{
-            height: 48,
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0 14px',
-            borderBottom: `1px solid ${t.colorBorderSecondary}`,
+            borderRight: `1px solid ${t.colorBorderSecondary}`,
+            height: '100%',
+            overflow: 'hidden',
           }}
         >
-          <Typography.Text strong ellipsis style={{ fontSize: 13 }}>
-            {ws?.name || '工作区'}
-          </Typography.Text>
-        </div>
-        <Menu
-          mode="inline"
-          selectedKeys={selected}
-          className="acb-sider-menu"
-          style={{ border: 'none', marginTop: 4 }}
-          items={[
-            { key: 'board', icon: <DashboardOutlined />, label: <Link to={projectId ? `${base}/board` : `/w/${wsId}/board`}>看板</Link> },
-            { key: 'list', icon: <UnorderedListOutlined />, label: <Link to={projectId ? `${base}/issues` : `/w/${wsId}/list`}>列表</Link> },
-            { key: 'cycles', icon: <FieldTimeOutlined />, label: <Link to={projectId ? `${base}/cycles` : `/w/${wsId}/cycles`}>周期</Link> },
-            { key: 'timeline', icon: <ScheduleOutlined />, label: <Link to={projectId ? `${base}/timeline` : `/w/${wsId}/timeline`}>排期</Link> },
-            { key: 'wiki', icon: <BookOutlined />, label: <Link to={`/w/${wsId}/wiki`}>Wiki</Link> },
-            { key: 'time', icon: <ClockCircleOutlined />, label: <Link to={`/w/${wsId}/time`}>工时</Link> },
-            { type: 'divider' },
-            { key: 'settings', icon: <SettingOutlined />, label: <Link to={`/w/${wsId}/settings`}>设置</Link> },
-            { key: 'bots', icon: <RobotOutlined />, label: <Link to={`/w/${wsId}/settings/bots`}>Bot</Link> },
-          ]}
-        />
-        {user?.is_platform_admin ? (
-          <div className="acb-sider-foot">
-            <Link
-              to="/admin"
-              className={`acb-sider-foot-link${loc.pathname.startsWith('/admin') ? ' is-active' : ''}`}
-              title="平台管理（仅超管）"
-            >
-              <CrownOutlined style={{ fontSize: 12 }} />
-              <span>平台管理</span>
-            </Link>
+          {siderBrand}
+          {navMenu}
+          {siderFoot}
+        </Sider>
+      ) : (
+        <Drawer
+          title={ws?.name || '工作区'}
+          placement="left"
+          open={navOpen}
+          onClose={() => setNavOpen(false)}
+          width={Math.min(280, typeof window !== 'undefined' ? window.innerWidth - 48 : 280)}
+          className="acb-nav-drawer"
+          styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column' } }}
+          destroyOnHidden
+        >
+          <div className="acb-sider" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {navMenu}
+            {siderFoot}
           </div>
-        ) : null}
-      </Sider>
+        </Drawer>
+      )}
       <Layout style={{ height: '100%', minWidth: 0, overflow: 'hidden' }}>
         <Header
+          className={isMobile ? 'acb-header-mobile' : undefined}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -217,9 +275,19 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
             borderBottom: `1px solid ${t.colorBorderSecondary}`,
             background: t.colorBgContainer,
             flexShrink: 0,
+            gap: 8,
           }}
         >
           <Space className="acb-header-context" size={10} align="center">
+            {isMobile ? (
+              <Button
+                type="text"
+                className="acb-nav-trigger"
+                icon={<MenuOutlined />}
+                aria-label="打开导航"
+                onClick={() => setNavOpen(true)}
+              />
+            ) : null}
             <ProjectPoolSelect
               workspaceId={wsId || ''}
               projects={projects}
@@ -250,10 +318,12 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
             />
             <AppHeaderTeam />
           </Space>
-          <Space size={2}>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {user?.name || user?.email}
-            </Typography.Text>
+          <Space size={2} className="acb-header-actions">
+            {!isMobile ? (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {user?.name || user?.email}
+              </Typography.Text>
+            ) : null}
             <Button
               type="text"
               size="small"
@@ -261,10 +331,12 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
               onClick={toggleTheme}
               title={themeMode === 'dark' ? '浅色' : '深色'}
             />
-            <Button type="text" size="small" onClick={() => nav('/')}>
-              工作区
-            </Button>
-            <Button type="text" size="small" icon={<LogoutOutlined />} onClick={onLogout} />
+            {!isMobile ? (
+              <Button type="text" size="small" onClick={() => nav('/')}>
+                工作区
+              </Button>
+            ) : null}
+            <Button type="text" size="small" icon={<LogoutOutlined />} onClick={onLogout} aria-label="退出登录" />
           </Space>
         </Header>
         <Content

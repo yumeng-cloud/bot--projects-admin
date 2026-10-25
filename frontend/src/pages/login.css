@@ -69,3 +69,40 @@
   height: 32px;
   font-weight: 500;
 }
+
+/* MOBILE_RESPONSIVE M2 — ≤639 竖屏可用，禁挤叠糊字 */
+.acb-login-card.ant-card {
+  width: min(400px, calc(100% - 32px));
+}
+
+@media (max-width: 639px) {
+  .acb-login {
+    padding: 24px 16px;
+    align-items: flex-start;
+  }
+  .acb-login-card.ant-card {
+    width: min(400px, calc(100% - 32px));
+    max-width: 100%;
+  }
+  .acb-login-card .ant-card-body {
+    padding: 24px 20px 20px;
+  }
+  .acb-login-title.ant-typography {
+    font-size: 18px;
+  }
+  .acb-login-card .ant-input,
+  .acb-login-card .ant-input-affix-wrapper {
+    min-height: 44px;
+  }
+  .acb-login-card .ant-input-affix-wrapper .ant-input {
+    min-height: 0;
+  }
+  .acb-login-card .ant-btn-primary {
+    height: 44px;
+    font-size: 15px;
+  }
+  .acb-login-card .ant-tabs-tab {
+    padding: 10px 0;
+    min-height: 44px;
+  }
+}

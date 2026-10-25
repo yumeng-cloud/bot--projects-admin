@@ -185,10 +185,10 @@ function issueOptionLabel(i: Pick<Issue, 'identifier' | 'title'>): string {
 
 
 const ISSUE_DRAWER_WIDE = 940
-/** 与 issue-detail.css @media (max-width: 639px) 轨上下布局断点一致 */
+/** 与 issue-detail.css @media (max-width: 639px) 轨上下布局断点一致；MOBILE_RESPONSIVE 同档 */
 const ISSUE_DRAWER_NARROW_MQ = '(max-width: 639px)'
-/** 规格 ISSUE_DETAIL_LAYOUT §5 / C6：窄屏显式贴近 min(100vw, 560) */
-const ISSUE_DRAWER_NARROW_WIDTH = 'min(100vw, 560px)'
+/** 窄屏近全屏：100vw，关钮热区见 issue-detail.css */
+const ISSUE_DRAWER_NARROW_WIDTH = '100vw'
 
 function useIssueDrawerNarrow(): boolean {
   const [narrow, setNarrow] = useState(() =>
@@ -546,9 +546,9 @@ export function IssueDrawer({ open, issue, workspaceId, projectId, teamId, onClo
       destroyOnHidden
       className="acb-drawer acb-issue-drawer"
       styles={{
-        // 宽屏保留 92vw 防溢出；窄屏显式 min(100vw, 560)，勿再硬撑 820
+        // 宽屏保留 92vw 防溢出；窄屏 100vw 近全屏可读可关
         wrapper: narrowDrawer
-          ? { width: ISSUE_DRAWER_NARROW_WIDTH, maxWidth: ISSUE_DRAWER_NARROW_WIDTH }
+          ? { width: '100vw', maxWidth: '100vw' }
           : { maxWidth: '92vw' },
         body: { padding: 0, overflow: 'hidden', height: '100%' },
       }}

@@ -314,3 +314,60 @@ body > #root .acb-page .acb-list-table .ant-table-tbody > tr > td {
   color: var(--acb-primary);
   background: color-mix(in srgb, var(--acb-primary) 8%, transparent);
 }
+
+/* MOBILE_RESPONSIVE M1 — 窄壳：汉堡热区 ≥44；顶栏不挤 */
+@media (max-width: 639px) {
+  .acb-layout-mobile {
+    overflow-x: hidden;
+  }
+  .acb-nav-trigger.ant-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .ant-layout-header.acb-header-mobile {
+    padding-inline: 8px !important;
+    gap: 4px;
+  }
+  .ant-layout-header.acb-header-mobile .acb-header-context {
+    max-width: min(260px, 62vw);
+    flex: 1 1 auto;
+  }
+  .ant-layout-header.acb-header-mobile .acb-header-actions .ant-btn {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    padding-inline: 0;
+  }
+  /* 「工作区」文案钮在窄顶栏易挤——保留图标类操作，文案钮缩字 */
+  .ant-layout-header.acb-header-mobile .acb-header-actions .ant-btn:not(.ant-btn-icon-only) {
+    width: auto;
+    min-width: 0;
+    padding-inline: 6px;
+    font-size: 12px;
+  }
+  .acb-nav-drawer .ant-drawer-header {
+    min-height: 52px;
+  }
+  .acb-nav-drawer .ant-drawer-close {
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .acb-nav-drawer .ant-menu-item {
+    height: 44px !important;
+    line-height: 44px !important;
+    margin-block: 2px !important;
+  }
+  .acb-sider-foot-link {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+}

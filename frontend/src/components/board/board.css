@@ -708,3 +708,46 @@ html[data-theme='dark'] .acb-col {
   outline: 1px solid color-mix(in srgb, var(--acb-primary) 45%, var(--acb-border));
   background: color-mix(in srgb, var(--acb-primary) 6%, var(--acb-bg-container));
 }
+
+/* MOBILE_RESPONSIVE M3 — ≤639 横滑可点开；触控热区/芯片间距 */
+@media (max-width: 639px) {
+  .acb-board-page {
+    padding: 10px 12px 8px;
+  }
+  .acb-page-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 44px;
+  }
+  .acb-board {
+    gap: 12px;
+    /* 留一点右缘，提示可横滑 */
+    padding-right: 12px;
+    scroll-snap-type: x proximity;
+  }
+  .acb-col {
+    flex: 0 0 min(280px, calc(100vw - 48px));
+    scroll-snap-align: start;
+  }
+  .acb-card {
+    /* 软化拖拽：允许纵向滚列；横滑交给 .acb-board */
+    touch-action: manipulation;
+    min-height: 44px;
+    padding: 12px 12px 12px 14px;
+  }
+  .acb-card-meta {
+    gap: 8px;
+  }
+  .acb-pack-strip {
+    gap: 8px;
+  }
+  .acb-pack-chip {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 12px;
+  }
+  .acb-col-archive-btn.ant-btn-link {
+    height: 36px;
+    padding: 0 8px;
+  }
+}
