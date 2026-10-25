@@ -74,4 +74,4 @@
 
 - 2026-10-25 08:19 · **视觉尺子锁**：副标定「人与 Bot 同场协作」；卡宽定 **400**；冷灰+白卡；总监尺子已产品拍认。React 在干 L1–L5。
 - 2026-10-25 08:20 · 产品拍板开刀；对齐已拉视觉总监 / 审图 / React；无实质反对则按本表干。Soft 三件仍冻。
-- 2026-10-25 · React L1–L5：主标题「育蒙协作看板」；副标「人与 Bot 同场协作」；冷灰 `--acb-bg-layout` + 白卡宽 400；`login.css`；箱截 `docs/qa-shots/login-refresh.png`（+ 可选 register）；砍 Linear/Grok Bot 文案。勾选留给产品。
+- 2026-10-25 · React L1–L5 已交：主标题「育蒙协作看板」；副标「人与 Bot 同场协作」；冷灰 `--acb-bg-layout` + 白卡宽 400；`login.css`；箱截 `docs/qa-shots/login-refresh.png` + `login-refresh-register.png`；砍 Linear/Grok Bot 文案。FE `005a3c1`（已 push main）。勾选留给产品 / L6 审图。
