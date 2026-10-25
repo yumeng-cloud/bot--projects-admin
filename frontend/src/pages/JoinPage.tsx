@@ -2,6 +2,7 @@
  * ONE_TAP C1 · 同源 FE /join?code=ymt_…&role=…
  * - 已登录：解析 query → 跳转席页并打开预填 JoinWizard
  * - 未登录：短引导（复制提示词 / 安装 / 登录后预填），不消耗码；不改坏 Go API 宿主页
+ * - 无码/码无效：人话空态（禁止死转 Spin）
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -28,11 +29,48 @@ function resolveWsId(ids: string[]): string | null {
   return ids[0] || null
 }
 
+/** 已登录但无码/码无效，或打开向导失败时的人话空态 */
+function JoinErrorCard({
+  message: errMsg,
+  onRetry,
+}: {
+  message: string
+  onRetry?: () => void
+}) {
+  return (
+    <div style={{ minHeight: '100%', display: 'grid', placeItems: 'center', padding: 24 }}>
+      <Card style={{ width: '100%', maxWidth: 480, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+        <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 8 }}>
+          无法打开入场向导
+        </Typography.Title>
+        <Alert type="error" showIcon message={errMsg} style={{ marginBottom: 16 }} />
+        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          {onRetry ? (
+            <Button type="primary" block onClick={onRetry}>
+              重试
+            </Button>
+          ) : null}
+          <Link to="/">
+            <Button block type={onRetry ? 'default' : 'primary'}>
+              回官网
+            </Button>
+          </Link>
+          <Link to="/login">
+            <Button block>去登录</Button>
+          </Link>
+        </Space>
+      </Card>
+    </div>
+  )
+}
+
 export default function JoinPage({ authed, onAuth }: Props) {
   const [searchParams] = useSearchParams()
   const nav = useNavigate()
   const parsed = useMemo(() => parseJoinSearchParams(searchParams), [searchParams])
   const [busy, setBusy] = useState(false)
+  const [openError, setOpenError] = useState<string | null>(null)
+  const [retryTick, setRetryTick] = useState(0)
   const [showLogin, setShowLogin] = useState(false)
 
   const codeError = useMemo(() => {
@@ -44,12 +82,13 @@ export default function JoinPage({ authed, onAuth }: Props) {
     }
   }, [parsed.code])
 
-  // 已登录：带参跳转席页，由 BotsRosterPage 打开预填向导
+  // 已登录 + 合法码：带参跳转席页，由 BotsRosterPage 打开预填向导
   useEffect(() => {
     if (!authed || codeError) return
     let cancelled = false
     ;(async () => {
       setBusy(true)
+      setOpenError(null)
       try {
         const { workspaces } = await listMyWorkspaces()
         if (cancelled) return
@@ -70,7 +109,9 @@ export default function JoinPage({ authed, onAuth }: Props) {
         nav(`/w/${wsId}/settings/bots?${q.toString()}`, { replace: true })
       } catch (e) {
         if (!cancelled) {
-          message.error(e instanceof Error ? e.message : '无法打开入场向导')
+          const msg = e instanceof Error ? e.message : '无法打开入场向导'
+          setOpenError(msg)
+          message.error(msg)
         }
       } finally {
         if (!cancelled) setBusy(false)
@@ -79,7 +120,7 @@ export default function JoinPage({ authed, onAuth }: Props) {
     return () => {
       cancelled = true
     }
-  }, [authed, codeError, parsed.code, parsed.role, parsed.seat, parsed.api, nav])
+  }, [authed, codeError, parsed.code, parsed.role, parsed.seat, parsed.api, nav, retryTick])
 
   const prompt = useMemo(() => {
     if (codeError) return ''
@@ -109,7 +150,22 @@ export default function JoinPage({ authed, onAuth }: Props) {
     }
   }
 
+  // 已登录：无码/码无效 → 人话空态（禁止死转）；合法码 → 短暂 Spin 或失败态
   if (authed) {
+    if (codeError) {
+      return <JoinErrorCard message={codeError} />
+    }
+    if (openError && !busy) {
+      return (
+        <JoinErrorCard
+          message={openError}
+          onRetry={() => {
+            setOpenError(null)
+            setRetryTick((t) => t + 1)
+          }}
+        />
+      )
+    }
     return (
       <div style={{ minHeight: '100%', display: 'grid', placeItems: 'center', padding: 24 }}>
         <Spin tip="正在打开入场向导…" />
