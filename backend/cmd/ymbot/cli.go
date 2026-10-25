@@ -814,12 +814,11 @@ func cmdSeatLeave(c *botclient.Client, args []string) error {
 		return err
 	}
 	opts := optsFrom(*full, *ids, *asJSON)
-	via, _ := v["via"].(string)
-	if via == "" {
-		via = "-"
+	if opts.Full || opts.JSON {
+		printView(opts, botclient.MarshalView(v), v)
+		return nil
 	}
-	msg := fmt.Sprintf("left role=%s via=%s\n", *role, via)
-	printView(opts, msg, v)
+	printView(opts, botclient.FormatSeatLeaveText(v), v)
 	return nil
 }
 

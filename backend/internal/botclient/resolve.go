@@ -127,7 +127,18 @@ func (c *Client) MemberNames() (map[string]string, error) {
 	return out, nil
 }
 
+// ClearLocalTeamSeatCache U7：leave/unbind 成功或 U4/U5「已失效已清理」后清通道成员名缓存，
+// 迫使下次 roster/展示重新拉成员，避免脏绑显示名卡死。
+func (c *Client) ClearLocalTeamSeatCache() {
+	c.ensureCaches()
+	c.cacheMu.Lock()
+	defer c.cacheMu.Unlock()
+	c.memberNames = map[string]string{}
+	c.membersLoaded = false
+}
+
 func (c *Client) memberName(id string) string {
+
 	if id == "" {
 		return ""
 	}

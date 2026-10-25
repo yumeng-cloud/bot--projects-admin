@@ -581,11 +581,10 @@ func callTool(c *botclient.Client, name string, args map[string]any) (string, er
 		if err != nil {
 			return "", err
 		}
-		via, _ := v["via"].(string)
-		if via == "" {
-			via = "-"
+		if opts.Full {
+			return botclient.MarshalView(v), nil
 		}
-		return fmt.Sprintf("left role=%s via=%s\n", role, via), nil
+		return botclient.FormatSeatLeaveText(v), nil
 	case "board_seat_expand":
 		uuid := strArg(args, "team_uuid")
 		if uuid == "" {

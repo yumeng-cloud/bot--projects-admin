@@ -370,7 +370,12 @@ type SeatLeaveOpts struct {
 	TeamID string
 }
 
+// MsgSeatBindStaleCleared U5/U7 人话：脏绑或已无绑的本地收尾透传句。
+const MsgSeatBindStaleCleared = "席位绑定已失效，已清理"
+
 // SeatLeave 离席：unbind 或 role release。
+// U-M1：U4（已无绑）/U5（脏绑已清理或 403「只能解绑自己」且成员已不存在）当成功 → 清本地队/席缓存并透传新人话；
+// 他人存活占用仍 403，人话对齐 U6（含显示名）。勿把「只能解绑自己」留给用户死局。
 func (c *Client) SeatLeave(roleSlug string, opts SeatLeaveOpts) (map[string]any, error) {
 	roleSlug = strings.TrimSpace(roleSlug)
 	if roleSlug == "" {
@@ -386,19 +391,111 @@ func (c *Client) SeatLeave(roleSlug string, opts SeatLeaveOpts) (map[string]any,
 		if err != nil {
 			return nil, err
 		}
-		raw, err := c.TeamSeatUnbind(teamID, strField(seat, "id"))
+		seatID := strField(seat, "id")
+		raw, err := c.TeamSeatUnbind(teamID, seatID)
 		if err != nil {
-			return nil, err
+			return c.seatLeaveRecoverForbidden(teamID, roleSlug, seat, err, out)
 		}
+		c.ClearLocalTeamSeatCache()
 		out["via"] = "unbind"
 		out["seat"] = projectSeatSlim(raw, roleSlug)
+		if note := unbindResponseNote(raw); note != "" {
+			out["note"] = note
+		}
 		return out, nil
 	}
 	if _, err := c.RoleReleaseBySlug(roleSlug); err != nil {
 		return nil, err
 	}
+	c.ClearLocalTeamSeatCache()
 	out["via"] = "role_release"
 	return out, nil
+}
+
+func unbindResponseNote(raw json.RawMessage) string {
+	var top map[string]any
+	if err := json.Unmarshal(raw, &top); err != nil || top == nil {
+		return ""
+	}
+	for _, k := range []string{"message", "note"} {
+		if n := strings.TrimSpace(strField(top, k)); n != "" {
+			return n
+		}
+	}
+	return ""
+}
+
+func isUnbindSelfOnlyForbidden(err error) bool {
+	ae, ok := err.(*APIError)
+	if !ok || ae.Status != 403 {
+		return false
+	}
+	msg := ae.Message + ae.Error()
+	return strings.Contains(msg, "只能解绑自己")
+}
+
+// seatLeaveRecoverForbidden：Go U-G* 合入前，403「只能解绑自己」按 roster+成员表分流 U4/U5 成功或 U6 占用中。
+func (c *Client) seatLeaveRecoverForbidden(teamID, roleSlug string, seatBefore map[string]any, err error, out map[string]any) (map[string]any, error) {
+	if !isUnbindSelfOnlyForbidden(err) {
+		return nil, err
+	}
+	// 刷新成员缓存再判存活，避免删成员后仍命中旧名表。
+	c.ClearLocalTeamSeatCache()
+	rosterRaw, rerr := c.TeamRosterGet(teamID)
+	seat := seatBefore
+	if rerr == nil {
+		if s, serr := SeatBySlug(rosterRaw, roleSlug); serr == nil {
+			seat = s
+		}
+	}
+	bound := strField(seat, "bound_member_id", "member_id")
+	if bound == "" {
+		out["via"] = "already_unbound"
+		out["note"] = MsgSeatBindStaleCleared
+		out["seat"] = map[string]any{"slug": roleSlug, "ok": true}
+		return out, nil
+	}
+	myID := strings.TrimSpace(c.Cfg.MemberID)
+	if myID == "" {
+		if mid, merr := c.ResolveMember(); merr == nil {
+			myID = mid
+		}
+	}
+	if myID != "" && bound == myID {
+		// 本人仍绑却被拒：少见；仍当失效收尾，勿死局。
+		out["via"] = "stale_cleared"
+		out["note"] = MsgSeatBindStaleCleared
+		out["seat"] = map[string]any{"slug": roleSlug, "ok": true}
+		return out, nil
+	}
+	names, _ := c.MemberNames()
+	if memberIDKnown(names, bound) {
+		holder := names[bound]
+		if holder == "" {
+			holder = strField(seat, "bound_display_name", "bound_member_display")
+		}
+		if holder == "" {
+			holder = bound
+		}
+		return nil, &APIError{
+			Status:  403,
+			Code:    "forbidden",
+			Message: fmt.Sprintf("席位由「%s」占用；请对方离席，或让管理员停工/离职解绑", holder),
+		}
+	}
+	// 成员表无此人 → U5 脏绑：本地收尾成功（服务端清绑待 U-G2；勿再甩只能解绑自己）
+	out["via"] = "stale_cleared"
+	out["note"] = MsgSeatBindStaleCleared
+	out["seat"] = map[string]any{"slug": roleSlug, "ok": true}
+	return out, nil
+}
+
+func memberIDKnown(names map[string]string, id string) bool {
+	if id == "" || names == nil {
+		return false
+	}
+	_, ok := names[id]
+	return ok
 }
 
 func projectSeatSlim(raw json.RawMessage, slug string, playbookRaw ...string) map[string]any {
@@ -470,6 +567,20 @@ func FormatSeatEnterText(v map[string]any) string {
 	if hint := strField(v, "memory_key_hint"); hint != "" {
 		fmt.Fprintf(&b, "memory_key=%s（席位隔离）\n", hint)
 	}
+	return b.String()
+}
+
+// FormatSeatLeaveText 离席瘦文本：优先透传 U5 人话，再 left role/via。
+func FormatSeatLeaveText(v map[string]any) string {
+	var b strings.Builder
+	if note := strField(v, "note"); note != "" {
+		fmt.Fprintf(&b, "%s\n", note)
+	}
+	via := strField(v, "via")
+	if via == "" {
+		via = "-"
+	}
+	fmt.Fprintf(&b, "left role=%s via=%s\n", dash(strField(v, "role")), via)
 	return b.String()
 }
 
