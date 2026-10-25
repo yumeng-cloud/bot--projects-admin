@@ -139,15 +139,6 @@ export default function IssuedInvitesPanel({
   const wsActive = useMemo(() => wsInvites.filter((i) => !isRevokedWs(i)), [wsInvites])
   const wsRevoked = useMemo(() => wsInvites.filter((i) => isRevokedWs(i)), [wsInvites])
 
-  const total = teamInvites.length + wsInvites.length
-  if (total === 0) return null
-
-  const activeCount = teamActive.length + wsActive.length
-  const summary =
-    activeCount > 0
-      ? `已签发 ${total} · 有效 ${activeCount}`
-      : `已签发 ${total} · 暂无有效`
-
   const ymtGroups = useMemo(() => {
     const map = new Map<string, { key: string; label: string; active: TeamInvite[]; revoked: TeamInvite[] }>()
     for (const inv of teamInvites) {
@@ -168,6 +159,15 @@ export default function IssuedInvitesPanel({
       return a.label.localeCompare(b.label, 'zh')
     })
   }, [teamInvites, teamSeats])
+
+  const total = teamInvites.length + wsInvites.length
+  if (total === 0) return null
+
+  const activeCount = teamActive.length + wsActive.length
+  const summary =
+    activeCount > 0
+      ? `已签发 ${total} · 有效 ${activeCount}`
+      : `已签发 ${total} · 暂无有效`
 
   const ymtRevokedAll = teamRevoked
   const ymwRevokedAll = wsRevoked
