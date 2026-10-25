@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   Alert,
@@ -139,6 +139,8 @@ export default function BotsRosterPage() {
   const [inviteBusy, setInviteBusy] = useState(false)
   /** 签发当次明文，只存活到复制成功后的一次 Toast；列表只留末四 */
   const [lastPlainInvite, setLastPlainInvite] = useState<string | null>(null)
+  /** 本会话签发明文缓存：有有效码时可复用复制（I-R2） */
+  const invitePlainByIdRef = useRef<Map<string, string>>(new Map())
   /** AUTO_CREW：全班入场包挡层（seats 快照防切队 refetch 冲掉） */
   const [crewPackOpen, setCrewPackOpen] = useState(false)
   const [crewPackAfterCreate, setCrewPackAfterCreate] = useState(false)
@@ -330,17 +332,18 @@ export default function BotsRosterPage() {
   }, [wsId, teamId])
 
   /** SEAT_VISIBILITY：立刻切新队 + 用返回名册 seed，避免只 Toast */
-  /** AUTO_CREW C1：同帧弹出全班入场包挡层 */
+  /** INVITE_ON_DEMAND I-R1：建队成功不再自动 setCrewPackOpen / issueCrewPack */
   const onTeamCreatedFromTemplate = (team: Team, roster: TeamSeat[]) => {
     setPendingCreatedTeam(team)
     setTeamSeats(roster || [])
     setTeamId(team.id)
     void reload().finally(() => setPendingCreatedTeam(null))
     void load()
-    if (emptySeatsForPack(roster || []).length > 0) {
-      setCrewPackSeats(roster || [])
-      setCrewPackAfterCreate(true)
-      setCrewPackOpen(true)
+    const n = emptySeatsForPack(roster || []).length
+    if (n > 0) {
+      message.success(`班底已创建（${n} 个空席）。按席发一把入场码，或用「全班入场包」勾选确认后再签。`)
+    } else {
+      message.success('班底已创建')
     }
   }
 
@@ -352,6 +355,7 @@ export default function BotsRosterPage() {
       const next = [...prev]
       for (const row of result.ok) {
         const inv = row.invite
+        if (row.code) invitePlainByIdRef.current.set(inv.id, row.code)
         const tail = inviteTail(inv)
         const stripped = {
           ...inv,
@@ -825,24 +829,23 @@ export default function BotsRosterPage() {
 
   type InviteRoleCtx = { slug?: string | null; displayName?: string | null }
 
-  /** 签发入场码并缓存末四；明文仅返回一次。role 写入 role_hint（可选）。 */
-  const issueInvitePlain = async (roleCtx?: InviteRoleCtx): Promise<string | null> => {
-    if (!teamId) {
-      message.warning('尚无团队，请先创建或加入班底')
-      return null
-    }
-    const slug = (roleCtx?.slug || '').trim()
-    const { invite } = await createTeamInvite(
-      wsId,
-      teamId,
-      {
-        allow_expand_seat: true,
-        ...(slug ? { role_hint: slug, seat_slug: slug } : {}),
-      },
-      crypto.randomUUID(),
-    )
+  const isInviteActive = (inv: TeamInvite): boolean => {
+    const st = (inv.status || (inv.revoked_at ? 'revoked' : 'active')).toLowerCase()
+    return st !== 'revoked' && st !== 'expired' && st !== 'exhausted'
+  }
+
+  const findActiveInviteForSeat = (slug: string): TeamInvite | undefined =>
+    issuedInvites.find((inv) => {
+      if (!isInviteActive(inv)) return false
+      const key = (inv.seat_slug || inv.role_hint || '').trim()
+      if (slug) return key === slug
+      return !key
+    })
+
+  const cacheIssuedInvite = (invite: TeamInvite, slug: string) => {
     const plain = invite.code || null
     const tail = inviteTail(invite)
+    if (plain) invitePlainByIdRef.current.set(invite.id, plain)
     setIssuedInvites((prev) => [
       {
         ...invite,
@@ -855,6 +858,152 @@ export default function BotsRosterPage() {
       ...prev.filter((x) => x.id !== invite.id),
     ])
     return plain
+  }
+
+  const mintInvitePlain = async (slug: string): Promise<string | null> => {
+    const { invite } = await createTeamInvite(
+      wsId,
+      teamId!,
+      {
+        allow_expand_seat: true,
+        ...(slug ? { role_hint: slug, seat_slug: slug } : {}),
+      },
+      crypto.randomUUID(),
+    )
+    return cacheIssuedInvite(invite, slug)
+  }
+
+  /**
+   * INVITE_ON_DEMAND I-R2：
+   * - 在席（active）禁 mint 顶替
+   * - 该席已有有效码 → 复用复制（本会话明文）或「吊销后再发」；禁静默加堆
+   */
+  const issueInvitePlain = async (roleCtx?: InviteRoleCtx): Promise<string | null> => {
+    if (!teamId) {
+      message.warning('尚无团队，请先创建或加入班底')
+      return null
+    }
+    const slug = (roleCtx?.slug || '').trim()
+    if (slug) {
+      const seat = teamSeats.find((s) => (s.role_slug || '').trim() === slug)
+      if (seat && seatOccupancy(seat) === 'active') {
+        const name = roleCtx?.displayName || seat.display_name || slug
+        message.warning(
+          `席「${name}」已有人在席，禁止签发顶替入场码。请用新人新席，或走停工席补位。`,
+        )
+        return null
+      }
+    }
+
+    const existing = findActiveInviteForSeat(slug)
+    if (existing) {
+      const tail = inviteTail(existing)
+      const cached = invitePlainByIdRef.current.get(existing.id) || null
+      const seatLabel = roleCtx?.displayName || slug || '未指定席'
+      const choice = await new Promise<'reuse' | 'replace' | 'cancel'>((resolve) => {
+        let settled = false
+        const finish = (v: 'reuse' | 'replace' | 'cancel') => {
+          if (settled) return
+          settled = true
+          resolve(v)
+        }
+        const instance = Modal.confirm({
+          title: '该席已有有效入场码',
+          icon: null,
+          content: (
+            <div>
+              <Typography.Paragraph style={{ marginBottom: 8 }}>
+                「{seatLabel}」已有有效码（末四 ·{tail}）。入场码是钥匙不是海报——勿静默加堆。
+              </Typography.Paragraph>
+              {cached ? (
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  本会话仍保留明文，可直接复制现有码。
+                </Typography.Text>
+              ) : (
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  明文仅签发时可见；可吊销后再发新码，或取消保留现有码。
+                </Typography.Text>
+              )}
+            </div>
+          ),
+          footer: (
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }} wrap>
+              <Button
+                onClick={() => {
+                  instance.destroy()
+                  finish('cancel')
+                }}
+              >
+                取消
+              </Button>
+              <Button
+                danger
+                onClick={() => {
+                  instance.destroy()
+                  finish('replace')
+                }}
+              >
+                吊销后再发
+              </Button>
+              {cached ? (
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    instance.destroy()
+                    finish('reuse')
+                  }}
+                >
+                  复制现有码
+                </Button>
+              ) : null}
+            </Space>
+          ),
+          onCancel: () => finish('cancel'),
+        })
+      })
+
+      if (choice === 'cancel') return null
+      if (choice === 'reuse') {
+        if (!cached) {
+          message.info(`该席已有有效码（末四 ·${tail}），本会话无明文可复制`)
+          return null
+        }
+        return cached
+      }
+      // replace：先吊销再发
+      try {
+        const { invite: revoked } = await revokeTeamInvite(
+          wsId,
+          teamId,
+          existing.id,
+          crypto.randomUUID(),
+        )
+        invitePlainByIdRef.current.delete(existing.id)
+        setIssuedInvites((prev) =>
+          prev.map((x) =>
+            x.id === existing.id
+              ? {
+                  ...x,
+                  ...revoked,
+                  status: revoked.status || 'revoked',
+                  revoked_at:
+                    revoked.revoked_at || x.revoked_at || new Date().toISOString(),
+                }
+              : x,
+          ),
+        )
+      } catch (e: unknown) {
+        if (isInviteServiceMissing(e)) {
+          message.warning('吊销接口尚未开通，无法替换入场码')
+        } else {
+          message.error(e instanceof ApiError ? e.message : '吊销旧码失败')
+        }
+        return null
+      }
+      return mintInvitePlain(slug)
+    }
+
+    return mintInvitePlain(slug)
   }
 
   const rememberPlainBriefly = (plain: string) => {
@@ -968,6 +1117,7 @@ export default function BotsRosterPage() {
       )
       const plain = invite.code || null
       const tail = inviteTail(invite)
+      if (plain) invitePlainByIdRef.current.set(invite.id, plain)
       setIssuedInvites((prev) => [
         {
           ...invite,
@@ -1230,20 +1380,18 @@ export default function BotsRosterPage() {
           {emptySeats.length > 0 ? (
             <Button
               size="small"
-              type="primary"
-              ghost
               icon={<CopyOutlined />}
               loading={inviteBusy}
               onClick={() => openCrewPack(false)}
             >
-              复制全班入场包
+              全班入场包
             </Button>
           ) : null}
           {renderOneTapActions()}
         </Space>
       </div>
       <Typography.Paragraph type="secondary" className="acb-bots-lead">
-        席位 = 角色坑。主路径：复制入场包（或「入场链接 / 入场提示词」，只含 ymt_ 与席位）；对方入场时自动获得身份。勿发公开群。设置·接入单把签 ymk_ 仅作旁路/救场，不是建队主路径。换机只换演员；续命靠服务端交接。
+        席位 = 角色坑。主路径：席卡「入场链接 / 入场提示词」按席发一把（只含 ymt_）；全班入场包为二级确认。勿发公开群。设置·接入单把签 ymk_ 仅作旁路/救场。换机只换演员；续命靠服务端交接。
       </Typography.Paragraph>
 
       {migrateCollapse}
@@ -1477,6 +1625,11 @@ export default function BotsRosterPage() {
         revokingId={revokingId}
         onRevokeTeam={(inv) => void onRevokeInvite(inv)}
         onRevokeWs={(inv) => void onRevokeWsInvite(inv)}
+        hasEmptySeats={emptySeats.length > 0}
+        onIssuePrimary={() => {
+          message.info('请到上方席卡点「入场链接」或「入场提示词」，按席发一把。')
+        }}
+        onOpenCrewPack={() => openCrewPack(false)}
       />
 
       <Collapse

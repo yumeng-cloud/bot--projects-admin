@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import { Button, Collapse, Popconfirm, Tag, Typography } from 'antd'
+import { Button, Collapse, Empty, Popconfirm, Space, Tag, Typography } from 'antd'
 import {
   inviteStatusCn,
   inviteTail,
@@ -19,6 +19,11 @@ type Props = {
   revokingId: string | null
   onRevokeTeam: (inv: TeamInvite) => void
   onRevokeWs?: (inv: WorkspaceInvite) => void
+  /** I-R3 空态主 CTA：按席发一把 */
+  onIssuePrimary?: () => void
+  /** I-R3 空态次要：全班包（二级确认） */
+  onOpenCrewPack?: () => void
+  hasEmptySeats?: boolean
 }
 
 const PREVIEW = 2
@@ -37,10 +42,22 @@ function seatGroupKey(inv: TeamInvite): string {
   return (inv.role_hint || inv.seat_slug || '').trim() || '__none__'
 }
 
+/** INVITE_ON_DEMAND I-R3：脏串 / 对不上席表 →「未命名席」；永不渲染 team:uuid:slug */
+function isDirtySeatKey(key: string): boolean {
+  if (!key || key === '__none__') return false
+  if (/^team:/i.test(key)) return true
+  if (/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(key)) {
+    return true
+  }
+  return false
+}
+
 function seatGroupLabel(key: string, seats: TeamSeat[]): string {
   if (key === '__none__') return '未指定席'
+  if (isDirtySeatKey(key)) return '未命名席'
   const hit = seats.find((s) => s.role_slug === key)
-  return hit?.display_name || key
+  if (!hit) return '未命名席'
+  return hit.display_name || hit.role_slug || '未命名席'
 }
 
 function InviteRow(props: {
@@ -133,6 +150,9 @@ export default function IssuedInvitesPanel({
   revokingId,
   onRevokeTeam,
   onRevokeWs,
+  onIssuePrimary,
+  onOpenCrewPack,
+  hasEmptySeats,
 }: Props) {
   const teamActive = useMemo(() => teamInvites.filter((i) => !isRevokedTeam(i)), [teamInvites])
   const teamRevoked = useMemo(() => teamInvites.filter((i) => isRevokedTeam(i)), [teamInvites])
@@ -151,7 +171,6 @@ export default function IssuedInvitesPanel({
       if (isRevokedTeam(inv)) g.revoked.push(inv)
       else g.active.push(inv)
     }
-    // active groups first, then groups that only have revoked
     return [...map.values()].sort((a, b) => {
       const aScore = a.active.length ? 0 : 1
       const bScore = b.active.length ? 0 : 1
@@ -161,7 +180,37 @@ export default function IssuedInvitesPanel({
   }, [teamInvites, teamSeats])
 
   const total = teamInvites.length + wsInvites.length
-  if (total === 0) return null
+
+  // I-R3：空态勿 null；主 CTA=按席发一把；全班包次要
+  if (total === 0) {
+    return (
+      <div className="acb-bots-invite-empty">
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={
+            <span>
+              尚无入场码 · 入场码是钥匙不是海报
+              <br />
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                要一把才开一把
+              </Typography.Text>
+            </span>
+          }
+        >
+          <Space wrap>
+            <Button type="primary" size="small" onClick={() => onIssuePrimary?.()}>
+              按席发一把
+            </Button>
+            {hasEmptySeats && onOpenCrewPack ? (
+              <Button size="small" onClick={() => onOpenCrewPack()}>
+                全班入场包（需确认）
+              </Button>
+            ) : null}
+          </Space>
+        </Empty>
+      </div>
+    )
+  }
 
   const activeCount = teamActive.length + wsActive.length
   const summary =

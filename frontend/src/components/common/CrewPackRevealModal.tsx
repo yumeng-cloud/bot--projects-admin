@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, Button, Modal, Space, Typography, message } from 'antd'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Alert, Button, Checkbox, Modal, Space, Typography, message } from 'antd'
 import { CopyOutlined } from '@ant-design/icons'
-import type { TeamSeat } from '../../api/teams'
+import { seatDisplayName, type TeamSeat } from '../../api/teams'
 import {
+  emptySeatsForPack,
   issueCrewPack,
   type CrewPackResult,
   type CrewPackSeatFail,
@@ -14,17 +15,18 @@ export type CrewPackRevealModalProps = {
   workspaceId: string
   teamId: string
   teamName: string
-  /** 当前队 roster；打开时对空席签发 */
+  /** 当前队 roster；勾选空席确认后再签 */
   seats: TeamSeat[]
   /** 签发成功后回写已签发列表（末四） */
   onIssued?: (result: CrewPackResult) => void
-  /** 建队成功自动弹出时标题区分 */
+  /** 建队成功自动弹出时标题区分（现已不再自动弹；保留兼容） */
   afterCreate?: boolean
 }
 
 /**
- * AUTO_CREW C1/C3：全班入场包挡层——签发空席 ymt_ + 展示 Markdown + 一键复制。
- * 部分席失败标明席名，其余仍可复制。禁嵌 ymk_。
+ * INVITE_ON_DEMAND I-R4：全班入场包二级挡层。
+ * 禁止 useEffect 一 open 就 issueCrewPack；勾选空席 → 用户确认后再签。
+ * 禁嵌 ymk_。
  */
 export default function CrewPackRevealModal({
   open,
@@ -39,16 +41,37 @@ export default function CrewPackRevealModal({
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<CrewPackResult | null>(null)
   const [copied, setCopied] = useState(false)
+  const [selected, setSelected] = useState<string[]>([])
   const runIdRef = useRef(0)
+
+  const emptySeats = useMemo(() => emptySeatsForPack(seats), [seats])
 
   const reset = useCallback(() => {
     setBusy(false)
     setResult(null)
     setCopied(false)
+    setSelected([])
   }, [])
+
+  // 打开时重置；默认不勾选（要一把才开一把）；不自动签发
+  useEffect(() => {
+    if (!open) {
+      reset()
+      runIdRef.current += 1
+      return
+    }
+    setResult(null)
+    setCopied(false)
+    setBusy(false)
+    setSelected([])
+  }, [open, reset])
 
   const runIssue = useCallback(async () => {
     if (!workspaceId || !teamId) return
+    if (selected.length === 0) {
+      message.warning('请先勾选要签发的空席')
+      return
+    }
     const myRun = ++runIdRef.current
     setBusy(true)
     setResult(null)
@@ -59,6 +82,7 @@ export default function CrewPackRevealModal({
         teamId,
         teamName: teamName || '未命名团队',
         seats,
+        selectedSlugs: selected,
       })
       if (myRun !== runIdRef.current) return
       setResult(res)
@@ -79,16 +103,7 @@ export default function CrewPackRevealModal({
     } finally {
       if (myRun === runIdRef.current) setBusy(false)
     }
-  }, [workspaceId, teamId, teamName, seats, onIssued])
-
-  useEffect(() => {
-    if (!open) {
-      reset()
-      runIdRef.current += 1
-      return
-    }
-    void runIssue()
-  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps -- 仅随 open 触发一次签发
+  }, [workspaceId, teamId, teamName, seats, selected, onIssued])
 
   const failSummary = (fails: CrewPackSeatFail[]) =>
     fails.map((f) => `「${f.displayName}」${f.reason ? `：${f.reason}` : ''}`).join('；')
@@ -113,8 +128,12 @@ export default function CrewPackRevealModal({
   }
 
   const title = afterCreate
-    ? `班底已就绪 · 复制入场包，对方入场时自动获得身份`
-    : `复制全班入场包`
+    ? `班底已就绪 · 勾选空席后签发入场包`
+    : `全班入场包（二级）`
+
+  const showPicker = !result && !busy
+  const allSlugs = emptySeats.map((s) => (s.role_slug || '').trim()).filter(Boolean)
+  const allChecked = allSlugs.length > 0 && allSlugs.every((s) => selected.includes(s))
 
   return (
     <Modal
@@ -133,14 +152,58 @@ export default function CrewPackRevealModal({
           showIcon
           message={
             afterCreate
-              ? `团队「${teamName}」已创建；复制入场包，对方入场时自动获得身份`
-              : `为当前队「${teamName}」的每个空席签发入场包（仅 ymt_ + 席位）；对方入场时自动获得身份`
+              ? `团队「${teamName}」已创建；按需勾选空席再签发（勿默认全开）`
+              : `为当前队「${teamName}」勾选空席后确认签发（仅 ymt_ + 席位）`
           }
-          description="勿发公开群。两码分轨：入场包只含 ymt_。设置·接入单把签 ymk_ 仅作旁路/救场，不是建队主路径。"
+          description="入场码是钥匙不是海报——要一把才开一把。勿发公开群。主路径请用席卡「入场链接 / 入场提示词」。"
         />
 
+        {showPicker ? (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <Typography.Text strong style={{ fontSize: 13 }}>
+                勾选要签发的空席
+              </Typography.Text>
+              {allSlugs.length > 0 ? (
+                <Button
+                  type="link"
+                  size="small"
+                  style={{ padding: 0 }}
+                  onClick={() => setSelected(allChecked ? [] : [...allSlugs])}
+                >
+                  {allChecked ? '清空' : '全选空席'}
+                </Button>
+              ) : null}
+            </div>
+            {emptySeats.length === 0 ? (
+              <Alert type="warning" showIcon message="当前没有空席可签" />
+            ) : (
+              <Checkbox.Group
+                style={{ width: '100%' }}
+                value={selected}
+                onChange={(vals) => setSelected(vals as string[])}
+              >
+                <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                  {emptySeats.map((seat) => {
+                    const slug = (seat.role_slug || '').trim()
+                    if (!slug) return null
+                    return (
+                      <Checkbox key={slug} value={slug}>
+                        {seatDisplayName(seat)}
+                        <Typography.Text type="secondary" style={{ marginLeft: 6, fontSize: 12 }}>
+                          （空席）
+                        </Typography.Text>
+                      </Checkbox>
+                    )
+                  })}
+                </Space>
+              </Checkbox.Group>
+            )}
+          </div>
+        ) : null}
+
         {busy ? (
-          <Typography.Text type="secondary">正在为各空席签发入场码…</Typography.Text>
+          <Typography.Text type="secondary">正在为勾选席签发入场码…</Typography.Text>
         ) : null}
 
         {result && result.failed.length > 0 ? (
@@ -160,7 +223,7 @@ export default function CrewPackRevealModal({
             description={
               result.failed.length
                 ? failSummary(result.failed)
-                : '当前没有空席，或签发接口未返回明文'
+                : '未勾选空席，或签发接口未返回明文'
             }
           />
         ) : null}
@@ -190,17 +253,35 @@ export default function CrewPackRevealModal({
         ) : null}
 
         <Space wrap>
-          <Button
-            type="primary"
-            icon={<CopyOutlined />}
-            loading={busy}
-            disabled={!result?.markdown}
-            onClick={() => void onCopy()}
-          >
-            复制全班入场包
-          </Button>
-          {!busy && result && result.ok.length === 0 ? (
-            <Button onClick={() => void runIssue()}>重试签发</Button>
+          {showPicker ? (
+            <Button
+              type="primary"
+              loading={busy}
+              disabled={selected.length === 0 || emptySeats.length === 0}
+              onClick={() => void runIssue()}
+            >
+              确认签发选中席（{selected.length}）
+            </Button>
+          ) : null}
+          {result?.markdown ? (
+            <Button
+              type="primary"
+              icon={<CopyOutlined />}
+              loading={busy}
+              onClick={() => void onCopy()}
+            >
+              复制全班入场包
+            </Button>
+          ) : null}
+          {result && !busy ? (
+            <Button
+              onClick={() => {
+                setResult(null)
+                setCopied(false)
+              }}
+            >
+              重新勾选
+            </Button>
           ) : null}
           <Button onClick={onClose} disabled={busy}>
             {copied ? '完成' : '关闭'}

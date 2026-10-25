@@ -72,8 +72,14 @@ export async function issueCrewPack(params: {
   teamId: string
   teamName: string
   seats: TeamSeat[]
+  /** 仅签发勾选席；缺省=全部空席（调用方应先确认） */
+  selectedSlugs?: string[]
 }): Promise<CrewPackResult> {
-  const targets = emptySeatsForPack(params.seats)
+  let targets = emptySeatsForPack(params.seats)
+  if (params.selectedSlugs) {
+    const want = new Set(params.selectedSlugs.map((s) => s.trim()).filter(Boolean))
+    targets = targets.filter((s) => want.has((s.role_slug || '').trim()))
+  }
   const ok: CrewPackSeatOk[] = []
   const failed: CrewPackSeatFail[] = []
 
