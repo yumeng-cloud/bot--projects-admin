@@ -17,6 +17,8 @@
 
 7. **PRO_ADMIN**：设置页 / 超管台有序密度专册见 [`PRO_ADMIN_VISUAL_BASELINE.md`](./PRO_ADMIN_VISUAL_BASELINE.md)（本波 A/F **专册优先**）。
 
+8. **SITE_LANDING**：登录前官网一页见 [`SITE_LANDING_VISUAL_BASELINE.md`](./SITE_LANDING_VISUAL_BASELINE.md)（冲突时专册优先；禁总指挥废稿暗黑皮）。
+
 ## 审图检查清单（每张截图）
 
 - [ ] 文字是否挤、糊、截断？
