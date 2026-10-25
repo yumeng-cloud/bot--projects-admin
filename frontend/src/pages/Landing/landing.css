@@ -1,5 +1,6 @@
-/* SITE_LANDING — figure-thickened A–F + A2 (docs/SITE_LANDING_VISUAL_BASELINE.md @bc215de)
+/* SITE_LANDING — L-R3‡ 真图接线（docs/SITE_LANDING_VISUAL_BASELINE.md + NEXT_WAVE_DEBT_LANDING）
  * Scope: .acb-landing-* only. Same tokens as app / login gate. No Google Fonts, no dark hero, no pill eyebrow.
+ * mocks.tsx / landing-mocks.css 可留档，但主路径不得再渲染 CSS 假框。
  */
 .acb-landing {
   min-height: 100%;
@@ -72,6 +73,22 @@
   width: 100%;
 }
 
+/* —— True art —— */
+.acb-landing-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--acb-border);
+  background: var(--acb-bg-container);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--acb-text) 4%, transparent);
+}
+
+.acb-landing-art.is-hero {
+  max-width: 520px;
+  margin-left: auto;
+}
+
 /* —— A Hero —— */
 .acb-landing-hero {
   display: grid;
@@ -137,11 +154,6 @@
   justify-content: flex-end;
 }
 
-.acb-landing-hero-viz .acb-mock-board {
-  max-width: 520px;
-  width: 100%;
-}
-
 /* —— Shared section —— */
 .acb-landing-block {
   margin-bottom: 52px;
@@ -181,7 +193,7 @@
   padding: 0;
 }
 
-/* C steps */
+/* C steps — stacked inside split copy */
 .acb-landing-steps-list {
   margin: 16px 0 0;
   padding: 0;
@@ -189,6 +201,11 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+}
+
+.acb-landing-steps-list.is-stacked {
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 .acb-landing-step {
@@ -230,11 +247,7 @@
   color: var(--acb-text-secondary);
 }
 
-.acb-landing-flow-wrap {
-  margin-top: 20px;
-}
-
-/* E how-start + seat stack */
+/* E how-start */
 .acb-landing-how-start {
   margin: 16px 0 0;
   max-width: 38em;
@@ -250,17 +263,6 @@
 .acb-landing-how-start strong {
   font-weight: 600;
   color: var(--acb-text);
-}
-
-.acb-landing-seat-stack {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 12px;
-}
-
-.acb-landing-seat-stack .acb-mock-seat,
-.acb-landing-seat-stack .acb-mock-key {
-  max-width: none;
 }
 
 /* F bottom CTA */
@@ -304,7 +306,7 @@
     gap: 28px;
   }
 
-  .acb-landing-hero-viz .acb-mock-board {
+  .acb-landing-art.is-hero {
     max-width: 100%;
   }
 }
@@ -325,7 +327,7 @@
     justify-content: stretch;
   }
 
-  .acb-landing-steps-list {
+  .acb-landing-steps-list:not(.is-stacked) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -351,7 +353,7 @@
     gap: 36px;
   }
 
-  .acb-landing-steps-list {
+  .acb-landing-steps-list:not(.is-stacked) {
     grid-template-columns: 1fr;
   }
 

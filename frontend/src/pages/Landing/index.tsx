@@ -1,25 +1,44 @@
 /**
- * LANDING / SITE_LANDING — figure-thickened A–F + A2.
- * Visual: docs/SITE_LANDING_VISUAL_BASELINE.md @bc215de §4 / §4.1 / §5 / §6
+ * LANDING / SITE_LANDING — L-R3‡ 真图接线（禁 CSS 假框主路径）
+ * Visual: docs/SITE_LANDING_VISUAL_BASELINE.md + docs/NEXT_WAVE_DEBT_LANDING.md
  */
 import { Link } from 'react-router-dom'
 import { Button } from 'antd'
 import './landing.css'
-import {
-  MockBoard,
-  MockSeatPanel,
-  MockMulti,
-  MockFlow,
-  MockCompare,
-  MockKey,
-} from './mocks'
+
+import artHero from './assets/landing-hero-board.png'
+import artWhy from './assets/landing-why-compare.png'
+import artTeam from './assets/landing-team-board.png'
+import artMulti from './assets/landing-multi-machines.png'
+import artSeats from './assets/landing-seats-keys.png'
+import artFlow from './assets/landing-flow-steps.png'
 
 const STEPS = [
   { n: '1', title: '建班底', body: '按角色开席，人与 Agent 各就各位。' },
-  { n: '2', title: '各机认领', body: '不同电脑认领不同席位角色，并行干活。' },
-  { n: '3', title: '看板推进', body: '共享 Issue / Wiki / 上下文，进度同场可见。' },
-  { n: '4', title: '统一调度', body: '干完收束验收；拍板仍在人。' },
+  { n: '2', title: '按席发一把入场', body: '有钥则用、无则生；按席复制入场链接给 Bot。' },
+  { n: '3', title: '各机认领角色', body: '不同电脑认领不同席位角色，并行干活。' },
+  { n: '4', title: '看板里统一调度', body: '共享 Issue / Wiki / 上下文；干完收束，拍板仍在人。' },
 ] as const
+
+function LandingArt({
+  src,
+  alt,
+  className = '',
+}: {
+  src: string
+  alt: string
+  className?: string
+}) {
+  return (
+    <img
+      className={`acb-landing-art${className ? ` ${className}` : ''}`}
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+    />
+  )
+}
 
 export default function Landing() {
   return (
@@ -36,7 +55,7 @@ export default function Landing() {
       </header>
 
       <main className="acb-landing-main">
-        {/* A Hero — left copy · right V-Board large frame */}
+        {/* A Hero — 左文 · 右真图大框 */}
         <section className="acb-landing-hero" aria-labelledby="acb-landing-title">
           <div className="acb-landing-hero-copy">
             <p className="acb-landing-eyebrow">人与 Agent，一支团队</p>
@@ -58,11 +77,15 @@ export default function Landing() {
             </div>
           </div>
           <div className="acb-landing-hero-viz">
-            <MockBoard />
+            <LandingArt
+              src={artHero}
+              alt="协作看板示意：人与 Agent 同场推进议题"
+              className="is-hero"
+            />
           </div>
         </section>
 
-        {/* A2 为什么做 + chat vs seat compare */}
+        {/* A2 为什么做 — 文左图右 */}
         <section
           id="acb-landing-why"
           className="acb-landing-block acb-landing-why"
@@ -74,36 +97,42 @@ export default function Landing() {
                 为什么做
               </h2>
               <p className="acb-landing-section-body">
-                聊天窗管不住一支队——要占席、席间交付与验收，而不是多开几个对话。
+                单人聊天窗管不住多角色协作；需要像真团队一样占席、交接、验收。
               </p>
             </div>
             <div className="acb-landing-split-viz">
-              <MockCompare />
+              <LandingArt
+                src={artWhy}
+                alt="单聊窗与席位班底对比：同场可交付可验收"
+              />
             </div>
           </div>
         </section>
 
-        {/* B 价值 — 左右图文交替（禁三等宽纯字卡墙） */}
+        {/* B 价值 — 左右图文交替（≥3 is-flip） */}
         <section
           id="acb-landing-values"
           className="acb-landing-block acb-landing-values"
           aria-label="产品价值"
         >
-          {/* 一支队：左文右图 V-Board */}
-          <article className="acb-landing-split acb-landing-value-row">
+          {/* 一支队：图左文右 */}
+          <article className="acb-landing-split is-flip acb-landing-value-row">
             <div className="acb-landing-split-copy">
-              <h2 className="acb-landing-section-title">一支队</h2>
+              <h2 className="acb-landing-section-title">一支队，不是多开聊天</h2>
               <p className="acb-landing-section-body">
-                人与 Agent 同场协作，共享看板与上下文。不是多开聊天：各司其席，像一支真团队在场。
+                人与 Agent 同场共享看板与上下文，各司其席。
               </p>
             </div>
             <div className="acb-landing-split-viz">
-              <MockBoard compact />
+              <LandingArt
+                src={artTeam}
+                alt="一支队看板：人与 Agent 各司其席"
+              />
             </div>
           </article>
 
-          {/* 多机：左图右文 V-Multi（交替） */}
-          <article className="acb-landing-split is-flip acb-landing-value-row">
+          {/* 多机：文左图右 */}
+          <article className="acb-landing-split acb-landing-value-row">
             <div className="acb-landing-split-copy">
               <h2 className="acb-landing-section-title">多机分工，不是换机续聊</h2>
               <p className="acb-landing-section-body">
@@ -111,56 +140,69 @@ export default function Landing() {
               </p>
             </div>
             <div className="acb-landing-split-viz">
-              <MockMulti />
+              <LandingArt
+                src={artMulti}
+                alt="多机认领不同席位角色，统一调度"
+              />
             </div>
           </article>
 
-          {/* 席位：左文右席位面板 */}
-          <article className="acb-landing-split acb-landing-value-row">
+          {/* 席位：图左文右 */}
+          <article className="acb-landing-split is-flip acb-landing-value-row">
             <div className="acb-landing-split-copy">
               <h2 className="acb-landing-section-title">席位 · 按需入场 · 模型档</h2>
               <p className="acb-landing-section-body">
-                班底按席；钥匙按需；决策审查强模型，写码轻量。档位后续可挂，结构已按席留好。
+                班底按席占用；入场钥匙按需发（有则用、无则生、替换才顶）；决策与审查用强模型，写码用轻量。
               </p>
             </div>
             <div className="acb-landing-split-viz">
-              <MockSeatPanel />
+              <LandingArt
+                src={artSeats}
+                alt="席位班底与按需入场钥"
+              />
             </div>
           </article>
         </section>
 
-        {/* C 怎么干活 + V-Flow */}
+        {/* C 怎么干活 + 流程真图 — 文左图右 */}
         <section
           className="acb-landing-block acb-landing-steps"
           aria-labelledby="acb-landing-steps-title"
         >
-          <h2 id="acb-landing-steps-title" className="acb-landing-section-title">
-            怎么干活
-          </h2>
-          <ol className="acb-landing-steps-list">
-            {STEPS.map((s) => (
-              <li key={s.n} className="acb-landing-step">
-                <span className="acb-landing-step-n" aria-hidden="true">
-                  {s.n}
-                </span>
-                <div className="acb-landing-step-copy">
-                  <h3 className="acb-landing-step-title">{s.title}</h3>
-                  <p className="acb-landing-step-body">{s.body}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <div className="acb-landing-flow-wrap">
-            <MockFlow />
+          <div className="acb-landing-split">
+            <div className="acb-landing-split-copy">
+              <h2 id="acb-landing-steps-title" className="acb-landing-section-title">
+                怎么干活
+              </h2>
+              <ol className="acb-landing-steps-list is-stacked">
+                {STEPS.map((s) => (
+                  <li key={s.n} className="acb-landing-step">
+                    <span className="acb-landing-step-n" aria-hidden="true">
+                      {s.n}
+                    </span>
+                    <div className="acb-landing-step-copy">
+                      <h3 className="acb-landing-step-title">{s.title}</h3>
+                      <p className="acb-landing-step-body">{s.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div className="acb-landing-split-viz">
+              <LandingArt
+                src={artFlow}
+                alt="四步流程：建班底、按席入场、各机认领、统一调度"
+              />
+            </div>
           </div>
         </section>
 
-        {/* D 分布式换机 — 左文右 V-Multi */}
+        {/* D 分布式 — 图左文右（第 3 个 is-flip） */}
         <section
           className="acb-landing-block acb-landing-dist"
           aria-labelledby="acb-landing-dist-title"
         >
-          <div className="acb-landing-split">
+          <div className="acb-landing-split is-flip">
             <div className="acb-landing-split-copy">
               <h2 id="acb-landing-dist-title" className="acb-landing-section-title">
                 多机就是一支队的工位
@@ -171,32 +213,37 @@ export default function Landing() {
               </p>
             </div>
             <div className="acb-landing-split-viz">
-              <MockMulti />
+              <LandingArt
+                src={artMulti}
+                alt="多机工位：不同机器认领不同角色"
+              />
             </div>
           </div>
         </section>
 
-        {/* E 席位与入场 — 左文右 V-Seat + V-Key */}
+        {/* E 怎么开始 — 文左图右 */}
         <section
           className="acb-landing-block acb-landing-seats"
           aria-labelledby="acb-landing-seats-title"
         >
-          <div className="acb-landing-split is-flip">
+          <div className="acb-landing-split">
             <div className="acb-landing-split-copy">
               <h2 id="acb-landing-seats-title" className="acb-landing-section-title">
-                钥匙按需，不堆墙
+                怎么开始
               </h2>
               <p className="acb-landing-section-body">
-                席位有人占用才算在席；入场钥匙有则用、无则生、替换才顶。决策与审查用强模型，写码席用轻量——档位后续可挂，结构已按席留好。
-              </p>
-              <p className="acb-landing-how-start">
-                <strong>怎么开始：</strong>
                 登录进入工作区；按席复制入场链接给 Bot；不要默认堆一墙码。
               </p>
+              <p className="acb-landing-how-start">
+                <strong>钥匙按需，不堆墙：</strong>
+                席位有人占用才算在席；入场钥匙有则用、无则生、替换才顶。决策与审查用强模型，写码席用轻量——档位后续可挂，结构已按席留好。
+              </p>
             </div>
-            <div className="acb-landing-split-viz acb-landing-seat-stack">
-              <MockSeatPanel />
-              <MockKey />
+            <div className="acb-landing-split-viz">
+              <LandingArt
+                src={artSeats}
+                alt="按席入场：一席一钥，按需发放"
+              />
             </div>
           </div>
         </section>
