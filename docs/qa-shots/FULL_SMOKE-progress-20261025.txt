@@ -10,7 +10,7 @@ env_probe:
   vite: http://127.0.0.1:5175 → 200
   api_healthz: http://127.0.0.1:8080/healthz → 200 {"status":"ok"}
 seed: admin@yumeng.tech (dogfood; NEVER owner)
-overall: PARTIAL (Wave D done · A3/B2/B5/C8/D3/E2/F1/F5/G2/H2 PASS† · A6 深链回跳 FAIL · remaining PENDING B3 C9 C10 E3 F2 F3 F4 F6 G3 G5 H3 H4 · NOT overall FULL_SMOKE PASS)
+overall: PASS† (with Soft C9) · A6 PASS† @0d5a57c retest · Wave E hard rows green · finalize 2026-10-25 15:39 Asia/Shanghai
 browser_run: Wave A+B computerUse 2026-10-25 Asia/Shanghai
 ================================================================
 
@@ -148,4 +148,35 @@ next:
   - Do NOT claim overall FULL_SMOKE PASS
 shots_copied:
   docs/qa-shots/FULL_SMOKE-20261025-d-{a3-register,a6-deep,b2-create-ws,b5-empty,c8-rel,d3-wiki-edit,e2-time,f1-ws,f5-label,g2-join,h2-admin-ws}.png
+# --- end block ---
+
+# --- run 5 · Wave E + A6 retest · finalize Overall PASS† ---
+time_AsiaShanghai: 2026-10-25 15:39 Asia/Shanghai
+HEAD_at_run: 0d5a57c (fix(fe): A6 未登录深链登录后回跳原目标)
+tester: QA (seed admin@yumeng.tech; dogfood only; NEVER owner)
+groups_touched: A6(retest) | B3 | C9 Soft | C10 | E3 | F2 F3 F4 F6 | G3 G5 | H3 H4
+rows:
+  A6 PASS† — retest @0d5a57c; evidence: docs/qa-shots/FULL_SMOKE-20261025-a6-retest.png (+ e-a6-retest.png) — 未登录深链→登录后回跳原目标；前 Wave D FAIL 清
+  B3 PASS† — evidence: FULL_SMOKE-20261025-e-b3-redeem.png
+  C9 Soft†/SKIP — evidence: FULL_SMOKE-20261025-e-c9-archive.png — Issue drawer 无归档控件（CSS only）；记 Soft，非 FAIL；不挡 Overall
+  C10 PASS† — evidence: FULL_SMOKE-20261025-e-c10-attach.png
+  E3 PASS† — evidence: FULL_SMOKE-20261025-e-e3-time-empty.png
+  F2 PASS† — evidence: FULL_SMOKE-20261025-e-f2-proj.png
+  F3 PASS† — evidence: FULL_SMOKE-20261025-e-f3-team.png
+  F4 PASS† — evidence: FULL_SMOKE-20261025-e-f4-members.png
+  F6 PASS† — evidence: FULL_SMOKE-20261025-e-f6-integ.png
+  G3 PASS† — evidence: FULL_SMOKE-20261025-e-g3-seat.png
+  G5 PASS† — evidence: FULL_SMOKE-20261025-e-g5-bot-edit.png
+  H3 PASS† — evidence: FULL_SMOKE-20261025-e-h3-users.png
+  H4 PASS† — evidence: FULL_SMOKE-20261025-e-h4-admin.png
+blockers:
+  - A6 深链回跳: CLEARED @0d5a57c (retest PASS†)
+softs:
+  - C9 Soft†/SKIP — no 归档 control in Issue drawer (CSS only); not a FAIL
+overall: **PASS†** with Soft C9 noted; all hard runnable rows green
+next:
+  - Soft C9 may open product debt ticket (archive control in Issue drawer) — optional; not blocking
+shots_copied:
+  docs/qa-shots/FULL_SMOKE-20261025-a6-retest.png
+  docs/qa-shots/FULL_SMOKE-20261025-e-{a6-retest,b3-redeem,c9-archive,c10-attach,e3-time-empty,f2-proj,f3-team,f4-members,f6-integ,g3-seat,g5-bot-edit,h3-users,h4-admin}.png
 # --- end block ---

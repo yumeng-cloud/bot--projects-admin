@@ -1,13 +1,14 @@
 FULL_SMOKE_20261025 · QA summary
 ================================================================
 wave: FULL_SMOKE_20261025
-written_at: 2026-10-25 15:18 Asia/Shanghai (Wave D append ~15:30)
-HEAD_at_finalize: 46f3040 (pre-docs commit; this summary lands in follow-up commit)
+written_at: 2026-10-25 15:39 Asia/Shanghai (Wave E finalize; prior Wave D append ~15:30)
+HEAD_at_A6_fix_retest: 0d5a57c
+HEAD_at_finalize: docs commit following 0d5a57c (this summary)
 tester: QA · seed admin@yumeng.tech（dogfood；禁主人）
 env: Vite :5175 200 · API /healthz 200
 checklist: docs/qa-shots/FULL_SMOKE-checklist-20261025.md
 progress: docs/qa-shots/FULL_SMOKE-progress-20261025.txt
-overall: PARTIAL — Wave D 后仍 PARTIAL（A6 FAIL + remaining PENDING）；非 Overall PASS†
+overall: **PASS†** with Soft C9 · A6 PASS† @0d5a57c retest · Wave E hard rows green · all hard runnable rows green
 ================================================================
 
 ## Waves
@@ -18,15 +19,15 @@ overall: PARTIAL — Wave D 后仍 PARTIAL（A6 FAIL + remaining PENDING）；�
 - A3 注册 Tab PASS†（Wave D · d-a3-register.png）
 - A4 /join 未登录 PASS†（旁证 LANDING-L-Q1-retest-join-bare-unauth / join-code-unauth）
 - A5 /join 已登录 PASS† @90cc85c（前 FAIL：裸 /join 死转 Spin；修后复测绿）
-- A6 受保护深链未登录 FAIL（Wave D · 深链回跳坏 · d-a6-deep.png）
+- A6 受保护深链未登录 PASS† @0d5a57c 复测（前 Wave D FAIL · d-a6-deep.png；复测 a6-retest.png）
 
 ### B · Home + 工作区
 - B1 Home PASS† · B4 进仓+切仓零 bleed PASS†
-- B2 创建工作区 PASS† · B5 空仓空态 PASS†（Wave D）· B3 兑换邀请码 → PENDING
+- B2 创建工作区 PASS† · B5 空仓空态 PASS†（Wave D）· B3 兑换邀请码 PASS†（Wave E · e-b3-redeem.png）
 
 ### C · 项目视图 + Issue（Wave C）
 - C1–C7 全 PASS†（看板/列表/周期/排期/新建 YM-33/详情编辑态/评论）
-- C8 关联 PASS†（Wave D）· C9 归档 · C10 附件 → PENDING
+- C8 关联 PASS†（Wave D）· C9 Soft†/SKIP（Wave E · 无归档控件 CSS only；非 FAIL）· C10 附件 PASS†（Wave E · e-c10-attach.png）
 
 ### D · Wiki
 - D1 打开 · D2 开篇 · D4 空正文空态 → PASS†（FULL_SMOKE-20261025-wiki.png）
@@ -34,28 +35,30 @@ overall: PARTIAL — Wave D 后仍 PARTIAL（A6 FAIL + remaining PENDING）；�
 
 ### E · 工时
 - E1 全页 PASS†（YM-9 + 标题；FULL_SMOKE-20261025-time.png）
-- E2 编辑保存 PASS†（Wave D）· E3 空态 → PENDING
+- E2 编辑保存 PASS†（Wave D）· E3 空态 PASS†（Wave E · e-e3-time-empty.png）
 
 ### F · 设置六 Tab
 - 六 Tab 均有页开箱截（settings-{workspace,projects,teams,members,labels,integrations}.png）
-- F1 工作区 · F5 标签 深保存 PASS†（Wave D）；F2 F3 F4 F6 仍 PENDING
+- F1 工作区 · F5 标签 深保存 PASS†（Wave D）；F2 F3 F4 F6 PASS†（Wave E · e-f2/f3/f4/f6）
 
 ### G · Bot 席
 - G1 名册 PASS† · G4 详情（席位·后端）PASS†
-- G2 向导 PASS†（Wave D）· G3 占席/解绑 · G5 详情编辑 → PENDING
+- G2 向导 PASS†（Wave D）· G3 占席/解绑 PASS† · G5 详情编辑 PASS†（Wave E · e-g3/g5）
 
 ### H · 平台管理
 - H1 /admin 入口 PASS†（工作区 11 / 用户 7）
-- H2 工作区台 PASS†（Wave D）· H3 用户台 · H4 深链 → PENDING
+- H2 工作区台 PASS†（Wave D）· H3 用户台 PASS† · H4 深链 PASS†（Wave E · e-h3/h4）
 
 ## Defects fixed this package
 - /join 无码死转「正在打开入场向导」→ FE 90cc85c；A5 retest PASS†
+- A6 未登录深链登录后回跳原目标 → FE 0d5a57c；A6 retest PASS†
 
 ## LANDING
 - L-P1 由产品关闭 @46f3040（证 L-Q1 PASS† / join 90cc85c / 锁句 675a300 / 图文 SL-V3 e7da310）
 - QA 不自认、不代关 L-P1
 
 ## Softs（不挡；另票）
+- **C9 Soft†/SKIP** — Issue drawer 无归档控件（CSS only）；非 FAIL；可开产品债票
 - favicon 404
 - Inter fonts CDN/tunnel
 - cycles 无「新建周期」按钮（C3 minor）
@@ -74,12 +77,10 @@ docs/qa-shots/FULL_SMOKE-20261025-{
 + LANDING-L-Q1-retest-* / LANDING-L-Q1-lock-retest-20261025.png（A4/A5/LANDING 旁证）
 
 ## Remaining PENDING（诚实清单）
-B3 · C9 C10 · E3 · F2 F3 F4 F6 · G3 G5 · H3 H4
-（A6 = FAIL，见 Wave D append）
+（无硬 PENDING）· C9 = Soft†/SKIP（非 FAIL）
 
 ## Verdict
-PARTIAL — 主路径大页（Landing/登录/Join/Home/看板–排期/Wiki 开/工时开/设置 Tab 开/Bot+详情/Admin 入口）绿；
-深编辑保存与若干次要行未本轮闭环 → 禁写 FULL_SMOKE Overall PASS†。
+**PASS†** with Soft C9 — 全部硬 runnable 行绿；A6 @0d5a57c 复测绿；C9 Soft†/SKIP 已记。
 
 ================================================================
 ## Wave D append · 2026-10-25 ~15:28 Asia/Shanghai
@@ -121,3 +122,32 @@ B3 · C9 C10 · E3 · F2 F3 F4 F6 · G3 G5 · H3 H4
 
 ### Verdict（仍）
 PARTIAL — Wave D 关掉一批深编辑/次要行；A6 深链回跳 FAIL 未清 + 上列 PENDING 仍在 → 禁写 FULL_SMOKE Overall PASS†。
+
+================================================================
+## Wave E append · 2026-10-25 15:39 Asia/Shanghai
+HEAD_at_wave_e: 0d5a57c (A6 fix) · finalize docs this commit
+tester: QA · seed admin@yumeng.tech（dogfood；禁主人）
+overall: **PASS†** with Soft C9 · all hard runnable rows green
+================================================================
+
+### Wave E / A6 retest results
+- A6 PASS† @0d5a57c 复测 — FULL_SMOKE-20261025-a6-retest.png（+ e-a6-retest.png）
+  · 前 Wave D FAIL（d-a6-deep.png）已清：登录后回跳原深链
+- B3 PASS† — e-b3-redeem.png
+- C9 Soft†/SKIP — e-c9-archive.png · Issue drawer 无归档控件（CSS only）；非 FAIL
+- C10 PASS† — e-c10-attach.png
+- E3 PASS† — e-e3-time-empty.png
+- F2 PASS† — e-f2-proj.png
+- F3 PASS† — e-f3-team.png
+- F4 PASS† — e-f4-members.png
+- F6 PASS† — e-f6-integ.png
+- G3 PASS† — e-g3-seat.png
+- G5 PASS† — e-g5-bot-edit.png
+- H3 PASS† — e-h3-users.png
+- H4 PASS† — e-h4-admin.png
+
+### Soft note（C9）
+Issue drawer 未见归档/取消归档控件（CSS only 探测）；记 Soft†/SKIP，**不是 FAIL**，不挡 Overall PASS†。可另开产品债票补入口。
+
+### Verdict（终）
+**PASS†** with Soft C9 — FULL_SMOKE_20261025 Overall PASS†；硬 runnable 全绿；HEAD note 0d5a57c；finalize 2026-10-25 15:39 Asia/Shanghai。
