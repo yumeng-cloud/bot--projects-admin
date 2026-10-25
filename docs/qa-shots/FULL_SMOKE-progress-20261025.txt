@@ -10,7 +10,7 @@ env_probe:
   vite: http://127.0.0.1:5175 → 200
   api_healthz: http://127.0.0.1:8080/healthz → 200 {"status":"ok"}
 seed: admin@yumeng.tech (dogfood; NEVER owner)
-overall: PENDING (Wave A partial + Wave B project PASS†; A5 join PASS† after 90cc85c; Landing lock PASS† @675a300 / L-Q1 retest2; product L-P1 @46f3040; C–H may continue elsewhere; NOT overall FULL_SMOKE PASS)
+overall: PARTIAL (Wave D done · A3/B2/B5/C8/D3/E2/F1/F5/G2/H2 PASS† · A6 深链回跳 FAIL · remaining PENDING B3 C9 C10 E3 F2 F3 F4 F6 G3 G5 H3 H4 · NOT overall FULL_SMOKE PASS)
 browser_run: Wave A+B computerUse 2026-10-25 Asia/Shanghai
 ================================================================
 
@@ -113,4 +113,39 @@ next:
 shots_copied:
   docs/qa-shots/LANDING-L-Q1-lock-retest-20261025.png (pre-existing)
   docs/qa-shots/LANDING-L-Q1-retest-{full,hero,home-authed,join-bare-authed,join-bare-unauth,join-code-authed,join-code-unauth}-20261025.png
+# --- end block ---
+
+# --- run 4 · Wave D · computerUse ---
+time_AsiaShanghai: 2026-10-25 ~15:23–15:28 Asia/Shanghai
+HEAD_at_run: 01b5296 (pre-docs; this docs commit follows)
+tester: QA (seed admin@yumeng.tech; dogfood only; NEVER owner)
+groups_touched: A3 A6 | B2 B5 | C8 | D3 | E2 | F1 F5 | G2 | H2
+fixture:
+  ws_created: FULL-SMOKE-WS-1524 (B2/B5)
+  register_probe: Smoke A3 / smoke+1792912992382@example.com (A3 form)
+
+rows:
+  A3 PASS† — evidence: docs/qa-shots/FULL_SMOKE-20261025-d-a3-register.png — /login「注册」Tab：姓名/邮箱/密码表单完整可填（Smoke A3）
+  A6 FAIL — evidence: docs/qa-shots/FULL_SMOKE-20261025-d-a6-deep.png — 受保护深链未登录→登录后未回跳目标深链，落 Home「我的工作区」；深链回跳坏。钉 React（auth redirect / from 保留）
+  B2 PASS† — evidence: FULL_SMOKE-20261025-d-b2-create-ws.png — 创建工作区 FULL-SMOKE-WS-1524 成功并可进仓
+  B5 PASS† — evidence: FULL_SMOKE-20261025-d-b5-empty.png — 新仓看板空态「还没有项目」+「+ 创建项目」主 CTA；「去设置」次要
+  C8 PASS† — evidence: FULL_SMOKE-20261025-d-c8-rel.png — Issue 关联区可建/空态像样
+  D3 PASS† — evidence: FULL_SMOKE-20261025-d-d3-wiki-edit.png — Wiki 编辑→保存→取消路径绿
+  E2 PASS† — evidence: FULL_SMOKE-20261025-d-e2-time.png — 工时编辑/保存路径绿
+  F1 PASS† — evidence: FULL_SMOKE-20261025-d-f1-ws.png — 设置·工作区 Tab 深保存路径绿
+  F5 PASS† — evidence: FULL_SMOKE-20261025-d-f5-label.png — 设置·标签新建/编辑路径绿
+  G2 PASS† — evidence: FULL_SMOKE-20261025-d-g2-join.png — Bot「加入班底」向导可开可关
+  H2 PASS† — evidence: FULL_SMOKE-20261025-d-h2-admin-ws.png — 平台管理·工作区台搜索/筛/新建路径绿
+
+blockers:
+  - A6 深链回跳 FAIL — 未登录开受保护深链后登录未回跳；落 Home。Do NOT claim overall FULL_SMOKE PASS
+remaining_PENDING:
+  B3 · C9 C10 · E3 · F2 F3 F4 F6 · G3 G5 · H3 H4
+overall: PARTIAL (A6 FAIL + remaining PENDING; NOT FULL_SMOKE PASS†)
+next:
+  - React: fix A6 auth deep-link return (preserve from → post-login bounce)
+  - Continue remaining PENDING rows when ready
+  - Do NOT claim overall FULL_SMOKE PASS
+shots_copied:
+  docs/qa-shots/FULL_SMOKE-20261025-d-{a3-register,a6-deep,b2-create-ws,b5-empty,c8-rel,d3-wiki-edit,e2-time,f1-ws,f5-label,g2-join,h2-admin-ws}.png
 # --- end block ---

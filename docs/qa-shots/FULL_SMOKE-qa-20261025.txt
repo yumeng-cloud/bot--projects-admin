@@ -1,13 +1,13 @@
 FULL_SMOKE_20261025 · QA summary
 ================================================================
 wave: FULL_SMOKE_20261025
-written_at: 2026-10-25 15:18 Asia/Shanghai
+written_at: 2026-10-25 15:18 Asia/Shanghai (Wave D append ~15:30)
 HEAD_at_finalize: 46f3040 (pre-docs commit; this summary lands in follow-up commit)
 tester: QA · seed admin@yumeng.tech（dogfood；禁主人）
 env: Vite :5175 200 · API /healthz 200
 checklist: docs/qa-shots/FULL_SMOKE-checklist-20261025.md
 progress: docs/qa-shots/FULL_SMOKE-progress-20261025.txt
-overall: PARTIAL — major pages green；非 Overall PASS†（硬行未全绿）
+overall: PARTIAL — Wave D 后仍 PARTIAL（A6 FAIL + remaining PENDING）；非 Overall PASS†
 ================================================================
 
 ## Waves
@@ -15,38 +15,38 @@ overall: PARTIAL — major pages green；非 Overall PASS†（硬行未全绿�
 ### A · Landing / Auth / Join
 - A1 Landing unauth PASS†
 - A2 Login (bad pwd Toast + seed → Home) PASS†
-- A3 注册 Tab PENDING（本轮未跑）
+- A3 注册 Tab PASS†（Wave D · d-a3-register.png）
 - A4 /join 未登录 PASS†（旁证 LANDING-L-Q1-retest-join-bare-unauth / join-code-unauth）
 - A5 /join 已登录 PASS† @90cc85c（前 FAIL：裸 /join 死转 Spin；修后复测绿）
-- A6 受保护深链未登录 PENDING
+- A6 受保护深链未登录 FAIL（Wave D · 深链回跳坏 · d-a6-deep.png）
 
 ### B · Home + 工作区
 - B1 Home PASS† · B4 进仓+切仓零 bleed PASS†
-- B2 创建工作区 · B3 兑换邀请码 · B5 空仓空态 → PENDING
+- B2 创建工作区 PASS† · B5 空仓空态 PASS†（Wave D）· B3 兑换邀请码 → PENDING
 
 ### C · 项目视图 + Issue（Wave C）
 - C1–C7 全 PASS†（看板/列表/周期/排期/新建 YM-33/详情编辑态/评论）
-- C8 关联 · C9 归档 · C10 附件 → PENDING
+- C8 关联 PASS†（Wave D）· C9 归档 · C10 附件 → PENDING
 
 ### D · Wiki
 - D1 打开 · D2 开篇 · D4 空正文空态 → PASS†（FULL_SMOKE-20261025-wiki.png）
-- D3 编辑→保存→取消 → PENDING（本轮未重做）
+- D3 编辑→保存→取消 PASS†（Wave D · d-d3-wiki-edit.png）
 
 ### E · 工时
 - E1 全页 PASS†（YM-9 + 标题；FULL_SMOKE-20261025-time.png）
-- E2 编辑保存 · E3 空态 → PENDING
+- E2 编辑保存 PASS†（Wave D）· E3 空态 → PENDING
 
 ### F · 设置六 Tab
 - 六 Tab 均有页开箱截（settings-{workspace,projects,teams,members,labels,integrations}.png）
-- 深编辑→保存未本轮重做 → F1–F6 仍 PENDING（诚实）
+- F1 工作区 · F5 标签 深保存 PASS†（Wave D）；F2 F3 F4 F6 仍 PENDING
 
 ### G · Bot 席
 - G1 名册 PASS† · G4 详情（席位·后端）PASS†
-- G2 向导 · G3 占席/解绑 · G5 详情编辑 → PENDING
+- G2 向导 PASS†（Wave D）· G3 占席/解绑 · G5 详情编辑 → PENDING
 
 ### H · 平台管理
 - H1 /admin 入口 PASS†（工作区 11 / 用户 7）
-- H2 新建工作区 · H3 用户台 · H4 深链 → PENDING
+- H2 工作区台 PASS†（Wave D）· H3 用户台 · H4 深链 → PENDING
 
 ## Defects fixed this package
 - /join 无码死转「正在打开入场向导」→ FE 90cc85c；A5 retest PASS†
@@ -74,8 +74,50 @@ docs/qa-shots/FULL_SMOKE-20261025-{
 + LANDING-L-Q1-retest-* / LANDING-L-Q1-lock-retest-20261025.png（A4/A5/LANDING 旁证）
 
 ## Remaining PENDING（诚实清单）
-A3 A6 · B2 B3 B5 · C8 C9 C10 · D3 · E2 E3 · F1–F6（深保存）· G2 G3 G5 · H2 H3 H4
+B3 · C9 C10 · E3 · F2 F3 F4 F6 · G3 G5 · H3 H4
+（A6 = FAIL，见 Wave D append）
 
 ## Verdict
 PARTIAL — 主路径大页（Landing/登录/Join/Home/看板–排期/Wiki 开/工时开/设置 Tab 开/Bot+详情/Admin 入口）绿；
 深编辑保存与若干次要行未本轮闭环 → 禁写 FULL_SMOKE Overall PASS†。
+
+================================================================
+## Wave D append · 2026-10-25 ~15:28 Asia/Shanghai
+HEAD_at_wave_d_docs: post-01b5296 (this docs commit)
+tester: QA · seed admin@yumeng.tech（dogfood；禁主人）
+overall: PARTIAL — A6 深链回跳 FAIL + remaining PENDING；禁 Overall PASS†
+================================================================
+
+### Wave D results
+- A3 注册 Tab PASS† — FULL_SMOKE-20261025-d-a3-register.png
+- A6 受保护深链未登录 FAIL — FULL_SMOKE-20261025-d-a6-deep.png
+  · 缺陷：登录后未回跳目标深链，落 Home「我的工作区」（深链回跳坏）
+  · 钉 React：auth redirect / `from` 保留与 post-login bounce
+- B2 创建工作区 PASS† — d-b2-create-ws.png（FULL-SMOKE-WS-1524）
+- B5 空仓空态 PASS† — d-b5-empty.png（「还没有项目」+「+ 创建项目」）
+- C8 Issue 关联 PASS† — d-c8-rel.png
+- D3 Wiki 编辑·保存·取消 PASS† — d-d3-wiki-edit.png
+- E2 工时编辑保存 PASS† — d-e2-time.png
+- F1 设置·工作区深保存 PASS† — d-f1-ws.png
+- F5 设置·标签深保存 PASS† — d-f5-label.png
+- G2 Bot 加入班底向导 PASS† — d-g2-join.png
+- H2 平台管理·工作区台 PASS† — d-h2-admin-ws.png
+
+### A6 defect note（开票给 React）
+标题建议：FULL_SMOKE A6 · 受保护深链登录后未回跳
+复现：无痕打开 `/w/{wsId}/board`（或等价受保护路径）→ 应进 `/login` 且保留 from → 登录 seed 后应回跳该深链；实测落 Home，深链丢失。
+证据：docs/qa-shots/FULL_SMOKE-20261025-d-a6-deep.png
+优先级：挡 Overall PASS†；不挡其余已绿行。
+
+### Evidence index (+ Wave D)
+docs/qa-shots/FULL_SMOKE-20261025-d-{
+  a3-register,a6-deep,b2-create-ws,b5-empty,c8-rel,d3-wiki-edit,
+  e2-time,f1-ws,f5-label,g2-join,h2-admin-ws
+}.png
+
+### Remaining PENDING（Wave D 后）
+B3 · C9 C10 · E3 · F2 F3 F4 F6 · G3 G5 · H3 H4
+（另：A6 = FAIL，非 PENDING）
+
+### Verdict（仍）
+PARTIAL — Wave D 关掉一批深编辑/次要行；A6 深链回跳 FAIL 未清 + 上列 PENDING 仍在 → 禁写 FULL_SMOKE Overall PASS†。

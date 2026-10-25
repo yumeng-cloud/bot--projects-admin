@@ -8,7 +8,7 @@
 > - Vite `http://127.0.0.1:5175` → **200**  
 > - API `http://127.0.0.1:8080/healthz` → **200** `{"status":"ok","service":"ai-collab-board",…}`  
 > - Seed（狗粮，**禁主人账号**）: `admin@yumeng.tech` / `Admin123!`  
-> **本文件状态:** Wave A 部分 + Wave B（项目 C1–C7）已跑 · **Overall PARTIAL/PENDING** · **未宣称 FULL_SMOKE PASS** · A5 bare `/join` **PASS†** after `90cc85c` · Landing lock **PASS†** @`675a300` / L-Q1 retest2 · 产品 L-P1 @`46f3040`  
+> **本文件状态:** Wave D 已跑 · **Overall PARTIAL**（A6 FAIL + 若干 PENDING）· **未宣称 FULL_SMOKE PASS** · A5 **PASS†** @`90cc85c` · Landing lock **PASS†** @`675a300` · 产品 L-P1 @`46f3040` · Wave D：A3/B2/B5/C8/D3/E2/F1/F5/G2/H2 **PASS†** · A6 深链回跳 **FAIL**  
 
 ## 红线（违反即 FAIL / 禁写 PASS†）
 
@@ -37,10 +37,10 @@
 |---|--------|----------|--------------|------|------|
 | **A1** | `/` 未登录 Landing | 清 token / 无痕打开 `/`；滚完整页；点主 CTA「登录」 | 官网 Landing（眉题/主标「育蒙协作看板」/副标/价值区），**不是**sole 登录墙；主 CTA 进 `/login` | docs/qa-shots/FULL_SMOKE-20261025-landing-unauth.png | **PASS†** |
 | **A2** | `/login` 登录 | 邮箱+密码提交 seed；错误密码试一次 | Toast「登录成功」→ 进后台 Home；错密人话失败，无白屏 | login-page + login-bad + home-authed（FULL_SMOKE-20261025-*） | **PASS†** |
-| **A3** | `/login` 注册 Tab | 切「注册」；填姓名/邮箱/密码（≥8）→ 提交或取消 | 表单完整；成功入会话或人话错；取消不脏状态 | | **PENDING** |
+| **A3** | `/login` 注册 Tab | 切「注册」；填姓名/邮箱/密码（≥8）→ 提交或取消 | 表单完整；成功入会话或人话错；取消不脏状态 | docs/qa-shots/FULL_SMOKE-20261025-d-a3-register.png · 注册 Tab 表单完整 | **PASS†** |
 | **A4** | `/join` 未登录 | 打开 `/join` 与 `/join?code=ymt_dummy`（或无效码） | 短引导可见（复制 Bot 提示词 / 登录后打开向导）；无效码人话；**不消耗码**；「回首页」可用 | LANDING-L-Q1-retest-join-bare-unauth + join-code-unauth @90cc85c | **PASS†** |
 | **A5** | `/join` 已登录 | 登录后带有效/无效 `code` 开 `/join` | 跳席页并预填「加入班底」向导或明确警告；不破深链 | LANDING-L-Q1-retest-join-bare-authed (+ code-authed) @90cc85c · 前 FAIL 截 join-page 作废 | **PASS†** |
-| **A6** | 受保护深链未登录 | 无痕打开 `/w/{wsId}/board` 或 `/admin` | 重定向 `/login` 且保留 from；登录后回跳或合理落 Home | | **PENDING** |
+| **A6** | 受保护深链未登录 | 无痕打开 `/w/{wsId}/board` 或 `/admin` | 重定向 `/login` 且保留 from；登录后回跳或合理落 Home | docs/qa-shots/FULL_SMOKE-20261025-d-a6-deep.png · 登录后未回跳深链，落 Home | **FAIL** |
 
 ---
 
@@ -49,10 +49,10 @@
 | # | 页/路径 | 真人步骤 | 期望（苛刻） | 证据 | 状态 |
 |---|--------|----------|--------------|------|------|
 | **B1** | `/` 已登录 Home | 登录后打开 `/` | 「我的工作区」列表；每卡「看板/列表/周期/Wiki/设置」可点；超管见「平台管理」；「退出登录」可用 | FULL_SMOKE-20261025-home-authed.png · 8 WS | **PASS†** |
-| **B2** | 创建工作区 | Home「创建」→ Modal 填名称+slug → 保存 | Toast 成功；列表出现新 WS；可进 `/w/{id}/board` | | **PENDING** |
+| **B2** | 创建工作区 | Home「创建」→ Modal 填名称+slug → 保存 | Toast 成功；列表出现新 WS；可进 `/w/{id}/board` | FULL_SMOKE-20261025-d-b2-create-ws.png · FULL-SMOKE-WS-1524 | **PASS†** |
 | **B3** | 兑换邀请码 | Home「兑换」→ 填 `ymw_…` → 确认；试无效码/空提交 | 成功「已加入工作空间」；无效人话；队席码 `ymt_` 指引去 Bot 席 | | **PENDING** |
 | **B4** | 进仓 + 顶栏切仓 | 从 Home 进 WS；顶栏/抽屉切换另一 WS | 切仓后侧栏名、项目池、Bot 席跟新仓；**零旧仓残留**（对照 WS_ISOLATION） | ws-entered + project-switch（FULL_SMOKE-20261025-*）· SQ1A 无 bleed | **PASS†** |
-| **B5** | 空仓空态 | 新/无项目 WS 开 `/w/{ws}/board` | 空态「还没有项目」+ 主 CTA「创建项目」本页 Modal；「去设置」仅次要 | | **PENDING** |
+| **B5** | 空仓空态 | 新/无项目 WS 开 `/w/{ws}/board` | 空态「还没有项目」+ 主 CTA「创建项目」本页 Modal；「去设置」仅次要 | FULL_SMOKE-20261025-d-b5-empty.png · 「还没有项目」+「+ 创建项目」 | **PASS†** |
 
 ---
 
@@ -70,7 +70,7 @@
 | **C5** | Issue 新建 | 看板或列表「新建」→ 填标题（±描述）→ **保存**；再 **取消** 一次半填关闭 | 保存后列表/看板可见；Toast/即时刷新；取消不落脏数据 | board-created · YM-33 FULL-SMOKE-B-20261025-145528 | **PASS†** |
 | **C6** | Issue 打开·编辑·保存 | 开 Issue 抽屉/页；改标题/描述 → 保存；属性轨改状态/负责人（若可） | 保存成功；关闭再开值仍在；属性轨 label\|value 中文 | issue-detail · desc+状态「进行中」· minor 叶/橙斜 | **PASS†** |
 | **C7** | Issue 评论 | 评论区发一条 → 见列表；空评论提交应拦 | 评论可见；失败人话；无未捕获错 | issue-detail · smoke comment OK | **PASS†** |
-| **C8** | Issue 关联 | 关联区加/看关联；空态「暂无…」类文案 | 关联可建或空态像样；禁裸 id | | **PENDING** |
+| **C8** | Issue 关联 | 关联区加/看关联；空态「暂无…」类文案 | 关联可建或空态像样；禁裸 id | FULL_SMOKE-20261025-d-c8-rel.png | **PASS†** |
 | **C9** | Issue 归档/取消归档 | 属性轨「归档」→ 确认；再「取消归档」（若有权） | 已归档只读态清晰；取消归档恢复可编 | | **PENDING** |
 | **C10** | 附件（若入口可见） | 上传合法图/拒非法类型 | 预览/列表；拒类型 Toast 人话（对照 I3） | | **PENDING** |
 
@@ -82,7 +82,7 @@
 |---|--------|----------|--------------|------|------|
 | **D1** | `/w/:wsId/wiki` | 打开 Wiki；浏览目录 | 目录+舞台；禁完成紫胶囊/裸 Select 行/漂浮空白 | FULL_SMOKE-20261025-wiki.png | **PASS†** |
 | **D2** | Wiki 开篇 | 点一篇已有页（或空态引导） | 正文可读；时间中文/上海时区友好 | wiki.png · 「无标题」· 更新于 今天 15:08 · 空正文 | **PASS†** |
-| **D3** | Wiki 编辑·保存·取消 | 进入编辑 → 改标题/正文 → **保存**；另开编辑 → **取消** | 保存后正文回显；取消丢未存改动；无白屏 | | **PENDING** |
+| **D3** | Wiki 编辑·保存·取消 | 进入编辑 → 改标题/正文 → **保存**；另开编辑 → **取消** | 保存后正文回显；取消丢未存改动；无白屏 | FULL_SMOKE-20261025-d-d3-wiki-edit.png | **PASS†** |
 | **D4** | Wiki 空态/权限 | 无页或只读角色路径 | 产品空态或只读提示；禁技术口吻 | wiki.png · 「还没有正文…」 | **PASS†** |
 
 ---
@@ -92,7 +92,7 @@
 | # | 页/路径 | 真人步骤 | 期望（苛刻） | 证据 | 状态 |
 |---|--------|----------|--------------|------|------|
 | **E1** | `/w/:wsId/time` | 打开工时全页 | 表/汇总可见；Issue 列 **YM-n + 标题**；成员显示名（如「管理员」）禁 raw id | FULL_SMOKE-20261025-time.png · YM-9 | **PASS†** |
-| **E2** | 工时编辑（若可） | 新增或改一条工时 → 保存；取消一次 | 保存刷新；取消不脏；错误人话 | | **PENDING** |
+| **E2** | 工时编辑（若可） | 新增或改一条工时 → 保存；取消一次 | 保存刷新；取消不脏；错误人话 | FULL_SMOKE-20261025-d-e2-time.png | **PASS†** |
 | **E3** | 工时空态 | 无记录筛选或新仓 | 像样空态，非大白块 | | **PENDING** |
 
 ---
@@ -104,11 +104,11 @@
 
 | # | Tab | 真人步骤 | 期望（苛刻） | 证据 | 状态 |
 |---|-----|----------|--------------|------|------|
-| **F1** | 工作区 `?tab=workspace` | Admin 改显示名（±slug）→ **保存**；非 Admin 看只读 | Toast「工作区已更新」；**顶栏/侧栏即时新名**；非 Admin「仅管理员可修改…」 | settings-workspace.png（页开；深保存未本轮） | **PENDING** |
+| **F1** | 工作区 `?tab=workspace` | Admin 改显示名（±slug）→ **保存**；非 Admin 看只读 | Toast「工作区已更新」；**顶栏/侧栏即时新名**；非 Admin「仅管理员可修改…」 | FULL_SMOKE-20261025-d-f1-ws.png（深保存） | **PASS†** |
 | **F2** | 项目 `?tab=projects` | 「编辑」→ Modal 改名 → 保存；取消一次 | Toast+列表名变；Modal 关；取消不改 | settings-projects.png（页开；深保存未本轮） | **PENDING** |
 | **F3** | 团队 `?tab=teams` | 「编辑」改名→保存；点「设为当前」「成员」「Bot 席」 | 改名即时；三钮路径正确不回归 | settings-teams.png（页开；深保存未本轮） | **PENDING** |
 | **F4** | 成员 `?tab=members` | 邀请已注册成员；签发 `ymw_` 链接；成员「更多」改角色；空态（若可） | Toast「已邀请成员」/「角色已更新」；唯一管理员降级拦截人话；空态「还没有成员」+「邀请成员」；Bot 脚注与人类分家 | settings-members.png（页开；深保存未本轮） | **PENDING** |
-| **F5** | 标签 `?tab=labels` | 新建标签；行「编辑」改名/色→保存；删或空态 | Toast「已新建标签」/编辑成功；空「还没有标签」 | settings-labels.png（页开；深保存未本轮） | **PENDING** |
+| **F5** | 标签 `?tab=labels` | 新建标签；行「编辑」改名/色→保存；删或空态 | Toast「已新建标签」/编辑成功；空「还没有标签」 | FULL_SMOKE-20261025-d-f5-label.png（深保存） | **PASS†** |
 | **F6** | 接入 `?tab=integrations`（或「接入」） | 打开；若可创建 API Key → 看明文一次挡层；列表仅末四 | 与席码 `ymt_` 分家说明清晰；明文仅一次；无崩 | settings-integrations.png（页开；创建 Key 未本轮） | **PENDING** |
 
 ---
@@ -118,7 +118,7 @@
 | # | 页/路径 | 真人步骤 | 期望（苛刻） | 证据 | 状态 |
 |---|--------|----------|--------------|------|------|
 | **G1** | `/settings/bots` 名册 | 打开 Bot 席；切团队（顶栏） | Roster 跟当前队；切队零串；空态「尚未绑定/请先创建或加入班底」产品文案 | FULL_SMOKE-20261025-bots.png | **PASS†** |
-| **G2** | 席位邀请·查找 | 打开「加入班底」向导；粘贴/查找 `ymt_`；签发/吊销列表轻抽 | 向导可开可关；无效码人话；已签发列表可吊销（或接口未开通人话警告） | | **PENDING** |
+| **G2** | 席位邀请·查找 | 打开「加入班底」向导；粘贴/查找 `ymt_`；签发/吊销列表轻抽 | 向导可开可关；无效码人话；已签发列表可吊销（或接口未开通人话警告） | FULL_SMOKE-20261025-d-g2-join.png | **PASS†** |
 | **G3** | 占席 / 停工 / 离职 | 有席时：占席或停工/离职解绑（勿毁唯一生产席；优先狗粮队） | Toast 人话；冲突面板可读；绑定失效有提示 | | **PENDING** |
 | **G4** | Bot 详情 `/settings/bots/:memberId` | 从名册进详情；看记忆 / Todo / handoff Tab | 「Bot 记忆与交接」；席位 Tag；空「暂无记忆」；换仓无旧数据残留 | FULL_SMOKE-20261025-bot-detail.png · 席位·后端 | **PASS†** |
 | **G5** | 详情编辑 | 记忆保存；新建待办→改状态；handoff 导出/取消导入 | Toast「已保存」；Todo 状态中文；导入校验人话 | | **PENDING** |
@@ -130,7 +130,7 @@
 | # | 页/路径 | 真人步骤 | 期望（苛刻） | 证据 | 状态 |
 |---|--------|----------|--------------|------|------|
 | **H1** | `/admin` 入口 | seed 超管从 Home/侧栏进「平台管理」；非超管应拒 | 顶栏「平台管理」+「全站工作区与用户」；非超管「需要平台超级管理员权限」 | FULL_SMOKE-20261025-admin.png | **PASS†** |
-| **H2** | 工作区台 | 名称搜索 + 状态筛；新建工作区 → 保存；「返回工作区」 | Toast「已新建工作区」；筛生效；表 hug 不崩 | | **PENDING** |
+| **H2** | 工作区台 | 名称搜索 + 状态筛；新建工作区 → 保存；「返回工作区」 | Toast「已新建工作区」；筛生效；表 hug 不崩 | FULL_SMOKE-20261025-d-h2-admin-ws.png | **PASS†** |
 | **H3** | 用户台 | 搜索用户；点所属 WS 芯片；超管授予/撤消（狗粮号，**禁动主人**） | 进 WS 或「已复制工作区名称」；Toast「已授予/已撤消平台超管」 | | **PENDING** |
 | **H4** | `/admin/*` 深链 | 打开已知子路径或刷新 | 不 404 白屏；回到对等台或合理态 | | **PENDING** |
 
@@ -142,14 +142,14 @@
 2. FAIL 钉同事（React/Go）+ 截图；**不问主人**。  
 3. 进度追加 `docs/qa-shots/FULL_SMOKE-progress-20261025.txt`。  
 4. 全组 A–H 全绿后方可 Overall **PASS†**；本清单骨架阶段 **Overall = PENDING**。  
-5. 进度见 `FULL_SMOKE-progress-20261025.txt` run1–3；**禁 Overall PASS†**（PARTIAL）；LANDING L-P1 由产品 @46f3040 关，QA 不代关。
+5. 进度见 `FULL_SMOKE-progress-20261025.txt` run1–4（含 Wave D）；**禁 Overall PASS†**（PARTIAL · A6 FAIL）；LANDING L-P1 由产品 @46f3040 关，QA 不代关。
 
 ## Overall
 
 | 项 | 值 |
 |----|-----|
 | Wave | FULL_SMOKE_20261025 |
-| Checklist | **PARTIAL**（major pages green · C1–C7/A5 PASS† · 深编辑与若干行 PENDING · 非 Overall PASS†） |
+| Checklist | **PARTIAL**（Wave D · A3/B2/B5/C8/D3/E2/F1/F5/G2/H2 PASS† · **A6 FAIL** · remaining PENDING B3 C9 C10 E3 F2 F3 F4 F6 G3 G5 H3 H4 · 非 Overall PASS†） |
 | Progress log | `docs/qa-shots/FULL_SMOKE-progress-20261025.txt` |
 | HEAD_at_checklist_write | `8d34c77` |
 | Env probe | Vite:5175 **200** · `/healthz` **200** · 2026-10-25 14:52 Asia/Shanghai |
