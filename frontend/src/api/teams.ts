@@ -100,6 +100,19 @@ export function createTeam(
   })
 }
 
+/** S-R1：Admin 改名（Go S-G1 PATCH …/teams/{teamId}）；可选 slug 预留 */
+export function patchTeam(
+  workspaceId: string,
+  teamId: string,
+  body: { name: string; slug?: string },
+) {
+  return api<{ team: Team }>(`${ws(workspaceId)}/teams/${teamId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+    skipToast: true,
+  })
+}
+
 /** 预览/ensure 用席位行 */
 export type TeamTemplateSeat = {
   slug: string

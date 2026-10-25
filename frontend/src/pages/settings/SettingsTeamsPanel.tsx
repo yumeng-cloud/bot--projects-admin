@@ -4,6 +4,7 @@ import { PlusOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { getRoster, listTeams, type Team } from '../../api/teams'
 import CreateTeamQuickModal from '../../components/common/CreateTeamQuickModal'
+import EditTeamModal from '../../components/common/EditTeamModal'
 import { useCurrentTeam } from '../../hooks/useCurrentTeam'
 import { formatShanghai } from '../../utils/time'
 
@@ -20,6 +21,7 @@ export default function SettingsTeamsPanel({ workspaceId }: Props) {
   const [loading, setLoading] = useState(true)
   const [rows, setRows] = useState<Row[]>([])
   const [createOpen, setCreateOpen] = useState(false)
+  const [editTarget, setEditTarget] = useState<Team | null>(null)
 
   const reload = useCallback(async () => {
     if (!workspaceId) return
@@ -125,9 +127,12 @@ export default function SettingsTeamsPanel({ workspaceId }: Props) {
             {
               title: '操作',
               key: 'actions',
-              width: 220,
+              width: 280,
               render: (_: unknown, row: Row) => (
                 <Space size={0} wrap>
+                  <Button type="link" size="small" onClick={() => setEditTarget(row)}>
+                    编辑
+                  </Button>
                   <Button
                     type="link"
                     size="small"
@@ -172,6 +177,16 @@ export default function SettingsTeamsPanel({ workspaceId }: Props) {
           setTeamId(team.id)
           await reloadCurrent()
           await reload()
+        }}
+      />
+      <EditTeamModal
+        open={Boolean(editTarget)}
+        workspaceId={workspaceId}
+        team={editTarget}
+        onClose={() => setEditTarget(null)}
+        onSaved={async (team) => {
+          await reload()
+          if (teamId === team.id) await reloadCurrent()
         }}
       />
     </>

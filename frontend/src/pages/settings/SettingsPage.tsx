@@ -131,6 +131,7 @@ export default function SettingsPage() {
   const [lastPlainCode, setLastPlainCode] = useState<string | null>(null)
 
   const [labelOpen, setLabelOpen] = useState(false)
+  const [editingLabel, setEditingLabel] = useState<Label | null>(null)
   const [labelForm] = Form.useForm<{ name: string; color: string }>()
   const [labelBusy, setLabelBusy] = useState(false)
 
@@ -424,24 +425,39 @@ export default function SettingsPage() {
     }
   }
 
-  const onCreateLabel = async () => {
+  const onSaveLabel = async () => {
     try {
       const values = await labelForm.validateFields()
       setLabelBusy(true)
-      await api(`/workspaces/${wsId}/labels`, {
-        method: 'POST',
-        body: JSON.stringify({
-          name: values.name.trim(),
-          color: values.color || '#5E6AD2',
-        }),
-      })
-      message.success('已新建标签')
+      const name = values.name.trim()
+      const color = values.color || '#5E6AD2'
+      if (editingLabel) {
+        await api(`/workspaces/${wsId}/labels/${editingLabel.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ name, color }),
+          skipToast: true,
+        })
+        message.success(`已更新「${name}」`)
+      } else {
+        await api(`/workspaces/${wsId}/labels`, {
+          method: 'POST',
+          body: JSON.stringify({ name, color }),
+        })
+        message.success('已新建标签')
+      }
       setLabelOpen(false)
+      setEditingLabel(null)
       labelForm.resetFields()
       await reloadLabels()
     } catch (e) {
       if (e && typeof e === 'object' && 'errorFields' in e) return
-      message.error(e instanceof ApiError || e instanceof Error ? e.message : '新建失败')
+      message.error(
+        e instanceof ApiError || e instanceof Error
+          ? e.message
+          : editingLabel
+            ? '保存失败'
+            : '新建失败',
+      )
     } finally {
       setLabelBusy(false)
     }
@@ -962,6 +978,7 @@ export default function SettingsPage() {
                         size="small"
                         icon={<PlusOutlined />}
                         onClick={() => {
+                          setEditingLabel(null)
                           labelForm.setFieldsValue({ name: '', color: '#5E6AD2' })
                           setLabelOpen(true)
                         }}
@@ -1001,6 +1018,31 @@ export default function SettingsPage() {
                             </span>
                           ),
                         },
+                        ...(isAdmin
+                          ? [
+                              {
+                                title: '操作',
+                                key: 'actions',
+                                width: 80,
+                                render: (_: unknown, row: Label) => (
+                                  <Button
+                                    type="link"
+                                    size="small"
+                                    onClick={() => {
+                                      setEditingLabel(row)
+                                      labelForm.setFieldsValue({
+                                        name: row.name,
+                                        color: row.color || '#5E6AD2',
+                                      })
+                                      setLabelOpen(true)
+                                    }}
+                                  >
+                                    编辑
+                                  </Button>
+                                ),
+                              },
+                            ]
+                          : []),
                       ]}
                     />
                   ) : (
@@ -1113,12 +1155,15 @@ export default function SettingsPage() {
       </div>
 
       <Modal
-        title="新建标签"
+        title={editingLabel ? '编辑标签' : '新建标签'}
         open={labelOpen}
-        onCancel={() => setLabelOpen(false)}
-        onOk={() => void onCreateLabel()}
+        onCancel={() => {
+          setLabelOpen(false)
+          setEditingLabel(null)
+        }}
+        onOk={() => void onSaveLabel()}
         confirmLoading={labelBusy}
-        okText="创建"
+        okText={editingLabel ? '保存' : '创建'}
         cancelText="取消"
         destroyOnHidden
       >
