@@ -132,8 +132,8 @@
 ## 看板 Issue
 
 - 标题含 **INVITE_ON_DEMAND**  
-- 描述链相对路径 `docs/NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md` + 开刀 commit SHA  
-- Issue 链接：_待填_（开刀脚本若未建成功，产品补链）
+- 描述链相对路径 `docs/NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md` + 开刀 commit `d7c35c473f77ef8fb891758d01af936a7c72ec39`  
+- Issue 链接：_待填_（缺口：公网狗粮 Bot 禁无父游离 Issue；仓内原无父票可挂。已建项目「产品债」待人类建父票后补链）
 
 ## 进度注记
 

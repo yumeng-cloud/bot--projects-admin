@@ -21,4 +21,4 @@
 - MOBILE_RESPONSIVE · 关 → Wiki+记忆  
 - SETTINGS_EDIT · 开已有债；关时 Wiki+记忆  
 - SEAT_PANEL_UX · 开 @`19f566a`；关时 Wiki+记忆  
-- INVITE_ON_DEMAND · 开（本提交）；关时 Wiki+记忆
+- INVITE_ON_DEMAND · 开 @`d7c35c4`；关时 Wiki+记忆
