@@ -105,9 +105,9 @@ export default function Landing() {
           {/* 多机：左图右文 V-Multi（交替） */}
           <article className="acb-landing-split is-flip acb-landing-value-row">
             <div className="acb-landing-split-copy">
-              <h2 className="acb-landing-section-title">多机分工</h2>
+              <h2 className="acb-landing-section-title">多机分工，不是换机续聊</h2>
               <p className="acb-landing-section-body">
-                不同电脑认领不同角色干活，干完统一调度。换机等于分布式工位，不是把同一会话挪走。
+                不同电脑认领不同角色干活，干完统一调度指挥。
               </p>
             </div>
             <div className="acb-landing-split-viz">
