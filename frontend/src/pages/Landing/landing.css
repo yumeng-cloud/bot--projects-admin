@@ -78,21 +78,29 @@
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 10px;
+  border-radius: 14px;
   border: 1px solid var(--acb-border);
   background: var(--acb-bg-container);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--acb-text) 4%, transparent);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--acb-text) 5%, transparent),
+    0 4px 12px color-mix(in srgb, var(--acb-text) 6%, transparent),
+    0 12px 28px color-mix(in srgb, var(--acb-text) 7%, transparent);
 }
 
 .acb-landing-art.is-hero {
-  max-width: 520px;
+  max-width: 600px;
   margin-left: auto;
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--acb-text) 5%, transparent),
+    0 6px 16px color-mix(in srgb, var(--acb-text) 7%, transparent),
+    0 16px 40px color-mix(in srgb, var(--acb-text) 9%, transparent);
 }
 
 /* —— A Hero —— */
 .acb-landing-hero {
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.1fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(560px, 1.15fr);
   gap: 40px;
   align-items: center;
   margin-bottom: 56px;
