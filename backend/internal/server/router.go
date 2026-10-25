@@ -184,11 +184,15 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 		}
 	})
 
+	// Mount* 与测试 mux / chi 子树一致：authAny(wsMem(next))，禁仅 authAny（否则错仓 Bot Key 旁路成员门）
+	mountWrap := func(next http.Handler) http.Handler {
+		return authAny(wsMem(next))
+	}
 	root := http.NewServeMux()
-	handlers.MountWiki(root, sqlDB, authAny)
-	handlers.MountTime(root, sqlDB, authAny)
-	handlers.MountBots(root, sqlDB, authAny)
-	handlers.MountTeams(root, sqlDB, authAny, hookH.DispatchEvent)
+	handlers.MountWiki(root, sqlDB, mountWrap)
+	handlers.MountTime(root, sqlDB, mountWrap)
+	handlers.MountBots(root, sqlDB, mountWrap)
+	handlers.MountTeams(root, sqlDB, mountWrap, hookH.DispatchEvent)
 	root.Handle("/", r)
 	return root
 }

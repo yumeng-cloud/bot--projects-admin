@@ -27,6 +27,8 @@ type Props = {
   open: boolean
   onClose: () => void
   wsId: string
+  /** X-R3：项目上下文下 handoff Issues 仅展示该 project_id */
+  projectId?: string | null
   role: BotRole | null
   bots: BotRosterItem[]
   /** Key 提示，如「末四 ·7624」；勿传完整 Key */
@@ -49,6 +51,7 @@ export default function SeatHandoffDrawer({
   open,
   onClose,
   wsId,
+  projectId = null,
   role,
   bots,
   keyHint,
@@ -102,14 +105,44 @@ export default function SeatHandoffDrawer({
     }
   }
 
+  // X-R1/R2：切仓或换席先清空 handoff，禁止他仓残留；cancelled 防竞态
   useEffect(() => {
-    if (open && role) void load()
+    let cancelled = false
+    setHandoff(null)
+    if (!(open && role && memberId)) {
+      setLoading(false)
+      return () => {
+        cancelled = true
+      }
+    }
+    setLoading(true)
+    ;(async () => {
+      try {
+        const res = await getHandoff(wsId, memberId)
+        if (cancelled) return
+        setHandoff(res.handoff)
+      } catch (e: unknown) {
+        if (cancelled) return
+        message.error(e instanceof Error ? e.message : '加载交接失败')
+        setHandoff(null)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, role?.id, memberId, wsId])
 
   const focus = pickLastFocus(handoff?.memories, role?.slug)
   const todos = openTodos(handoff?.todos)
-  const issues = handoff?.issues || []
+  // X-R3 / B1：有项目上下文时仅展示当前项目 Issue，不混他项目 YM-*
+  const issues = useMemo(() => {
+    const all = handoff?.issues || []
+    if (!projectId) return all
+    return all.filter((i) => i.project_id === projectId)
+  }, [handoff?.issues, projectId])
 
   const cardText = buildHandoffCardText({
     seat: seatMeta,

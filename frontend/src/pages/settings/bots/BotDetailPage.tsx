@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   Alert,
   Button,
@@ -30,12 +30,15 @@ import {
   type BotMemory,
   type BotTodo,
 } from '../../../api/bots'
+import { ApiError } from '../../../api/client'
+import { readStoredProjectId } from '../../../utils/currentProject'
 import { formatShanghai, formatWikiTime } from '../../../utils/time'
 import { openTodos, pickLastFocus, statusCn } from './seatHandoffText'
 import './bots.css'
 
 export default function BotDetailPage() {
   const { wsId = '', memberId = '' } = useParams()
+  const nav = useNavigate()
   const [loading, setLoading] = useState(true)
   const [memories, setMemories] = useState<BotMemory[]>([])
   const [todos, setTodos] = useState<BotTodo[]>([])
@@ -43,8 +46,66 @@ export default function BotDetailPage() {
   const [q, setQ] = useState('')
   const [importJson, setImportJson] = useState('')
   const [importing, setImporting] = useState(false)
+  /** X-R3：当前仓项目上下文（acb.project.<wsId>） */
+  const projectId = readStoredProjectId(wsId)
+
+  const clearBotData = () => {
+    setMemories([])
+    setTodos([])
+    setHandoff(null)
+  }
+
+  // X-R2：切仓/换 member 先 clear，再 fetch（等价 queryKey 含 wsId）；cancelled 防竞态
+  useEffect(() => {
+    let cancelled = false
+    clearBotData()
+    setQ('')
+    setImportJson('')
+    if (!wsId || !memberId) {
+      setLoading(false)
+      return () => {
+        cancelled = true
+      }
+    }
+    setLoading(true)
+    ;(async () => {
+      try {
+        const [m, t, h] = await Promise.all([
+          listMemories(wsId, memberId),
+          listTodos(wsId, memberId),
+          getHandoff(wsId, memberId),
+        ])
+        if (cancelled) return
+        setMemories(m.memories || [])
+        setTodos(t.todos || [])
+        setHandoff(h.handoff)
+      } catch (e: unknown) {
+        if (cancelled) return
+        // X-R2：失败保持空态，禁止继续渲染上一仓 memories/handoff
+        clearBotData()
+        const status = e instanceof ApiError ? e.status : 0
+        if (status === 404 || status === 403) {
+          message.error('该 Bot 不属于当前工作区')
+          nav(`/w/${wsId}/settings/bots`, { replace: true })
+          return
+        }
+        message.error(e instanceof Error ? e.message : '加载失败')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wsId, memberId])
 
   const load = async () => {
+    if (!wsId || !memberId) {
+      clearBotData()
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const [m, t, h] = await Promise.all([
@@ -56,15 +117,25 @@ export default function BotDetailPage() {
       setTodos(t.todos || [])
       setHandoff(h.handoff)
     } catch (e: unknown) {
+      clearBotData()
+      const status = e instanceof ApiError ? e.status : 0
+      if (status === 404 || status === 403) {
+        message.error('该 Bot 不属于当前工作区')
+        nav(`/w/${wsId}/settings/bots`, { replace: true })
+        return
+      }
       message.error(e instanceof Error ? e.message : '加载失败')
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => {
-    void load()
-  }, [wsId, memberId])
+  // X-R3 / B1：有项目上下文时 handoff Issues 仅当前项目
+  const handoffIssues = useMemo(() => {
+    const all = handoff?.issues || []
+    if (!projectId) return all
+    return all.filter((i) => i.project_id === projectId)
+  }, [handoff?.issues, projectId])
 
   if (loading && !handoff) {
     return (
@@ -106,8 +177,8 @@ export default function BotDetailPage() {
             </div>
             <div>
               <Typography.Text type="secondary">开放 Issues · </Typography.Text>
-              {(handoff.issues || []).length
-                ? (handoff.issues || []).map((i) => `${i.identifier} ${i.title}`).join('；')
+              {handoffIssues.length
+                ? handoffIssues.map((i) => `${i.identifier} ${i.title}`).join('；')
                 : '无'}
             </div>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -300,14 +371,14 @@ export default function BotDetailPage() {
                       ))}
                       {!openTd.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
                     </Card>
-                    <Card size="small" title={`开放 Issues（${handoff.issues?.length || 0}）`}>
-                      {(handoff.issues || []).map((i) => (
+                    <Card size="small" title={`开放 Issues（${handoffIssues.length}）`}>
+                      {handoffIssues.map((i) => (
                         <div key={i.id}>
                           <Tag color="purple">{i.identifier}</Tag> {i.title}{' '}
                           <Tag>{statusCn(i.status)}</Tag>
                         </div>
                       ))}
-                      {!handoff.issues?.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
+                      {!handoffIssues.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
                     </Card>
                     <Button onClick={() => void load()}>刷新交接</Button>
                   </>

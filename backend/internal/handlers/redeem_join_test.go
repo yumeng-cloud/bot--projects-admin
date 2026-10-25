@@ -48,10 +48,12 @@ func redeemJoinMux(t *testing.T) *http.ServeMux {
 	wsH := &handlers.WorkspaceHandler{DB: sqlDB}
 	jwt := middleware.AuthJWT(middleware.JWTParser{Secret: cfg.JWTSecret})
 	authAny := middleware.AuthJWTOrAPIKey(middleware.JWTParser{Secret: cfg.JWTSecret}, sqlDB)
-	// production MountTeams wrap = authAny only（redeem 自行可选鉴权）
+	wsMem := middleware.RequireWorkspaceMember(sqlDB)
+	// production MountTeams wrap = authAny(wsMem)；redeem 路径不走 wrap（自行可选鉴权）
+	wrap := func(next http.Handler) http.Handler { return authAny(wsMem(next)) }
 	mux.HandleFunc("POST /api/v1/auth/login", authH.Login)
 	mux.Handle("GET /api/v1/workspaces", jwt(http.HandlerFunc(wsH.ListMine)))
-	handlers.MountTeams(mux, sqlDB, authAny)
+	handlers.MountTeams(mux, sqlDB, wrap)
 	return mux
 }
 

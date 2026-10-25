@@ -8,9 +8,21 @@ import (
 	"github.com/yumeng-tech/ai-collab-board/backend/internal/pkg/apperr"
 )
 
-// resolveMember 优先用上下文（RequireWorkspaceMember / API Key）；否则查 members。
+// resolveMember 优先用上下文（RequireWorkspaceMember / API Key）；有 mid 仍须核 members.id=? AND workspace_id=path。
+// Bot Key 错仓 → 403「API Key 不属于该工作空间」（与 RequireWorkspaceMember 齐）。
 func resolveMember(db *sql.DB, r *http.Request, workspaceID string) (memberID string, err error) {
 	if mid := middleware.MemberID(r.Context()); mid != "" {
+		var found string
+		err = db.QueryRow(`SELECT id FROM members WHERE id = ? AND workspace_id = ?`, mid, workspaceID).Scan(&found)
+		if err == sql.ErrNoRows {
+			if middleware.ActorKind(r.Context()) == "bot" {
+				return "", apperr.Forbidden("API Key 不属于该工作空间")
+			}
+			return "", apperr.Forbidden("你不是该工作空间的成员")
+		}
+		if err != nil {
+			return "", err
+		}
 		return mid, nil
 	}
 	uid := middleware.UserID(r.Context())

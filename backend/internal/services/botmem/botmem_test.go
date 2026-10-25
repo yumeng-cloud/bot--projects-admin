@@ -341,3 +341,72 @@ func TestSearchMemoriesPostgresOptional(t *testing.T) {
 		t.Fatalf("expected hit, got %+v", res)
 	}
 }
+
+// X-G2：错仓 mid 读/写 memories+todos → 404「成员不存在」；同仓正常。
+func TestWSIsolationMemoriesTodos(t *testing.T) {
+	svc, ws1, m1, _ := setup(t)
+	sqlDB := svc.DB
+
+	ws2 := idgen.New()
+	if _, err := sqlDB.Exec(`INSERT INTO workspaces (id, name, slug) VALUES (?,?,?)`, ws2, "WS2", "ws2-"+ws2[:8]); err != nil {
+		t.Fatal(err)
+	}
+	m2 := idgen.New()
+	if _, err := sqlDB.Exec(`INSERT INTO members (id, workspace_id, user_id, role, display_name, is_bot, bot_enabled) VALUES (?,?,NULL,'bot','BotWS2',1,1)`, m2, ws2); err != nil {
+		t.Fatal(err)
+	}
+
+	// 同仓写/读 OK
+	mem, err := svc.UpsertMemory(ws1, m1, botmem.UpsertMemoryInput{KeyName: "k", ValueText: "v"})
+	if err != nil {
+		t.Fatalf("same-ws UpsertMemory: %v", err)
+	}
+	list, err := svc.ListMemories(ws1, m1, "")
+	if err != nil || len(list) != 1 {
+		t.Fatalf("same-ws ListMemories: %v len=%d", err, len(list))
+	}
+	todo, err := svc.CreateTodo(ws1, m1, botmem.CreateTodoInput{Title: "t1"})
+	if err != nil {
+		t.Fatalf("same-ws CreateTodo: %v", err)
+	}
+	todos, err := svc.ListTodos(ws1, m1, "")
+	if err != nil || len(todos) != 1 {
+		t.Fatalf("same-ws ListTodos: %v len=%d", err, len(todos))
+	}
+
+	must404 := func(name string, err error) {
+		t.Helper()
+		if err == nil {
+			t.Fatalf("%s: want 404 成员不存在, got nil", name)
+		}
+		ae, ok := err.(*apperr.AppError)
+		if !ok || ae.Code != "not_found" || ae.Message != "成员不存在" {
+			t.Fatalf("%s: want not_found 成员不存在, got %#v", name, err)
+		}
+	}
+
+	// 错仓：ws2 path + ws1 mid（写 IDOR 回归）
+	_, err = svc.UpsertMemory(ws2, m1, botmem.UpsertMemoryInput{KeyName: "evil", ValueText: "x"})
+	must404("UpsertMemory cross-ws", err)
+	_, err = svc.CreateTodo(ws2, m1, botmem.CreateTodoInput{Title: "evil"})
+	must404("CreateTodo cross-ws", err)
+	_, err = svc.ListMemories(ws2, m1, "")
+	must404("ListMemories cross-ws", err)
+	_, err = svc.ListTodos(ws2, m1, "")
+	must404("ListTodos cross-ws", err)
+	_, err = svc.PatchMemory(ws2, m1, mem.ID, botmem.PatchMemoryInput{})
+	must404("PatchMemory cross-ws", err)
+	err = svc.DeleteMemory(ws2, m1, mem.ID)
+	must404("DeleteMemory cross-ws", err)
+	_, err = svc.PatchTodo(ws2, m1, todo.ID, botmem.PatchTodoInput{})
+	must404("PatchTodo cross-ws", err)
+
+	// 同仓 patch/delete 仍可用
+	if _, err := svc.PatchMemory(ws1, m1, mem.ID, botmem.PatchMemoryInput{ValueText: strPtr("v2")}); err != nil {
+		t.Fatalf("same-ws PatchMemory: %v", err)
+	}
+	st := "done"
+	if _, err := svc.PatchTodo(ws1, m1, todo.ID, botmem.PatchTodoInput{Status: &st}); err != nil {
+		t.Fatalf("same-ws PatchTodo: %v", err)
+	}
+}

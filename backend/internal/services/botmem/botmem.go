@@ -285,8 +285,20 @@ type UpsertMemoryInput struct {
 	RoleID    *string
 }
 
+
+// assertMemberInWorkspace 硬门：path member 必须属于 path workspace；否则 404「成员不存在」（与 Handoff 齐，禁 200 空 / 201 脏写）。
+func (s *Service) assertMemberInWorkspace(workspaceID, memberID string) error {
+	if !s.memberExists(workspaceID, memberID) {
+		return apperr.NotFound("成员不存在")
+	}
+	return nil
+}
+
 // ListMemories：q 非空时用 LIKE 关键词检索；语义/混合见 SearchMemories。
 func (s *Service) ListMemories(workspaceID, memberID, q string) ([]models.BotMemory, error) {
+	if err := s.assertMemberInWorkspace(workspaceID, memberID); err != nil {
+		return nil, err
+	}
 	q = strings.TrimSpace(q)
 	var rows *sql.Rows
 	var err error
@@ -330,6 +342,9 @@ func (s *Service) GetMemory(workspaceID, memberID, memoryID string) (*models.Bot
 }
 
 func (s *Service) UpsertMemory(workspaceID, memberID string, in UpsertMemoryInput) (*models.BotMemory, error) {
+	if err := s.assertMemberInWorkspace(workspaceID, memberID); err != nil {
+		return nil, err
+	}
 	in.KeyName = strings.TrimSpace(in.KeyName)
 	if in.KeyName == "" {
 		return nil, apperr.BadRequest("key_name 不能为空")
@@ -379,6 +394,9 @@ type PatchMemoryInput struct {
 }
 
 func (s *Service) PatchMemory(workspaceID, memberID, memoryID string, in PatchMemoryInput) (*models.BotMemory, error) {
+	if err := s.assertMemberInWorkspace(workspaceID, memberID); err != nil {
+		return nil, err
+	}
 	cur, err := s.GetMemory(workspaceID, memberID, memoryID)
 	if err != nil {
 		return nil, err
@@ -421,6 +439,9 @@ func (s *Service) PatchMemory(workspaceID, memberID, memoryID string, in PatchMe
 }
 
 func (s *Service) DeleteMemory(workspaceID, memberID, memoryID string) error {
+	if err := s.assertMemberInWorkspace(workspaceID, memberID); err != nil {
+		return err
+	}
 	res, err := s.DB.Exec(`DELETE FROM bot_memories WHERE id = ? AND workspace_id = ? AND member_id = ?`, memoryID, workspaceID, memberID)
 	if err != nil {
 		return err
@@ -446,6 +467,9 @@ type CreateTodoInput struct {
 }
 
 func (s *Service) ListTodos(workspaceID, memberID, status string) ([]models.BotTodo, error) {
+	if err := s.assertMemberInWorkspace(workspaceID, memberID); err != nil {
+		return nil, err
+	}
 	var rows *sql.Rows
 	var err error
 	if status != "" {
@@ -486,6 +510,9 @@ func (s *Service) GetTodo(workspaceID, memberID, todoID string) (*models.BotTodo
 }
 
 func (s *Service) CreateTodo(workspaceID, memberID string, in CreateTodoInput) (*models.BotTodo, error) {
+	if err := s.assertMemberInWorkspace(workspaceID, memberID); err != nil {
+		return nil, err
+	}
 	in.Title = strings.TrimSpace(in.Title)
 	if in.Title == "" {
 		return nil, apperr.BadRequest("title 不能为空")
@@ -515,6 +542,9 @@ type PatchTodoInput struct {
 }
 
 func (s *Service) PatchTodo(workspaceID, memberID, todoID string, in PatchTodoInput) (*models.BotTodo, error) {
+	if err := s.assertMemberInWorkspace(workspaceID, memberID); err != nil {
+		return nil, err
+	}
 	cur, err := s.GetTodo(workspaceID, memberID, todoID)
 	if err != nil {
 		return nil, err
@@ -602,12 +632,7 @@ func (s *Service) Roster(workspaceID string) ([]models.BotRosterItem, error) {
 // --- Handoff ---
 
 func (s *Service) Handoff(workspaceID, memberID string) (*models.BotHandoff, error) {
-	var mid string
-	err := s.DB.QueryRow(`SELECT id FROM members WHERE id = ? AND workspace_id = ?`, memberID, workspaceID).Scan(&mid)
-	if err == sql.ErrNoRows {
-		return nil, apperr.NotFound("成员不存在")
-	}
-	if err != nil {
+	if err := s.assertMemberInWorkspace(workspaceID, memberID); err != nil {
 		return nil, err
 	}
 
@@ -621,7 +646,7 @@ func (s *Service) Handoff(workspaceID, memberID string) (*models.BotHandoff, err
 	}
 
 	var roleID string
-	err = s.DB.QueryRow(`SELECT role_id FROM bot_role_claims WHERE member_id = ? AND workspace_id = ? AND released_at IS NULL LIMIT 1`,
+	err := s.DB.QueryRow(`SELECT role_id FROM bot_role_claims WHERE member_id = ? AND workspace_id = ? AND released_at IS NULL LIMIT 1`,
 		memberID, workspaceID).Scan(&roleID)
 	if err == nil {
 		if r, err := s.GetRole(workspaceID, roleID); err == nil {
@@ -753,12 +778,7 @@ func (s *Service) findOpenTodoByTitleIssue(workspaceID, memberID, title string, 
 
 // ImportHandoff 将续工包写入目标 member：memories upsert、未完成 todos 导入、尝试 claim；issues 只列 id。
 func (s *Service) ImportHandoff(workspaceID, memberID string, in ImportHandoffInput) (*ImportHandoffResult, error) {
-	var mid string
-	err := s.DB.QueryRow(`SELECT id FROM members WHERE id = ? AND workspace_id = ?`, memberID, workspaceID).Scan(&mid)
-	if err == sql.ErrNoRows {
-		return nil, apperr.NotFound("成员不存在")
-	}
-	if err != nil {
+	if err := s.assertMemberInWorkspace(workspaceID, memberID); err != nil {
 		return nil, err
 	}
 

@@ -23,6 +23,7 @@ import { THEME_MODE_STORAGE_KEY, resolveThemeMode, type ThemeMode } from '../the
 import { TeamPoolSelect } from '../components/common/TeamPoolSelect'
 import { ProjectPoolSelect } from '../components/common/ProjectPoolSelect'
 import { CurrentTeamProvider, useCurrentTeam } from '../hooks/useCurrentTeam'
+import { readStoredProjectId, writeStoredProjectId } from '../utils/currentProject'
 
 const { Header, Sider, Content } = Layout
 
@@ -120,6 +121,11 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
   useEffect(() => {
     if (!wsId) return
     localStorage.setItem('workspaceId', wsId)
+    // X-R1：切仓先清空项目池，再 fetch（配合 key={wsId} remount）
+    setProjects([])
+    setProjectId(undefined)
+    setWs(null)
+    setLoading(true)
     ;(async () => {
       try {
         const [wsRes, projRes] = await Promise.all([
@@ -129,11 +135,27 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
         setWs(wsRes.workspaces.find((w) => w.id === wsId) || null)
         const list = projRes.projects || []
         setProjects(list)
-        // B3: 路由项目不在未归档池 → 切到首个未归档；无则清空（空态 B1）
+        // B3 + X-R1：路由优先，否则 acb.project.<wsId>；不在池则首个未归档
+        const stored = readStoredProjectId(wsId)
         if (routeProjectId && list.some((p) => p.id === routeProjectId)) {
           setProjectId(routeProjectId)
+          writeStoredProjectId(wsId, routeProjectId)
+        } else if (stored && list.some((p) => p.id === stored)) {
+          setProjectId(stored)
+          if (routeProjectId) {
+            const tab =
+              loc.pathname.includes('/issues') || loc.pathname.includes('/list')
+                ? 'issues'
+                : loc.pathname.includes('/cycles')
+                  ? 'cycles'
+                  : loc.pathname.includes('/timeline')
+                    ? 'timeline'
+                    : 'board'
+            nav(`/w/${wsId}/projects/${stored}/${tab}`, { replace: true })
+          }
         } else if (list.length) {
           setProjectId(list[0].id)
+          writeStoredProjectId(wsId, list[0].id)
           if (routeProjectId && !list.some((p) => p.id === routeProjectId)) {
             const tab =
               loc.pathname.includes('/issues') || loc.pathname.includes('/list')
@@ -315,11 +337,7 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
               projectId={projectId}
               onSelect={(id) => {
                 setProjectId(id)
-                try {
-                  localStorage.setItem('ai-collab-board:projectId', id)
-                } catch {
-                  /* ignore */
-                }
+                writeStoredProjectId(wsId || '', id)
                 nav(`/w/${wsId}/projects/${id}/${tabFromSelected()}`)
               }}
               onCreated={(project) => {
@@ -328,11 +346,7 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
                   return [project, ...prev]
                 })
                 setProjectId(project.id)
-                try {
-                  localStorage.setItem('ai-collab-board:projectId', project.id)
-                } catch {
-                  /* ignore */
-                }
+                writeStoredProjectId(wsId || '', project.id)
                 nav(`/w/${wsId}/projects/${project.id}/board`)
                 void reloadProjects(project.id)
               }}
@@ -385,9 +399,10 @@ export default function AppLayout({ user, onLogout }: { user: User | null; onLog
       </div>
     )
   }
+  // X-R1：主内容树 key={wsId} remount —— 切仓零残留（债首选）
   return (
-    <CurrentTeamProvider workspaceId={wsId}>
-      <AppLayoutShell user={user} onLogout={onLogout} />
+    <CurrentTeamProvider key={wsId} workspaceId={wsId}>
+      <AppLayoutShell key={wsId} user={user} onLogout={onLogout} />
     </CurrentTeamProvider>
   )
 }

@@ -5,6 +5,7 @@ import { PlusOutlined } from '@ant-design/icons'
 import { listProjects } from '../api/projects'
 import { MOCK_PROJECT, preferMock } from '../api/mockData'
 import CreateProjectModal from '../components/common/CreateProjectModal'
+import { writeStoredProjectId } from '../utils/currentProject'
 
 /** /w/:wsId/board → 第一个项目的 board；无项目时平静空态 + 本页创建 */
 export default function ProjectRedirect({ tab }: { tab: 'board' | 'issues' | 'cycles' | 'timeline' }) {
@@ -92,11 +93,7 @@ export default function ProjectRedirect({ tab }: { tab: 'board' | 'issues' | 'cy
           workspaceId={wsId}
           onClose={() => setModalOpen(false)}
           onCreated={(p) => {
-            try {
-              localStorage.setItem('ai-collab-board:projectId', p.id)
-            } catch {
-              /* ignore */
-            }
+            writeStoredProjectId(wsId, p.id)
             setProjectId(p.id)
           }}
         />

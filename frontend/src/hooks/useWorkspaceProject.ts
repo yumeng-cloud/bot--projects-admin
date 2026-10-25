@@ -1,27 +1,40 @@
 import { useEffect, useState } from 'react'
 import { listProjects } from '../api/projects'
 import { MOCK_PROJECT, preferMock } from '../api/mockData'
-
-const KEY = 'ai-collab-board:projectId'
+import {
+  readStoredProjectId,
+  writeStoredProjectId,
+  resolveProjectId,
+} from '../utils/currentProject'
 
 export function useWorkspaceProject(workspaceId: string | undefined) {
-  const [projectId, setProjectId] = useState<string | null>(() => localStorage.getItem(KEY))
+  const [projectId, setProjectIdState] = useState<string | null>(() =>
+    workspaceId ? readStoredProjectId(workspaceId) : null,
+  )
   const [projectName, setProjectName] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const setProjectId = (id: string | null) => {
+    setProjectIdState(id)
+    if (workspaceId) writeStoredProjectId(workspaceId, id)
+  }
+
   useEffect(() => {
     if (!workspaceId) return
     let cancelled = false
+    // X-R1：切仓先清空再 fetch，零他仓项目残留
+    setProjectIdState(null)
+    setProjectName('')
+    setLoading(true)
+    setError(null)
     ;(async () => {
-      setLoading(true)
-      setError(null)
       try {
         if (preferMock()) {
           if (!cancelled) {
-            setProjectId(MOCK_PROJECT)
+            setProjectIdState(MOCK_PROJECT)
             setProjectName('演示项目')
-            localStorage.setItem(KEY, MOCK_PROJECT)
+            writeStoredProjectId(workspaceId, MOCK_PROJECT)
           }
           return
         }
@@ -29,21 +42,22 @@ export function useWorkspaceProject(workspaceId: string | undefined) {
         const list = res.projects || []
         if (!list.length) {
           if (!cancelled) {
-            setProjectId(null)
+            setProjectIdState(null)
             setError('还没有项目')
           }
           return
         }
-        const saved = localStorage.getItem(KEY)
-        const pick = list.find((p) => p.id === saved) || list[0]
+        const saved = readStoredProjectId(workspaceId)
+        const pickId = resolveProjectId(list, saved)
+        const pick = list.find((p) => p.id === pickId) || list[0]
         if (!cancelled) {
-          setProjectId(pick.id)
+          setProjectIdState(pick.id)
           setProjectName(pick.name)
-          localStorage.setItem(KEY, pick.id)
+          writeStoredProjectId(workspaceId, pick.id)
         }
       } catch (e: unknown) {
         if (!cancelled) {
-          setProjectId(null)
+          setProjectIdState(null)
           setError(e instanceof Error ? e.message : '加载项目失败')
         }
       } finally {

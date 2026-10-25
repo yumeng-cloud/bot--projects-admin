@@ -85,6 +85,7 @@ import {
   parseJoinSearchParams,
 } from '../../../utils/oneTapJoin'
 import { emptySeatsForPack } from '../../../utils/autoCrewPack'
+import { readStoredProjectId } from '../../../utils/currentProject'
 import type { CrewPackResult } from '../../../utils/autoCrewPack'
 import CrewPackRevealModal from '../../../components/common/CrewPackRevealModal'
 import './bots.css'
@@ -169,6 +170,10 @@ export default function BotsRosterPage() {
       setRoles(r.bot_roles || [])
       setKeys((k.api_keys || []).filter((x) => !x.revoked_at))
     } catch (e: unknown) {
+      // X-R1：失败也保持空态，禁止他仓数据残留
+      setBots([])
+      setRoles([])
+      setKeys([])
       message.error(e instanceof Error ? e.message : '加载失败')
     } finally {
       setLoading(false)
@@ -198,8 +203,49 @@ export default function BotsRosterPage() {
   }, [searchParams, setSearchParams])
 
 
+  // X-R1：切 wsId 先清空 bots/roles/keys/seats/handoff Drawer，再 fetch
   useEffect(() => {
-    void load()
+    let cancelled = false
+    setBots([])
+    setRoles([])
+    setKeys([])
+    setTeamSeats([])
+    setDrawerRole(null)
+    setIssuedInvites([])
+    setWsInvites([])
+    setConflictOpen(false)
+    setConflictInfo(null)
+    setPendingCreatedTeam(null)
+    setCrewPackOpen(false)
+    setCrewPackSeats([])
+    setLoading(true)
+    ;(async () => {
+      try {
+        const [b, r, k] = await Promise.all([
+          listBots(wsId),
+          listBotRoles(wsId),
+          api<{ api_keys: ApiKeyRow[] }>(`/workspaces/${wsId}/api-keys`).catch(() => ({
+            api_keys: [] as ApiKeyRow[],
+          })),
+        ])
+        if (cancelled) return
+        setBots(b.bots || [])
+        setRoles(r.bot_roles || [])
+        setKeys((k.api_keys || []).filter((x) => !x.revoked_at))
+      } catch (e: unknown) {
+        if (cancelled) return
+        setBots([])
+        setRoles([])
+        setKeys([])
+        message.error(e instanceof Error ? e.message : '加载失败')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wsId])
 
   /** U-R1：设置·移除成员后乐观清绑并立刻 reload seats/roster */
@@ -1534,6 +1580,7 @@ export default function BotsRosterPage() {
         open={Boolean(drawerRole)}
         onClose={() => setDrawerRole(null)}
         wsId={wsId}
+        projectId={readStoredProjectId(wsId) || undefined}
         role={drawerRole}
         bots={bots}
         keyHint={

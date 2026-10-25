@@ -72,6 +72,9 @@ func (s *Service) dropMemoryIndex(ctx context.Context, workspaceID, memoryID str
 // SearchMemories 支持 mode=keyword|semantic|hybrid；无 Embed/Store 时 semantic/hybrid → keyword_fallback。
 // q 为空时仅列出该 member 全部记忆（keyword 路径）。
 func (s *Service) SearchMemories(ctx context.Context, workspaceID, memberID, q string, mode SearchMode, limit int) (*SearchResult, error) {
+	if err := s.assertMemberInWorkspace(workspaceID, memberID); err != nil {
+		return nil, err
+	}
 	q = strings.TrimSpace(q)
 	if limit <= 0 || limit > 100 {
 		limit = 50

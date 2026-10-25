@@ -5,6 +5,7 @@ import { listProjects, type Project } from '../../api/projects'
 import { preferMock } from '../../api/mockData'
 import BoardPage from './BoardPage'
 import { useWorkspaceProject } from '../../hooks/useWorkspaceProject'
+import { writeStoredProjectId } from '../../utils/currentProject'
 
 export default function BoardRoute() {
   const { wsId } = useParams()
@@ -37,7 +38,7 @@ export default function BoardRoute() {
           style={{ minWidth: 180 }}
           value={projectId}
           onChange={(id) => {
-            localStorage.setItem('ai-collab-board:projectId', id)
+            writeStoredProjectId(workspaceId, id)
             setProjectId(id)
           }}
           options={

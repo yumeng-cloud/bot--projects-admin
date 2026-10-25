@@ -13,6 +13,7 @@ import {
 import { PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { listProjects, patchProject, type Project } from '../../api/projects'
+import { writeStoredProjectId } from '../../utils/currentProject'
 import CreateProjectModal from '../../components/common/CreateProjectModal'
 import EditProjectModal from '../../components/common/EditProjectModal'
 import { formatShanghai } from '../../utils/time'
@@ -68,11 +69,7 @@ export default function SettingsProjectsPanel({ workspaceId }: Props) {
       message.info('已归档项目请先恢复，再进入看板')
       return
     }
-    try {
-      localStorage.setItem('ai-collab-board:projectId', row.id)
-    } catch {
-      /* ignore */
-    }
+    writeStoredProjectId(workspaceId, row.id)
     nav(`/w/${workspaceId}/projects/${row.id}/board`)
   }
 
@@ -211,7 +208,7 @@ export default function SettingsProjectsPanel({ workspaceId }: Props) {
         onClose={() => setCreateOpen(false)}
         onCreated={(p) => {
           try {
-            localStorage.setItem('ai-collab-board:projectId', p.id)
+            writeStoredProjectId(workspaceId, p.id)
           } catch {
             /* ignore */
           }

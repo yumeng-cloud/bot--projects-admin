@@ -71,6 +71,8 @@ export function CurrentTeamProvider({
 
   useEffect(() => {
     let cancelled = false
+    // X-R1：切仓先清 teams，再 fetch（外层 key={wsId} remount 为主）
+    setTeams([])
     setLoading(true)
     const saved = readStoredTeamId(workspaceId)
     setTeamIdState(saved)
