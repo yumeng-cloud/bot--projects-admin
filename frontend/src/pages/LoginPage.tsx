@@ -2,14 +2,8 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Button, Card, Form, Input, Typography, message, Tabs } from 'antd'
 import { login as apiLogin, register as apiRegister } from '../api/auth'
+import { safeReturnPath } from '../utils/safeReturnPath'
 import './login.css'
-
-function safeReturnPath(from: unknown): string {
-  if (typeof from !== 'string' || !from.startsWith('/') || from.startsWith('//')) return '/'
-  // Stay on login / landing only if that was the intent; default home.
-  if (from === '/login') return '/'
-  return from
-}
 
 export default function LoginPage({ onAuth }: { onAuth: () => void }) {
   const [loading, setLoading] = useState(false)
@@ -18,11 +12,13 @@ export default function LoginPage({ onAuth }: { onAuth: () => void }) {
   const stateFrom = (location.state as { from?: unknown } | null)?.from
 
   const finishAuth = () => {
-    onAuth()
-    // Only bounce when this page owns /login. Embedded in /join keeps JoinPage flow.
+    const target = safeReturnPath(stateFrom)
+    // Navigate before flipping authed so deep-link wins the route race
+    // (App's authed /login also honors state.from as a safety net).
     if (location.pathname === '/login') {
-      nav(safeReturnPath(stateFrom), { replace: true })
+      nav(target, { replace: true })
     }
+    onAuth()
   }
 
   const login = async (v: { email: string; password: string }) => {

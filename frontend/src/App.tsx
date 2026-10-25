@@ -14,12 +14,24 @@ import { logout, me, type User } from './api/auth'
 import SettingsPage from './pages/settings/SettingsPage'
 import { BotsRosterPage, BotDetailPage } from './pages/settings/bots'
 import PlatformAdminPage from './pages/admin/PlatformAdminPage'
+import { safeReturnPath } from './utils/safeReturnPath'
 
-/** Unauthed hit on protected path → /login, keep deep-link intent. */
+/** Unauthed hit on protected path → /login, keep deep-link intent in location.state.from. */
 function RedirectToLogin() {
   const location = useLocation()
   const from = `${location.pathname}${location.search}${location.hash}`
   return <Navigate to="/login" replace state={{ from }} />
+}
+
+/**
+ * Authed user on /login → original deep link (state.from) or Home.
+ * Must honor `from`: after LoginPage calls onAuth(), Routes flip to this branch
+ * while URL may still be /login; a hard Navigate to="/" would wipe the return intent.
+ */
+function LoginRedirectWhenAuthed() {
+  const location = useLocation()
+  const from = (location.state as { from?: unknown } | null)?.from
+  return <Navigate to={safeReturnPath(from)} replace />
 }
 
 export default function App() {
@@ -62,7 +74,7 @@ export default function App() {
         ) : (
           <>
             <Route path="/" element={<HomePage onLogout={onLogout} />} />
-            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="/login" element={<LoginRedirectWhenAuthed />} />
             <Route path="/admin" element={<PlatformAdminPage />} />
             <Route path="/admin/*" element={<PlatformAdminPage />} />
             <Route path="/w/:wsId" element={<AppLayout user={user} onLogout={onLogout} />}>
