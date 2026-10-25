@@ -1,0 +1,38 @@
+XWS-AUTH · Bot 记忆/交接 双仓探针 2026-10-25 ~10:18 CST
+================================================================
+主人现象：切「工作空间/07项目」仍见他仓 Bot 记忆与交接（截图含 blockers/focus/queue、YM-18/11/2）。
+截图：docs/qa-shots/XWS-AUTH-bot-memory-leak-20261025.png（若在）
+
+环境：local :8080 · seed admin@yumeng.tech
+WS1 育蒙科技 ba1481c49148aba9553ba3811406b69f（36 bots）
+WS2 QA Invite WS 1b62eb739b167cf21cb62d109bda2690（0 bots）
+MID_ws1 Grok Bot 094acad4a3f0aaef2ee6370e790912b4
+MID_ws1 backend  ccae88b715a08d9364309db54f43d4e8
+MID_ws2 human    493f1f87b0ee0b67bc6895afc07cd02a
+
+--- 活探结果（IDOR 错仓路径）---
+GET /workspaces/{WS2}/bots/{MID_ws1}/memories  -> 200 {"memories":[]}
+GET /workspaces/{WS2}/bots/{MID_ws1}/todos     -> 200 {"todos":[]}
+GET /workspaces/{WS2}/bots/{MID_ws1}/handoff   -> 404 {"code":"not_found","message":"成员不存在"}
+（MID backend 同结果）
+
+GET /workspaces/{WS1}/bots/{MID_ws2}/memories  -> 200 {"memories":[]}
+GET /workspaces/{WS1}/bots/{MID_ws2}/todos     -> 200 {"todos":[]}
+GET /workspaces/{WS1}/bots/{MID_ws2}/handoff   -> 404 成员不存在
+
+对照：同仓正确路径 memories -> 200 且有数据（Grok Bot n≥1）。
+
+--- 代码口径（与探针一致）---
+- Handoff：校验 member∈path.ws → 错仓 404（符合）
+- ListMemories / ListTodos：SQL 双键过滤，错仓 **200 空数组**（无明文泄漏，但非 403；缺「成员不属于本仓」硬门）
+- FE BotDetailPage：/w/:wsId/settings/bots/:memberId；切仓若保留旧 memberId + React 态，可继续展示旧 handoff（切仓未清缓存假设）
+
+--- QA 判定 ---
+API 明文跨仓泄漏（把 WS1 记忆内容经 WS2 URL 读出）：本探针 **未复现**（空/404）。
+权限语义缺陷：memories/todos 错仓应 403/404，现 200 空 → Soft†/须补硬门。
+主人 UI 现象优先怀疑：
+  A) 切仓 FE 未卸 BotDetail / 未清 state（产品草案「切仓清缓存」）
+  B) 同仓跨项目：handoff 开放 Issue 不按当前项目过滤（截图面包屑 YM·示例项目，主人说「07项目」）
+债文请拆两行验收：跨仓隔离 + 跨项目可见性。推荐 API：非本仓成员一律 403（与 handoff 对齐用 404 也可，但勿 200 空）。
+
+结论交产品主持席合议；PASS† 前勿关。
