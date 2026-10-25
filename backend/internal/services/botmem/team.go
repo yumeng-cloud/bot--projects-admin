@@ -149,6 +149,28 @@ func (s *Service) GetTeam(workspaceID, teamID string) (*models.Team, error) {
 	return &t, nil
 }
 
+type UpdateTeamInput struct {
+	Name string
+}
+
+// UpdateTeam Admin 改名；空名拒绝。
+func (s *Service) UpdateTeam(workspaceID, teamID string, in UpdateTeamInput) (*models.Team, error) {
+	in.Name = strings.TrimSpace(in.Name)
+	if in.Name == "" {
+		return nil, apperr.BadRequest("团队名称不能为空")
+	}
+	if _, err := s.GetTeam(workspaceID, teamID); err != nil {
+		return nil, err
+	}
+	now := nowUTC()
+	_, err := s.DB.Exec(`UPDATE teams SET name = ?, updated_at = ? WHERE id = ? AND workspace_id = ?`,
+		in.Name, now, teamID, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	return s.GetTeam(workspaceID, teamID)
+}
+
 func scanTeam(row interface{ Scan(dest ...any) error }) (models.Team, error) {
 	var t models.Team
 	var slug sql.NullString

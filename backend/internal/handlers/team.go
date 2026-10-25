@@ -130,6 +130,31 @@ func (h *TeamHandler) GetTeam(w http.ResponseWriter, r *http.Request) {
 	middleware.JSON(w, http.StatusOK, map[string]any{"team": team})
 }
 
+// PatchTeam PATCH …/teams/{teamID}：Admin 改名；空名 400；非 Admin 403。
+func (h *TeamHandler) PatchTeam(w http.ResponseWriter, r *http.Request) {
+	ws, actor, ok := requireWorkspaceMember(h.DB, w, r)
+	if !ok {
+		return
+	}
+	if resolveMemberRole(h.DB, r, actor) != "admin" {
+		middleware.HandleError(w, apperr.Forbidden("需要管理员权限才能修改团队名称"))
+		return
+	}
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := middleware.DecodeJSON(r, &req); err != nil {
+		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
+		return
+	}
+	team, err := h.Svc.UpdateTeam(ws, r.PathValue("teamID"), botmem.UpdateTeamInput{Name: req.Name})
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	middleware.JSON(w, http.StatusOK, map[string]any{"team": team})
+}
+
 func (h *TeamHandler) GetRoster(w http.ResponseWriter, r *http.Request) {
 	ws, _, ok := requireWorkspaceMember(h.DB, w, r)
 	if !ok {
@@ -444,6 +469,7 @@ func MountTeams(mux *http.ServeMux, db *sql.DB, wrap func(http.Handler) http.Han
 	reg("GET /api/v1/workspaces/{workspaceID}/team-templates", h.ListTeamTemplates)
 	reg("GET /api/v1/workspaces/{workspaceID}/teams", h.ListTeams)
 	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}", h.GetTeam)
+	reg("PATCH /api/v1/workspaces/{workspaceID}/teams/{teamID}", h.PatchTeam)
 	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}/roster", h.GetRoster)
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/roster/ensure", h.Idempotent(h.EnsureRoster))
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/seats", h.Idempotent(h.CreateSeat))

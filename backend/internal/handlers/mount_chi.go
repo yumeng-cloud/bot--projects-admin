@@ -96,6 +96,7 @@ func MountTeamsChi(r chi.Router, db *sql.DB) {
 	m.Get("/team-templates", h.ListTeamTemplates)
 	m.Get("/teams", h.ListTeams)
 	m.Get("/teams/{teamID}", h.GetTeam)
+	m.Patch("/teams/{teamID}", h.PatchTeam)
 	m.Get("/teams/{teamID}/roster", h.GetRoster)
 	m.Post("/teams/{teamID}/roster/ensure", h.EnsureRoster)
 	m.Post("/teams/{teamID}/seats", h.CreateSeat)

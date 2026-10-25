@@ -105,6 +105,10 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 
 			ws.Get("/projects", projH.List)
 			ws.Post("/projects", projH.Create)
+			// S-G2：FE patchProject 走 /workspaces/{ws}/projects/{id}；顶层 /projects/{id} 仍保留兼容
+			ws.Get("/projects/{projectID}", projH.Get)
+			ws.Patch("/projects/{projectID}", projH.Patch)
+			ws.Delete("/projects/{projectID}", projH.Delete)
 
 			ws.Get("/projects/{projectID}/board-column-prefs", projH.GetBoardColumnPrefs)
 			ws.Put("/projects/{projectID}/board-column-prefs", projH.PutBoardColumnPrefs)
