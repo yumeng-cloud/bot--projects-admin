@@ -1,0 +1,130 @@
+WS_ISOLATION · X-Q1 API 复测纪要 A2–A6 + X-I1 / B / X-M1
+时间：2026-10-25 10:25 Asia/Shanghai
+判定（API 行）：**PASS†**（A2–A6 / X-I1 / A5 / B·API）；UI A1/B1 → **需 box 浏览器**（本 executor 无 computerUse 派发）
+================================================================
+基线
+  git HEAD @ 4b1256a（pull --ff-only；含 fae4e48 祖先）
+  Go+FE 修复：fae4e48（X-G* assertMemberInWorkspace + X-R1～R3 remount/清态/项目滤）
+  Issue 契约：f7474d9（X-I1）
+  通道：47f0c73（X-M1 annotate 403/404；禁软吞）
+  债/锤：dadd8e9 + 34ece64；先验探针 f169699（200 空）/ 0c39d38（POST 201）
+  二进制：rebuild /tmp/ai-board-server-xq1 from HEAD（旧 /tmp/ai-board-server-sq1 @09:08 早于 fae4e48@10:22 → 已停并换新）
+  API：http://127.0.0.1:8080 healthz 200 · DB postgres seed
+  种子：admin@yumeng.tech / Admin123!
+
+对象
+  WS1 育蒙科技      ba1481c49148aba9553ba3811406b69f（admin 成员）
+  WS2 QA Invite WS  1b62eb739b167cf21cb62d109bda2690（admin 成员；0 bots）
+  MID Grok Bot      094acad4a3f0aaef2ee6370e790912b4（仅 WS1）
+  ISSUE1 YM-9       3b2a4ee954ef0766cbbbc9143adc92ce（WS1 / project 示例）
+  P1 示例项目       b1e996fb8ba9c350e249f7a862425a67
+  P2 SQ1-UI-Proj…   ade1ded229f481d2fa6dadcb770cfd55
+
+码表（产品）
+  member∉ws 读写 → **404**（禁 200 空 / 禁 201）
+  调用方非成员   → **403**
+
+----------------------------------------------------------------
+行结果表
+----------------------------------------------------------------
+| 行 | 期望 | 实得 | 判定 |
+| --- | --- | --- | --- |
+| A2 GET WS2/bots/{MID}/memories\|todos | 404 | 404 成员不存在 | PASS† |
+| A3 GET …/handoff | 404 | 404 成员不存在 | PASS† |
+| A4 POST/PATCH memories\|todos 错仓 | 404（禁 201） | POST mem 404；POST todo 404；PATCH mem 404；PATCH todo 404 | PASS† |
+| A5 非成员业务读 | 403 | outsider JWT→403「您不是该工作空间的成员」；WS1 ymk_→WS2→403「API Key 不属于该工作空间」 | PASS† |
+| A6 脏写后 GET | N/A 或仍 404 | A4 无 201；GET 仍 404 | PASS† / N/A |
+| X-I1 GetIssue 错仓 | 404 | 404 Issue 不存在 | PASS† |
+| X-I1 ListIssues(WS2) | 不含 WS1 id | 200 n=0 contains=False | PASS† |
+| B · API project_id | 列表仅该项目 | ?project_id=P1 → n=27 全 P1；P2 → n=0 | PASS†（API） |
+| B1 · UI 切项目滤 | 屏仅当前项目 | — | **需 box 浏览器**（FE X-R3 已合 fae4e48；SeatHandoffDrawer filter project_id） |
+| A1 · UI 切仓零残留 | BotDetail/记忆无 WS1 残留 | — | **需 box 浏览器**（FE X-R1 key={wsId} remount + X-R2 clearBotData 已合） |
+| X-M1 ymbot 错仓 | 403/404 人话，不印「无记忆」 | WS1 ymk_ + WS2 env → 403 带「工作区隔离…」；正确仓 list OK | PASS†（annotate）；错 mid 404 见 A2 curl（WS2 无 bot 无法发 ymk_） |
+
+----------------------------------------------------------------
+curl 证据（JWT 已脱敏）
+----------------------------------------------------------------
+export API=http://127.0.0.1:8080
+export WS1=ba1481c49148aba9553ba3811406b69f
+export WS2=1b62eb739b167cf21cb62d109bda2690
+export MID=094acad4a3f0aaef2ee6370e790912b4
+export ISSUE1=3b2a4ee954ef0766cbbbc9143adc92ce
+# TOKEN=$(curl -sS -X POST $API/api/v1/auth/login -H 'Content-Type: application/json' \
+#   -d '{"email":"admin@yumeng.tech","password":"Admin123!"}' | jq -r .token)
+
+# A2
+curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $TOKEN" \
+  $API/api/v1/workspaces/$WS2/bots/$MID/memories   # → 404
+curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $TOKEN" \
+  $API/api/v1/workspaces/$WS2/bots/$MID/todos      # → 404
+
+# A3
+curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $TOKEN" \
+  $API/api/v1/workspaces/$WS2/bots/$MID/handoff    # → 404
+
+# A4（正确 body；错仓须 404）
+curl -sS -w '\n%{http_code}\n' -X POST -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' -H "Idempotency-Key: xws-a4-mem" \
+  -d '{"key_name":"xws-a4-mem","value_text":"probe"}' \
+  $API/api/v1/workspaces/$WS2/bots/$MID/memories   # → 404
+curl -sS -w '\n%{http_code}\n' -X POST -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"xws-a4-todo","status":"open"}' \
+  $API/api/v1/workspaces/$WS2/bots/$MID/todos      # → 404
+# PATCH 用 WS1 真实 memory id 打到 WS2 路径 → 404
+
+# A5 outsider
+# POST /api/v1/auth/register {email,password,name} → token
+# GET WS1/.../memories → 403 {"code":"forbidden","message":"您不是该工作空间的成员"}
+
+# A5 API key（WS1 发 ymk_ 打 WS2）
+# POST $API/api/v1/workspaces/$WS1/api-keys {"name":"xq1-a5-probe"} → token
+# GET WS2/.../memories Authorization: Bearer ymk_… → 403 API Key 不属于该工作空间
+
+# X-I1
+curl -sS -w '\n%{http_code}\n' -H "Authorization: Bearer $TOKEN" \
+  $API/api/v1/workspaces/$WS2/issues/$ISSUE1        # → 404 Issue 不存在
+curl -sS -H "Authorization: Bearer $TOKEN" \
+  $API/api/v1/workspaces/$WS2/issues                # → 200 issues=[]（不含 ISSUE1）
+
+# B API
+curl -sS -H "Authorization: Bearer $TOKEN" \
+  "$API/api/v1/workspaces/$WS1/issues?project_id=b1e996fb8ba9c350e249f7a862425a67"
+  # → 200 n=27 全属 P1
+curl -sS -H "Authorization: Bearer $TOKEN" \
+  "$API/api/v1/workspaces/$WS1/issues?project_id=ade1ded229f481d2fa6dadcb770cfd55"
+  # → 200 n=0
+
+对照正确仓：GET WS1/MID/memories → 200（含 alpha:last_focus 等）；handoff → 200。
+
+----------------------------------------------------------------
+FE 静态确认（git show / rg @ fae4e48）
+----------------------------------------------------------------
+X-R1 AppLayout.tsx: CurrentTeamProvider key={wsId} + AppLayoutShell key={wsId} remount
+X-R2 BotDetailPage.tsx: clearBotData() on ws/member change；404/403 → clear + navigate bots
+X-R3 SeatHandoffDrawer.tsx: handoff issues filter i.project_id === projectId
+Vite :5175 存活（dev）；本 agent 无 desktop 派发工具 → A1/B1 截图交主 agent box 浏览器自点。
+
+----------------------------------------------------------------
+X-M1 通道
+----------------------------------------------------------------
+rebuild /tmp/ymbot-xq1 from HEAD。
+YMBOT_API_KEY=<WS1 ymk_> YMBOT_WORKSPACE_ID=$WS2 YMBOT_MEMBER_ID=$MID memory list
+  → 无权限：API Key 不属于该工作空间（工作区隔离：调用方须为本仓成员，超管无业务读旁路）（HTTP 403）
+  （未打印「无记忆」——禁软吞 OK）
+同 key + WS1 → memory list 正常列出 7 条。
+错 mid∈他仓 的 ymbot 404：WS2 无 Bot 成员无法发 ymk_；与 A2 curl 同闸，记 N/A·curl 已盖。
+
+----------------------------------------------------------------
+清理
+----------------------------------------------------------------
+A4 无 201 → 无脏记忆/待办需删。
+探针 API Key id=82965bae91421a16da57b67156b1ea26 name=xq1-a5-probe（WS1）；
+  DELETE/POST revoke 路由本环境 404，未撤；名称可辨，可后清。
+注册 outsider xq1-outsider-*@example.com（无任何 ws 成员资格）保留无害。
+
+----------------------------------------------------------------
+Blockers / 交主 agent
+----------------------------------------------------------------
+- A1 / B1 UI：需 box 浏览器自点（切 WS1→WS2 BotDetail 零残留；切项目 handoff/Issue 仅当前项目）。FE 码已在 fae4e48。
+- 全表绿后再交产品 X-P1。
