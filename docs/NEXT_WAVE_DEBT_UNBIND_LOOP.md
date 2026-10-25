@@ -65,13 +65,13 @@ left/stopped/open ◄── 补位仅显式补位码/合法 force（**不**自�
 
 ## 产品勾选
 
-- [ ] **U-G1** 移除级联
-- [ ] **U-G2** 脏绑可清
-- [ ] **U-G3** 占用中人话
-- [ ] **U-G4** 幂等回归
-- [ ] **U-M1** CLI 本地收尾
-- [x] **U-R1** FE 移除后席态
-- [x] **U-R2** FE 文案
+- [x] **U-G1** 移除级联 · Go `9d49bdd` · TestUG1CascadeUnbindOnMemberRemove · 产品勾
+- [x] **U-G2** 脏绑可清 · Go `9d49bdd` · TestUG2StaleBoundUnbindClears · 产品勾
+- [x] **U-G3** 占用中人话 · Go `9d49bdd` · TestUG3AliveOccupantForbiddenMessage · 产品勾
+- [x] **U-G4** 幂等回归 · Go `9d49bdd` · TestUG4UnboundIdempotentUnbind · 产品勾
+- [x] **U-M1** CLI 本地收尾 · ymbot `1065066` · botclient seat_leave_test · 产品勾
+- [x] **U-R1** FE 移除后席态 · FE `091dd71` · 产品勾
+- [x] **U-R2** FE 文案 · FE `091dd71` · 产品勾
 - [ ] **U-Q1** QA 自测
 - [ ] **U-P1** 关单
 
@@ -98,5 +98,7 @@ left/stopped/open ◄── 补位仅显式补位码/合法 force（**不**自�
 
 ## 进度注记
 
+- 2026-10-25 08:34 · **产品勾 U-G1～U-G4** Go `9d49bdd`（本机复跑 UG1–4+AdminPath PASS）。软债搁置：级联非单 SQL 事务（FK SET NULL 兜底，不挡本刀）。
+- 2026-10-25 08:34 · **产品勾 U-M1** `1065066` + **确认 U-R1/U-R2** `091dd71`。码齐 → 开 **QA U-Q1** 自跑全链路（禁甩用户）。
 - 2026-10-25 08:30 · 产品拍板开刀。根因：移除成员不级联 → 脏绑 → 403「只能解绑自己绑定的席位」。LOGIN_REFRESH 并行。Soft 三件仍冻。
 - 2026-10-25 08:35 · FE U-R1/U-R2：Settings 移除后 `emitMemberRemoved` → 班底页乐观清绑+reload；stop/unbind skipToast + U6/U5/U4 人话。等 Go U-G1～U-G3 入后行为自然对齐。
