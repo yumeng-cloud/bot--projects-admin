@@ -1,9 +1,10 @@
 # SETTINGS_EDIT S-Q1 · 全表自点验收清单（骨架·等码）
 
 > 2026-10-25 08:45 Asia/Shanghai · QA 骨架  
-> **活点：** 2026-10-25 09:13 Asia/Shanghai · **Overall FAIL**（纪要 `SETTINGS_EDIT-S-Q1-qa-retest-20261025-0913.md`）  
+> **活点：** 2026-10-25 09:13 Asia/Shanghai · 初跑 FAIL（纪要 `SETTINGS_EDIT-S-Q1-qa-retest-20261025-0913.md`）  
+> **复测 SQ1-2：** 2026-10-25 09:20 Asia/Shanghai · **Overall S-Q1 PASS†**（纪要 `SETTINGS_EDIT-S-Q1-sq1-2-retest-20261025-0920.md` · FE `fd29305`）  
 > **债：** [`docs/NEXT_WAVE_DEBT_SETTINGS_EDIT.md`](../NEXT_WAVE_DEBT_SETTINGS_EDIT.md)  
-> **码齐：** Go `bd394ff`（S-G1+S-G2）+ FE `0e15fa0`（S-R1～R5）  
+> **码齐：** Go `bd394ff`（S-G1+S-G2）+ FE `0e15fa0`（S-R1～R5）+ **S-R2 补丁** `fd29305`（侧栏即时刷新）  
 > **硬约束：** 禁甩用户测；不问用户；MOBILE 并行不挡、勿改 MOBILE 证据；只写 QA 文档。
 
 ## 目标（债文 §QA 自点矩阵 1–6 + 勾选 S-Q1）
@@ -43,7 +44,7 @@
 | # | 覆盖 | 前置账号 | 路径（设置哪 Tab） | 操作步骤（自点） | 期望 | 证据截图路径 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | **SQ1-1** | §QA-1 团队改名 | Admin | 设置 · **团队**（`?tab=teams`） | ① 打开团队表，确认目标队操作列有 **「编辑」** ② 点「编辑」→ Modal 改 `name`（可±简介若有字段）→ 保存 ③ 看列表与 Toast | Toast 成功（人话）；列表该队名即时变；无白屏/按钮无响应；失败有人话 | `docs/qa-shots/settings-edit-team-rename.png`（Modal+保存后列表） | **✅ PASS** · 2026-10-25 09:07 Asia/Shanghai · Toast+列表名变 |
-| **SQ1-2** | §QA-2 工作区改名 | Admin | 设置 · **工作区**（`?tab=workspace`） | ① 改「显示名称」为可辨新名（可选：Admin 改 slug）② 点 **保存** ③ 看顶栏/侧栏工作区名与本 Tab 表单回显 | Toast「工作区已更新」或等价成功；顶栏/侧栏名变；表单回显新值；非 Admin 应只读提示 | `docs/qa-shots/settings-edit-workspace-rename.png`（表单+顶栏/侧栏） | **❌ FAIL** · Toast+表单 OK；**侧栏名未变**（AppLayout.ws 未刷新）→ 钉 React S-R2 |
+| **SQ1-2** | §QA-2 工作区改名 | Admin | 设置 · **工作区**（`?tab=workspace`） | ① 改「显示名称」为可辨新名（可选：Admin 改 slug）② 点 **保存** ③ 看顶栏/侧栏工作区名与本 Tab 表单回显 | Toast「工作区已更新」或等价成功；顶栏/侧栏名变；表单回显新值；非 Admin 应只读提示 | `docs/qa-shots/settings-edit-workspace-rename.png`（表单+顶栏/侧栏） | **✅ PASS†** · 2026-10-25 09:20 Asia/Shanghai · S-R2 `fd29305` 复测：Toast+表单+**侧栏/抽屉即时新名**（见 `settings-edit-sq1-2-retest-*-202610250920.png`） |
 | **SQ1-3** | §QA-3 项目编辑 | Admin（或有权改项目角色） | 设置 · **项目**（`?tab=projects`） | ① 目标项目行点 **「编辑」** ② `EditProjectModal` 改名（可±简介）→ 保存 ③ 看项目列表名 | Toast 成功；列表名变；Modal 关闭；无白屏 | `docs/qa-shots/settings-edit-project-rename.png`（Modal+列表） | **✅ PASS** · 兼证 **S-G2** ws PATCH |
 | **SQ1-4** | §QA-4 成员角色 | Admin（≥2 人类成员为宜；勿拆唯一管理员） | 设置 · **成员**（`?tab=members`） | ① 非唯一 Admin 的人类成员行 → **更多** ② 「设为管理员」或「设为成员」（与当前角色相反）③ 看角色芯片与 Toast | Toast「角色已更新」；角色芯片变；唯一管理员降级/移除应拦截人话；**若交件后仍无入口** → 本行记「产品缺口另票」不硬 FAIL 功能码 | `docs/qa-shots/settings-edit-member-role.png`（更多菜单+角色变后） | **✅ PASS** · 「设为管理员」Toast 角色已更新 |
 | **SQ1-5** | §QA-5 标签编辑 | Admin | 设置 · **标签**（`?tab=labels`） | ① 已有标签行点 **编辑**（或等价入口）② 改名称（可±色）→ 保存 ③ 看列表 | Toast 成功；列表名/色变。**若 Tab 在但无编辑入口** → 记缺口钉 React **S-R5**（后端 `PATCH …/labels/{id}` 骨架时已存在）；**若无标签页** → 记产品缺口 | `docs/qa-shots/settings-edit-label-rename.png`（编辑态+列表） | **✅ PASS** · **S-R5 覆盖** Toast+列表 |
@@ -85,6 +86,16 @@
 | 标签 S-R5 | UI 编辑入口+保存 PASS |
 | Overall | **FAIL** · 勿假 PASS；复测门禁=React 修侧栏刷新 |
 
+
+## 复测笔记（2026-10-25 09:20 Asia/Shanghai · SQ1-2 / S-R2）
+
+| 观察 | 结论 |
+| --- | --- |
+| FE SHA | `fd29305` 在 origin/main；Vite `:5175` 源码含 `onWorkspaceUpdated` |
+| SQ1-2 | Toast「工作区已更新」+ 表单回显 + **侧栏即时** `育蒙S-R2-250920`（保存后无硬刷）+ 抽屉同新名 → **PASS†** |
+| 其余 SQ1-1/3/4/5/6 | 前次 PASS；本刀仅改 AppLayout context / Settings 保存回调，判无回潮 |
+| Overall | **S-Q1 PASS†** · 可关产品 **S-P1** |
+
 ## 明确不做（本刀）
 
 - 不重做设置 IA；不另起移动设置页  
@@ -97,13 +108,13 @@
 
 | ID | 状态 |
 | --- | --- |
-| S-Q1 checklist | **活点已跑** · 见 `SETTINGS_EDIT-S-Q1-qa-retest-20261025-0913.md` |
-| S-Q1 活点 | **FAIL** · SQ1-2 侧栏名不刷新（钉 React S-R2）；其余 SQ1-1/3/4/5/6 PASS；S-G2+标签已覆盖 |
-| Overall | **FAIL**（勿假 PASS；等 React 修后复测） |
+| S-Q1 checklist | **活点+复测已跑** · 初跑 `SETTINGS_EDIT-S-Q1-qa-retest-20261025-0913.md`；复测 `SETTINGS_EDIT-S-Q1-sq1-2-retest-20261025-0920.md` |
+| S-Q1 活点 | **PASS†** · SQ1-2 经 S-R2 `fd29305` 复测绿；其余 1/3/4/5/6 前次 PASS 无回潮 |
+| Overall | **PASS†** · 可关产品 **S-P1** |
 
 ## 下一步门禁（谁交件才能开跑）
 
 1. **Go** 交 **S-G1**（`PATCH …/teams/{id}` 改名 + 校验 + 单测）并 push → SQ1-1 可 API/UI 联测。  
 2. **React** 交 **S-R1**（团队「编辑」Modal）必选；**S-R2～S-R4** 回归点通；**S-R5** 标签编辑入口（或产品书面缺口）→ 全表 SQ1-1～6 可开跑。  
-3. 码齐后 QA **立刻开跑**本清单 → 出 retest + `settings-edit-*.png` → 产品 **S-P1** 关单。  
+3. ~~码齐后 QA 开跑~~ → **已绿**（`fd29305` SQ1-2 复测 PASS†）→ 产品 **S-P1** 可关。  
 4. MOBILE 并行不挡本刀；本刀优先于移动美化（债文派工）。
