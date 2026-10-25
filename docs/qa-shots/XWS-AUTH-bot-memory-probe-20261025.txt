@@ -1,49 +1,82 @@
-XWS-AUTH · Bot 记忆/交接 双仓探针 2026-10-25 ~10:18 CST
+XWS-AUTH · Bot 记忆/交接 跨仓授权探针 2026-10-25 ~10:19 Asia/Shanghai
 ================================================================
-主人现象：切「工作空间/07项目」仍见他仓 Bot 记忆与交接（截图含 blockers/focus/queue、YM-18/11/2）。
-截图：docs/qa-shots/XWS-AUTH-bot-memory-leak-20261025.png（若在）
+判定：**FAIL**（WRITE IDOR + 缺 member∈ws 硬门 + FE 错仓加载失败时态残留）
+API 明文 READ 把他仓已有 memories 经错仓 URL 读出：本探针 **未复现**（200 空 / handoff 404）。
 
-环境：local :8080 · seed admin@yumeng.tech
-WS1 育蒙科技 ba1481c49148aba9553ba3811406b69f（36 bots）
+主人现象：切「工作空间/07项目」仍见他仓 Bot 记忆与交接（blockers/focus/queue、YM-18/11/2）。
+截图附件示顶栏仍为 育蒙科技 / YM·示例项目（疑项目切换而非工作区，或 FE 态残留）。
+
+环境：local :8080 · seed admin@yumeng.tech / Admin123!
+WS1 育蒙科技     ba1481c49148aba9553ba3811406b69f（36 bots）
 WS2 QA Invite WS 1b62eb739b167cf21cb62d109bda2690（0 bots）
-MID_ws1 Grok Bot 094acad4a3f0aaef2ee6370e790912b4
-MID_ws1 backend  ccae88b715a08d9364309db54f43d4e8
-MID_ws2 human    493f1f87b0ee0b67bc6895afc07cd02a
+M1  Grok Bot     094acad4a3f0aaef2ee6370e790912b4（baseline memories=7；handoff issues YM-9/12/11/18/17/13）
+M2  管理员(human) 493f1f87b0ee0b67bc6895afc07cd02a
 
---- 活探结果（IDOR 错仓路径）---
-GET /workspaces/{WS2}/bots/{MID_ws1}/memories  -> 200 {"memories":[]}
-GET /workspaces/{WS2}/bots/{MID_ws1}/todos     -> 200 {"todos":[]}
-GET /workspaces/{WS2}/bots/{MID_ws1}/handoff   -> 404 {"code":"not_found","message":"成员不存在"}
-（MID backend 同结果）
+--- 复现步骤 ---
+1. POST /api/v1/auth/login {email:admin@yumeng.tech, password:Admin123!}
+2. GET  /api/v1/workspaces → 取 WS1/WS2
+3. GET  /api/v1/workspaces/{WS1}/bots → 取 M1（有记忆的 bot）
+4. GET  /api/v1/workspaces/{WS2}/bots/{M1}/memories|todos|handoff
+5. GET  /api/v1/workspaces/{WS1}/bots/{M2}/memories|todos|handoff
+6. POST /api/v1/workspaces/{WS2}/bots/{M1}/memories  (Idempotency-Key) → 观察是否 201
+7. POST /api/v1/workspaces/{WS2}/bots/{M1}/todos     → 观察是否 201
 
-GET /workspaces/{WS1}/bots/{MID_ws2}/memories  -> 200 {"memories":[]}
-GET /workspaces/{WS1}/bots/{MID_ws2}/todos     -> 200 {"todos":[]}
-GET /workspaces/{WS1}/bots/{MID_ws2}/handoff   -> 404 成员不存在
+--- 活探 HTTP 状态 ---
+READ 错仓（WS2 路径 + M1）：
+  GET .../memories  -> 200 {"memories":[]}     无他仓明文；但非 403/404
+  GET .../todos     -> 200 {"todos":[]}
+  GET .../handoff   -> 404 code=not_found message=成员不存在
 
-对照：同仓正确路径 memories -> 200 且有数据（Grok Bot n≥1）。
+READ 反向（WS1 路径 + M2）：
+  GET .../memories  -> 200 []
+  GET .../todos     -> 200 []
+  GET .../handoff   -> 404 成员不存在
 
---- 代码口径（与探针一致）---
-- Handoff：校验 member∈path.ws → 错仓 404（符合）
-- ListMemories / ListTodos：SQL 双键过滤，错仓 **200 空数组**（无明文泄漏，但非 403；缺「成员不属于本仓」硬门）
-- FE BotDetailPage：/w/:wsId/settings/bots/:memberId；切仓若保留旧 memberId + React 态，可继续展示旧 handoff（切仓未清缓存假设）
+WRITE 错仓（WS2 路径 + M1）—— **泄漏/越权确认**：
+  POST .../memories {key_name:xws-probe-*} -> **201 Created**
+  GET  .../memories 之后                 -> **200 memories=1**（种入的探针键可见）
+  DELETE 探针记忆                        -> 200 已删除（清理）
+  POST .../todos {title:xws-probe-todo}  -> **201 Created**（随后 PATCH canceled 清理）
 
---- QA 判定 ---
-API 明文跨仓泄漏（把 WS1 记忆内容经 WS2 URL 读出）：本探针 **未复现**（空/404）。
-权限语义缺陷：memories/todos 错仓应 403/404，现 200 空 → Soft†/须补硬门。
-主人 UI 现象优先怀疑：
-  A) 切仓 FE 未卸 BotDetail / 未清 state（产品草案「切仓清缓存」）
-  B) 同仓跨项目：handoff 开放 Issue 不按当前项目过滤（截图面包屑 YM·示例项目，主人说「07项目」）
-债文请拆两行验收：跨仓隔离 + 跨项目可见性。推荐 API：非本仓成员一律 403（与 handoff 对齐用 404 也可，但勿 200 空）。
+对照正确路径：
+  GET WS1/M1/memories -> 200 n=7
+  GET WS1/M1/handoff  -> 200 issues 含 YM-18/11/12 等
 
-结论交产品主持席合议；PASS† 前勿关。
+--- 根因假设（hypothesis / 部分已证）---
+[已证] handlers ListMemories/CreateMemory/ListTodos/CreateTodo/Patch*/DeleteMemory
+      仅 requireWorkspaceMember（校验「调用者 ∈ path.ws」），**ABSENCE** 校验
+      path.memberID.workspace_id == path.workspaceID。
+[已证] UpsertMemory / CreateTodo 服务层直接 INSERT workspace_id=path.ws, member_id=path.member
+      **不**查 members 表归属 → WRITE IDOR（可在任意调用者有权的 ws 下，用他仓 memberId 写记忆/待办）。
+[已证] Handoff / ImportHandoff：`SELECT id FROM members WHERE id=? AND workspace_id=?` → 错仓 404。
+[已证] Me：同上双键。
+[假设] 主人 UI：BotDetailPage load() 用 Promise.all(memories,todos,handoff)；handoff 404 时
+      **整组 reject，catch 不清空** memories/todos/handoff state → 错仓 URL 或短暂失败时
+      旧交接摘要（YM-18 等）继续挂在屏上。路线 /w/:wsId/settings/bots/:memberId
+      无切仓时强制丢掉 memberId 的守卫。
+[假设] 「07项目」或为同仓项目切换；handoff Issues 按 workspace+assignee，**不按当前项目过滤**，
+      顶栏项目变了仍见 YM-*（与截图顶栏仍 育蒙科技 一致）。
 
---- 写路径污染（Go 点名补探）2026-10-25 10:18 CST ---
-POST /workspaces/{WS2}/bots/{MID_ws1}/memories  → **201**
-  写入行 workspace_id=WS2, member_id=MID_ws1, key=xws-probe-*
-GET  同路径 memories → **200 且可见刚写入**（写后读穿）
-GET  /workspaces/{WS1}/bots/{MID_ws1}/memories → 不见该 key（按 WS1 过滤）
+--- 受影响端点 ---
+缺 member∈ws 硬门（READ 现 200 空 / WRITE 201）：
+  GET/POST   /api/v1/workspaces/{ws}/bots/{memberID}/memories
+  PATCH/DELETE .../memories/{memoryID}
+  GET/POST   .../todos
+  PATCH      .../todos/{todoID}
+有硬门（错仓 404）：
+  GET/POST   .../handoff
+  GET        .../bots/me
 
-POST /workspaces/{WS1}/bots/{MID_ws2_human}/memories → **201**（他仓人类 member_id 写入本仓）
+中间件 AuthJWTOrAPIKey + RequireWorkspaceMember / requireWorkspaceMember：
+  只证明调用者是 path.ws 成员；**不能**阻止 path.memberID 属于另一仓。
+  故：成员在 ws A 的 JWT，可打 /workspaces/A/bots/{memberOfB}/… —— memories/todos 写会成功。
 
-结论升级：跨仓 **写污染 IDOR 成立**（201）；修前须 member∈ws 硬门（产品已拍 404）。
-探针行已尝试 DELETE 清理。
+--- 建议 Go 修复方向（勿在本 PR 实现）---
+1. 在 botmem 抽 ensureMemberInWorkspace(ws, memberID) error；List/Upsert/Patch/Delete Memory、
+   List/Create/Patch Todo 入口与 Handoff 对齐，非本仓 → 404（或 403）。
+2. 或 handlers 在取 PathValue("memberID") 后统一先查 members 再调 Svc。
+3. FE：BotDetailPage load catch 时 setMemories([])/setTodos([])/setHandoff(null)；
+   切仓导航不要保留旧 memberId；handoff issues 若产品要项目隔离再加 project 过滤。
+4. 回归：本文件步骤 4–6 须变 404/403，且 POST 不得 201。
+
+探针 SHA 上下文：见本提交。不改产品代码。
