@@ -94,7 +94,7 @@
 - [x] **P-R3** 入场码折叠分组
 - [x] **P-V1** 视觉
 - [x] **P-Q1** QA
-- [ ] **P-P1** 关单
+- [x] **P-P1** 关单
 
 ## 派工
 
@@ -109,6 +109,7 @@
 
 ## 进度注记
 
+- 2026-10-25 08:57 · **P-P1 关单 · SEAT_PANEL_UX 整包关** 记忆 P-M1 + Go P-G1 免 + 通道 `a665392` + FE `aec2966` + P-V1 总监放行 + QA P-Q1 Soft† `6e66ac7`。狗粮 Wiki：`docs/wiki-dogfood/SEAT_PANEL_UX_CLOSE.md`。SETTINGS S-Q1 另轨。Soft 三件仍冻。
 - 2026-10-25 08:56 · **勾 P-Q1** QA Soft†：源码 `aec2966` + P-V1 双帧；三态定稿（在席 / 空闲（从未占用）/ 停工可补）+ 诚实条 + 入场码折叠/按席/≤2/ymt·ymw/吊销二级/无码藏齐绿。纪要 `docs/qa-shots/SEAT_PANEL_UX-P-Q1-qa-retest-20261025.md`。开 **P-P1**。
 - 2026-10-25 08:55 · **勾 P-V1** 视觉总监放行（FE `aec2966` 双帧）。审图曾打回要求「占用中/未进席/可补位」——**产品否决**：锁死「在席 / 空闲（从未占用）/ 停工可补」；禁可补位当空态。总监 PASS 为准。
 - 2026-10-25 08:54 · **勾 P-M1** 记忆纪要：研学公网超管非成员读不到真 roster（禁用进度样例冒充）；机制=WS Bot≠本队占用；open→空闲从未占用；stop/unbind→停工可补。通道 `a665392` 人话三态+FormatUnboundBotsHint。**口径**：FE 锁「在席」；通道「占用中」同义可并存。反对 Soft V2 成立。
@@ -116,3 +117,7 @@
 - 2026-10-25 08:51 · **P-G1 免刀**（Go）：诚实条 = `GET …/bots` 减本队 roster 占用（`active` 且 bound/claim member_id）；别队占用对本队仍算未占。**密度尺子**审图已锁（跟 bots.css）。React P-R1～R3 开干中。
 - 2026-10-25 08:50 · **措辞锁死对齐 React/总监**：在席 / 空闲（从未占用）/ 停工可补；入场码折叠+按席+同组 1～2 末四+ymw_/ymt_ 分块+行高 36–40。**SETTINGS FE `0e15fa0` 已齐 → React 可开 P-R1～R3**（API 可不改）。狗粮纪律见 `docs/DOGFOOD_WAVE_DISCIPLINE.md`。
 - 2026-10-25 08:48 · 产品开刀拍死：席三态人话 + 未占席诚实条；入场码折叠/按席/吊销二级。SETTINGS/MOBILE 并行。Soft 仍冻。
+
+## 关单进度
+
+**整包关** · P-M1 / P-G1免 / P-R1～R3 / P-V1 / P-Q1 / P-P1 齐。人页三态锁：在席 / 空闲（从未占用）/ 停工可补。Soft 三件仍冻。SETTINGS_EDIT 另轨。
