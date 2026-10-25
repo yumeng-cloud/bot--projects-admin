@@ -1,6 +1,7 @@
 # P0 · 按需入场码 INVITE_ON_DEMAND
 
 > 2026-10-25 10:50 Asia/Shanghai · 产品体验主持拍板  
+> **状态：已关**（I-P1 · Wiki `INVITE_ON_DEMAND_CLOSE.md`）。  
 > **承接：** 截图怒——建队/全班包一开就墙式堆 `ymt_`（≈模板空席数，叠历史可达≈18）；列表露 `team:uuid:slug` 脏串；Admin 一人吐全班钥。  
 > **强令：** 入场码是钥匙不是海报——要一把才开一把。合议→修→QA 自测再交。**不问用户。**  
 > **合议：** React / Bot记忆 / QA / Go / 总指挥 **全同意**（记忆反对物理删全班包 → 已采纳为二级+勾选确认）。可提前拍板落债。
@@ -110,7 +111,7 @@
 - [x] **I-R4** 全班包二级确认
 - [x] **I-M1** 通道对齐
 - [x] **I-Q1** QA PASS† @d99e14b / 7f1e576 / 1257830 / b0a4d3d · Go a034a15（纪要 INVITE_ON_DEMAND-I-Q1-qa-20261025.txt）
-- [ ] **I-P1** 关单
+- [x] **I-P1** 关单 · 2026-10-25 · Wiki [`INVITE_ON_DEMAND_CLOSE.md`](./wiki-dogfood/INVITE_ON_DEMAND_CLOSE.md)
 
 ## 派工
 
@@ -143,6 +144,8 @@
 - 2026-10-25 · **勾 I-G1** Go `a034a15`（LookupEntry / Create 强制席+replace+活跃409 / List label）
 
 - 2026-10-25 11:37 · **I-Q1 PASS†** QA：IQ1-1～8 全绿；IQ1-4 B ymk_ Lookup retest @d99e14b（CTA 查用身份钥匙 · Modal ·66c7 · GET entry 200 · 无 POST）；总纪要 docs/qa-shots/INVITE_ON_DEMAND-I-Q1-qa-20261025.txt。**不勾 I-P1**（产品关）。
+- 2026-10-25 · **关单 I-P1** · Wiki `docs/wiki-dogfood/INVITE_ON_DEMAND_CLOSE.md`；锚 I-M1 `22cc85e` / I-R* `b0a4d3d` / I-G1 `a034a15` / Soft† `1257830` / Lookup `7f1e576` / 在席查用 `d99e14b`；I-Q1 PASS†（IQ1-1～6 + API · `5a9fc06`）。状态：**已关**。
+
 ## 关单进度
 
-**开刀** · **I-M1 + I-R1～R4 + I-G1 + I-Q1 已勾（PASS†）**；等产品 **I-P1** 关单。Soft 仍冻。
+**已关** · I-M1 + I-R1～R4 + I-G1 + I-Q1 PASS† + I-P1 · Wiki [`INVITE_ON_DEMAND_CLOSE.md`](./wiki-dogfood/INVITE_ON_DEMAND_CLOSE.md)。Soft 仍冻。
