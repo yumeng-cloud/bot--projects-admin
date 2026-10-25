@@ -313,12 +313,35 @@ func (h *TeamHandler) ListInvites(w http.ResponseWriter, r *http.Request) {
 		middleware.HandleError(w, apperr.Forbidden("需要管理员权限才能查看入场码列表"))
 		return
 	}
-	list, err := h.Svc.ListInvites(ws, r.PathValue("teamID"))
+	q := r.URL.Query()
+	list, err := h.Svc.ListInvites(ws, r.PathValue("teamID"), botmem.ListInvitesFilter{
+		SeatSlug: q.Get("seat_slug"),
+		Status:   q.Get("status"),
+	})
 	if err != nil {
 		middleware.HandleError(w, err)
 		return
 	}
 	middleware.JSON(w, http.StatusOK, map[string]any{"invites": list})
+}
+
+// LookupEntry Admin：按席/角色查可用入场凭证（优先未吊销 ymk_，否则 active ymt_）。
+func (h *TeamHandler) LookupEntry(w http.ResponseWriter, r *http.Request) {
+	ws, actor, ok := requireWorkspaceMember(h.DB, w, r)
+	if !ok {
+		return
+	}
+	if resolveMemberRole(h.DB, r, actor) != "admin" {
+		middleware.HandleError(w, apperr.Forbidden("需要管理员权限才能查询入场凭证"))
+		return
+	}
+	q := r.URL.Query()
+	entry, err := h.Svc.LookupEntry(ws, r.PathValue("teamID"), q.Get("seat_slug"), q.Get("role_slug"))
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	middleware.JSON(w, http.StatusOK, map[string]any{"entry": entry})
 }
 
 // RevokeInvite Admin 吊销入场码；已吊销再吊 → 仍 200 + status=revoked（幂等）。
@@ -355,6 +378,7 @@ func (h *TeamHandler) CreateInvite(w http.ResponseWriter, r *http.Request) {
 		RoleSlug        string `json:"role_slug"`
 		MaxUses         *int   `json:"max_uses"`
 		ExpiresAt       string `json:"expires_at"`
+		Replace         bool   `json:"replace"`
 	}
 	if err := middleware.DecodeJSON(r, &req); err != nil {
 		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
@@ -371,6 +395,7 @@ func (h *TeamHandler) CreateInvite(w http.ResponseWriter, r *http.Request) {
 		MaxUses:         req.MaxUses,
 		ExpiresAt:       req.ExpiresAt,
 		CreatedBy:       actor,
+		Replace:         req.Replace,
 	})
 	if err != nil {
 		middleware.HandleError(w, err)
@@ -481,6 +506,7 @@ func MountTeams(mux *http.ServeMux, db *sql.DB, wrap func(http.Handler) http.Han
 	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}/invites", h.ListInvites)
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/invites", h.Idempotent(h.CreateInvite))
 	reg("POST /api/v1/workspaces/{workspaceID}/teams/{teamID}/invites/{inviteID}/revoke", h.Idempotent(h.RevokeInvite))
+	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}/entry", h.LookupEntry)
 	// G3/HUMAN_ONBOARD redeem：不走强制鉴权 wrap（允许无 Bearer bootstrap）
 	mux.Handle("POST /api/v1/team-invites/redeem", http.HandlerFunc(h.RedeemInvite))
 	reg("GET /api/v1/workspaces/{workspaceID}/teams/{teamID}/pins", h.ListPins)

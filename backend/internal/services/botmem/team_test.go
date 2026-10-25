@@ -334,7 +334,7 @@ func TestTeamInviteRedeem(t *testing.T) {
 	}
 	if _, err := svc.RevokeInvite(ws, team.ID, inv.ID); err != nil {
 		// already at max; create fresh to revoke
-		inv2, err2 := svc.CreateInvite(ws, team.ID, botmem.CreateInviteInput{CreatedBy: m1})
+		inv2, err2 := svc.CreateInvite(ws, team.ID, botmem.CreateInviteInput{RoleHint: "frontend", CreatedBy: m1})
 		if err2 != nil {
 			t.Fatal(err2)
 		}

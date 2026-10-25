@@ -180,7 +180,7 @@ func TestRevokeInviteAdminIdempotent(t *testing.T) {
 	_ = json.Unmarshal(rr.Body.Bytes(), &teamRes)
 	teamID := teamRes.Team.ID
 
-	invBody, _ := json.Marshal(map[string]any{"allow_expand_seat": false, "max_uses": 5})
+	invBody, _ := json.Marshal(map[string]any{"allow_expand_seat": false, "role_hint": "frontend", "max_uses": 5})
 	rr = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/"+wsID+"/teams/"+teamID+"/invites", bytes.NewReader(invBody))
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -255,5 +255,163 @@ func TestRevokeInviteAdminIdempotent(t *testing.T) {
 	}
 	if code != "" && strings.Contains(raw, code) {
 		t.Fatalf("list leaked plain code after revoke")
+	}
+}
+
+func TestInviteOnDemandIG1HTTP(t *testing.T) {
+	mux := teamInvitesMux(t)
+	token, wsID := loginAdmin(t, mux)
+
+	body, _ := json.Marshal(map[string]string{"name": "I-G1-HTTP"})
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/"+wsID+"/teams", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("create team %d %s", rr.Code, rr.Body.String())
+	}
+	var teamRes struct {
+		Team struct {
+			ID string `json:"id"`
+		} `json:"team"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &teamRes)
+	teamID := teamRes.Team.ID
+	if teamID == "" {
+		t.Fatal("no team id")
+	}
+
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/"+wsID+"/teams/"+teamID+"/roster/ensure", bytes.NewReader([]byte("{}")))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("ensure %d %s", rr.Code, rr.Body.String())
+	}
+	var rosterRes struct {
+		Roster []map[string]any `json:"roster"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &rosterRes)
+	if len(rosterRes.Roster) == 0 {
+		t.Fatalf("no roster: %s", rr.Body.String())
+	}
+	slug, _ := rosterRes.Roster[0]["role_slug"].(string)
+	if slug == "" {
+		t.Fatalf("no role_slug: %#v", rosterRes.Roster[0])
+	}
+
+	base := "/api/v1/workspaces/" + wsID + "/teams/" + teamID
+
+	// missing seat/role → 400
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, base+"/invites", bytes.NewReader([]byte(`{"max_uses":1}`)))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("want 400 missing seat got %d %s", rr.Code, rr.Body.String())
+	}
+
+	// lookup missing params → 400
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, base+"/entry", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("want 400 entry got %d %s", rr.Code, rr.Body.String())
+	}
+
+	// lookup empty → 404
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, base+"/entry?seat_slug="+slug, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("want 404 entry got %d %s", rr.Code, rr.Body.String())
+	}
+
+	// create invite
+	invBody, _ := json.Marshal(map[string]any{"seat_slug": slug, "role_hint": slug, "max_uses": 2})
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, base+"/invites", bytes.NewReader(invBody))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("create %d %s", rr.Code, rr.Body.String())
+	}
+	var createRes struct {
+		Code   string         `json:"code"`
+		Invite map[string]any `json:"invite"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &createRes)
+	if !strings.HasPrefix(createRes.Code, "ymt_") {
+		t.Fatalf("code=%v", createRes.Code)
+	}
+	if createRes.Invite["label"] == nil || createRes.Invite["label"] == "" {
+		t.Fatalf("label missing: %#v", createRes.Invite)
+	}
+
+	// list filter + label
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, base+"/invites?seat_slug="+slug+"&status=active", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("list %d %s", rr.Code, rr.Body.String())
+	}
+	var listRes struct {
+		Invites []map[string]any `json:"invites"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &listRes)
+	if len(listRes.Invites) != 1 {
+		t.Fatalf("filtered len=%d body=%s", len(listRes.Invites), rr.Body.String())
+	}
+	if listRes.Invites[0]["label"] == nil || listRes.Invites[0]["label"] == "" {
+		t.Fatalf("list label missing")
+	}
+	if strings.Contains(rr.Body.String(), createRes.Code) {
+		t.Fatal("list leaked plain code")
+	}
+
+	// lookup ymt_
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, base+"/entry?seat_slug="+slug, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("lookup ymt %d %s", rr.Code, rr.Body.String())
+	}
+	var entryRes struct {
+		Entry map[string]any `json:"entry"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &entryRes)
+	if entryRes.Entry["kind"] != "ymt_" {
+		t.Fatalf("entry=%#v", entryRes.Entry)
+	}
+	if strings.Contains(rr.Body.String(), createRes.Code) {
+		t.Fatal("entry leaked plain code")
+	}
+
+	// replace
+	invBody2, _ := json.Marshal(map[string]any{"seat_slug": slug, "replace": true})
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, base+"/invites", bytes.NewReader(invBody2))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("replace create %d %s", rr.Code, rr.Body.String())
+	}
+
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, base+"/invites?seat_slug="+slug+"&status=active", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	mux.ServeHTTP(rr, req)
+	_ = json.Unmarshal(rr.Body.Bytes(), &listRes)
+	if len(listRes.Invites) != 1 {
+		t.Fatalf("after replace active=%d body=%s", len(listRes.Invites), rr.Body.String())
 	}
 }

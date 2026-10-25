@@ -153,6 +153,22 @@ type TeamInvite struct {
 	UpdatedAt       string  `json:"updated_at"`
 	// Code 仅 CreateInvite 响应明文，不落库；List 永不返回
 	Code string `json:"code,omitempty"`
+	// Label 席 display_name / 人话名；对不上席表 →「未命名席」（I-G1）
+	Label string `json:"label,omitempty"`
+}
+
+// TeamEntryLookup GET …/entry 查用结果（无 ymk_/ymt_ 明文）。
+type TeamEntryLookup struct {
+	Kind        string `json:"kind"` // ymk_ | ymt_
+	KeyID       string `json:"key_id,omitempty"`
+	TokenPrefix string `json:"token_prefix,omitempty"`
+	TokenTail   string `json:"token_tail,omitempty"`
+	MemberID    string `json:"member_id,omitempty"`
+	DisplayName string `json:"display_name,omitempty"`
+	InviteID    string `json:"invite_id,omitempty"`
+	CodeTail    string `json:"code_tail,omitempty"`
+	Status      string `json:"status,omitempty"`
+	SeatSlug    string `json:"seat_slug,omitempty"`
 }
 
 // Invite status 常量（G3 list）

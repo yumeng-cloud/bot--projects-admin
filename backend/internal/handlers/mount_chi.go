@@ -108,6 +108,7 @@ func MountTeamsChi(r chi.Router, db *sql.DB) {
 	m.Get("/teams/{teamID}/invites", h.ListInvites)
 	m.Post("/teams/{teamID}/invites", h.CreateInvite)
 	m.Post("/teams/{teamID}/invites/{inviteID}/revoke", h.RevokeInvite)
+	m.Get("/teams/{teamID}/entry", h.LookupEntry)
 	m.Get("/teams/{teamID}/pins", h.ListPins)
 	m.Get("/teams/{teamID}/pins/{key}", h.GetPin)
 	m.Put("/teams/{teamID}/pins", h.PutPin)

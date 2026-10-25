@@ -143,13 +143,14 @@ func TestRedeemJoinActiveNoReplace(t *testing.T) {
 		t.Fatal(err)
 	}
 	seat := roster[0]
-	if _, err := svc.BindSeat(ws, tm.ID, seat.ID, m1, false); err != nil {
-		t.Fatal(err)
-	}
+	// I-G1：活跃席禁止 CreateInvite；先发码再绑席，redeem 仍应 409 禁顶替。
 	inv, err := svc.CreateInvite(ws, tm.ID, botmem.CreateInviteInput{
 		SeatSlug: seat.RoleSlug, RoleHint: seat.RoleSlug,
 	})
 	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.BindSeat(ws, tm.ID, seat.ID, m1, false); err != nil {
 		t.Fatal(err)
 	}
 	_, err = svc.RedeemInviteAndJoin(botmem.RedeemJoinInput{Code: inv.Code, Provision: true})

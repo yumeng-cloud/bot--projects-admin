@@ -15,6 +15,7 @@ import (
 
 const teamInvitePrefix = "ymt_"
 
+// CreateInviteInput 签发入场码；须 seat_slug 或 role_hint（role_slug 由 handler 归一到 RoleHint）。
 type CreateInviteInput struct {
 	AllowExpandSeat bool
 	SeatSlug        string
@@ -22,6 +23,14 @@ type CreateInviteInput struct {
 	MaxUses         *int
 	ExpiresAt       string // RFC3339 optional
 	CreatedBy       string
+	// Replace=true：先幂等吊销该席/角色下 active ymt_ 再发 1；缺省/false 可不吊旧直接再发 1。
+	Replace bool
+}
+
+// ListInvitesFilter 可选过滤；空字段忽略。
+type ListInvitesFilter struct {
+	SeatSlug string
+	Status   string
 }
 
 func hashInviteToken(raw string) string {
@@ -44,24 +53,45 @@ func newInviteCode() (plain, prefix, hash string, err error) {
 }
 
 // CreateInvite 签发 ymt_ 入场码；明文仅返回一次。
+// I-G1：须 seat_slug 或 role_hint；活跃席 → 409；replace 先吊旧。
 func (s *Service) CreateInvite(workspaceID, teamID string, in CreateInviteInput) (*models.TeamInvite, error) {
 	if _, err := s.GetTeam(workspaceID, teamID); err != nil {
 		return nil, err
 	}
+	seatSlug := strings.TrimSpace(strings.ToLower(in.SeatSlug))
+	roleHint := strings.TrimSpace(in.RoleHint)
+	if seatSlug == "" && roleHint == "" {
+		return nil, apperr.BadRequest("须指定 seat_slug 或 role_hint/role_slug")
+	}
+	if roleHint == "" && seatSlug != "" {
+		roleHint = seatSlug
+	}
+
+	// 活跃席禁顶替：目标席 occupancy=active → 409
+	if seat, _ := s.findSeatForInvite(workspaceID, teamID, seatSlug, roleHint); seat != nil {
+		if isSeatActiveOccupancy(seat) {
+			return nil, apperr.Conflict("席位已有人在席，禁止签发顶替入场码")
+		}
+	}
+
+	if in.Replace {
+		if err := s.revokeActiveInvitesForSeatRole(workspaceID, teamID, seatSlug, roleHint); err != nil {
+			return nil, err
+		}
+	}
+
 	plain, prefix, hash, err := newInviteCode()
 	if err != nil {
 		return nil, err
 	}
 	now := nowUTC()
 	id := idgen.New()
-	var seatSlug, roleHint, expires, createdBy any
-	if v := strings.TrimSpace(strings.ToLower(in.SeatSlug)); v != "" {
-		seatSlug = v
+	var seatSlugVal, roleHintVal, expires, createdBy any
+	if seatSlug != "" {
+		seatSlugVal = seatSlug
 	}
-	if v := strings.TrimSpace(in.RoleHint); v != "" {
-		roleHint = v
-	} else if seatSlug != nil {
-		roleHint = seatSlug
+	if roleHint != "" {
+		roleHintVal = roleHint
 	}
 	if v := strings.TrimSpace(in.ExpiresAt); v != "" {
 		if _, err := time.Parse(time.RFC3339, v); err != nil {
@@ -89,7 +119,7 @@ func (s *Service) CreateInvite(workspaceID, teamID string, in CreateInviteInput)
 		(id, workspace_id, team_id, token_hash, token_prefix, allow_expand_seat, seat_slug, role_hint,
 		 max_uses, use_count, expires_at, revoked_at, created_by, created_at, updated_at)
 		VALUES (?,?,?,?,?,?,?,?,?,0,?,NULL,?,?,?)`,
-		id, workspaceID, teamID, hash, prefix, allow, seatSlug, roleHint,
+		id, workspaceID, teamID, hash, prefix, allow, seatSlugVal, roleHintVal,
 		maxUses, expires, createdBy, now, now)
 	if err != nil {
 		return nil, err
@@ -99,6 +129,7 @@ func (s *Service) CreateInvite(workspaceID, teamID string, in CreateInviteInput)
 		return nil, err
 	}
 	inv.Code = plain
+	s.attachInviteLabel(workspaceID, teamID, inv)
 	return inv, nil
 }
 
@@ -227,6 +258,7 @@ func (s *Service) RevokeInvite(workspaceID, teamID, inviteID string) (*models.Te
 	}
 	if inv.RevokedAt != nil && strings.TrimSpace(*inv.RevokedAt) != "" {
 		inv.Code = ""
+		s.attachInviteLabel(workspaceID, teamID, inv)
 		return inv, nil
 	}
 	now := nowUTC()
@@ -241,6 +273,7 @@ func (s *Service) RevokeInvite(workspaceID, teamID, inviteID string) (*models.Te
 		return nil, err
 	}
 	inv.Code = ""
+	s.attachInviteLabel(workspaceID, teamID, inv)
 	return inv, nil
 }
 
@@ -284,10 +317,22 @@ func computeInviteStatus(inv *models.TeamInvite) string {
 }
 
 // ListInvites Admin 列团队已签发入场码；不含明文 code / token_hash。
-func (s *Service) ListInvites(workspaceID, teamID string) ([]models.TeamInvite, error) {
+// 可选 filter：seat_slug、status（如 active）。每项附 label。
+func (s *Service) ListInvites(workspaceID, teamID string, filter ...ListInvitesFilter) ([]models.TeamInvite, error) {
 	if _, err := s.GetTeam(workspaceID, teamID); err != nil {
 		return nil, err
 	}
+	var f ListInvitesFilter
+	if len(filter) > 0 {
+		f = filter[0]
+	}
+	f.SeatSlug = strings.TrimSpace(strings.ToLower(f.SeatSlug))
+	f.Status = strings.TrimSpace(strings.ToLower(f.Status))
+
+	// roster 须在打开 invites rows 之前取：sqlite MaxOpenConns=1，持 rows 再 Query 会死锁。
+	roster, _ := s.GetRoster(workspaceID, teamID)
+	labelBySlug := inviteSeatLabelMap(roster)
+
 	rows, err := s.DB.Query(`
 		SELECT id, workspace_id, team_id, token_prefix, allow_expand_seat, seat_slug, role_hint,
 			max_uses, use_count, expires_at, revoked_at, created_by, created_at, updated_at
@@ -298,6 +343,7 @@ func (s *Service) ListInvites(workspaceID, teamID string) ([]models.TeamInvite, 
 		return nil, err
 	}
 	defer rows.Close()
+
 	out := make([]models.TeamInvite, 0)
 	for rows.Next() {
 		inv, err := scanInvite(rows)
@@ -305,9 +351,246 @@ func (s *Service) ListInvites(workspaceID, teamID string) ([]models.TeamInvite, 
 			return nil, err
 		}
 		enrichInvite(&inv)
-		// 明确清空，防止任何路径带上明文
 		inv.Code = ""
+		if f.SeatSlug != "" {
+			ss := ""
+			if inv.SeatSlug != nil {
+				ss = strings.ToLower(*inv.SeatSlug)
+			}
+			rh := ""
+			if inv.RoleHint != nil {
+				rh = strings.ToLower(strings.TrimSpace(*inv.RoleHint))
+			}
+			if ss != f.SeatSlug && rh != f.SeatSlug {
+				continue
+			}
+		}
+		if f.Status != "" && inv.Status != f.Status {
+			continue
+		}
+		inv.Label = resolveInviteLabel(&inv, labelBySlug)
 		out = append(out, inv)
 	}
 	return out, rows.Err()
+}
+
+// LookupEntry I-G1：按席/角色查可用入场凭证（优先未吊销 ymk_，否则 active ymt_）。
+// seat_slug 与 role_slug 二选一必填；都给时优先 seat_slug。都无 → 400；都无可用 → 404。
+func (s *Service) LookupEntry(workspaceID, teamID, seatSlug, roleSlug string) (*models.TeamEntryLookup, error) {
+	if _, err := s.GetTeam(workspaceID, teamID); err != nil {
+		return nil, err
+	}
+	seatSlug = strings.TrimSpace(strings.ToLower(seatSlug))
+	roleSlug = strings.TrimSpace(strings.ToLower(roleSlug))
+	if seatSlug == "" && roleSlug == "" {
+		return nil, apperr.BadRequest("须指定 seat_slug 或 role_slug")
+	}
+	lookupKey := seatSlug
+	if lookupKey == "" {
+		lookupKey = roleSlug
+	}
+
+	seat, _ := s.findSeatForInvite(workspaceID, teamID, seatSlug, roleSlug)
+	if seat != nil && isSeatActiveOccupancy(seat) && seat.BoundMemberID != nil && *seat.BoundMemberID != "" {
+		memberID := *seat.BoundMemberID
+		keyID, prefix, ok := s.findUnrevokedAPIKey(workspaceID, memberID)
+		if ok {
+			dn := ""
+			if seat.BoundDisplayName != nil {
+				dn = *seat.BoundDisplayName
+			}
+			if dn == "" {
+				dn = seat.DisplayName
+			}
+			return &models.TeamEntryLookup{
+				Kind:        "ymk_",
+				KeyID:       keyID,
+				TokenPrefix: prefix,
+				TokenTail:   apiKeyTail(prefix),
+				MemberID:    memberID,
+				DisplayName: dn,
+			}, nil
+		}
+	}
+
+	list, err := s.ListInvites(workspaceID, teamID, ListInvitesFilter{SeatSlug: lookupKey, Status: models.InviteStatusActive})
+	if err != nil {
+		return nil, err
+	}
+	if len(list) == 0 && seatSlug != "" && roleSlug != "" && seatSlug != roleSlug {
+		list, err = s.ListInvites(workspaceID, teamID, ListInvitesFilter{SeatSlug: roleSlug, Status: models.InviteStatusActive})
+		if err != nil {
+			return nil, err
+		}
+	}
+	if len(list) > 0 {
+		inv := list[0]
+		ss := lookupKey
+		if inv.SeatSlug != nil && *inv.SeatSlug != "" {
+			ss = *inv.SeatSlug
+		}
+		return &models.TeamEntryLookup{
+			Kind:     "ymt_",
+			InviteID: inv.ID,
+			CodeTail: inv.CodeTail,
+			Status:   inv.Status,
+			SeatSlug: ss,
+		}, nil
+	}
+	return nil, apperr.NotFound("该席位暂无可用入场凭证")
+}
+
+func (s *Service) findUnrevokedAPIKey(workspaceID, memberID string) (id, prefix string, ok bool) {
+	err := s.DB.QueryRow(`
+		SELECT id, key_prefix FROM api_keys
+		WHERE workspace_id = ? AND member_id = ?
+		  AND (revoked_at IS NULL OR revoked_at = '')
+		ORDER BY created_at DESC
+		LIMIT 1`, workspaceID, memberID).Scan(&id, &prefix)
+	if err != nil {
+		return "", "", false
+	}
+	return id, prefix, true
+}
+
+func apiKeyTail(prefix string) string {
+	clean := strings.TrimPrefix(prefix, "ymk_")
+	if clean == "" {
+		return ""
+	}
+	if len(clean) <= 4 {
+		return clean
+	}
+	return clean[len(clean)-4:]
+}
+
+func (s *Service) findSeatForInvite(workspaceID, teamID, seatSlug, roleHint string) (*models.TeamSeat, error) {
+	roster, err := s.GetRoster(workspaceID, teamID)
+	if err != nil {
+		return nil, err
+	}
+	seatSlug = strings.TrimSpace(strings.ToLower(seatSlug))
+	roleHint = strings.TrimSpace(strings.ToLower(roleHint))
+	if seatSlug != "" {
+		for i := range roster {
+			if strings.ToLower(roster[i].RoleSlug) == seatSlug {
+				return &roster[i], nil
+			}
+		}
+	}
+	if roleHint != "" {
+		for i := range roster {
+			if strings.ToLower(roster[i].RoleSlug) == roleHint {
+				return &roster[i], nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+func isSeatActiveOccupancy(seat *models.TeamSeat) bool {
+	if seat == nil {
+		return false
+	}
+	st := normalizeSeatStatus(seat.Status)
+	if st != models.SeatStatusActive {
+		return false
+	}
+	return seat.BoundMemberID != nil && strings.TrimSpace(*seat.BoundMemberID) != ""
+}
+
+func (s *Service) revokeActiveInvitesForSeatRole(workspaceID, teamID, seatSlug, roleHint string) error {
+	list, err := s.ListInvites(workspaceID, teamID)
+	if err != nil {
+		return err
+	}
+	seatSlug = strings.TrimSpace(strings.ToLower(seatSlug))
+	roleHint = strings.TrimSpace(strings.ToLower(roleHint))
+	for _, inv := range list {
+		if inv.Status != models.InviteStatusActive {
+			continue
+		}
+		if !inviteMatchesSeatRole(&inv, seatSlug, roleHint) {
+			continue
+		}
+		if _, err := s.RevokeInvite(workspaceID, teamID, inv.ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func inviteMatchesSeatRole(inv *models.TeamInvite, seatSlug, roleHint string) bool {
+	if inv == nil {
+		return false
+	}
+	ss, rh := "", ""
+	if inv.SeatSlug != nil {
+		ss = strings.ToLower(strings.TrimSpace(*inv.SeatSlug))
+	}
+	if inv.RoleHint != nil {
+		rh = strings.ToLower(strings.TrimSpace(*inv.RoleHint))
+	}
+	if seatSlug != "" && (ss == seatSlug || rh == seatSlug) {
+		return true
+	}
+	if roleHint != "" && (ss == roleHint || rh == roleHint) {
+		return true
+	}
+	return false
+}
+
+func inviteSeatLabelMap(roster []models.TeamSeat) map[string]string {
+	m := make(map[string]string, len(roster))
+	for _, seat := range roster {
+		slug := strings.ToLower(strings.TrimSpace(seat.RoleSlug))
+		if slug == "" {
+			continue
+		}
+		name := strings.TrimSpace(seat.DisplayName)
+		if name == "" || looksLikeDirtySeatKey(name) {
+			name = "未命名席"
+		}
+		m[slug] = name
+	}
+	return m
+}
+
+func resolveInviteLabel(inv *models.TeamInvite, labelBySlug map[string]string) string {
+	keys := make([]string, 0, 2)
+	if inv.SeatSlug != nil && strings.TrimSpace(*inv.SeatSlug) != "" {
+		keys = append(keys, strings.ToLower(strings.TrimSpace(*inv.SeatSlug)))
+	}
+	if inv.RoleHint != nil && strings.TrimSpace(*inv.RoleHint) != "" {
+		keys = append(keys, strings.ToLower(strings.TrimSpace(*inv.RoleHint)))
+	}
+	for _, k := range keys {
+		if lab, ok := labelBySlug[k]; ok && lab != "" {
+			return lab
+		}
+	}
+	return "未命名席"
+}
+
+func looksLikeDirtySeatKey(s string) bool {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return true
+	}
+	if strings.HasPrefix(s, "team:") && strings.Count(s, ":") >= 2 {
+		return true
+	}
+	return false
+}
+
+func (s *Service) attachInviteLabel(workspaceID, teamID string, inv *models.TeamInvite) {
+	if inv == nil {
+		return
+	}
+	roster, err := s.GetRoster(workspaceID, teamID)
+	if err != nil {
+		inv.Label = "未命名席"
+		return
+	}
+	inv.Label = resolveInviteLabel(inv, inviteSeatLabelMap(roster))
 }
