@@ -1,7 +1,7 @@
 # P0 · 未登录官网 LANDING / SITE_LANDING
 
 > 2026-10-25 Asia/Shanghai · 产品体验主持拍板  
-> **打回补钉（2026-10-25）**：主人截图怒「只有 hero+三卡像半截页」→ **须扩成完整官网**（安静好用、非赛博）。状态：**打回加厚中**。  
+> **打回补钉（2026-10-25）**：主人截图怒「只有 hero+三卡像半截页」→ **须扩成完整官网**（安静好用、非赛博）。状态：**已关**（L-P1 · Wiki `LANDING_CLOSE.md`）。  
 > **承接：** 主人怒——总指挥自写落地页难看；总指挥停笔；产品定气质+文案，UI视觉·审图执刀（必要时 React）。  
 > **视觉尺子（锁）：** [`SITE_LANDING_VISUAL_BASELINE.md`](./SITE_LANDING_VISUAL_BASELINE.md) @`710df9f`——废稿黑名单与浅色 token **跟专册**，勿另皮。  
 > **专册让位说明：** 视觉专册原「价值≤3」硬上限 **对本刀让位**给主人加厚令；仍禁废稿暗黑 / glow / `#5b8cff` / Noto CDN / 编号营销长滚；浅色同肤不变。详见专册与下文信息架构。  
@@ -116,9 +116,9 @@
 - [x] **SL-V2** 全页 / 375（若需）
 - [x] **SL-V3** 视觉总监放行
 - [x] **L-Q1** QA · PASS† @b7b20ea / SL-V3 e027f5a · 纪要 LANDING-L-Q1-qa-20261025.txt
-- [ ] **L-P1** 关单
+- [x] **L-P1** 关单 · 2026-10-25 · Wiki [`LANDING_CLOSE.md`](./wiki-dogfood/LANDING_CLOSE.md)
 
-**状态：L-P0/R1/R2/R3 + SL-V1/V2/V3 + L-Q1 PASS† 已勾**（交产品 L-P1；QA 不关）。
+**状态：已关**（L-P0/R1/R2/R3 + SL-V1/V2/V3 + L-Q1 PASS† + L-P1）。软非挡：Inter CDN 另票。
 
 ## 派工
 
@@ -155,7 +155,8 @@
 - 2026-10-25 · **勾 L-R3** React `b7b20ea`（CSS `083c3cc`）A–F+A2 加厚全文；状态：L-P0/R1/R2/R3 已勾；等审图 SL-V1+必交 SL-V2 → 总监 SL-V3 → QA L-Q1 → L-P1。
 - 2026-10-25 · **勾 SL-V1/V2/V3** 总监放行 @`e027f5a` 双帧（desktop+scroll）；FE `b7b20ea`；软非挡：全局 Inter CDN 另票。状态：等 QA L-Q1 → L-P1。
 - 2026-10-25 · **勾 L-Q1 PASS†** computerUse @`b7b20ea` / SL-V3 `e027f5a`；纪要 `docs/qa-shots/LANDING-L-Q1-qa-20261025.txt`；LQ1-1～7 全绿；副标 SL-V3 放行句（认领在价值卡）；**不勾 L-P1**（产品关）。
+- 2026-10-25 · **关单 L-P1** · Wiki `docs/wiki-dogfood/LANDING_CLOSE.md`；锚 SL-V3 @`e027f5a` · FE `b7b20ea` · 勾债 `b680ed8` · L-Q1 PASS†（箱截 `LANDING-L-Q1-*-20261025.png`）；软非挡 Inter CDN 另票。状态：**已关**。
 
 ## 关单进度
 
-**L-P0/R1/R2/R3 + SL-V1/V2/V3 + L-Q1 PASS† 已勾** · 交产品 L-P1（QA 不关）。
+**已关** · L-P0/R1/R2/R3 + SL-V1/V2/V3 + L-Q1 PASS† + L-P1 · Wiki [`LANDING_CLOSE.md`](./wiki-dogfood/LANDING_CLOSE.md)。
