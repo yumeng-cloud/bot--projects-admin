@@ -78,6 +78,8 @@ Handoff **无表**，由 service 实时组装。
 
 错误体：`{"code","message"}`（snake_case）。
 
+**工作区隔离（XWS-AUTH · 通道 X-M1）：** 调用方非本仓成员 → **403**；path `memberID` ∉ 当前 ws → **404**（与 handoff 齐，**禁** 200 空当成功）。`ymbot`/MCP 对 403/404 人话透传，错误态不打印「(无记忆)」。member∈ws 硬门见 Go X-G1。
+
 记忆语义召回（Postgres+pgvector）：upsert 写向量、`?mode=` 检索，约定见 [`embed.md`](./embed.md)。本地 SQLite 仅关键词/`keyword_fallback`，不以 sqlite-vec 为生产方案。
 
 ### Handoff 字段

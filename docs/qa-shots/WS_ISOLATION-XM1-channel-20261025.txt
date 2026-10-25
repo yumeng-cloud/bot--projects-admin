@@ -1,0 +1,37 @@
+WS_ISOLATION X-M1 · 通道（Bot 记忆）审计/修复纪要
+时间：2026-10-25 10:20 Asia/Shanghai
+基线：git pull 后 main @ 9ec761b（含债补 34ece64 / dadd8e9）
+角色：Bot 记忆/通道 · 禁改 Go assertMemberInWorkspace / UpsertMemory 硬门
+
+## Go 硬门状态
+- rg assertMemberInWorkspace → **未落地**（X-G1/G2/G3 仍等 Go）
+- ListMemories/CreateMemory 仅 requireWorkspaceMember（调用方∈ws），**未**校验 path memberID∈ws
+- 现网错仓 GET memories → 200 空；POST → 201（IDOR）属服务端，通道不双改闸
+
+## 软吞审计（CLI / MCP / botclient）
+
+| 路径 | 软吞 403/404→空成功？ | 软吞 200 空当「无问题」？ | 结论 |
+| --- | --- | --- | --- |
+| Client.Do | N（非 2xx → APIError） | N/A（2xx 按 HTTP 成功） | OK |
+| MemoryList/Set · HandoffGet/Import | 修复前已 return err；现加 annotateBotWSErr 人话 | 200+[] 仍成功打印「(无记忆)」——**等 X-G1 改 404**，通道不伪造拒 | 跟 Go |
+| CLI cmdMemory / cmdHandoff | err≠nil 即 return，不调 FormatMemoryListText | 同上 | OK |
+| MCP board_memory_* / board_handoff_* | isError=true 透传 | 同上 | OK |
+| TeamJoin 二次 HandoffGet 刷新 | **曾** if err==nil 才更新（403/404 被吞） | — | **已修**：403/404 上抛 |
+| SeatEnter HandoffGet | 已硬失败 | — | OK |
+| FormatMemoryListText("(无记忆)") | 仅成功路径 | 合法空列表 OK；错仓 200 空靠 Go | 文档已标明 |
+
+软吞 403/404 发现：**Y（TeamJoin 刷新一处）→ 已修**。
+其它 memory/handoff 主路径：**N**（原本即透传）。
+200 空当成功漏报：**服务端问题**；通道单测锁定「真 403/404 绝不印无记忆」。
+
+## 本切片改动
+- backend/internal/botclient/client.go — annotateBotWSErr；MemoryList/Set/HandoffGet/Import 包装
+- backend/internal/botclient/team.go — TeamJoin 刷新对 403/404 不再软吞
+- backend/internal/botclient/ws_isolation_xm1_test.go — 新增
+- docs/BOT.md / docs/BOT_MCP_CLI.md — 码表一句话（非 root README）
+
+## 测试
+go test ./internal/botclient/ ./cmd/ymbot/ → green
+
+## 跟进
+等 Go X-G1 合入后：错仓 mid GET/POST → 404；通道已对齐人话与退出码（12），无需再改主路径。

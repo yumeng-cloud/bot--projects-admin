@@ -77,8 +77,8 @@
 | Issue 叶子领取 | `board_issue_claim` / `ymbot issue claim` | `PATCH …/issues/{id}`（`assignee_id=me`） | **只领叶子**；≠ `board_role_claim`（岗位）；非叶子依赖服务端 409 | **P0** |
 | 评论读取 | `board_comment_list` / `ymbot comment list` | `GET …/issues/{id}/comments` | 入：`issue_id`；出：`comments[]` | **P0** |
 | 评论写入 | `board_comment_create` / `ymbot comment create` | `POST …/issues/{id}/comments` | 入：`issue_id, body`；一条命令完成；幂等 Key | **P0** |
-| 记忆读取 | `board_memory_list` / `ymbot memory list` | `GET …/bots/{memberID}/memories?q=` | 入：`q?`；默认当前 Bot member；出：`memories[]` | **P0** |
-| 记忆写入 | `board_memory_set` / `ymbot memory set` | `POST …/bots/{memberID}/memories`（upsert） | 入：`key_name, value_text, tags?`；出：`memory` | **P0** |
+| 记忆读取 | `board_memory_list` / `ymbot memory list` | `GET …/bots/{memberID}/memories?q=` | 入：`q?`；默认当前 Bot member；出：`memories[]`；**403/404 人话透传**（错仓禁当空成功；见 XWS-AUTH） | **P0** |
+| 记忆写入 | `board_memory_set` / `ymbot memory set` | `POST …/bots/{memberID}/memories`（upsert） | 入：`key_name, value_text, tags?`；出：`memory`；错仓 mid **404**（禁 201；跟 Go X-G1） | **P0** |
 | Handoff 续工/备份 | `board_handoff_get` / `ymbot handoff get\|export` | `GET …/bots/{memberID}/handoff` | **日常续工**：`get` 无文件；`--out`/`export` 仅换机备份可选 | **P0** |
 | Handoff 导入 | `board_handoff_import` / `ymbot handoff import` | `POST …/bots/{memberID}/handoff` | 入：文件或 JSON；出：`imported_* / claimed / warnings` | **P0** |
 | 工作区搜索 | `board_search` / `ymbot search` | `GET …/search?q=` | 入：`q`；出：issues/projects 摘要 | P1 |

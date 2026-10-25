@@ -1305,15 +1305,19 @@ func (c *Client) TeamJoin(opts TeamJoinOpts) (map[string]any, error) {
 		out["note"] = "已绑本席，跳过 enter，直接 handoff get"
 	}
 
-	// 权威续命再拉一次（与封装契约一致；幂等）
+	// 权威续命再拉一次（与封装契约一致；幂等）。
+	// X-M1：403/404（错仓/非成员）不得软吞；其它瞬时错误保留 enter 时 handoff。
 	if _, has := out["handoff"]; !has || alreadySelf {
 		// already handled
 	} else {
 		handRaw, err := c.HandoffGet()
-		if err == nil {
-			if hand, err2 := c.ProjectHandoff(handRaw, ViewOpts{}); err2 == nil {
-				out["handoff"] = hand
+		if err != nil {
+			if ae, ok := err.(*APIError); ok && (ae.Status == 403 || ae.Status == 404) {
+				return nil, err
 			}
+			// 非隔离类错误：保留 enter 摘要
+		} else if hand, err2 := c.ProjectHandoff(handRaw, ViewOpts{}); err2 == nil {
+			out["handoff"] = hand
 		}
 	}
 	out["force_used"] = enterForce

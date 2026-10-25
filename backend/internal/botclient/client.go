@@ -416,6 +416,48 @@ func (c *Client) CommentCreate(issueID, body string) (json.RawMessage, error) {
 	return c.Do(http.MethodPost, c.ws("/issues/"+issueID+"/comments"), nil, map[string]string{"body": body}, true)
 }
 
+
+// annotateBotWSErr 通道 X-M1：bots memories/todos/handoff 上的 403/404 用人话标明工作区隔离。
+// 禁止调用方把错误当「无记忆」空成功。服务端 member∈ws 硬门仍属 Go X-G1（本函数不代替）。
+func annotateBotWSErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	ae, ok := err.(*APIError)
+	if !ok {
+		return err
+	}
+	msg := strings.TrimSpace(ae.Message)
+	switch ae.Status {
+	case 403:
+		if containsAny(msg, "工作区", "本仓", "隔离", "旁路") {
+			return ae
+		}
+		if msg == "" {
+			msg = "非本工作区成员"
+		}
+		code := ae.Code
+		if strings.TrimSpace(code) == "" {
+			code = "forbidden"
+		}
+		return &APIError{Status: 403, Code: code, Message: msg + "（工作区隔离：调用方须为本仓成员，超管无业务读旁路）"}
+	case 404:
+		if containsAny(msg, "工作区", "本仓", "错仓", "隔离", "成员不在") {
+			return ae
+		}
+		if msg == "" || strings.EqualFold(msg, "not found") || msg == "资源不存在" {
+			msg = "成员不在当前工作区或不存在"
+		}
+		code := ae.Code
+		if strings.TrimSpace(code) == "" {
+			code = "not_found"
+		}
+		return &APIError{Status: 404, Code: code, Message: msg + "（错仓 mid→404，禁止当空列表成功）"}
+	default:
+		return ae
+	}
+}
+
 func (c *Client) MemoryList(q, mode string, limit int) (json.RawMessage, error) {
 	mid, err := c.ResolveMember()
 	if err != nil {
@@ -431,7 +473,8 @@ func (c *Client) MemoryList(q, mode string, limit int) (json.RawMessage, error) 
 	if limit > 0 {
 		qv.Set("limit", strconv.Itoa(limit))
 	}
-	return c.Do(http.MethodGet, c.ws("/bots/"+mid+"/memories"), qv, nil, false)
+	raw, err := c.Do(http.MethodGet, c.ws("/bots/"+mid+"/memories"), qv, nil, false)
+	return raw, annotateBotWSErr(err)
 }
 
 func (c *Client) MemorySet(key, value, tags string) (json.RawMessage, error) {
@@ -443,7 +486,8 @@ func (c *Client) MemorySet(key, value, tags string) (json.RawMessage, error) {
 	if tags != "" {
 		body["tags"] = tags
 	}
-	return c.Do(http.MethodPost, c.ws("/bots/"+mid+"/memories"), nil, body, true)
+	raw, err := c.Do(http.MethodPost, c.ws("/bots/"+mid+"/memories"), nil, body, true)
+	return raw, annotateBotWSErr(err)
 }
 
 func (c *Client) HandoffGet() (json.RawMessage, error) {
@@ -451,7 +495,8 @@ func (c *Client) HandoffGet() (json.RawMessage, error) {
 	if err != nil {
 		return nil, err
 	}
-	return c.Do(http.MethodGet, c.ws("/bots/"+mid+"/handoff"), nil, nil, false)
+	raw, err := c.Do(http.MethodGet, c.ws("/bots/"+mid+"/handoff"), nil, nil, false)
+	return raw, annotateBotWSErr(err)
 }
 
 func (c *Client) HandoffImport(body any) (json.RawMessage, error) {
@@ -459,5 +504,6 @@ func (c *Client) HandoffImport(body any) (json.RawMessage, error) {
 	if err != nil {
 		return nil, err
 	}
-	return c.Do(http.MethodPost, c.ws("/bots/"+mid+"/handoff"), nil, body, true)
+	raw, err := c.Do(http.MethodPost, c.ws("/bots/"+mid+"/handoff"), nil, body, true)
+	return raw, annotateBotWSErr(err)
 }
