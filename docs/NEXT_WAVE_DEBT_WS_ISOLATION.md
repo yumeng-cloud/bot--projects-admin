@@ -69,8 +69,8 @@
 - [x] **X-R2** BotDetail
 - [x] **X-R3** 项目滤
 - [x] **X-I1** Issue 契约
-- [ ] **X-Q1** QA
-- [ ] **X-P1** 关单
+- [x] **X-Q1** QA
+- [x] **X-P1** 关单
 
 ## 非目标
 
@@ -90,6 +90,7 @@
 
 ## 进度注记
 
+- 2026-10-25 10:28 · **X-P1 关单 · WS_ISOLATION 整包关** Go+FE `fae4e48` + X-M1 `47f0c73` + X-I1 `f7474d9` + QA X-Q1 PASS† `b88bda1`。狗粮 Wiki：`docs/wiki-dogfood/WS_ISOLATION_CLOSE.md`。Soft 三件仍冻。
 - 2026-10-25 10:23 · **勾 X-R1～R3** 同提交 `fae4e48`：key={wsId} remount + BotDetail/Drawer 先清 + acb.project.<wsId> + handoff Issues 按 project 滤。开 **X-Q1**。
 - 2026-10-25 10:23 · **勾 X-G1～G3** Go `fae4e48`（与 X-R* 同提交）：assertMemberInWorkspace 写/读 404；MountWiki/Time/Bots/Teams `authAny(wsMem)`；resolveMember mid∈path ws；Bot Key 错仓 403。CLI/MCP 未动（X-M1）。
 - 2026-10-25 10:21 · **勾 X-M1** 通道 `47f0c73`：禁软吞 403/404；人话隔离；证据 `WS_ISOLATION-XM1-channel-20261025.txt`。写拒闸仍等 X-G1。
@@ -97,3 +98,7 @@
 - 2026-10-25 10:20 · Go 三点洞属实确认入 X-G3（含 MountWiki/Time）；写 IDOR 优先堵。
 - 2026-10-25 10:19 · **补锤**：写路径 IDOR `@0c39d38`（POST 201）；FE 拍死 `key={wsId}` remount 为首选（React 合议）。
 - 2026-10-25 10:18 · **拍板开刀**。探针 `f169699`；码表 403/404 齐 Go 建议。明文泄漏未复现；UI 主修 FE + memories/todos 硬门。
+
+## 关单进度
+
+**整包关** · X-G1～G3 / X-R1～R3 / X-M1 / X-I1 / X-Q1 / X-P1 齐。错仓读写 404；切仓零残留；切项目仅当前项目。Soft 三件仍冻。
