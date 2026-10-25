@@ -1,0 +1,77 @@
+INVITE_ON_DEMAND · I-Q1 FE retest IQ1-4（computerUse @7f1e576 · fixture IQ14-EntryFixture-20261025）
+时间：2026-10-25 11:32 Asia/Shanghai
+判定：**Soft†**（A ymt_ 复用 PASS† · C 404→Create PASS† · B ymk_ Lookup **FAIL** · React 缺陷；不交 I-P1）
+================================================================
+基线
+  FE sha：7f1e576
+         fix(fe): IQ1-4 Lookup UI — entry 先查再用/复用/签发
+  Fixture：IQ14-EntryFixture-20261025 · team_id=7fee125cabf4c81ca1a6825283fed8f4
+           纪要：INVITE_ON_DEMAND-I-Q1-IQ14-fixture-20261025.txt @3aabe11
+  Go / I-G1：仍 PASS† @a034a15（LookupEntry 优先未吊销 ymk_，否则 active ymt_，都无 404）
+  前次 FE Soft†：1257830（IQ1-3/5 · INVITE_ON_DEMAND-I-Q1-retest-IQ1-35-20261025.txt）
+  债：docs/NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md · IQ1-4 / I-R2 / I-G1 / I-M1
+  清单：docs/qa-shots/INVITE_ON_DEMAND-I-Q1-checklist-20261025.txt（本轮改 IQ1-4 Soft†/FAIL）
+  证据源：FE computerUse 复测（本目录 retest png）
+  禁主人：本跑未用主人账号作 tester
+
+Shot 索引
+  INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-ymt-20261025.png      · A ymt_ 复用
+  INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-ymk-20261025.png      · B ymk_ Lookup（FAIL 现场）
+  INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-pm-create-20261025.png · C 404→Create
+
+----------------------------------------------------------------
+逐行（本轮复测 · fixture 三态）
+----------------------------------------------------------------
+| case | seat | expected | 判定 | 摘要 |
+| --- | --- | --- | --- | --- |
+| A ymt_ 复用 | frontend | GET entry 200 kind=ymt_ → 复用 Modal；禁再签 | PASS† | Modal「该席已有有效入场码」·5469；GET entry 200；无 POST invites |
+| B ymk_ Lookup | backend（active） | GET entry 200 kind=ymk_ → 查用展示；禁 mint | **FAIL** | active 后端席 **ZERO invite CTAs**；Lookup 从未被调用；API 旁证会返 ymk_ |
+| C 404→Create | pm（空席） | GET entry 404 → 再 Create 签发 1 | PASS† | pm 席 mint 一枚（单次 Create） |
+| IQ1-4 总 | — | 状态机三态全绿 | **Soft†** | A/C 绿；B React 缺陷挡全绿 |
+| I-G1 API | — | Lookup/Create 矩阵 | PASS† | 不变 @a034a15；fixture curl 已录 |
+
+----------------------------------------------------------------
+A · ymt_ 复用 PASS†
+----------------------------------------------------------------
+  seat：frontend（fixture 仅 active ymt_ · code_tail=5469）
+  · UI：Modal「该席已有有效入场码」·5469
+  · 网络：GET …/entry?seat_slug=frontend → 200 kind=ymt_
+  · 无 POST …/invites（不静默再签）
+  箱截：INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-ymt-20261025.png
+
+----------------------------------------------------------------
+B · ymk_ Lookup FAIL（React 缺陷）
+----------------------------------------------------------------
+  seat：backend（fixture active + bound Bot + 未吊销 ymk_）
+  · API 旁证（fixture curl）：GET …/entry?seat_slug=backend → 200 kind=ymk_ token_tail=66c7
+  · UI 实况：active 后端席 **零** invite CTA（无「入场」/查用入口）
+  · 后果：Lookup 路径从未触发；ymk_ 查用 UI 无法验证
+  · 根因归 React：IQ1-5「在席禁 mint」把 CTA 整段藏光，未保留「查用已有 K」入口
+    （Go Lookup OK；缺陷在 FE 入口可见性，非 API）
+  箱截：INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-ymk-20261025.png
+  Defect → React：active + 有有效 ymk_ 席须暴露 Lookup/查用 CTA（禁 mint 顶替 ≠ 禁查用）
+
+----------------------------------------------------------------
+C · 404 Create PASS†
+----------------------------------------------------------------
+  seat：pm（fixture 空席 · GET entry 404）
+  · UI：走 Create 路径，签发一枚
+  · 期望对齐：单次 mint；不堆码
+  箱截：INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-pm-create-20261025.png
+
+----------------------------------------------------------------
+相对前次 Soft† @1257830 / fixture @3aabe11
+----------------------------------------------------------------
+  已消：D4 部分——FE @7f1e576 已接 GET …/entry；ymt_ 复用 Modal + 404→Create 可证
+  新开 / 仍开：D-B（React）active 席零 CTA → ymk_ Lookup 永不调用
+  不交 I-P1（IQ1-4 非全绿）
+
+----------------------------------------------------------------
+Verdict
+----------------------------------------------------------------
+**Soft†** @ FE 7f1e576 · fixture IQ14-EntryFixture-20261025 / 7fee125c · Go a034a15
+  PASS†：A ymt_ 复用 · C 404→Create
+  FAIL ：B ymk_ Lookup（React：active 席零 invite CTA）
+  仍 PASS†：IQ1-1 · IQ1-2 · IQ1-3 · IQ1-5 · IQ1-6 · IQ1-7 · I-G1 API
+  非全绿 → **不交 I-P1**（本文件不改债 I-P1 / I-Q1 勾选）
+One-line → React+产品+总指挥：I-Q1 IQ1-4 Soft† @7f1e576 / fixture 7fee125c；A ymt_ 复用 PASS†（Modal ·5469 GET200 无POST）· C 404 Create PASS† · B ymk_ Lookup FAIL（active 后端零 CTA·Lookup 未调·API 会返 ymk_）→ React 修查用入口；不交 I-P1。
