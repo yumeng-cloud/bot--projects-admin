@@ -1,0 +1,21 @@
+SETTINGS_BOTS · React #310 白屏 · QA 初判 FAIL 2026-10-25 09:46 CST
+================================================================
+现象（用户机）：/w/.../settings/bots 控制台 Minified React error #310
+  用户机截图已贴 QA 会话；产线 bundle index-Cl32MVub.js
+
+含义：Rendered more hooks than during the previous render
+
+根因（源码，非猜测）：
+  frontend/src/pages/settings/bots/IssuedInvitesPanel.tsx @ aec2966（SEAT_PANEL P-R*）
+  L137–140：4× useMemo 恒执行
+  L143：if (total === 0) return null   ← 提前 return
+  L151：ymtGroups = useMemo(...)       ← 仅 total>0 才执行 → 钩子数量 4↔5 跳变
+
+复现路径：席页有绑定时渲染 IssuedInvitesPanel；邀请列表先空后回填（或反之）即炸。
+  BotsRosterPage 仅在 hasAnyBinding 分支挂载该面板。
+
+修复口径（交 React）：
+  把 ymtGroups 的 useMemo 挪到 early return 之前（与另 4 个 useMemo 同层），
+  或改成非 hook 计算；禁在条件 return 后调 hook。
+
+验收：修完后 QA 自点 settings/bots（有席 + 邀请空→有、有→空）不炸；PASS† 再交产品。
