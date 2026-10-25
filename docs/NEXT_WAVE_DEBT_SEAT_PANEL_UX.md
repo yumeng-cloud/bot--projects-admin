@@ -87,7 +87,7 @@
 
 ## 产品勾选
 
-- [ ] **P-M1** 实态纪要
+- [x] **P-M1** 实态纪要
 - [x] **P-G1** API（若需）
 - [x] **P-R1** 席卡三态
 - [x] **P-R2** 未占席条
@@ -109,6 +109,7 @@
 
 ## 进度注记
 
+- 2026-10-25 08:54 · **勾 P-M1** 记忆纪要：研学公网超管非成员读不到真 roster（禁用进度样例冒充）；机制=WS Bot≠本队占用；open→空闲从未占用；stop/unbind→停工可补。通道 `a665392` 人话三态+FormatUnboundBotsHint。**口径**：FE 锁「在席」；通道「占用中」同义可并存。反对 Soft V2 成立。
 - 2026-10-25 08:53 · **勾 P-R1～R3** FE `aec2966`；箱截 `SEAT_PANEL-P-V1-states.png` / `…-invites.png`。产品抽看三态+诚实条+折叠/分组/ymt·ymw 分块齐。开 **P-V1 审图→总监** + **P-Q1**（S-Q1 仍优先若未完）。
 - 2026-10-25 08:51 · **P-G1 免刀**（Go）：诚实条 = `GET …/bots` 减本队 roster 占用（`active` 且 bound/claim member_id）；别队占用对本队仍算未占。**密度尺子**审图已锁（跟 bots.css）。React P-R1～R3 开干中。
 - 2026-10-25 08:50 · **措辞锁死对齐 React/总监**：在席 / 空闲（从未占用）/ 停工可补；入场码折叠+按席+同组 1～2 末四+ymw_/ymt_ 分块+行高 36–40。**SETTINGS FE `0e15fa0` 已齐 → React 可开 P-R1～R3**（API 可不改）。狗粮纪律见 `docs/DOGFOOD_WAVE_DISCIPLINE.md`。
