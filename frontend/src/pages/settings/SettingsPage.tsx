@@ -20,11 +20,12 @@ import {
   type MenuProps,
 } from 'antd'
 import { CopyOutlined, MoreOutlined, PlusOutlined } from '@ant-design/icons'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import SettingsProjectsPanel from './SettingsProjectsPanel'
 import SettingsTeamsPanel from './SettingsTeamsPanel'
 import { api, ApiError } from '../../api/client'
 import { getWorkspace, listMyWorkspaces, patchWorkspace, slugifyName } from '../../api/workspaces'
+import type { AppLayoutOutletContext } from '../../layouts/AppLayout'
 import {
   inviteMember,
   listMembers,
@@ -96,6 +97,7 @@ function expiresPresetToRfc3339(preset: string): string | undefined {
 
 export default function SettingsPage() {
   const { wsId = '' } = useParams()
+  const { onWorkspaceUpdated } = useOutletContext<AppLayoutOutletContext>()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabParam = searchParams.get('tab') || 'workspace'
   const activeTab =
@@ -416,6 +418,11 @@ export default function SettingsPage() {
       setWsName(resp.workspace.name)
       setWsSlug(resp.workspace.slug)
       wsForm.setFieldsValue({ name: resp.workspace.name, slug: resp.workspace.slug })
+      onWorkspaceUpdated?.({
+        id: resp.workspace.id,
+        name: resp.workspace.name,
+        slug: resp.workspace.slug,
+      })
       message.success('工作区已更新')
     } catch (e) {
       if (e && typeof e === 'object' && 'errorFields' in e) return

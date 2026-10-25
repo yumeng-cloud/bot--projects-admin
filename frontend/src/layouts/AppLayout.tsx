@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Layout, Menu, Typography, Button, Space, Spin, theme, Drawer } from 'antd'
 import {
@@ -25,6 +25,12 @@ import { ProjectPoolSelect } from '../components/common/ProjectPoolSelect'
 import { CurrentTeamProvider, useCurrentTeam } from '../hooks/useCurrentTeam'
 
 const { Header, Sider, Content } = Layout
+
+/** Settings 等子页经 Outlet 回写工作区（改名后侧栏即时刷新） */
+export type AppLayoutOutletContext = {
+  onWorkspaceUpdated: (next: { id: string; name: string; slug: string }) => void
+}
+
 
 /** MOBILE_RESPONSIVE：与 Issue 窄轨一致 ≤639 */
 const MOBILE_MQ = '(max-width: 639px)'
@@ -95,6 +101,21 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
     }
     return list
   }
+
+  const onWorkspaceUpdated = useCallback(
+    (next: { id: string; name: string; slug: string }) => {
+      setWs((prev) => {
+        if (prev?.id === next.id) {
+          return { ...prev, name: next.name, slug: next.slug }
+        }
+        if (!prev && wsId && next.id === wsId) {
+          return { id: next.id, name: next.name, slug: next.slug }
+        }
+        return prev
+      })
+    },
+    [wsId],
+  )
 
   useEffect(() => {
     if (!wsId) return
@@ -348,7 +369,7 @@ function AppLayoutShell({ user, onLogout }: { user: User | null; onLogout: () =>
             flexDirection: 'column',
           }}
         >
-          <Outlet />
+          <Outlet context={{ onWorkspaceUpdated } satisfies AppLayoutOutletContext} />
         </Content>
       </Layout>
     </Layout>
