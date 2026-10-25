@@ -45,6 +45,9 @@ type Props = {
   /** SEAT_REFILL：可补位席复制补位入场码（ymt_；非扩编） */
   onCopyRefill?: () => void
   refillBusy?: boolean
+  /** IQ1-4：在席查用已有身份钥匙（Lookup；禁 mint） */
+  onLookupEntry?: () => void
+  lookupBusy?: boolean
 }
 
 export default function SeatHandoffDrawer({
@@ -63,6 +66,8 @@ export default function SeatHandoffDrawer({
   onLeaveUnbind,
   onCopyRefill,
   refillBusy = false,
+  onLookupEntry,
+  lookupBusy = false,
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [handoff, setHandoff] = useState<BotHandoff | null>(null)
@@ -196,31 +201,44 @@ export default function SeatHandoffDrawer({
               </Tag>
               {keyHint ? <Tag>{keyHint}</Tag> : null}
             </div>
-            {kind === 'active' && canLeave ? (
+            {kind === 'active' ? (
               <Space size={8} wrap style={{ marginTop: 10 }}>
-                <Popconfirm
-                  title="停工此席？"
-                  description="原演员解除占用，席位变为「停工可补」。"
-                  okText="停工"
-                  cancelText="取消"
-                  onConfirm={() => onStop?.()}
-                >
-                  <Button size="small" icon={<StopOutlined />}>
-                    停工
+                {onLookupEntry ? (
+                  <Button
+                    size="small"
+                    loading={lookupBusy}
+                    onClick={() => onLookupEntry()}
+                  >
+                    查用身份钥匙
                   </Button>
-                </Popconfirm>
-                <Popconfirm
-                  title="离职解绑此席？"
-                  description="原演员解除绑定，席位变为停工可补（left）。"
-                  okText="离职解绑"
-                  cancelText="取消"
-                  okButtonProps={{ danger: true }}
-                  onConfirm={() => onLeaveUnbind?.()}
-                >
-                  <Button size="small" danger icon={<UserDeleteOutlined />}>
-                    离职解绑
-                  </Button>
-                </Popconfirm>
+                ) : null}
+                {canLeave ? (
+                  <>
+                    <Popconfirm
+                      title="停工此席？"
+                      description="原演员解除占用，席位变为「停工可补」。"
+                      okText="停工"
+                      cancelText="取消"
+                      onConfirm={() => onStop?.()}
+                    >
+                      <Button size="small" icon={<StopOutlined />}>
+                        停工
+                      </Button>
+                    </Popconfirm>
+                    <Popconfirm
+                      title="离职解绑此席？"
+                      description="原演员解除绑定，席位变为停工可补（left）。"
+                      okText="离职解绑"
+                      cancelText="取消"
+                      okButtonProps={{ danger: true }}
+                      onConfirm={() => onLeaveUnbind?.()}
+                    >
+                      <Button size="small" danger icon={<UserDeleteOutlined />}>
+                        离职解绑
+                      </Button>
+                    </Popconfirm>
+                  </>
+                ) : null}
               </Space>
             ) : null}
             {role.claim?.claimed_at ? (

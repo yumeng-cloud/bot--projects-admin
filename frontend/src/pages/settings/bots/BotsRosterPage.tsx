@@ -964,6 +964,110 @@ export default function BotsRosterPage() {
     return cacheIssuedInvite(invite, clean)
   }
 
+  /** IQ1-4：ymk_ Lookup Modal（人话席名/演员/末四或 prefix）；禁堆码文案 */
+  const showYmkLookup = (entry: TeamEntryLookup, seatLabel: string) => {
+    const rawDn = (entry.display_name || '').trim()
+    const actor =
+      rawDn && !/team:|[0-9a-f]{8}-[0-9a-f]{4}/i.test(rawDn) ? rawDn : seatLabel
+    const tail =
+      (entry.token_tail || '').trim() ||
+      (entry.token_prefix || '').replace(/^ymk_/i, '').slice(-4) ||
+      '····'
+    const prefixHint = (entry.token_prefix || '').trim()
+      ? entry.token_prefix
+      : `ymk_····${tail}`
+    Modal.info({
+      title: '已有身份钥匙可查用',
+      icon: null,
+      content: (
+        <div>
+          <Typography.Paragraph style={{ marginBottom: 8 }}>
+            席「{seatLabel}」已有未吊销平台钥（演员 {actor} · 末四 ·{tail}
+            {prefixHint ? ` · ${prefixHint}` : ''}）。
+            已有身份钥匙可查用，勿再堆入场码。
+          </Typography.Paragraph>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            平台钥无明文可复制属预期；勿再 CreateInvite 堆码。若须换钥，请走设置里显式重签。
+          </Typography.Text>
+        </div>
+      ),
+      okText: '知道了',
+    })
+  }
+
+  /** IQ1-4：在席专用查用入口——只 Lookup，永不 CreateInvite / 复制 ymt_ 入场链接 */
+  const onLookupEntry = async (roleCtx?: InviteRoleCtx) => {
+    if (!teamId) {
+      message.warning('尚无团队，请先创建或加入班底')
+      return
+    }
+    const gate = isActiveForInviteCtx(roleCtx)
+    const seat = gate.seat || resolveSeatForInviteCtx(roleCtx)
+    const slug =
+      resolveSeatCleanSlug(seat, roleCtx?.slug) ||
+      cleanSeatSlug(roleCtx?.slug) ||
+      ''
+    const seatLabel = inviteCtxHumanName(roleCtx, seat)
+    if (!slug) {
+      message.warning(`席「${seatLabel}」无可用短代号，无法查用身份钥匙`)
+      return
+    }
+    setInviteBusy(true)
+    try {
+      const { entry } = await lookupTeamEntry(wsId, teamId, { seat_slug: slug })
+      if (entry?.kind === 'ymk_') {
+        showYmkLookup(entry, seatLabel)
+        return
+      }
+      if (entry?.kind === 'ymt_') {
+        const tail = (entry.code_tail || '').trim() || '····'
+        const prefixHint = `ymt_····${tail}`
+        Modal.info({
+          title: '已有入场码可查用',
+          icon: null,
+          content: (
+            <div>
+              <Typography.Paragraph style={{ marginBottom: 8 }}>
+                席「{seatLabel}」已有有效入场码（末四 ·{tail} · {prefixHint}）。
+                在席禁签发顶替码；可停工后再走补位。
+              </Typography.Paragraph>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                明文仅签发时可见；此处只查用展示，不复制入场链接、不 CreateInvite。
+              </Typography.Text>
+            </div>
+          ),
+          okText: '知道了',
+        })
+        return
+      }
+      message.info(`席「${seatLabel}」暂无可用身份钥匙`)
+    } catch (e: unknown) {
+      if (e instanceof ApiError && e.status === 404) {
+        message.info(
+          `席「${seatLabel}」在席但暂无可用身份钥匙。请勿静默签发顶替入场码；若须换钥请走设置显式重签，或停工后补位。`,
+        )
+        return
+      }
+      if (e instanceof ApiError && e.status === 400) {
+        message.error(e.message || '查用入场凭证参数无效')
+        return
+      }
+      if (isInviteServiceMissing(e)) {
+        message.warning('查用入场凭证接口尚未开通')
+        return
+      }
+      message.error(
+        e instanceof ApiError
+          ? e.message || '查用入场凭证失败'
+          : e instanceof Error
+            ? e.message
+            : '查用入场凭证失败',
+      )
+    } finally {
+      setInviteBusy(false)
+    }
+  }
+
   /**
    * INVITE_ON_DEMAND I-R2 + IQ1-4/5：
    * - 有 slug → 先 Lookup（GET …/entry）再决定：ymk_ 查用 / ymt_ 复用 / 404 再 Create
@@ -1100,42 +1204,12 @@ export default function BotsRosterPage() {
       return plain ? { outcome: 'plain', code: plain } : { outcome: 'minted-opaque' }
     }
 
-    const showYmkLookup = (entry: TeamEntryLookup) => {
-      const rawDn = (entry.display_name || '').trim()
-      const actor =
-        rawDn && !/team:|[0-9a-f]{8}-[0-9a-f]{4}/i.test(rawDn) ? rawDn : seatLabel
-      const tail =
-        (entry.token_tail || '').trim() ||
-        (entry.token_prefix || '').replace(/^ymk_/i, '').slice(-4) ||
-        '····'
-      const prefixHint = (entry.token_prefix || '').trim()
-        ? entry.token_prefix
-        : `ymk_····${tail}`
-      Modal.info({
-        title: '已有身份钥匙可查用',
-        icon: null,
-        content: (
-          <div>
-            <Typography.Paragraph style={{ marginBottom: 8 }}>
-              席「{seatLabel}」已有未吊销平台钥（演员 {actor} · 末四 ·{tail}
-              {prefixHint ? ` · ${prefixHint}` : ''}）。
-              已有身份钥匙可查用，勿再堆入场码。
-            </Typography.Paragraph>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              平台钥无明文可复制属预期；勿再 CreateInvite 堆码。若须换钥，请走设置里显式重签。
-            </Typography.Text>
-          </div>
-        ),
-        okText: '知道了',
-      })
-    }
-
     // IQ1-4：有干净 slug 时先 Lookup（服务端真相）
     if (slug) {
       try {
         const { entry } = await lookupTeamEntry(wsId, teamId, { seat_slug: slug })
         if (entry?.kind === 'ymk_') {
-          showYmkLookup(entry)
+          showYmkLookup(entry, seatLabel)
           return { outcome: 'aborted' }
         }
         if (entry?.kind === 'ymt_' && entry.invite_id) {
@@ -1783,7 +1857,25 @@ export default function BotsRosterPage() {
                         popupMatchSelectWidth={false}
                       />
                     </>
-                  ) : busy ? null : (
+                  ) : busy ? (
+                    <Tooltip title="查用该席已有身份钥匙（平台钥 ymk_）；在席禁签发顶替入场码">
+                      <Button
+                        size="small"
+                        type="link"
+                        style={{ padding: 0 }}
+                        loading={inviteBusy}
+                        onClick={() =>
+                          void onLookupEntry({
+                            roleId: role.id,
+                            slug: cleanSeatSlug(role.slug) || role.slug || undefined,
+                            displayName: roleDisplay(role),
+                          })
+                        }
+                      >
+                        查用身份钥匙
+                      </Button>
+                    </Tooltip>
+                  ) : (
                     renderOneTapActions({
                       compact: true,
                       occupied: false,
@@ -2020,6 +2112,17 @@ export default function BotsRosterPage() {
             : undefined
         }
         refillBusy={inviteBusy}
+        onLookupEntry={
+          drawerRole
+            ? () =>
+                void onLookupEntry({
+                  roleId: drawerRole.id,
+                  slug: cleanSeatSlug(drawerRole.slug) || drawerRole.slug || undefined,
+                  displayName: roleDisplay(drawerRole),
+                })
+            : undefined
+        }
+        lookupBusy={inviteBusy}
       />
 
 
