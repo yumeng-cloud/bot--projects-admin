@@ -103,7 +103,7 @@
 
 ## 产品勾选
 
-- [ ] **I-G1** Lookup / Create 强制席 / 活跃 409 / List label
+- [x] **I-G1** Lookup / Create 强制席 / 活跃 409 / List label
 - [x] **I-R1** 砍建队自动堆码
 - [x] **I-R2** 按席复用 / 禁顶替
 - [x] **I-R3** 人话 label + 空态 CTA
@@ -140,7 +140,8 @@
 - 2026-10-25 10:50 · **开刀拍板**。合议 React/记忆/QA/Go/总指挥全同意；Go API 契约锁死；主修 FE 砍自动堆；Soft 仍冻。
 - 2026-10-25 11:00 · **I-M1 通道对齐**（Bot 记忆）：`BOT.md` / `BOT_MCP_CLI.md` + CLI/MCP/join 瘦文案落「有 K 用 / 无则生成 / 显式替换才顶 / 在席禁顶」；`identity_reused` 续队不重发；Soft V2 **未动**。未改 Go Create/Lookup 闸（I-G1）。
 - 2026-10-25 · **勾 I-R1～R4** React `b0a4d3d`（砍建队自动堆；复用/禁顶；人话 label；全班包确认）
+- 2026-10-25 · **勾 I-G1** Go `a034a15`（LookupEntry / Create 强制席+replace+活跃409 / List label）
 
 ## 关单进度
 
-**开刀** · **I-M1 + I-R1～R4 已勾**；仍等 Go I-G1 → QA I-Q1 → I-P1（FE 主凶已砍，QA 可先跑 FE 项）。Soft 仍冻。
+**开刀** · **I-M1 + I-R1～R4 + I-G1 已勾**；等 QA I-Q1 → I-P1。Soft 仍冻。
