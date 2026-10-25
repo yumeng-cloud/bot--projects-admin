@@ -18,6 +18,7 @@ import {
   openTodos,
   pickLastFocus,
   roleDisplay,
+  seatOccupancyTagLabel,
   statusCn,
   type SeatCardMeta,
 } from './seatHandoffText'
@@ -71,7 +72,7 @@ export default function SeatHandoffDrawer({
   const boundLabel =
     boundBot?.display_name ||
     occupantLabel ||
-    (memberId ? '已绑定' : kind === 'left' ? '可补位' : '空闲')
+    (memberId ? '已绑定' : kind === 'left' ? '停工可补' : '空闲（从未占用）')
 
   const seatMeta: SeatCardMeta = useMemo(
     () => ({
@@ -158,11 +159,7 @@ export default function SeatHandoffDrawer({
               title={roleDisplay(role)}
             >
               <Tag color={kind === 'active' ? 'blue' : kind === 'left' ? 'orange' : 'default'}>
-                {kind === 'active'
-                  ? `占用中 · ${boundLabel}`
-                  : kind === 'left'
-                    ? '可补位'
-                    : '空闲'}
+                {seatOccupancyTagLabel(kind, kind === 'active' ? boundLabel : null)}
               </Tag>
               {keyHint ? <Tag>{keyHint}</Tag> : null}
             </div>
@@ -170,7 +167,7 @@ export default function SeatHandoffDrawer({
               <Space size={8} wrap style={{ marginTop: 10 }}>
                 <Popconfirm
                   title="停工此席？"
-                  description="原演员解除占用，席位变为「停工席 · 可补位」。"
+                  description="原演员解除占用，席位变为「停工可补」。"
                   okText="停工"
                   cancelText="取消"
                   onConfirm={() => onStop?.()}
@@ -181,7 +178,7 @@ export default function SeatHandoffDrawer({
                 </Popconfirm>
                 <Popconfirm
                   title="离职解绑此席？"
-                  description="原演员解除绑定，席位变为可补位（left）。"
+                  description="原演员解除绑定，席位变为停工可补（left）。"
                   okText="离职解绑"
                   cancelText="取消"
                   okButtonProps={{ danger: true }}
@@ -209,7 +206,7 @@ export default function SeatHandoffDrawer({
             <Alert
               type="warning"
               showIcon
-              message="停工席 · 可补位"
+              message="停工可补"
               description={
                 <Space direction="vertical" size={8} style={{ width: '100%' }}>
                   <span>持补位码入场即占该席；活跃席仍禁顶替。补位 ≠ 扩编新席（勿混 ymk_）。也可指派已有 Bot。占席后才有交接摘要。</span>
@@ -231,10 +228,10 @@ export default function SeatHandoffDrawer({
             <Alert
               type="info"
               showIcon
-              message="席位空闲"
+              message="空闲（从未占用）"
               description={
                 <span>
-                  绑定后再看交接。新机：打开同一工作区 → 贴 Key，或本机 seat enter 绑到席位「
+                  尚未有 Bot 进本席。绑定后再看交接。新机：打开同一工作区 → 贴 Key，或本机 seat enter 绑到席位「
                   {roleDisplay(role)}」→{' '}
                   <Typography.Text code>ymbot handoff get</Typography.Text>
                   <Typography.Text type="secondary" style={{ display: 'block', marginTop: 6, fontSize: 12 }}>

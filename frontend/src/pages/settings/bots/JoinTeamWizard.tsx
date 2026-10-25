@@ -524,21 +524,20 @@ export default function JoinTeamWizard({
                         {seatDisplayName(seat)}
                       </Typography.Text>
                       {active ? (
-                        <Tag style={{ margin: 0 }}>占用中</Tag>
+                        <Tag color="blue" style={{ margin: 0 }}>
+                          {seat.bound_display_name
+                            ? `在席 · ${seat.bound_display_name}`
+                            : '在席'}
+                        </Tag>
                       ) : left ? (
                         <Tag color="orange" style={{ margin: 0 }}>
-                          可补位
+                          停工可补
                         </Tag>
                       ) : (
-                        <Tag color="green" style={{ margin: 0 }}>
-                          空席
+                        <Tag color="default" style={{ margin: 0 }}>
+                          空闲（从未占用）
                         </Tag>
                       )}
-                      {active && seat.bound_display_name ? (
-                        <Typography.Text type="secondary" style={{ fontSize: 12, maxWidth: 88 }} ellipsis>
-                          {seat.bound_display_name}
-                        </Typography.Text>
-                      ) : null}
                     </button>
                   )
                 })}

@@ -70,7 +70,14 @@ import CreateTeamFromTemplateModal from './CreateTeamFromTemplateModal'
 import SeatConflictPanel, { type SeatConflictInfo } from './SeatConflictPanel'
 import SeatHandoffDrawer from './SeatHandoffDrawer'
 import TeamPinsPanel from './TeamPinsPanel'
-import { roleDisplay } from './seatHandoffText'
+import { roleDisplay, seatOccupancyTagLabel } from './seatHandoffText'
+import IssuedInvitesPanel from './IssuedInvitesPanel'
+import {
+  listWorkspaceInvites,
+  revokeWorkspaceInvite,
+  isWorkspaceInviteMissing,
+  type WorkspaceInvite,
+} from '../../../api/workspaceInvites'
 import {
   buildBotJoinPrompt,
   buildJoinUrl,
@@ -126,6 +133,8 @@ export default function BotsRosterPage() {
   /** 建队瞬间 teams 列表尚未 reload 时顶栏/页眉仍显示新队名 */
   const [pendingCreatedTeam, setPendingCreatedTeam] = useState<Team | null>(null)
   const [issuedInvites, setIssuedInvites] = useState<TeamInvite[]>([])
+  /** 工作区人类码 ymw_（与队席 ymt_ 分块展示） */
+  const [wsInvites, setWsInvites] = useState<WorkspaceInvite[]>([])
   const [inviteBusy, setInviteBusy] = useState(false)
   /** 签发当次明文，只存活到复制成功后的一次 Toast；列表只留末四 */
   const [lastPlainInvite, setLastPlainInvite] = useState<string | null>(null)
@@ -262,6 +271,12 @@ export default function BotsRosterPage() {
       } catch {
         /* 保留本地签发缓存 */
       }
+      try {
+        const winv = await listWorkspaceInvites(wsId)
+        if (!cancelled) setWsInvites(winv.invites || [])
+      } catch {
+        if (!cancelled) setWsInvites([])
+      }
     })()
     return () => {
       cancelled = true
@@ -297,6 +312,8 @@ export default function BotsRosterPage() {
           code: undefined,
           code_tail: tail,
           code_prefix: inv.code_prefix || `ymt_····${tail}`,
+          role_hint: inv.role_hint || row.slug || null,
+          seat_slug: inv.seat_slug || row.slug || null,
         }
         const idx = next.findIndex((x) => x.id === inv.id)
         if (idx >= 0) next[idx] = stripped
@@ -341,6 +358,16 @@ export default function BotsRosterPage() {
   }
 
   const freeBots = useMemo(() => bots.filter((b) => b.bot_enabled), [bots])
+  /** P-R2：本 WS Bot − 本队 roster 占用集合；别队占用仍算未占本队席 */
+  const unseatedWsBots = useMemo(() => {
+    const occupied = new Set<string>()
+    for (const s of teamSeats) {
+      if (seatOccupancy(s) !== 'active') continue
+      const id = s.bound_member_id || s.member_id || s.claim?.member_id
+      if (id) occupied.add(id)
+    }
+    return bots.filter((b) => b.bot_enabled && !occupied.has(b.member_id))
+  }, [bots, teamSeats])
   /** TEAM_SWITCH S2 + SEAT_VISIBILITY：按本队 roster 出卡；无匹配 bot_role 时用席合成，保证空席可见 */
   const visibleRoles = useMemo(() => {
     if (!teamId) return roles
@@ -404,6 +431,34 @@ export default function BotsRosterPage() {
     } catch (e: unknown) {
       if (isInviteServiceMissing(e)) {
         message.warning('吊销接口尚未开通')
+      } else {
+        message.error(e instanceof ApiError ? e.message : '吊销失败')
+      }
+    } finally {
+      setRevokingId(null)
+    }
+  }
+
+  const onRevokeWsInvite = async (inv: WorkspaceInvite) => {
+    setRevokingId(inv.id)
+    try {
+      const { invite } = await revokeWorkspaceInvite(wsId, inv.id, crypto.randomUUID())
+      setWsInvites((prev) =>
+        prev.map((x) =>
+          x.id === inv.id
+            ? {
+                ...x,
+                ...invite,
+                status: invite.status || 'revoked',
+                revoked_at: invite.revoked_at || x.revoked_at || new Date().toISOString(),
+              }
+            : x,
+        ),
+      )
+      message.success('已吊销工作区邀请码')
+    } catch (e: unknown) {
+      if (isWorkspaceInviteMissing(e)) {
+        message.warning('工作区邀请吊销接口尚未开通')
       } else {
         message.error(e instanceof ApiError ? e.message : '吊销失败')
       }
@@ -607,8 +662,8 @@ export default function BotsRosterPage() {
     message.success(
       successToast ||
         (status === 'stopped'
-          ? `已将「${roleDisplay(role)}」标为停工 · 可补位`
-          : `已将「${roleDisplay(role)}」离职解绑 · 可补位`),
+          ? `已将「${roleDisplay(role)}」标为停工可补`
+          : `已将「${roleDisplay(role)}」离职解绑 · 停工可补`),
     )
     void load()
     void refreshTeamRoster()
@@ -748,6 +803,8 @@ export default function BotsRosterPage() {
         code: undefined,
         code_tail: tail,
         code_prefix: invite.code_prefix || `ymt_····${tail}`,
+        role_hint: invite.role_hint || slug || null,
+        seat_slug: invite.seat_slug || slug || null,
       },
       ...prev.filter((x) => x.id !== invite.id),
     ])
@@ -871,6 +928,8 @@ export default function BotsRosterPage() {
           code: undefined,
           code_tail: tail,
           code_prefix: invite.code_prefix || `ymt_····${tail}`,
+          role_hint: invite.role_hint || slug || null,
+          seat_slug: invite.seat_slug || slug || null,
         },
         ...prev.filter((x) => x.id !== invite.id),
       ])
@@ -1145,6 +1204,33 @@ export default function BotsRosterPage() {
 
       <TeamPinsPanel wsId={wsId} teamId={teamId} />
 
+      {unseatedWsBots.length > 0 ? (
+        <Alert
+          className="acb-bots-unseated-alert"
+          type="info"
+          showIcon
+          message={`本工作区有 ${unseatedWsBots.length} 个 Bot 尚未占本队席`}
+          description={
+            <div style={{ fontSize: 13, lineHeight: 1.45 }}>
+              <div style={{ marginBottom: 6 }}>
+                {unseatedWsBots.map((b) => b.display_name).join('、')}
+                <Typography.Text type="secondary">
+                  （别队占用也算未占本队席）
+                </Typography.Text>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                <Button size="small" type="link" style={{ padding: 0 }} onClick={() => setJoinOpen(true)}>
+                  加入班底
+                </Button>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  或在「空闲 / 停工可补」席上指派 Bot、复制补位码
+                </Typography.Text>
+              </div>
+            </div>
+          }
+        />
+      ) : null}
+
       {visibleRoles.length ? (
         <div className="acb-bots-seat-grid">
           {visibleRoles.map((role) => {
@@ -1178,7 +1264,10 @@ export default function BotsRosterPage() {
                     color={busy ? 'blue' : left ? 'orange' : 'default'}
                     style={{ margin: 0, flexShrink: 0 }}
                   >
-                    {busy ? '占用中' : left ? '可补位' : '空闲'}
+                    {seatOccupancyTagLabel(
+                      busy ? 'active' : left ? 'left' : 'empty',
+                      busy ? bound || botName(mid) : null,
+                    )}
                   </Tag>
                   {hint ? (
                     <Typography.Text type="secondary" style={{ fontSize: 12, flexShrink: 0 }}>
@@ -1198,9 +1287,9 @@ export default function BotsRosterPage() {
                       ) : null}
                     </span>
                   ) : left ? (
-                    <Typography.Text type="secondary">停工席 · 可补位</Typography.Text>
+                    <Typography.Text type="secondary">曾绑已清 · 可持补位码入场</Typography.Text>
                   ) : (
-                    <Typography.Text type="secondary">等待绑定</Typography.Text>
+                    <Typography.Text type="secondary">从未占用 · 可指派或签发入场码</Typography.Text>
                   )}
                 </div>
 
@@ -1264,7 +1353,7 @@ export default function BotsRosterPage() {
                     <>
                       <Popconfirm
                         title="停工此席？"
-                        description="原演员解除占用，席位变为「停工席 · 可补位」。活跃禁顶替不变。"
+                        description="原演员解除占用，席位变为「停工可补」。活跃禁顶替不变。"
                         okText="停工"
                         cancelText="取消"
                         onConfirm={() => void onStop(role)}
@@ -1280,7 +1369,7 @@ export default function BotsRosterPage() {
                       </Popconfirm>
                       <Popconfirm
                         title="离职解绑此席？"
-                        description="原演员解除绑定，席位变为可补位（left）。勿与入场码/Bot 入场混淆。"
+                        description="原演员解除绑定，席位变为停工可补（left）。勿与入场码/Bot 入场混淆。"
                         okText="离职解绑"
                         cancelText="取消"
                         okButtonProps={{ danger: true }}
@@ -1335,59 +1424,14 @@ export default function BotsRosterPage() {
         </div>
       )}
 
-      {issuedInvites.length ? (
-        <Card size="small" className="acb-bots-invite-list" title="已签发入场码" style={{ marginBottom: 12 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {issuedInvites.slice(0, 12).map((inv) => {
-              const st = (inv.status || (inv.revoked_at ? 'revoked' : 'active')).toLowerCase()
-              const revoked = st === 'revoked'
-              return (
-                <div
-                  key={inv.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    minHeight: 32,
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <Typography.Text style={{ fontFamily: 'var(--acb-font-mono, monospace)', fontSize: 13 }}>
-                    末四 ·{inviteTail(inv)}
-                  </Typography.Text>
-                  <Tag color={revoked ? 'default' : st === 'active' ? 'green' : 'orange'} style={{ margin: 0 }}>
-                    {inviteStatusCn(st)}
-                  </Tag>
-                  {!revoked ? (
-                    <Popconfirm
-                      title="吊销此入场码？"
-                      description="吊销后无法再用该码加入；已进席不受影响。"
-                      okText="吊销"
-                      cancelText="取消"
-                      okButtonProps={{ danger: true }}
-                      onConfirm={() => void onRevokeInvite(inv)}
-                    >
-                      <Button
-                        size="small"
-                        type="link"
-                        danger
-                        style={{ padding: 0 }}
-                        loading={revokingId === inv.id}
-                      >
-                        吊销
-                      </Button>
-                    </Popconfirm>
-                  ) : (
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      —
-                    </Typography.Text>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </Card>
-      ) : null}
+      <IssuedInvitesPanel
+        teamInvites={issuedInvites}
+        wsInvites={wsInvites}
+        teamSeats={teamSeats}
+        revokingId={revokingId}
+        onRevokeTeam={(inv) => void onRevokeInvite(inv)}
+        onRevokeWs={(inv) => void onRevokeWsInvite(inv)}
+      />
 
       <Collapse
         size="small"

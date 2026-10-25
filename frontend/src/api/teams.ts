@@ -60,6 +60,9 @@ export type TeamInvite = {
   /** 派生态，不落库 */
   status?: InviteStatus | string
   created_at?: string
+  /** 签发时锚定的席位 slug（列表分组用） */
+  role_hint?: string | null
+  seat_slug?: string | null
 }
 
 export type RedeemInviteResult = {

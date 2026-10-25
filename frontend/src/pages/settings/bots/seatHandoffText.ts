@@ -35,7 +35,7 @@ export function statusCn(s: string): string {
 export type SeatCardMeta = {
   roleName: string
   roleSlug?: string
-  boundLabel: string /** 已绑显示名或「空闲」 */
+  boundLabel: string /** 已绑显示名或「未进席」/「可补位」 */
   keyHint?: string /** 仅末四 / 前缀尾，勿完整 Key */
   claimedAt?: string | null
 }
@@ -81,4 +81,17 @@ export function buildHandoffCardText(opts: {
 
 export function roleDisplay(role: BotRole): string {
   return role.name || role.slug || '未命名席位'
+}
+
+/** SEAT_PANEL_UX P-R1：席卡三态（只认本队 roster；禁可补≈空闲） */
+export function seatOccupancyTagLabel(
+  kind: 'active' | 'empty' | 'left',
+  occupantName?: string | null,
+): string {
+  if (kind === 'active') {
+    const name = (occupantName || '').trim()
+    return name ? `在席 · ${name}` : '在席'
+  }
+  if (kind === 'left') return '停工可补'
+  return '空闲（从未占用）'
 }
