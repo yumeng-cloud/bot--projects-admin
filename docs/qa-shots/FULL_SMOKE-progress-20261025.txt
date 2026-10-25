@@ -10,7 +10,7 @@ env_probe:
   vite: http://127.0.0.1:5175 → 200
   api_healthz: http://127.0.0.1:8080/healthz → 200 {"status":"ok"}
 seed: admin@yumeng.tech (dogfood; NEVER owner)
-overall: PENDING (Wave A partial + Wave B project PASS†; A5 bare /join FAIL; C–H not run)
+overall: PENDING (Wave A partial + Wave B project PASS†; A5 bare /join retest PASS† @90cc85c; LANDING L-Q1 package still FAIL on §多机 copy; C–H not run)
 browser_run: Wave A+B computerUse 2026-10-25 Asia/Shanghai
 ================================================================
 
@@ -62,4 +62,28 @@ next:
   - Do NOT claim overall FULL_SMOKE PASS; Do NOT close LANDING
 shots_copied:
   docs/qa-shots/FULL_SMOKE-20261025-{landing-unauth,login-page,login-bad,home-authed,join-page,ws-entered,board,board-created,issue-detail,list,cycles,timeline,project-switch}.png
+# --- end block ---
+
+# --- run 2 · A5 /join retest after 90cc85c · computerUse (LANDING L-Q1 retest旁证) ---
+time_AsiaShanghai: 2026-10-25 ~15:04–15:06 Asia/Shanghai
+HEAD_at_run: 90cc85c (fix(fe): /join 无码不再死转「正在打开入场向导」)
+tester: QA (dogfood only; NEVER owner)
+groups_touched: A5 (+ LANDING L-Q1 join/visual/copy package)
+rows:
+  A5 PASS† — retest after 90cc85c; evidence: docs/qa-shots/LANDING-L-Q1-retest-join-bare-authed-20261025.png (+ join-bare-unauth / join-code-* ) — bare `/join` authed no longer infinite Spin「正在打开入场向导…」; form/wizard reachable
+  A4 note — unauth `/join` bare+code also green in same shot set (LANDING-L-Q1-retest-join-bare-unauth / join-code-unauth); FULL_SMOKE A4 row not formally closed here
+LANDING_package:
+  L-Q1 retest **FAIL** — docs/qa-shots/LANDING-L-Q1-retest-qa-20261025.txt
+  Join PASS† · Visual gates PASS† (SL-V3 e7da310) · FAIL only LQ1-4 §多机 lock title/body missing 「不是换机续聊」 and 「指挥」
+  FE 90cc85c · SL-V3 e7da310 · debt bc215de
+  Do NOT claim L-P1 close; Do NOT tick L-P1; Do NOT claim LANDING / FULL_SMOKE overall PASS
+blockers:
+  - A5 Spin hang: CLEARED @90cc85c (retest PASS†)
+  - LANDING L-Q1 still FAIL on §多机 copy lock (LQ1-4) — do NOT close LANDING / L-P1
+next:
+  - React/产品: fix §多机 title/body to债锁「多机分工，不是换机续聊」+「…统一调度指挥。」then L-Q1 re-retest
+  - Continue Wave C+ when ready
+  - Do NOT claim overall FULL_SMOKE PASS; Do NOT close LANDING
+shots_copied:
+  docs/qa-shots/LANDING-L-Q1-retest-{full,hero,home-authed,join-bare-authed,join-bare-unauth,join-code-authed,join-code-unauth}-20261025.png
 # --- end block ---

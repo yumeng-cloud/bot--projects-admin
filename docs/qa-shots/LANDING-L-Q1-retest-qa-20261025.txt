@@ -1,0 +1,94 @@
+LANDING / SITE_LANDING · L-Q1 复测 FAIL 纪要（computerUse @90cc85c / SL-V3 e7da310）
+时间：2026-10-25 15:06 Asia/Shanghai
+判定：**FAIL**（Join 已绿 · 视觉门绿 · **唯 §多机锁句 FAIL**；**不交 L-P1**；本文件不勾 L-P1）
+================================================================
+基线
+  FE sha：90cc85c3238a001f92fe6fde06e2dc113c3eb7fc
+         （fix(fe): /join 无码不再死转「正在打开入场向导」）
+  视觉放行：SL-V3 @e7da310386717bdcd77b888a36dd2d54a1fdff2f（图文加厚总监放行；专册 @bc215de）
+  债：docs/NEXT_WAVE_DEBT_LANDING.md @bc215dea6a15302d6f489f9070e4280ee7bd1ee1
+  清单：docs/qa-shots/LANDING-L-Q1-retest-checklist-20261025.txt
+  前次 L-Q1：PASS† @b7b20ea / SL-V3 e027f5a（**作废**·随图文重开；见 LANDING-L-Q1-qa-20261025.txt）
+  证据源：FE computerUse 复测（本目录 LANDING-L-Q1-retest-*-20261025.png）
+  禁主人：本跑未用主人账号作 tester（狗粮/箱测路径）
+
+Shot 索引（齐套 · 已落 docs/qa-shots/）
+  LANDING-L-Q1-retest-full-20261025.png            · 全页 / 价值区（含 §多机）
+  LANDING-L-Q1-retest-hero-20261025.png            · 首屏 Hero（LQ1-1 / LQ1-5）
+  LANDING-L-Q1-retest-home-authed-20261025.png     · 登录后后台（LQ1-2）
+  LANDING-L-Q1-retest-join-bare-authed-20261025.png · bare `/join` 已登录（Join 修复旁证）
+  LANDING-L-Q1-retest-join-bare-unauth-20261025.png · bare `/join` 未登录
+  LANDING-L-Q1-retest-join-code-authed-20261025.png · `/join?code=…` 已登录
+  LANDING-L-Q1-retest-join-code-unauth-20261025.png · `/join?code=…` 未登录
+
+----------------------------------------------------------------
+逐行（LQ1-1～LQ1-7 · 图文重开后复测）
+----------------------------------------------------------------
+| 行 | 判定 | 摘要 |
+| --- | --- | --- |
+| LQ1-1 | PASS† | 未认证 `/` = 完整营销 Landing（非 Login 墙 sole home）；Hero 大框示意可见 |
+| LQ1-2 | PASS† | 登录后 → workspace Home / 后台（既有 App；未卡官网） |
+| LQ1-3 | PASS† | `/join` 深链不破：bare + `?code=` · unauth + authed 均可达；**无**死转「正在打开入场向导」Spin（相对 FULL_SMOKE A5 FAIL @5dbc9ff 已消） |
+| LQ1-4 | **FAIL** | §多机锁句未齐：页上 **缺**债锁标题半句「不是换机续聊」与正文尾词「指挥」（见下） |
+| LQ1-5 | PASS† | 主标「育蒙协作看板」；眉题「人与 Agent，一支团队」纯文一行（禁 pill）；主 CTA「登录」 |
+| LQ1-6 | PASS† | 箱截齐套（7 帧 retest png）+ 本纪要；FE/SL-V3/债 sha 写明 |
+| LQ1-7 | PASS† | Forbidden：未用主人账号作 tester |
+
+视觉门（旁证 · 非 LQ1 行，记本跑所见）
+| 门 | 判定 | 摘要 |
+| --- | --- | --- |
+| SL-V1/V2/V3 | PASS† | 图文放行仍有效 @e7da310 · 专册 @bc215de；本跑全页/Hero 帧可见图文骨架（示意≥4 / 交替形态仍在）——**不挡本 FAIL**；FAIL 仅文案锁 |
+
+----------------------------------------------------------------
+LQ1-1 / LQ1-5 PASS† 证据
+----------------------------------------------------------------
+  · 未登录打开 `/` → 全页 Landing（非 sole Login 墙）
+  · 眉题 plain：「人与 Agent，一支团队」（无 accent 胶囊 pill）
+  · 主标：「育蒙协作看板」
+  · 主 CTA：「登录」
+  · 副标（SL-V3 放行口径）：「把人和 Agent 编进同一支班底，按席干活、多机分工、统一调度。」
+  箱截：LANDING-L-Q1-retest-hero-20261025.png · LANDING-L-Q1-retest-full-20261025.png
+
+----------------------------------------------------------------
+LQ1-2 PASS† 证据
+----------------------------------------------------------------
+  · 登录成功 → workspace home / 后台（既有 App 行为）
+  · 未卡在官网 Landing
+  箱截：LANDING-L-Q1-retest-home-authed-20261025.png
+
+----------------------------------------------------------------
+LQ1-3 PASS† 证据（Join 修复 · 相对 A5）
+----------------------------------------------------------------
+  · bare `/join` 未登录：短引导/表单可见，**非**无限 Spin
+  · bare `/join` 已登录：入场向导/表单可达，**非**死转「正在打开入场向导…」（消 FULL_SMOKE A5）
+  · `/join?code=…` unauth + authed：深链不破、不被 Landing 路由吞
+  箱截：
+    LANDING-L-Q1-retest-join-bare-unauth-20261025.png
+    LANDING-L-Q1-retest-join-bare-authed-20261025.png
+    LANDING-L-Q1-retest-join-code-unauth-20261025.png
+    LANDING-L-Q1-retest-join-code-authed-20261025.png
+  Note：FULL_SMOKE A5 旁证见 FULL_SMOKE-progress-20261025.txt 复测块；**不**因此宣称 FULL_SMOKE / LANDING 整体 PASS
+
+----------------------------------------------------------------
+LQ1-4 **FAIL** 证据（§多机锁句 · 苛评）
+----------------------------------------------------------------
+  债锁（NEXT_WAVE_DEBT_LANDING.md @bc215de · 产品锁文案表）：
+    · §多机标题：**「多机分工，不是换机续聊」**
+    · §多机正文：**「不同电脑认领不同角色干活，干完统一调度指挥。」**
+  computerUse 实得（全页/价值区帧）：
+    · 标题侧：**未见**完整半句「不是换机续聊」（锁否定对照缺失 → 续聊话术禁令未钉死在标题）
+    · 正文侧：**未见**尾词「指挥」（「统一调度指挥」被截短/漂成「统一调度」或等价弱句）
+  → 相对债锁 **双缺**：「不是换机续聊」+「指挥」= **FAIL**（非 caveat；非 Soft†）
+  → Join / 视觉绿 **不**掩护文案 FAIL；包仍 FAIL
+  箱截：LANDING-L-Q1-retest-full-20261025.png（§多机区）
+  禁：勿用「认领/统一调度 语义大致在」糊过锁句；产品锁表逐字位
+
+----------------------------------------------------------------
+Verdict
+----------------------------------------------------------------
+**FAIL** @ FE 90cc85c · SL-V3 e7da310 · 债 bc215de
+  PASS†：LQ1-1 · LQ1-2 · LQ1-3 · LQ1-5 · LQ1-6 · LQ1-7（含 Join 修复绿）
+  FAIL：LQ1-4（§多机标题/正文缺「不是换机续聊」与「指挥」）
+  视觉门：PASS†（旁证；不抬整体）
+  → **不交 L-P1**；本文件 / 本清单 / 债侧 **均不勾** L-P1；**不宣称** L-Q1 关 / LANDING 关
+One-line → 产品+React+总指挥：LANDING L-Q1 复测 **FAIL** @90cc85c / SL-V3 e7da310 / 债 bc215de；Join（含 bare）PASS†；视觉 PASS†；**唯 LQ1-4 §多机锁句 FAIL**（缺「不是换机续聊」+「指挥」）；**不交 L-P1**。
