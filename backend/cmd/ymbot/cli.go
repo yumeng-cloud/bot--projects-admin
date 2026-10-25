@@ -634,7 +634,7 @@ func cmdTeam(c *botclient.Client, args []string) error {
 func cmdTeamJoin(c *botclient.Client, args []string) error {
 	fs := newFS("team join")
 	code := fs.String("code", "", "团队入场码 ymt_…")
-	role := fs.String("role", "", "可选目标席位 slug；活跃占用 409 禁顶替")
+	role := fs.String("role", "", "可选目标席位 slug；在席占用 → 409 禁顶（请对方 seat leave）")
 	newSeat := fs.String("new-seat", "", "无空席且允许扩编时的新席 slug（默认 role_hint 或 seat-N）")
 	force := fs.Bool("force", false, "仅 stopped|left 清脏绑；活跃席即使传也不顶替")
 	idKey := fs.String("idempotency-key", "", "")
@@ -643,7 +643,7 @@ func cmdTeamJoin(c *botclient.Client, args []string) error {
 		return err
 	}
 	if strings.TrimSpace(*code) == "" {
-		return fmt.Errorf("用法: ymbot team join --code <ymt_…> [--role <slug>] [--new-seat <slug>] [--force]\n空手上场：redeem→team pull→seat enter→handoff get；无钥自动发 ymk_，有钥续队不重发；活跃席禁 force")
+		return fmt.Errorf("用法: ymbot team join --code <ymt_…> [--role <slug>] [--new-seat <slug>] [--force]\nI-M1：有 K 用（持 ymk_ 不重发）/ 无则生成一把 / 在席禁顶（409→seat leave）；--force 仅 stopped|left 脏绑，永不顶活跃")
 	}
 	applyIDKey(c, *idKey)
 	v, err := c.TeamJoin(botclient.TeamJoinOpts{

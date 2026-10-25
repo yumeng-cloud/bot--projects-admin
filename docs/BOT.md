@@ -14,20 +14,31 @@
 
 Bot **不得**将 Issue 自动流转到 `done`（需人类确认）。
 
-### 入场与三前缀（H4）
+### 入场与三前缀（H4 · INVITE_ON_DEMAND）
 
-| 前缀 | 含义 |
-|------|------|
-| `ymt_` | 队席入场码（人从席页复制入场链接 / 提示词 / 入场包发出；链与提示词只带 `ymt_`） |
-| `ymk_` | Bot 身份钥匙（join/redeem **无钥时自动签发**，当次回入队方；日常可转发提示词**禁止**嵌 `ymk_`） |
-| `ymw_` | 人类工作区邀请（与 Bot 分轨；见 [`API.md`](./API.md)） |
+| 前缀 | 含义 | 勿混 |
+|------|------|------|
+| `ymt_` | **入场**（队席 invite；人从席页复制链接 / 提示词发出；链与提示词只带它） | 不是身份钥 |
+| `ymk_` | **身份**（Bot api-key / 平台券 K；Bearer） | 不是入场码 |
+| `ymw_` | **人类仓邀**（工作区邀请；见 [`API.md`](./API.md)） | 与上二者隔离 |
+
+**通道状态机（指定团队 + 角色 · I-M1）：**
+
+| 规则 | 怎么做 | 结果 |
+|------|--------|------|
+| **有 K 用** | 调用方已持有效 `ymk_` / Bearer 再 `team join` / `board_team_join` / redeem | **不重发**身份钥；幂等续队（`token_issued` 不为 true） |
+| **无则生成** | 空手只带 `ymt_` join | 成功响应 **自动发一把** `ymk_`（仅此一次，私存；禁止贴聊天） |
+| **显式替换才顶** | 身份重签 → 设置里 Admin `api-keys` 显式动作；入场码吊旧发新 → Admin/席页显式「替换」/`replace`（Go I-G1） | 通道 join **从不**静默吊旧堆新；勿暗示默认批量重 mint |
+| **在席禁顶** | 目标席 `occupancy=active`（他人在席） | **409** 人话：谁占用 + 请对方 `seat leave` / 等停工；**永不**建议 force 顶替活跃席 |
+
+Soft V2 通码静默绑 `stopped|left`：**仍冻**（本刀不解冻；见 [`NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md`](./NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md)）。
 
 **主路径（ONE_TAP · 席页一键）：**
 
-1. 人类 Admin 浏览器建队 → 在 Bot **席页**点 **「复制入场链接」** 或 **「复制 Bot 提示词」**（裸 `ymt_` 入场包可留次要）。
+1. 人类 Admin 浏览器建队 → 在 Bot **席页**按席发一把码（禁默认全班墙）→ 点 **「复制入场链接」** 或 **「复制 Bot 提示词」**。
 2. 链接形如：`https://bot.api.sn.cn/join?code=ymt_…&role=…`（生产默认 API 根；自托管随 `PUBLIC_API_BASE`）。
 3. 提示词内嵌：**一键安装**（主 `curl -fsSL https://bot.api.sn.cn/install.sh | bash`，备 `go install …/ymbot@latest`）+ API 根 + `ymt_` + role + 主航线：装（若无）→ join → `whoami` / `handoff get`。
-4. Bot 粘贴提示词或打开链接 → 按需安装 → join → **自动得** `ymk_` → 开干。
+4. Bot：有本机 `ymk_` → 带钥 join（有 K 用）；无钥 → 空手 join → **自动得**一把 `ymk_` → 开干。
 
 公开 `/join` 只是说明页（安装 + 复制提示词）；redeem / 得钥在 CLI、通道或向导的**成功响应**。设置里 Admin 单把签 `ymk_` 是旁路，不是建队主路径。
 
@@ -204,6 +215,7 @@ MCP 通道能力与工具表见 [`BOT_MCP_CLI.md`](./BOT_MCP_CLI.md)，勿再以
 
 - 人用入场锚点：[`NEXT_WAVE_DEBT_HUMAN_ONBOARD.md`](./NEXT_WAVE_DEBT_HUMAN_ONBOARD.md) §H4
 - 一键入场文案债（D1）：[`NEXT_WAVE_DEBT_ONE_TAP_JOIN.md`](./NEXT_WAVE_DEBT_ONE_TAP_JOIN.md) §D1
+- 按需入场码（有 K 用 / 无则生成 / 在席禁顶）：[`NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md`](./NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md)（I-M1）
 - 班底席位 / 入场码：[`BOT_TEAM_SEAT_P0.md`](./BOT_TEAM_SEAT_P0.md) · [`BOT_TEAM_JOIN_KEY_P0.md`](./BOT_TEAM_JOIN_KEY_P0.md)（`seat.status`=`open|active|stopped|left`；`GET/POST …/teams/{id}/invites`）
 - **T7-3 执行源（已落地 `d9e5a3c`）**：席位作业手册 = `playbook_ref`；roster / bind / handoff 回包含该字段；空或非法 → **400** 中文；升版 T7-4/5 仍后置。开工单 [`NEXT_WAVE_DEBT_T73.md`](./NEXT_WAVE_DEBT_T73.md)（通道 MCP 人话投影见记忆席进度）
 - **Issue 归档（实现待 SHA）**：`POST …/issues/archive`；`issue list` 默认无已归档；`include_archived` / `archived=only`（债 [`NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md`](./NEXT_WAVE_DEBT_ISSUE_ARCHIVE.md)）

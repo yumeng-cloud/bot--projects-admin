@@ -106,6 +106,19 @@ P0 合计 **12** 项能力（鉴权自检 + Issue×5含叶子 claim + 评论×2 
 
 MCP / CLI **不得**实现登录密码流；只接受 API Key（人类调试可用 JWT，但不作为 Bot 路径文档主推）。
 
+### 5.1 入场 join（INVITE_ON_DEMAND · I-M1）
+
+通道：`ymbot team join --code <ymt_…>` / MCP `board_team_join`（= redeem → pull → enter → handoff get）。
+
+| 规则 | 怎么做 | 打开哪 | 结果 |
+|------|--------|--------|------|
+| **有 K 用** | 已设 `YMBOT_API_KEY=ymk_…`（或 MCP env Bearer）再 join | CLI / `board_team_join` | **不重发**钥；瘦文本可出 `identity=续用既有 ymk_（有 K 用，未重发）` |
+| **无则生成** | 不设 Key，只带 `code=ymt_…` | 同上 | 成功回一把 `ymk_`（`token_issued=true`，仅此一次） |
+| **显式替换才顶** | 身份重签走 Admin `api-keys`；入场码吊旧发新走席页/API 显式替换 | 设置 / 席页（非 join） | join **不**静默吊旧堆新 |
+| **在席禁顶** | `--role` 指向他人 active 席（即使传 `--force`） | join / `board_seat_enter` | **409** 中文：谁占用 + 请对方 `seat leave`；永不教 force 顶活跃 |
+
+三分轨：`ymt_`=入场 · `ymk_`=身份 · `ymw_`=人类仓邀。Soft V2 通码静默补位：**仍冻**。权威债：[`NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md`](./NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md)；人话总览：[`BOT.md`](./BOT.md)「入场与三前缀」。
+
 ---
 
 ## 6. 「好用」体验标准

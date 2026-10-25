@@ -1150,11 +1150,11 @@ func pickJoinSeat(seats []map[string]any, myMemberID string, opts TeamJoinOpts, 
 			return found, role, false, false, nil
 		case "active":
 			holder := strField(found, "bound_display_name")
-			msg := fmt.Sprintf("席位 %s 占用中，禁止顶替", role)
+			msg := fmt.Sprintf("席位 %s 在席占用中，禁止顶替", role)
 			if holder != "" {
-				msg = fmt.Sprintf("席位 %s 占用中（%s），禁止顶替；请对方 seat leave 或等停工后再进", role, holder)
+				msg = fmt.Sprintf("席位 %s 在席占用中（%s），禁止顶替；请对方 seat leave 或等停工后再进（通道不提供 force 顶活跃）", role, holder)
 			} else {
-				msg = msg + "；请对方 seat leave 或等停工后再进"
+				msg = msg + "；请对方 seat leave 或等停工后再进（通道不提供 force 顶活跃）"
 			}
 			return nil, "", false, false, &APIError{Status: 409, Code: "conflict", Message: msg}
 		default:
@@ -1260,6 +1260,9 @@ func (c *Client) TeamJoin(opts TeamJoinOpts) (map[string]any, error) {
 		if tok := strings.TrimSpace(redeem.Token); tok != "" {
 			out["token"] = tok
 		}
+	} else {
+		// 有 K 用：持有效 ymk_ redeem 不重发（I-M1）
+		out["identity_reused"] = true
 	}
 	if redeem.RoleHint != "" {
 		out["role_hint"] = redeem.RoleHint
@@ -1276,7 +1279,7 @@ func (c *Client) TeamJoin(opts TeamJoinOpts) (map[string]any, error) {
 			return nil, &APIError{
 				Status:  409,
 				Code:    "conflict",
-				Message: fmt.Sprintf("席位 %s 占用中，禁止顶替（join 不对活跃席传 force）", slug),
+				Message: fmt.Sprintf("席位 %s 在席占用中，禁止顶替（join 不对活跃席传 force；请对方 seat leave）", slug),
 			}
 		}
 		// --force 仅 stopped|left；活跃路径上面已 return
@@ -1333,7 +1336,9 @@ func FormatTeamJoinText(v map[string]any) string {
 	}
 	if tok := strField(v, "token"); tok != "" {
 		fmt.Fprintf(&b, "token=%s\n", tok)
-		b.WriteString("token_issued=true（仅此一次，私存；禁止贴进聊天）\n")
+		b.WriteString("token_issued=true（无则生成·仅此一次，私存；禁止贴进聊天）\n")
+	} else if v["identity_reused"] == true || v["token_issued"] == false {
+		b.WriteString("identity=续用既有 ymk_（有 K 用，未重发）\n")
 	}
 	if v["seat_created"] == true {
 		b.WriteString("seat_created=true\n")

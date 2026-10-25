@@ -378,3 +378,57 @@ func TestNextAutoSeatSlug(t *testing.T) {
 		t.Fatalf("%s", g)
 	}
 }
+
+func TestFormatTeamJoinTextIdentityReused(t *testing.T) {
+	txt := FormatTeamJoinText(map[string]any{
+		"role": "frontend", "step": "redeem→team pull→seat enter→handoff get",
+		"identity_reused": true,
+	})
+	if !strings.Contains(txt, "有 K 用") || !strings.Contains(txt, "未重发") {
+		t.Fatalf("want 有 K 用 messaging, got %s", txt)
+	}
+	if strings.Contains(txt, "token=") {
+		t.Fatalf("must not print token when reused: %s", txt)
+	}
+}
+
+func TestTeamJoinIdentityReusedWhenKeyPresent(t *testing.T) {
+	c := newJoinTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/v1/team-invites/redeem":
+			if ah := r.Header.Get("Authorization"); !strings.HasPrefix(ah, "Bearer ymk_") {
+				t.Errorf("expected Bearer ymk_ on redeem, got %q", ah)
+			}
+			// 有 K 用：服务端不重发
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"workspace_id": "ws-new", "team_id": "team-1", "allow_expand_seat": false,
+				"member_id": "member-me", "token_issued": false,
+			})
+		case strings.HasSuffix(r.URL.Path, "/roster/ensure"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"roster": []map[string]any{
+					{"id": "seat-fe", "role_slug": "frontend", "bound_member_id": "member-me"},
+				},
+			})
+		case strings.Contains(r.URL.Path, "/handoff"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"handoff": map[string]any{"memories": []any{}, "todos": []any{}, "issues": []any{}}})
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	out, err := c.TeamJoin(TeamJoinOpts{Code: "ymt_reuse", Role: "frontend"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out["identity_reused"] != true {
+		t.Fatalf("want identity_reused, got %#v", out)
+	}
+	if out["token_issued"] == true || strField(out, "token") != "" {
+		t.Fatalf("must not remint: %#v", out)
+	}
+	txt := FormatTeamJoinText(out)
+	if !strings.Contains(txt, "有 K 用") {
+		t.Fatalf("text=%s", txt)
+	}
+}
+

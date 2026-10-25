@@ -1,0 +1,22 @@
+INVITE_ON_DEMAND · I-M1 通道对齐旁证 2026-10-25 Asia/Shanghai
+债: docs/NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md
+范围: CLI / MCP / BOT.md / BOT_MCP_CLI.md 人话契约；botclient TeamJoin 瘦输出
+
+怎么做:
+  1. 读 BOT.md「入场与三前缀」状态机表（有 K 用 / 无则生成 / 显式替换才顶 / 在席禁顶）
+  2. ymbot --help 可见「有 K 用 / 无则生成 / 在席禁顶」
+  3. board_team_join description 同契约
+  4. go test ./internal/botclient/ -run 'TeamJoin|FormatTeamJoin|PickJoin|Classify' + ./cmd/ymbot/ -run HelpLists
+
+打开哪:
+  - docs/BOT.md · docs/BOT_MCP_CLI.md §5.1
+  - backend/cmd/ymbot/{main,cli,mcp}.go
+  - backend/internal/botclient/team.go（FormatTeamJoinText / pickJoinSeat 409）
+
+结果:
+  - 持 ymk_ redeem/join → identity_reused / 未重发（有 K 用）
+  - 空手 join → token_issued 一把（无则生成；既有 BATCH_CREW/ONE_TAP）
+  - active 席 → 409 中文 + seat leave；无 force 顶活跃建议
+  - Soft V2 通码静默绑 stopped|left：文档写明仍冻；代码未解冻
+
+未做: I-G1 Create/Lookup 闸；I-R* FE；invites/batch

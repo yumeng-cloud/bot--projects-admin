@@ -151,7 +151,7 @@ func mcpTools() []map[string]any {
 		{"name": "board_team_pull", "description": "主航线①：按团队 UUID 拉班底（slug=席位；幂等 ensure；不清 memory）", "inputSchema": obj(map[string]any{
 			"team_uuid": str, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "team_uuid")},
-		{"name": "board_team_join", "description": "空手上场封装：redeem(ymt_)→team pull→seat enter→handoff get；活跃席禁顶替；空手自动发 ymk_，有钥续队不重发", "inputSchema": obj(map[string]any{
+		{"name": "board_team_join", "description": "入场封装（I-M1）：redeem(ymt_)→pull→enter→handoff；有 K 用（持 ymk_ 不重发）/ 无则生成一把 / 在席禁顶（409 人话+seat leave）；显式替换才吊旧发新（非本 tool）", "inputSchema": obj(map[string]any{
 			"code": str, "role": str, "new_seat": str, "force": bol, "idempotency_key": idKey, "full": full, "ids": ids,
 		}, "code")},
 		{"name": "board_team_templates", "description": "内置班底模板清单（key/席位 slug；瘦输出）", "inputSchema": obj(map[string]any{
