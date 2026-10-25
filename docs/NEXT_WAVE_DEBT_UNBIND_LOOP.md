@@ -73,7 +73,7 @@ left/stopped/open ◄── 补位仅显式补位码/合法 force（**不**自�
 - [x] **U-R1** FE 移除后席态 · FE `091dd71` · 产品勾
 - [x] **U-R2** FE 文案 · FE `091dd71` · 产品勾
 - [x] **U-Q1** QA 自测 · PASS† `docs/qa-shots/UNBIND_LOOP-U-Q1-qa-retest-20261025.txt` · 产品待 U-P1
-- [ ] **U-P1** 关单
+- [x] **U-P1** 关单 · 2026-10-25 · Go `9d49bdd` + ymbot `1065066` + FE `091dd71` + QA `d37b090`
 
 ## QA 验收清单（U-Q1 必跑 · 禁甩用户）
 
@@ -98,8 +98,13 @@ left/stopped/open ◄── 补位仅显式补位码/合法 force（**不**自�
 
 ## 进度注记
 
+- 2026-10-25 08:37 · **U-P1 关单 · UNBIND_LOOP 整包关** QA PASS† `d37b090`。关键：移除成员后再 leave 不再「只能解绑自己」。
 - 2026-10-25 08:37 · **QA U-Q1 PASS†** 全链路自跑（API 矩阵 UQ1-1～8/7a/7b 硬绿；U-M1/U-R 源码+单测 soft†；二进制含 `9d49bdd` 重建）。禁甩用户。等产品 **U-P1**。
 - 2026-10-25 08:34 · **产品勾 U-G1～U-G4** Go `9d49bdd`（本机复跑 UG1–4+AdminPath PASS）。软债搁置：级联非单 SQL 事务（FK SET NULL 兜底，不挡本刀）。
 - 2026-10-25 08:34 · **产品勾 U-M1** `1065066` + **确认 U-R1/U-R2** `091dd71`。码齐 → 开 **QA U-Q1** 自跑全链路（禁甩用户）。
 - 2026-10-25 08:30 · 产品拍板开刀。根因：移除成员不级联 → 脏绑 → 403「只能解绑自己绑定的席位」。LOGIN_REFRESH 并行。Soft 三件仍冻。
 - 2026-10-25 08:35 · FE U-R1/U-R2：Settings 移除后 `emitMemberRemoved` → 班底页乐观清绑+reload；stop/unbind skipToast + U6/U5/U4 人话。等 Go U-G1～U-G3 入后行为自然对齐。
+
+## 关单进度
+
+**整包关** · U-G1～G4 / U-M1 / U-R1～R2 / U-Q1 / U-P1 齐。软债：级联非单 SQL 事务搁置。Soft 三件仍冻。MOBILE_RESPONSIVE 另轨并行。
