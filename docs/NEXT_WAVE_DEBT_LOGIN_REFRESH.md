@@ -51,7 +51,7 @@
 - [x] **L5** 箱截 `login-refresh.png` (+register) · 产品勾
 - [x] **L6** 视觉放行 · 审图 PASS + 总监放行 `005a3c1` · 产品勾
 - [x] **L7** QA spotcheck PASS† · Soft† 源码+箱截 · `docs/qa-shots/LOGIN_REFRESH-L7-spotcheck.md` · FE `005a3c1`
-- [ ] **L8** 关单
+- [x] **L8** 关单 · 2026-10-25 · FE `005a3c1` + QA `4ccd53c`
 
 ## 派工
 
@@ -72,9 +72,14 @@
 
 ## 进度注记
 
+- 2026-10-25 08:32 · **L8 关单 · LOGIN_REFRESH 整包关** FE `005a3c1` + QA `4ccd53c` / L6 总监放行。Soft 三件仍冻。
 - 2026-10-25 08:32 · **L7 PASS†** QA Soft†：复用 `login-refresh.png` + `login-refresh-register.png`；主名/副标/登录注册可进齐；纪要 `docs/qa-shots/LOGIN_REFRESH-L7-spotcheck.md`。开 **产品 L8**。
 - 2026-10-25 08:31 · **L6 放行** 审图自审 PASS → 视觉总监放行（两帧对照尺子）。开 **QA L7**。
 - 2026-10-25 08:30 · **产品勾 L1–L5** FE `005a3c1`：箱截核过——主名/副标/卡宽400/冷灰白卡齐；无 Linear/Grok Bot。开 **L6** 审图自审→总监放行；L7 等 L6。
 - 2026-10-25 08:19 · **视觉尺子锁**：副标定「人与 Bot 同场协作」；卡宽定 **400**；冷灰+白卡；总监尺子已产品拍认。React 在干 L1–L5。
 - 2026-10-25 08:20 · 产品拍板开刀；对齐已拉视觉总监 / 审图 / React；无实质反对则按本表干。Soft 三件仍冻。
 - 2026-10-25 · React L1–L5 已交：主标题「育蒙协作看板」；副标「人与 Bot 同场协作」；冷灰 `--acb-bg-layout` + 白卡宽 400；`login.css`；箱截 `docs/qa-shots/login-refresh.png` + `login-refresh-register.png`；砍 Linear/Grok Bot 文案。FE `005a3c1`（已 push main）。勾选留给产品 / L6 审图。
+
+## 关单进度
+
+**整包关** · L1–L8 齐（FE `005a3c1` + L6 总监放行 + QA `4ccd53c` Soft†）。Soft 三件仍冻。UNBIND_LOOP 另轨并行。
