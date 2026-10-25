@@ -61,9 +61,9 @@
 
 ## 产品勾选
 
-- [ ] **X-G1** 成员∈ws 硬门
-- [ ] **X-G2** 单测
-- [ ] **X-G3** Mount/resolveMember
+- [x] **X-G1** 成员∈ws 硬门
+- [x] **X-G2** 单测
+- [x] **X-G3** Mount/resolveMember
 - [x] **X-M1** 通道
 - [ ] **X-R1** 切仓清态
 - [ ] **X-R2** BotDetail
@@ -90,6 +90,7 @@
 
 ## 进度注记
 
+- 2026-10-25 10:23 · **勾 X-G1～G3** Go `fae4e48`（与 X-R* 同提交）：assertMemberInWorkspace 写/读 404；MountWiki/Time/Bots/Teams `authAny(wsMem)`；resolveMember mid∈path ws；Bot Key 错仓 403。CLI/MCP 未动（X-M1）。
 - 2026-10-25 10:21 · **勾 X-M1** 通道 `47f0c73`：禁软吞 403/404；人话隔离；证据 `WS_ISOLATION-XM1-channel-20261025.txt`。写拒闸仍等 X-G1。
 - 2026-10-25 10:20 · **勾 X-I1** Issue `f7474d9`：跨仓 Get 404 + List 隔离契约单测；席报 live curl 齐（维持 404）。
 - 2026-10-25 10:20 · Go 三点洞属实确认入 X-G3（含 MountWiki/Time）；写 IDOR 优先堵。
