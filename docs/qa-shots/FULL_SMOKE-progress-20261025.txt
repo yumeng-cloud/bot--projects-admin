@@ -1,4 +1,4 @@
-FULL_SMOKE_20261025 · progress log (empty template)
+FULL_SMOKE_20261025 · progress log
 ================================================================
 wave: FULL_SMOKE_20261025
 checklist: docs/qa-shots/FULL_SMOKE-checklist-20261025.md
@@ -10,21 +10,56 @@ env_probe:
   vite: http://127.0.0.1:5175 → 200
   api_healthz: http://127.0.0.1:8080/healthz → 200 {"status":"ok"}
 seed: admin@yumeng.tech (dogfood; NEVER owner)
-overall: PENDING
-browser_run: NOT STARTED (checklist skeleton only)
+overall: PENDING (Wave A partial + Wave B project PASS†; A5 bare /join FAIL; C–H not run)
+browser_run: Wave A+B computerUse 2026-10-25 Asia/Shanghai
 ================================================================
 
 # Append one block per run / retest. Do not invent PASS† without evidence.
 
-# --- run template ---
-# time_AsiaShanghai:
-# HEAD_at_run: <git rev-parse --short HEAD>
-# tester: QA (seed/dogfood only)
-# groups_touched: A|B|C|D|E|F|G|H
-# rows:
-#   <ID> PENDING|PASS†|FAIL — evidence: <png/txt path> — note:
-# blockers:
-# next:
-# --- end block ---
+# --- run 1 · Wave A (auth) + Wave B (project) · computerUse ---
+time_AsiaShanghai: 2026-10-25 ~14:52–14:58 Asia/Shanghai
+HEAD_at_run: 2e45f83 (pre-commit; docs-only update follows)
+tester: QA (seed admin@yumeng.tech; dogfood only)
+groups_touched: A|B|C (computerUse waves named A=auth, B=project → checklist A/B/C)
+fixture:
+  ws: ba1481c49148aba9553ba3811406b69f (育蒙科技)
+  project: b1e996fb8ba9c350e249f7a862425a67 (示例项目)
+  issue_created: YM-33 FULL-SMOKE-B-20261025-145528
 
-# (no runs yet)
+rows:
+  A1 PASS† — evidence: docs/qa-shots/FULL_SMOKE-20261025-landing-unauth.png — unauth Landing OK
+  A2 PASS† — evidence: FULL_SMOKE-20261025-login-page.png + login-bad.png + home-authed.png — bad pwd Toast「邮箱或密码错误」; seed login → Home 8 workspaces
+  A3 PENDING — register Tab not in this run
+  A4 PENDING — unauth /join (+ L-Q1 `/join?code=ymt_dummy`) product track; not closed here
+  A5 FAIL — evidence: docs/qa-shots/FULL_SMOKE-20261025-join-page.png (/tmp/full-smoke/join-page.png) — bare `/join` while authed → infinite Spin「正在打开入场向导…」>20s. Note: JoinPage.tsx when authed+valid code redirects; when codeError should show form — investigate if empty code fails validate then still shows only Spin for authed path.
+  A6 PENDING — protected deep-link unauth not in this run
+  B1 PASS† — evidence: FULL_SMOKE-20261025-home-authed.png — Home 8 workspaces
+  B2 PENDING
+  B3 PENDING
+  B4 PASS† — evidence: FULL_SMOKE-20261025-ws-entered.png + project-switch.png — enter 育蒙科技; project switch SQ1A no bleed
+  B5 PENDING
+  C1 PASS† — evidence: FULL_SMOKE-20261025-board.png — 看板 OK
+  C2 PASS† — evidence: FULL_SMOKE-20261025-list.png — 列表 OK
+  C3 PASS† — evidence: FULL_SMOKE-20261025-cycles.png — 周期 OK (minor: no「新建周期」button)
+  C4 PASS† — evidence: FULL_SMOKE-20261025-timeline.png — 排期 OK
+  C5 PASS† — evidence: FULL_SMOKE-20261025-board-created.png — created YM-33 FULL-SMOKE-B-20261025-145528
+  C6 PASS† — evidence: FULL_SMOKE-20261025-issue-detail.png — desc + status「进行中」OK (minor: leaf badge「叶」; desc orange italic)
+  C7 PASS† — evidence: FULL_SMOKE-20261025-issue-detail.png — comment「smoke comment」OK
+  C8–C10 PENDING
+  D*–H* PENDING
+
+minors (not FAIL):
+  - favicon 404
+  - Inter fonts tunnel fail
+  - cycles: no「新建周期」button
+  - issue detail: leaf badge「叶」; desc orange italic
+
+blockers:
+  - A5 bare `/join` authed Spin hang (React JoinPage empty-code path) — do NOT close LANDING; L-Q1 still testing `/join?code=ymt_dummy`
+next:
+  - Fix/investigate JoinPage authed+empty code Spin
+  - Continue Wave C+ (Wiki/Time/Settings/Bots/Admin) when ready
+  - Do NOT claim overall FULL_SMOKE PASS; Do NOT close LANDING
+shots_copied:
+  docs/qa-shots/FULL_SMOKE-20261025-{landing-unauth,login-page,login-bad,home-authed,join-page,ws-entered,board,board-created,issue-detail,list,cycles,timeline,project-switch}.png
+# --- end block ---
