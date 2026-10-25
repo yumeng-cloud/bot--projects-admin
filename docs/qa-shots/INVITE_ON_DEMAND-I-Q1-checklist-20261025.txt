@@ -1,7 +1,7 @@
 INVITE_ON_DEMAND · I-Q1 验收骨架 2026-10-25（对齐债 docs/NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md · 开刀 d7c35c4 / 挂钩 297bfc5）
 气质：入场码是钥匙不是海报——要一把才开一把。
-判定：**Soft†**（IQ1-3/5 PASS† @1257830；IQ1-4 Soft†/FAIL @7f1e576：A/C PASS† · B ymk_ Lookup FAIL·React；Go I-G1 API PASS† @a034a15）· 2026-10-25 11:32 Asia/Shanghai
-FE sha：7f1e576（IQ1-4 retest）· 前次 Soft† 1257830 · Go sha：a034a152a1fd171ef3c97a816a7c7ba392e39d90 · 全纪要：INVITE_ON_DEMAND-I-Q1-FE-qa-20261025.txt + INVITE_ON_DEMAND-I-Q1-IG1-api-qa-20261025.txt + INVITE_ON_DEMAND-I-Q1-retest-IQ1-35-20261025.txt + INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-20261025.txt
+判定：**PASS†**（IQ1-1～IQ1-8 全绿 · IQ1-4 含 ymk_ Lookup retest @d99e14b；I-G1 API PASS† @a034a15）· 2026-10-25 11:37 Asia/Shanghai
+FE sha：d99e14b（IQ1-4 B ymk_ 关绿）· 7f1e576（IQ1-4 A/C）· 1257830（IQ1-3/5）· b0a4d3d（I-R1～R4）· Go sha：a034a152a1fd171ef3c97a816a7c7ba392e39d90 · 总纪要：INVITE_ON_DEMAND-I-Q1-qa-20261025.txt
 ================================================================
 前置：
 - React I-R1～R4 + Go I-G1 入 main 且可跑后再全表自点。
@@ -23,13 +23,13 @@ FE sha：7f1e576（IQ1-4 retest）· 前次 Soft† 1257830 · Go sha：a034a152
 A · 建队默认不堆码（I-R1 主凶）
 [x] IQ1-1 PASS† 建队（模板有空席）成功同帧：**不**自动 setCrewPackOpen；**不**强制 CrewPackRevealModal；**不** auto issueCrewPack 循环 POST …/invites
     期望：无 ≈模板空席数～叠历史≈18 的 ymt_ 墙；无「一开队就全班吐码」
-    证据：箱截 INVITE_ON_DEMAND-I-Q1-create-no-wall-*.png + 网络无批量 invites
+    证据：箱截 INVITE_ON_DEMAND-I-Q1-create-no-wall-*.png + 网络无批量 invites · FE b0a4d3d
     附：若仍见「全班入场包」入口 → 须为二级，且勾选空席确认后才签（I-R4；禁无确认一键 N 签）
 
 B · 按需一码（I-R2 / I-G1 Create）
 [x] IQ1-2 PASS† 指定团队+角色/席：用户显式「发一把」→ **仅 1** 枚 invite（ymt_）；禁静默加堆
     期望：一次点击 / 一次 CTA = 一码；List 该席有效增量 ≤1（或替换见 IQ1-4）
-    证据：箱截 + POST …/invites 单次 1 响应；禁 invites/batch
+    证据：箱截 + POST …/invites 单次 1 响应；禁 invites/batch · FE b0a4d3d
 
 C · 列表人话（I-R3 / I-G1 List label）
 [x] IQ1-3 PASS† IssuedInvitesPanel（或等价列表）显示人话 label（席显示名 / 角色中文）；脏串永不渲染
@@ -38,25 +38,24 @@ C · 列表人话（I-R3 / I-G1 List label）
     纪要：INVITE_ON_DEMAND-I-Q1-retest-IQ1-35-20261025.txt
 
 D · K 状态机 + 活跃席（I-R2 / I-G1 / 主人硬约束）
-[x] IQ1-4 Soft†/FAIL 指定团队+角色状态机（retest @7f1e576 / fixture IQ14-EntryFixture-20261025）
-    · 有可用平台券 K（ymk_）→ Lookup/复用/inspect，**不** mint 新码  → **FAIL**（active 后端零 invite CTA；Lookup 未调；API 会返 ymk_）
-    · 无 K → 生成一枚（ymt_ 入场，或按需另开 ymk_；路径分家） → PASS† C pm 404→Create mint 一枚
-    · 有有效 ymt_ → 复用 Modal；不静默再签 → PASS† A frontend Modal ·5469；GET entry 200；无 POST
+[x] IQ1-4 PASS† 指定团队+角色状态机（最终 @d99e14b / fixture IQ14-EntryFixture-20261025）
+    · 有可用平台券 K（ymk_）→ Lookup/复用/inspect，**不** mint 新码  → PASS† B @d99e14b：CTA「查用身份钥匙」在席+drawer；Modal「已有身份钥匙可查用」·66c7；GET entry 200；无 POST invites
+    · 无 K → 生成一枚（ymt_ 入场，或按需另开 ymk_；路径分家） → PASS† C @7f1e576 pm 404→Create mint 一枚
+    · 有有效 ymt_ → 复用 Modal；不静默再签 → PASS† A @7f1e576 frontend Modal ·5469；GET entry 200；无 POST
     · 显式「替换」→ 先吊旧再发新 1；不替换可直接发新 1（勿堆垃圾）
     · **优先平台 K**；ymt_/ymk_/ymw_ 三分轨勿混
-    证据：INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-{ymt,ymk,pm-create}-20261025.png · 纪要 INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-20261025.txt · FE 7f1e576 · Go a034a15
-    Defect→React：active+有 ymk_ 须保留查用 CTA（禁 mint ≠ 禁 Lookup）
+    证据：INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-{ymt,ymk,pm-create}-20261025.png · INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-ymk-d99e14b-20261025.png · 总纪要 INVITE_ON_DEMAND-I-Q1-qa-20261025.txt · FE d99e14b/7f1e576 · Go a034a15
 [x] IQ1-5 PASS† 活跃席禁顶替：occupancy=active 再 invite → **409**（或 UI 明确禁 mint）；**永不** displace active seat
     证据：retest @1257830 · INVITE_ON_DEMAND-I-Q1-retest-IQ1-5-20261025.png · active「后端」隐藏入场链接/提示词；无 mint POST；drawer 无 mint
     纪要：INVITE_ON_DEMAND-I-Q1-retest-IQ1-35-20261025.txt
 
 E · 全班包二级（I-R4 · 非删入口）
 [x] IQ1-6 PASS† 「全班入场包」若保留：二级入口 + 勾选空席确认后才签发；无确认不得 N 签；不物理删除入口
-    证据：箱截确认步 + 确认前后 invites 计数
+    证据：箱截确认步 + 确认前后 invites 计数 · FE b0a4d3d
 
 F · 纪律 / 证据门
 [x] IQ1-7 PASS† **Forbidden**：全程禁用主人账号作 tester；用狗粮/箱测账号
-[x] IQ1-8 Soft†纪要已写（非全绿·B ymk_ Lookup FAIL）自跑+retest 完成：本目录箱截齐套 + 纪要写清 FE/Go sha · 逐行；全绿再交产品 I-P1
+[x] IQ1-8 PASS† 全绿纪要+箱截齐套：本目录箱截 + INVITE_ON_DEMAND-I-Q1-qa-20261025.txt 写清 FE/Go sha · 逐行；**交产品 I-P1**（本清单不勾 I-P1）
 
 关：全绿 PASS† 纪要 + 箱截后交产品 I-P1。（本清单不改 I-P1）
-状态：FE Soft† @7f1e576 · IQ1-3/5 PASS† · IQ1-4 Soft†/FAIL（A/C PASS† · B ymk_ Lookup FAIL·React）· I-G1 API PASS† · **不交 I-P1**
+状态：FE PASS† @d99e14b · IQ1-1～IQ1-8 全绿 · IQ1-4 A/B/C PASS†（ymk_ Lookup ·66c7）· I-G1 API PASS† @a034a15 · **不交 I-P1**

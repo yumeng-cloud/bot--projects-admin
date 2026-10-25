@@ -109,7 +109,7 @@
 - [x] **I-R3** 人话 label + 空态 CTA
 - [x] **I-R4** 全班包二级确认
 - [x] **I-M1** 通道对齐
-- [ ] **I-Q1** QA
+- [x] **I-Q1** QA PASS† @d99e14b / 7f1e576 / 1257830 / b0a4d3d · Go a034a15（纪要 INVITE_ON_DEMAND-I-Q1-qa-20261025.txt）
 - [ ] **I-P1** 关单
 
 ## 派工
@@ -142,6 +142,7 @@
 - 2026-10-25 · **勾 I-R1～R4** React `b0a4d3d`（砍建队自动堆；复用/禁顶；人话 label；全班包确认）
 - 2026-10-25 · **勾 I-G1** Go `a034a15`（LookupEntry / Create 强制席+replace+活跃409 / List label）
 
+- 2026-10-25 11:37 · **I-Q1 PASS†** QA：IQ1-1～8 全绿；IQ1-4 B ymk_ Lookup retest @d99e14b（CTA 查用身份钥匙 · Modal ·66c7 · GET entry 200 · 无 POST）；总纪要 docs/qa-shots/INVITE_ON_DEMAND-I-Q1-qa-20261025.txt。**不勾 I-P1**（产品关）。
 ## 关单进度
 
-**开刀** · **I-M1 + I-R1～R4 + I-G1 已勾**；等 QA I-Q1 → I-P1。Soft 仍冻。
+**开刀** · **I-M1 + I-R1～R4 + I-G1 + I-Q1 已勾（PASS†）**；等产品 **I-P1** 关单。Soft 仍冻。

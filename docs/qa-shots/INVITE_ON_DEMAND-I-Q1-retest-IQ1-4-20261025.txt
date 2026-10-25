@@ -75,3 +75,14 @@ Verdict
   仍 PASS†：IQ1-1 · IQ1-2 · IQ1-3 · IQ1-5 · IQ1-6 · IQ1-7 · I-G1 API
   非全绿 → **不交 I-P1**（本文件不改债 I-P1 / I-Q1 勾选）
 One-line → React+产品+总指挥：I-Q1 IQ1-4 Soft† @7f1e576 / fixture 7fee125c；A ymt_ 复用 PASS†（Modal ·5469 GET200 无POST）· C 404 Create PASS† · B ymk_ Lookup FAIL（active 后端零 CTA·Lookup 未调·API 会返 ymk_）→ React 修查用入口；不交 I-P1。
+
+
+----------------------------------------------------------------
+ADDENDUM · B ymk_ Lookup retest PASS† @d99e14b · 2026-10-25 11:37 Asia/Shanghai
+----------------------------------------------------------------
+  FE sha：d99e14b fix(fe): IQ1-4 在席查用身份钥匙入口（Lookup 直达 ymk_ Modal）
+  · CTA「查用身份钥匙」：后端在席 seat + SeatHandoffDrawer
+  · Modal「已有身份钥匙可查用」·66c7
+  · GET …/entry 200 · 无 POST …/invites
+  箱截：INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-ymk-d99e14b-20261025.png
+  → IQ1-4 A/B/C 全绿；总判定见 INVITE_ON_DEMAND-I-Q1-qa-20261025.txt · **PASS†**（不交 I-P1）

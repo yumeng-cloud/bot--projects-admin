@@ -1,0 +1,70 @@
+INVITE_ON_DEMAND · I-Q1 全绿 PASS† 总纪要
+时间：2026-10-25 11:37 Asia/Shanghai
+判定：**PASS†**（IQ1-1～IQ1-8 全绿；I-G1 API PASS†；**不交 I-P1** · 产品关）
+================================================================
+基线 SHA
+  FE d99e14b  fix(fe): IQ1-4 在席查用身份钥匙入口（Lookup 直达 ymk_ Modal）← 本轮关 B
+  FE 7f1e576  fix(fe): IQ1-4 Lookup UI — entry 先查再用/复用/签发（A/C 已绿）
+  FE 1257830  fix(fe): INVITE IQ1-3/5 人话席名 + 在席禁 mint
+  FE b0a4d3d  fix(fe): INVITE_ON_DEMAND I-R1～R4 按需入场码（建队无墙/一码/全班确认）
+  Go a034a15  feat(invite): I-G1 LookupEntry + Create seat/role gate + replace + List filter/label
+  债：docs/NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md
+  清单：docs/qa-shots/INVITE_ON_DEMAND-I-Q1-checklist-20261025.txt（本轮全绿）
+  禁主人：全程狗粮/箱测账号；未用主人作 tester
+
+分纪要索引
+  INVITE_ON_DEMAND-I-Q1-FE-qa-20261025.txt           Soft† @b0a4d3d（初跑）
+  INVITE_ON_DEMAND-I-Q1-IG1-api-qa-20261025.txt      I-G1 API PASS† @a034a15
+  INVITE_ON_DEMAND-I-Q1-retest-IQ1-35-20261025.txt   IQ1-3/5 PASS† @1257830
+  INVITE_ON_DEMAND-I-Q1-IQ14-fixture-20261025.txt    fixture ymk_/ymt_/404 @7fee125c
+  INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-20261025.txt    Soft†/FAIL @7f1e576（A/C PASS† · B FAIL）
+  本文件                                              全绿 PASS† @d99e14b（含 B ymk_ retest）
+
+----------------------------------------------------------------
+逐行总表（IQ1-1～IQ1-8）
+----------------------------------------------------------------
+| 行 | 判定 | 关绿 SHA | 摘要 |
+| --- | --- | --- | --- |
+| IQ1-1 | PASS† | b0a4d3d | 建队无墙：不自动 setCrewPackOpen / 不 auto issueCrewPack |
+| IQ1-2 | PASS† | b0a4d3d | 显式发一把 → 仅 1 枚；禁静默加堆 / invites/batch |
+| IQ1-3 | PASS† | 1257830 | 列表/toast/tooltip 人话「前端」等；禁裸 team:uuid:slug |
+| IQ1-4 | PASS† | d99e14b | 状态机三态全绿（见下 · 含 ymk_ Lookup retest） |
+| IQ1-5 | PASS† | 1257830 | 活跃席禁 mint；UI 隐藏入场链接；无 POST；Go 短 slug 409 |
+| IQ1-6 | PASS† | b0a4d3d | 全班包二级 + 勾选空席确认后才签 |
+| IQ1-7 | PASS† | — | Forbidden：全程未用主人作 tester |
+| IQ1-8 | PASS† | 本提交 | 箱截齐套 + 全绿纪要；交产品 I-P1（本文件不勾 I-P1） |
+| I-G1 API | PASS† | a034a15 | 缺 seat/role→400；活跃→409；Lookup entry；replace；List label |
+
+----------------------------------------------------------------
+IQ1-4 状态机（最终 · fixture IQ14-EntryFixture-20261025 / 7fee125c）
+----------------------------------------------------------------
+| case | seat | 判定 | 关绿 | 摘要 |
+| --- | --- | --- | --- | --- |
+| A ymt_ 复用 | frontend | PASS† | 7f1e576 | Modal「该席已有有效入场码」·5469；GET entry 200；无 POST |
+| B ymk_ Lookup | backend（active） | PASS† | d99e14b | CTA「查用身份钥匙」在席+drawer；Modal「已有身份钥匙可查用」·66c7；GET entry 200；无 POST invites |
+| C 404→Create | pm（空席） | PASS† | 7f1e576 | GET 404 → Create mint 一枚 |
+
+B 消缺路径（相对 Soft† @7f1e576）：
+  前：active 后端零 invite CTA → Lookup 永不调用（React）
+  修：d99e14b 在席暴露「查用身份钥匙」→ Lookup 直达 ymk_ Modal
+  复测：computerUse @d99e14b · CTA 席卡+drawer · Modal ·66c7 · GET 200 · 无 POST invites
+  箱截：INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-ymk-d99e14b-20261025.png
+
+Shot 索引（IQ1-4）
+  INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-ymt-20261025.png
+  INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-ymk-20261025.png          （FAIL 现场 @7f1e576 · 留档）
+  INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-ymk-d99e14b-20261025.png  （PASS† retest）
+  INVITE_ON_DEMAND-I-Q1-retest-IQ1-4-pm-create-20261025.png
+
+其它箱截（既有）
+  INVITE_ON_DEMAND-I-Q1-retest-IQ1-3-20261025.png
+  INVITE_ON_DEMAND-I-Q1-retest-IQ1-5-20261025.png
+  （初跑 create-no-wall / one-code / list-labels / crewpack-confirm 见 FE Soft† 纪要）
+
+----------------------------------------------------------------
+Verdict
+----------------------------------------------------------------
+**PASS†** @ FE d99e14b / 7f1e576 / 1257830 / b0a4d3d · Go a034a15
+  IQ1-1～IQ1-8 全绿 · I-G1 API PASS†
+  **不交 / 不勾 I-P1**（产品体验关单）
+One-line → 产品+总指挥：I-Q1 PASS† @d99e14b；建队无墙/一码/人话/在席禁顶/全班确认/ymk_查用·66c7 全绿；Go I-G1 @a034a15；交产品 I-P1。
