@@ -114,13 +114,13 @@
 - [x] **L-R1** 路由（仍有效：未登录 `/`=Landing；`/login`=Login；authed 后台不动；`/join` 不破）
 - [x] **L-R2** Landing 锁文案落地（路由/锁句骨架仍有效；**正文须按专册 @`bc215de` 图文重做**）
 - [x] **L-R3†** FE `f0fe24f` 图文加厚交件（示意≥4：V-Board/Seat/Multi/Flow + 左右交替≥2 + Hero 大框；锁句勿漂）；前次 L-R3 @`b7b20ea` 纯字加厚 **作废**
-- [ ] **SL-V1** 桌面首屏箱截（Hero 大示意框）；前次 @`e027f5a`/`e4bd63c` **作废**
-- [ ] **SL-V2** 全页截（≥4 示意 + ≥2 图文交替）；前次 **作废**
-- [ ] **SL-V3** 视觉总监放行（专册 @`bc215de`；半截/小儿科直接打回）；前次放行 **作废**
+- [x] **SL-V1** 桌面首屏箱截（Hero 大示意框）总监放行图文 @`e7da310`；前次 @`e027f5a`/`e4bd63c` **作废**
+- [x] **SL-V2** 全页截（≥4 示意 + ≥2 图文交替）总监放行图文 @`e7da310`；前次 **作废**
+- [x] **SL-V3** 视觉总监放行图文 @`e7da310`（专册 @`bc215de`；FE `f0fe24f`）；前次放行 **作废**
 - [ ] **L-Q1** QA 复测（前次 PASS† @`b7b20ea` / SL-V3 `e027f5a` **作废**，随图文重开）
 - [ ] **L-P1** 产品关（前次关单 Wiki `LANDING_CLOSE.md` 随重开搁置；图文放行后再关）
 
-**状态：等审图双帧→总监 SL-V3→L-Q1**（L-P0/R1/R2/R3† 已勾 FE `f0fe24f`；SL-V1/V2/V3 + L-Q1 + L-P1 待）。软非挡：Inter CDN 另票。
+**状态：等 QA L-Q1 → L-P1**（L-P0/R1/R2/R3†/SL-V1/V2/V3 已勾 总监放行图文 @`e7da310` · FE `f0fe24f` · 专册 @`bc215de`；L-Q1 + L-P1 待）。软非挡：Inter CDN 另票。
 
 ## 派工
 
@@ -160,7 +160,8 @@
 - 2026-10-25 · **关单 L-P1** · Wiki `docs/wiki-dogfood/LANDING_CLOSE.md`；锚 SL-V3 @`e027f5a` · FE `b7b20ea` · 勾债 `b680ed8` · L-Q1 PASS†（箱截 `LANDING-L-Q1-*-20261025.png`）；软非挡 Inter CDN 另票。状态：**已关**（随后被 14:47 打回作废）。
 - 2026-10-25 14:47 · **主人打回「太小儿科、没有图文」→ 重开**；专册 [`SITE_LANDING_VISUAL_BASELINE.md`](./SITE_LANDING_VISUAL_BASELINE.md) @`bc215de`（示意≥4 + 左右交替≥2 + Hero 大框；纯字卡墙=FAIL）。前次 SL-V3/L-P1（及 SL-V1/V2、L-Q1）@`e027f5a`/`e4bd63c` **作废**；L-R3 → **L-R3†** 重开；L-R1/R2 路由保持勾。状态：**重开 · 图文**。
 - 2026-10-25 · **勾 L-R3†** FE `f0fe24f` 图文加厚交件（V-Board/Seat/Multi/Flow CSS mock）；状态：等审图双帧→总监 SL-V3→L-Q1。
+- 2026-10-25 · **勾 SL-V1/V2/V3** 总监放行图文 @`e7da310` 双帧；FE `f0fe24f`；专册 `bc215de`；Inter CDN 软另票。状态：等 QA L-Q1 → L-P1。
 
 ## 关单进度
 
-**等审图双帧→总监 SL-V3→L-Q1** · L-P0/R1/R2/R3† 已勾 FE `f0fe24f`；SL-V1/V2/V3 + L-Q1 + L-P1 待 · 专册 @`bc215de` · 前次关单 Wiki [`LANDING_CLOSE.md`](./wiki-dogfood/LANDING_CLOSE.md) 搁置。
+**等 QA L-Q1 → L-P1** · L-P0/R1/R2/R3†/SL-V1/V2/V3 已勾 总监放行图文 @`e7da310` · FE `f0fe24f` · 专册 @`bc215de`；L-Q1 + L-P1 待 · 前次关单 Wiki [`LANDING_CLOSE.md`](./wiki-dogfood/LANDING_CLOSE.md) 搁置。软非挡：Inter CDN 另票。
