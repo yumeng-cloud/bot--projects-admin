@@ -348,3 +348,126 @@ func (h *AdminHandler) PatchUser(w http.ResponseWriter, r *http.Request) {
 		"user": adminUserDTO{ID: uid, Email: email, Name: name, IsPlatformAdmin: newFlag == 1, CreatedAt: created, Workspaces: []adminUserWorkspaceRef{}},
 	})
 }
+
+// AddWorkspaceMember POST /api/v1/admin/workspaces/{id}/members
+// Platform-admin bypass: seat an already-registered user into a workspace (idempotent).
+func (h *AdminHandler) AddWorkspaceMember(w http.ResponseWriter, r *http.Request) {
+	wsID := r.PathValue("id")
+	if wsID == "" {
+		wsID = r.PathValue("workspaceID")
+	}
+	var req struct {
+		Email       string `json:"email"`
+		Role        string `json:"role"`
+		DisplayName string `json:"display_name"`
+	}
+	if err := middleware.DecodeJSON(r, &req); err != nil {
+		middleware.HandleError(w, apperr.BadRequest("请求体无效"))
+		return
+	}
+	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
+	if req.Email == "" || !strings.Contains(req.Email, "@") {
+		middleware.HandleError(w, apperr.BadRequest("邮箱格式不正确"))
+		return
+	}
+	if req.Role == "" {
+		req.Role = "member"
+	}
+	if req.Role != "admin" && req.Role != "member" {
+		middleware.HandleError(w, apperr.BadRequest("角色仅支持 admin 或 member"))
+		return
+	}
+
+	// Existence only — disabled WS stays operable for platform admin (same as PatchWorkspace).
+	var wsExists string
+	err := h.DB.QueryRow(`SELECT id FROM workspaces WHERE id=?`, wsID).Scan(&wsExists)
+	if err == sql.ErrNoRows {
+		middleware.HandleError(w, apperr.NotFound("工作空间不存在"))
+		return
+	}
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+
+	var userID, userName string
+	err = h.DB.QueryRow(`SELECT id, name FROM users WHERE email=?`, req.Email).Scan(&userID, &userName)
+	if err == sql.ErrNoRows {
+		middleware.HandleError(w, apperr.NotFound("该邮箱尚未注册，请先让对方注册账号"))
+		return
+	}
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+
+	display := strings.TrimSpace(req.DisplayName)
+	if display == "" {
+		display = userName
+	}
+
+	var existingID, existingRole, existingDisplay, existingCreated string
+	err = h.DB.QueryRow(`SELECT id, role, display_name, created_at FROM members WHERE workspace_id=? AND user_id=?`,
+		wsID, userID).Scan(&existingID, &existingRole, &existingDisplay, &existingCreated)
+	actor := middleware.UserID(r.Context())
+	if err == nil {
+		// Idempotent: already a member — optionally elevate role; return 200.
+		roleChanged := false
+		finalRole := existingRole
+		finalDisplay := existingDisplay
+		if req.Role == "admin" && existingRole != "admin" {
+			_, err = h.DB.Exec(`UPDATE members SET role=? WHERE id=?`, req.Role, existingID)
+			if err != nil {
+				middleware.HandleError(w, err)
+				return
+			}
+			finalRole = req.Role
+			roleChanged = true
+		}
+		if display != "" && display != existingDisplay && strings.TrimSpace(req.DisplayName) != "" {
+			_, err = h.DB.Exec(`UPDATE members SET display_name=? WHERE id=?`, display, existingID)
+			if err != nil {
+				middleware.HandleError(w, err)
+				return
+			}
+			finalDisplay = display
+		}
+		h.writeAudit(actor, "workspace.add_member", "workspace", wsID, map[string]any{
+			"email": req.Email, "user_id": userID, "member_id": existingID,
+			"role": finalRole, "idempotent": true, "role_changed": roleChanged,
+		})
+		email := req.Email
+		middleware.JSON(w, http.StatusOK, map[string]any{
+			"member": memberDTO{
+				ID: existingID, WorkspaceID: wsID, UserID: &userID, Role: finalRole,
+				DisplayName: finalDisplay, Email: &email, CreatedAt: existingCreated,
+			},
+			"idempotent": true,
+			"message":    "该用户已是成员",
+		})
+		return
+	}
+	if err != sql.ErrNoRows {
+		middleware.HandleError(w, err)
+		return
+	}
+
+	id := idgen.New()
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	_, err = h.DB.Exec(`INSERT INTO members (id, workspace_id, user_id, role, display_name, is_bot, bot_enabled, created_at)
+		VALUES (?,?,?,?,?,0,1,?)`, id, wsID, userID, req.Role, display, now)
+	if err != nil {
+		middleware.HandleError(w, err)
+		return
+	}
+	h.writeAudit(actor, "workspace.add_member", "workspace", wsID, map[string]any{
+		"email": req.Email, "user_id": userID, "member_id": id, "role": req.Role,
+	})
+	email := req.Email
+	middleware.JSON(w, http.StatusCreated, map[string]any{
+		"member": memberDTO{
+			ID: id, WorkspaceID: wsID, UserID: &userID, Role: req.Role,
+			DisplayName: display, Email: &email, CreatedAt: now,
+		},
+	})
+}

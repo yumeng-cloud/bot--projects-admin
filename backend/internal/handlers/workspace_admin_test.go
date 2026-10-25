@@ -479,3 +479,141 @@ func TestListUsersSearchAndWorkspaces(t *testing.T) {
 	}
 	_ = normalTok // silence if unused in future refactors
 }
+
+func TestAdminAddWorkspaceMember(t *testing.T) {
+	h, _, _ := wsAdminEnv(t)
+	adminTok := loginUser(t, h, "admin@yumeng.tech", "Admin123!")
+	_, targetID := registerUser(t, h, "seatme@test.com", "password1", "入席者")
+	normalTok, _ := registerUser(t, h, "notadmin@test.com", "password1", "非超管")
+
+	// Create a workspace owned by someone else so target is not yet a member.
+	rr := doJSON(t, h, http.MethodPost, "/api/v1/admin/workspaces", adminTok, map[string]string{
+		"name": "旁路席", "slug": "bypass-seat", "owner_email": "notadmin@test.com",
+	})
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("create ws %d %s", rr.Code, rr.Body.String())
+	}
+	var created struct {
+		Workspace struct {
+			ID string `json:"id"`
+		} `json:"workspace"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &created)
+	wsID := created.Workspace.ID
+
+	path := "/api/v1/admin/workspaces/" + wsID + "/members"
+
+	// non-platform-admin → 403
+	rr = doJSON(t, h, http.MethodPost, path, normalTok, map[string]string{
+		"email": "seatme@test.com", "role": "member",
+	})
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("non-admin want 403 got %d %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), "平台超级管理员") {
+		t.Fatalf("403 msg %s", rr.Body.String())
+	}
+
+	// user not registered → 404
+	rr = doJSON(t, h, http.MethodPost, path, adminTok, map[string]string{
+		"email": "ghost@test.com", "role": "member",
+	})
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("ghost want 404 got %d %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), "尚未注册") {
+		t.Fatalf("ghost msg %s", rr.Body.String())
+	}
+
+	// workspace missing → 404
+	rr = doJSON(t, h, http.MethodPost, "/api/v1/admin/workspaces/ws_does_not_exist/members", adminTok, map[string]string{
+		"email": "seatme@test.com", "role": "member",
+	})
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("missing ws want 404 got %d %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), "工作空间不存在") {
+		t.Fatalf("missing ws msg %s", rr.Body.String())
+	}
+
+	// success seat as member
+	rr = doJSON(t, h, http.MethodPost, path, adminTok, map[string]string{
+		"email": "seatme@test.com", "role": "member", "display_name": "旁路成员",
+	})
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("seat want 201 got %d %s", rr.Code, rr.Body.String())
+	}
+	var seat struct {
+		Member struct {
+			ID          string  `json:"id"`
+			WorkspaceID string  `json:"workspace_id"`
+			UserID      *string `json:"user_id"`
+			Role        string  `json:"role"`
+			DisplayName string  `json:"display_name"`
+			Email       *string `json:"email"`
+		} `json:"member"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &seat)
+	if seat.Member.Role != "member" || seat.Member.DisplayName != "旁路成员" {
+		t.Fatalf("seat member %+v", seat.Member)
+	}
+	if seat.Member.UserID == nil || *seat.Member.UserID != targetID {
+		t.Fatalf("user_id want %s got %+v", targetID, seat.Member.UserID)
+	}
+	if seat.Member.WorkspaceID != wsID {
+		t.Fatalf("ws_id want %s got %s", wsID, seat.Member.WorkspaceID)
+	}
+
+	// idempotent: already member → 200, no hard 409
+	rr = doJSON(t, h, http.MethodPost, path, adminTok, map[string]string{
+		"email": "seatme@test.com", "role": "member",
+	})
+	if rr.Code != http.StatusOK {
+		t.Fatalf("idempotent want 200 got %d %s", rr.Code, rr.Body.String())
+	}
+	var again struct {
+		Idempotent bool   `json:"idempotent"`
+		Message    string `json:"message"`
+		Member     struct {
+			ID   string `json:"id"`
+			Role string `json:"role"`
+		} `json:"member"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &again)
+	if !again.Idempotent || again.Member.ID != seat.Member.ID {
+		t.Fatalf("idempotent body %+v", again)
+	}
+	if !strings.Contains(again.Message, "已是成员") {
+		t.Fatalf("idempotent msg %s", again.Message)
+	}
+
+	// idempotent elevate to admin
+	rr = doJSON(t, h, http.MethodPost, path, adminTok, map[string]string{
+		"email": "seatme@test.com", "role": "admin",
+	})
+	if rr.Code != http.StatusOK {
+		t.Fatalf("elevate want 200 got %d %s", rr.Code, rr.Body.String())
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &again)
+	if again.Member.Role != "admin" {
+		t.Fatalf("elevate role want admin got %s body=%s", again.Member.Role, rr.Body.String())
+	}
+
+	// default role = member when omitted
+	_, _ = registerUser(t, h, "defaultrole@test.com", "password1", "默角")
+	rr = doJSON(t, h, http.MethodPost, path, adminTok, map[string]string{
+		"email": "defaultrole@test.com",
+	})
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("default role want 201 got %d %s", rr.Code, rr.Body.String())
+	}
+	var defSeat struct {
+		Member struct {
+			Role string `json:"role"`
+		} `json:"member"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &defSeat)
+	if defSeat.Member.Role != "member" {
+		t.Fatalf("default role want member got %s", defSeat.Member.Role)
+	}
+}

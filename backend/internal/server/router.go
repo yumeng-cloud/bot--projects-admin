@@ -77,6 +77,7 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 			adm.Get("/workspaces", adminH.ListWorkspaces)
 			adm.Post("/workspaces", adminH.CreateWorkspace)
 			adm.Patch("/workspaces/{id}", adminH.PatchWorkspace)
+			adm.Post("/workspaces/{id}/members", adminH.AddWorkspaceMember)
 			adm.Get("/users", adminH.ListUsers)
 			adm.Patch("/users/{id}", adminH.PatchUser)
 		})
