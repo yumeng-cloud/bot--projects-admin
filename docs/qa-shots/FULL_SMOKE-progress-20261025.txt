@@ -10,7 +10,7 @@ env_probe:
   vite: http://127.0.0.1:5175 → 200
   api_healthz: http://127.0.0.1:8080/healthz → 200 {"status":"ok"}
 seed: admin@yumeng.tech (dogfood; NEVER owner)
-overall: PENDING (Wave A partial + Wave B project PASS†; A5 bare /join retest PASS† @90cc85c; LANDING L-Q1 package still FAIL on §多机 copy; C–H not run)
+overall: PENDING (Wave A partial + Wave B project PASS†; A5 join PASS† after 90cc85c; Landing lock PASS† @675a300 / L-Q1 retest2; product L-P1 @46f3040; C–H may continue elsewhere; NOT overall FULL_SMOKE PASS)
 browser_run: Wave A+B computerUse 2026-10-25 Asia/Shanghai
 ================================================================
 
@@ -85,5 +85,32 @@ next:
   - Continue Wave C+ when ready
   - Do NOT claim overall FULL_SMOKE PASS; Do NOT close LANDING
 shots_copied:
+  docs/qa-shots/LANDING-L-Q1-retest-{full,hero,home-authed,join-bare-authed,join-bare-unauth,join-code-authed,join-code-unauth}-20261025.png
+# --- end block ---
+
+# --- run 3 · LANDING L-Q1 retest2 PASS† @675a300 · Landing lock ---
+time_AsiaShanghai: 2026-10-25 ~15:14–15:18 Asia/Shanghai
+HEAD_at_docs: post-46f3040 (product L-P1 close already on main); FE lock 675a300; join 90cc85c
+tester: QA (dogfood only; NEVER owner)
+groups_touched: A5 (confirm) | LANDING L-Q1 retest2
+rows:
+  A5 PASS† — after 90cc85c; evidence: docs/qa-shots/LANDING-L-Q1-retest-join-bare-authed-20261025.png (+ bare-unauth / code-*) — bare `/join` authed no Spin hang
+  Landing lock PASS† — FE 675a300; title+body exact 「多机分工，不是换机续聊」+「…统一调度指挥。」; drift sentence gone
+  smoke 主标/眉题/副标 PASS†
+LANDING_package:
+  L-Q1 retest2 **PASS†** — docs/qa-shots/LANDING-L-Q1-retest2-qa-20261025.txt
+  checklist: docs/qa-shots/LANDING-L-Q1-retest-checklist-20261025.txt (PASS† retest2)
+  lock shot: docs/qa-shots/LANDING-L-Q1-lock-retest-20261025.png (already in repo @ba10660)
+  FE 675a300 · join 90cc85c · SL-V3 e7da310 · debt bc215de
+  Prior retest1 FAIL @90cc85c (LQ1-4 only) cleared by 675a300
+  PASS† delivered to product; QA did not rewrite Wiki; product L-P1 close already @46f3040
+blockers:
+  - A5 Spin hang: CLEARED @90cc85c (PASS†)
+  - LANDING L-Q1 copy lock: CLEARED @675a300 (PASS† retest2)
+next:
+  - Continue Wave C+ when ready (not claimed overall FULL_SMOKE PASS)
+  - Do NOT claim overall FULL_SMOKE PASS
+shots_copied:
+  docs/qa-shots/LANDING-L-Q1-lock-retest-20261025.png (pre-existing)
   docs/qa-shots/LANDING-L-Q1-retest-{full,hero,home-authed,join-bare-authed,join-bare-unauth,join-code-authed,join-code-unauth}-20261025.png
 # --- end block ---

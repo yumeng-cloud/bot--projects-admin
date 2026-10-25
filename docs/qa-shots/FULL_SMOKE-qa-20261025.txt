@@ -1,0 +1,81 @@
+FULL_SMOKE_20261025 · QA summary
+================================================================
+wave: FULL_SMOKE_20261025
+written_at: 2026-10-25 15:18 Asia/Shanghai
+HEAD_at_finalize: 46f3040 (pre-docs commit; this summary lands in follow-up commit)
+tester: QA · seed admin@yumeng.tech（dogfood；禁主人）
+env: Vite :5175 200 · API /healthz 200
+checklist: docs/qa-shots/FULL_SMOKE-checklist-20261025.md
+progress: docs/qa-shots/FULL_SMOKE-progress-20261025.txt
+overall: PARTIAL — major pages green；非 Overall PASS†（硬行未全绿）
+================================================================
+
+## Waves
+
+### A · Landing / Auth / Join
+- A1 Landing unauth PASS†
+- A2 Login (bad pwd Toast + seed → Home) PASS†
+- A3 注册 Tab PENDING（本轮未跑）
+- A4 /join 未登录 PASS†（旁证 LANDING-L-Q1-retest-join-bare-unauth / join-code-unauth）
+- A5 /join 已登录 PASS† @90cc85c（前 FAIL：裸 /join 死转 Spin；修后复测绿）
+- A6 受保护深链未登录 PENDING
+
+### B · Home + 工作区
+- B1 Home PASS† · B4 进仓+切仓零 bleed PASS†
+- B2 创建工作区 · B3 兑换邀请码 · B5 空仓空态 → PENDING
+
+### C · 项目视图 + Issue（Wave C）
+- C1–C7 全 PASS†（看板/列表/周期/排期/新建 YM-33/详情编辑态/评论）
+- C8 关联 · C9 归档 · C10 附件 → PENDING
+
+### D · Wiki
+- D1 打开 · D2 开篇 · D4 空正文空态 → PASS†（FULL_SMOKE-20261025-wiki.png）
+- D3 编辑→保存→取消 → PENDING（本轮未重做）
+
+### E · 工时
+- E1 全页 PASS†（YM-9 + 标题；FULL_SMOKE-20261025-time.png）
+- E2 编辑保存 · E3 空态 → PENDING
+
+### F · 设置六 Tab
+- 六 Tab 均有页开箱截（settings-{workspace,projects,teams,members,labels,integrations}.png）
+- 深编辑→保存未本轮重做 → F1–F6 仍 PENDING（诚实）
+
+### G · Bot 席
+- G1 名册 PASS† · G4 详情（席位·后端）PASS†
+- G2 向导 · G3 占席/解绑 · G5 详情编辑 → PENDING
+
+### H · 平台管理
+- H1 /admin 入口 PASS†（工作区 11 / 用户 7）
+- H2 新建工作区 · H3 用户台 · H4 深链 → PENDING
+
+## Defects fixed this package
+- /join 无码死转「正在打开入场向导」→ FE 90cc85c；A5 retest PASS†
+
+## LANDING
+- L-P1 由产品关闭 @46f3040（证 L-Q1 PASS† / join 90cc85c / 锁句 675a300 / 图文 SL-V3 e7da310）
+- QA 不自认、不代关 L-P1
+
+## Softs（不挡；另票）
+- favicon 404
+- Inter fonts CDN/tunnel
+- cycles 无「新建周期」按钮（C3 minor）
+- issue 详情 leaf「叶」/描述橙斜（C6 minor）
+- Wiki smoke 页标题「无标题」+ 空正文（stub OK）
+
+## Evidence index
+docs/qa-shots/FULL_SMOKE-20261025-{
+  landing-unauth,login-page,login-bad,home-authed,join-page,ws-entered,
+  board,board-created,issue-detail,list,cycles,timeline,project-switch,
+  wiki,time,
+  settings-workspace,settings-projects,settings-teams,settings-members,
+  settings-labels,settings-integrations,
+  bots,bot-detail,admin
+}.png
++ LANDING-L-Q1-retest-* / LANDING-L-Q1-lock-retest-20261025.png（A4/A5/LANDING 旁证）
+
+## Remaining PENDING（诚实清单）
+A3 A6 · B2 B3 B5 · C8 C9 C10 · D3 · E2 E3 · F1–F6（深保存）· G2 G3 G5 · H2 H3 H4
+
+## Verdict
+PARTIAL — 主路径大页（Landing/登录/Join/Home/看板–排期/Wiki 开/工时开/设置 Tab 开/Bot+详情/Admin 入口）绿；
+深编辑保存与若干次要行未本轮闭环 → 禁写 FULL_SMOKE Overall PASS†。
