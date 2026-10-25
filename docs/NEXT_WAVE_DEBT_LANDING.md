@@ -2,9 +2,11 @@
 
 > 2026-10-25 Asia/Shanghai · 产品体验主持拍板  
 > **打回补钉（2026-10-25 11:04）**：主人截图怒「只有 hero+三卡像半截页」→ **须扩成完整官网**（安静好用、非赛博）。  
-> **打回补钉（2026-10-25 14:47）**：主人打回「太小儿科、没有图文」→ **纯字卡墙 = FAIL**；须按专册 @`bc215de` 出图文页。状态：**已关**（图文重开包 · L-Q1 PASS† → L-P1）。  
+> **打回补钉（2026-10-25 14:47）**：主人打回「太小儿科、没有图文」→ **纯字卡墙 = FAIL**；须按专册出图文页。  
+> **打回补钉（2026-10-25 20:55）**：主人打回「要生成真图+整页设计」→ CSS 假框/空卡片冒充产品图 **= FAIL**；须 **真插图**（箱内 GenerateImage 或 `Landing/assets/` / `frontend/public` 静态 PNG/WebP）+ 整页设计。状态：**重开 · 真图**。  
+> **前次图文关单作废：** L-P1 @`46f3040` / SL-V3 @`e7da310` / FE 锁句 @`675a300`（及 FE 图文 `f0fe24f`）**作废**——主人骂 CSS 假框。  
 > **承接：** 主人怒——总指挥自写落地页难看；总指挥停笔；产品定气质+文案，UI视觉·审图执刀（必要时 React）。  
-> **视觉尺子（锁）：** [`SITE_LANDING_VISUAL_BASELINE.md`](./SITE_LANDING_VISUAL_BASELINE.md) @`bc215de`——图文加厚（示意≥4 · 左右交替≥2 · Hero 大框）；废稿黑名单与浅色 token **跟专册**，勿另皮。  
+> **视觉尺子（锁）：** [`SITE_LANDING_VISUAL_BASELINE.md`](./SITE_LANDING_VISUAL_BASELINE.md) @`bc215de` + 本文「真图硬门」——示意≥4 · 左右交替≥2 · Hero 大框 · **每段真插图**；废稿黑名单与浅色 token **跟专册**，勿另皮。  
 > **专册让位说明：** 视觉专册原「价值≤3」硬上限 **对本刀让位**给主人加厚令；仍禁废稿暗黑 / glow / `#5b8cff` / Noto CDN / 编号营销长滚；浅色同肤不变。详见专册与下文信息架构。  
 > **废稿参考（禁抄）：** `/workspace/yumeng-landing/index.html`（暗黑赛博）**可弃**。  
 > **刀名互通：** **LANDING** ↔ **SITE_LANDING**（同一刀）。  
@@ -29,7 +31,8 @@
 2. **叙事：** 人与 Agent 像一支团队；「换机」= **分布式**——不同电脑认领不同角色干活，干完统一调度指挥（**禁止**写成普通「换机续会话 / 同步进度 / 换机续聊」话术）。  
 3. **继续体现：** 席位班底、按需入场 K（有 K 用 / 无则生 / 替换才顶）、决策与审查用强模型 · 写码用轻量模型（档位配置 **本刀不实现**，只叙事铺垫）。  
 4. **完整页：** 禁「Hero + 三卡 + 脚」半截页；须按下方信息架构加厚成完整官网（可滚）。  
-5. **图文硬门（专册 @`bc215de`）：** 全页示意 **≥4**（V-Board / V-Seat / V-Multi / V-Flow）；左右图文交替 **≥2**；Hero **大框**示意；**纯字卡墙 = FAIL**。锁句勿漂（育蒙协作看板、多机=认领角色+统一调度、禁续会话话术）。
+5. **图文硬门（专册 @`bc215de`）：** 全页示意 **≥4**（V-Board / V-Seat / V-Multi / V-Flow）；左右图文交替 **≥2**；Hero **大框**示意；**纯字卡墙 = FAIL**。锁句勿漂（育蒙协作看板、多机=认领角色+统一调度、禁续会话话术）。  
+6. **真图硬门（2026-10-25 20:55 · 产品硬锁图文位）：** 下列每位 **必须真插图**——**Hero** / **看板(V-Board)** / **席位(V-Seat)** / **多机(V-Multi)** / **流程(V-Flow)**。来源仅限：箱内 **GenerateImage**，或静态 **PNG/WebP**（专册优先 `frontend/src/pages/Landing/assets/`；亦可 `frontend/public`）。**禁**纯字墙；**禁**用 CSS 假框 / 空卡片 / mock 灰框冒充产品图。前次 CSS mock 图文关单 **作废**。
 
 ## 信息架构（改锁 · 替换旧「价值≤3块」硬上限）
 
@@ -89,49 +92,66 @@
 
 ## 视觉（跟专册 · 勿另开尺子）
 
-- Token / 废稿黑名单 / 箱截路径 / 图文硬门：**整跟** [`SITE_LANDING_VISUAL_BASELINE.md`](./SITE_LANDING_VISUAL_BASELINE.md) @`bc215de`。  
-- **IA：** 以本文「信息架构（改锁）」为准；专册原「价值≤3」对本刀让位；正文须满足新专册图文硬门（示意≥4 + 左右交替≥2 + Hero 大框）。  
-- 画布浅色 `--acb-bg-layout`；主色 `#5E6AD2`；禁 `#0b0d10` 暗底、radial 光晕、外挂 Google Fonts / Noto CDN、eyebrow 胶囊、`#5b8cff`、编号营销长滚；**禁通篇纯字+灰框卡墙**。  
-- 实现可落 `frontend/src/pages/Landing`（或等价）；样式跟现 FE token / 登录门 quiet 表面。
+- Token / 废稿黑名单 / 箱截路径 / 图文硬门：**整跟** [`SITE_LANDING_VISUAL_BASELINE.md`](./SITE_LANDING_VISUAL_BASELINE.md) @`bc215de` + 专册「真图硬门」节（或本文硬约束 §6）。  
+- **IA：** 以本文「信息架构（改锁）」为准；专册原「价值≤3」对本刀让位；正文须满足图文硬门（示意≥4 + 左右交替≥2 + Hero 大框）**且**真图硬门（五位真插图）。  
+- 画布浅色 `--acb-bg-layout`；主色 `#5E6AD2`；禁 `#0b0d10` 暗底、radial 光晕、外挂 Google Fonts / Noto CDN、eyebrow 胶囊、`#5b8cff`、编号营销长滚；**禁通篇纯字+灰框卡墙**；**禁 CSS 假框冒充产品图**。  
+- 实现可落 `frontend/src/pages/Landing`（或等价）；真图落专册目录 `frontend/src/pages/Landing/assets/`（或 `frontend/public`）PNG/WebP，或箱内 GenerateImage 交件后入库；样式跟现 FE token / 登录门 quiet 表面。
+
+### 真图硬门（产品硬锁图文位 · 勿漂）
+
+| 位 | 代号 | 要求 |
+| --- | --- | --- |
+| Hero | （大框） | **真插图**占右侧/大框；禁 chip 条、禁空灰框 |
+| 看板 | **V-Board** | **真插图**；禁纯 CSS 列卡 mock 冒充 |
+| 席位 | **V-Seat** | **真插图**；禁 chip/空表冒充 |
+| 多机 | **V-Multi** | **真插图**；标题锁「多机分工，不是换机续聊」；正文锁「…干完统一调度指挥。」 |
+| 流程 | **V-Flow** | **真插图**；禁仅数字字卡 |
+
+来源：**GenerateImage（箱内）** 或静态 PNG/WebP（专册 §4.1/`Landing/assets/`，亦可 `frontend/public`）。主名锁 **育蒙协作看板**；锁句表上文「产品锁文案」勿漂。规格细节整跟专册 §4「信息架构 + 真图硬门」。
 
 ## 勾选
 
 | ID | 标准 | 谁 |
 | --- | --- | --- |
-| **L-P0** | 本债拍板（含锁文案 + 眉题禁 pill + 打回加厚 IA） | 产品体验 |
+| **L-P0** | 本债拍板（含锁文案 + 眉题禁 pill + 打回加厚 IA + 真图硬门） | 产品体验 |
 | **L-R1** | 路由：未登录 `/`=Landing；`/login`=Login；authed 后台不动；`/join` 不破 | React |
 | **L-R2** | Landing 按锁文案首刀落地（可组件在 `pages/Landing`）；眉题纯文 13–14 secondary，禁 pill | React / 审图 |
-| **L-R3†** | React **按专册 @`bc215de` 出图文页**（章节齐 + 示意≥4：V-Board/V-Seat/V-Multi/V-Flow + 左右交替≥2 + Hero 大框）；锁句勿漂；前次纯字加厚作废 | React / 审图 |
-| **SL-V1** | 桌面箱截 `docs/qa-shots/site-landing-desktop.png`（1280×800：首屏顶栏+Hero **含大示意框** + 下一区可见）；前次 @`e027f5a`/`e4bd63c` **作废** | 审图 → 总监 |
-| **SL-V2** | **必交** `site-landing-scroll.png` 全页；须能数出 ≥4 示意 + ≥2 图文交替；可选 `site-landing-375.png`；前次作废 | 审图 → 总监 |
-| **SL-V3** | 审图自审 playbook + 专册 @`bc215de` → **视觉总监**复核；半截页 / 小儿科纯字卡 **直接打回**；前次放行作废 | UI视觉·审图 → 视觉总监 |
-| **L-Q1** | 未登录打开=/官网；登录后进后台；`/join` 仍可用；箱截；禁甩主人；随图文重开后复测 | QA |
-| **L-P1** | 产品关（图文放行 + L-Q1 后再关） | 产品体验 |
+| **L-R3†** | （历史）React 按专册出 CSS/mock 图文页——**已勾但整包作废**，勿再当关单依据 | React / 审图 |
+| **L-V-SPEC** | **视觉总监配图规格**：为 Hero / V-Board / V-Seat / V-Multi / V-Flow 各出真图规格（尺寸·构图·禁区·文件名建议）；对齐专册浅色 token；禁赛博/炫光 | 视觉总监 |
+| **L-R3‡** | React **落真图整页**（章节齐 + 五位真插图入库 + 左右交替≥2 + Hero 真图大框）；锁句勿漂；**禁 CSS 假框**；前次 L-R3† CSS mock **作废** | React / 审图 |
+| **SL-V1** | 桌面箱截 `docs/qa-shots/site-landing-desktop.png`（1280×800：首屏顶栏+Hero **含真图大框** + 下一区可见）；前次图文包 @`e7da310`/`46f3040` **作废** | 审图 → 总监 |
+| **SL-V2** | **必交** `site-landing-scroll.png` 全页；须能数出 ≥4 **真**示意 + ≥2 图文交替；可选 `site-landing-375.png`；前次作废 | 审图 → 总监 |
+| **SL-V3** | 审图自审 playbook + 专册 + 真图硬门 → **视觉总监**复核；半截页 / 纯字卡 / **CSS 假框** **直接打回**；前次放行 @`e7da310` **作废** | UI视觉·审图 → 视觉总监 |
+| **L-Q1** | 未登录打开=/官网；登录后进后台；`/join` 仍可用；箱截；禁甩主人；随真图重开后复测 | QA |
+| **L-P1** | 产品关（真图放行 + L-Q1 后再关） | 产品体验 |
 
 ## 产品勾选
 
-- [x] **L-P0** 本债拍板 · 2026-10-25（文案锁 + 眉题禁 pill + 链专册；打回加厚补钉；14:47 图文重开）
+- [x] **L-P0** 本债拍板 · 2026-10-25（文案锁 + 眉题禁 pill + 链专册；打回加厚；14:47 图文；**20:55 真图重开**）
 - [x] **L-R1** 路由（仍有效：未登录 `/`=Landing；`/login`=Login；authed 后台不动；`/join` 不破）
-- [x] **L-R2** Landing 锁文案落地（路由/锁句骨架仍有效；**正文须按专册 @`bc215de` 图文重做**）
-- [x] **L-R3†** FE `f0fe24f` 图文加厚交件（示意≥4：V-Board/Seat/Multi/Flow + 左右交替≥2 + Hero 大框；锁句勿漂）；前次 L-R3 @`b7b20ea` 纯字加厚 **作废**
-- [x] **SL-V1** 桌面首屏箱截（Hero 大示意框）总监放行图文 @`e7da310`；前次 @`e027f5a`/`e4bd63c` **作废**
-- [x] **SL-V2** 全页截（≥4 示意 + ≥2 图文交替）总监放行图文 @`e7da310`；前次 **作废**
-- [x] **SL-V3** 视觉总监放行图文 @`e7da310`（专册 @`bc215de`；FE `f0fe24f`）；前次放行 **作废**
-- [x] **L-Q1** PASS† retest2 · 图文复测（锁句 `675a300` + join `90cc85c` + FE `f0fe24f` / SL-V3 `e7da310` / 专册 `bc215de`）；纪要 `LANDING-L-Q1-retest2-qa-20261025.txt`；证据 `LANDING-L-Q1-lock-retest-20261025.png`；前次 @`b7b20ea`/`e027f5a` **作废**；retest1 FAIL @`010fc18` 已消
-- [x] **L-P1** 产品关 · 图文重开包 · Wiki `docs/wiki-dogfood/LANDING_CLOSE.md`（前次 `e4bd63c`/`e027f5a` 作废已由重开替代）
+- [x] **L-R2** Landing 锁文案落地（路由/锁句骨架仍有效；**正文须按真图硬门重做**）
+- [x] **L-R3†** ~~FE `f0fe24f` CSS/mock 图文加厚~~ · **整包作废**（主人骂 CSS 假框；勿当关单依据）
+- [ ] **L-V-SPEC** 视觉总监配图规格（Hero / V-Board / V-Seat / V-Multi / V-Flow 真图规格）
+- [ ] **L-R3‡** React 落**真图**整页（五位真插图 + 左右交替≥2 + Hero 真图大框；禁 CSS 假框）；前次 L-R3† / 关单 @`46f3040` / SL-V3 `e7da310` / FE `675a300` **作废**
+- [ ] **SL-V1** 桌面首屏箱截（Hero **真图**大框）；前次图文包 @`e7da310` **作废**
+- [ ] **SL-V2** 全页截（≥4 **真**示意 + ≥2 图文交替）；前次 **作废**
+- [ ] **审图自审** playbook + 专册真图硬门（半截/纯字/CSS 假框直接打回）
+- [ ] **SL-V3** 视觉总监放行真图整页；前次放行 @`e7da310` **作废**
+- [ ] **L-Q1** 真图重开后复测（未登录=/官网；登录进后台；`/join`；箱截；禁甩主人）
+- [ ] **L-P1** 产品关（真图放行 + L-Q1 后再关）；前次图文关单 @`46f3040` **作废**
 
-**状态：已关**（L-P0/R1/R2/R3†/SL-V1/V2/V3/L-Q1/L-P1 齐；图文重开包 · 专册 @`bc215de` · FE `f0fe24f`/`675a300`/`90cc85c` · SL-V3 @`e7da310` · L-Q1 PASS† 证据 `LANDING-L-Q1-lock-retest-20261025.png`）。软非挡：Inter CDN 另票。
+**状态：重开 · 真图**（回退 L-R3‡ / SL-V1/V2/V3 / L-Q1 / L-P1；前次图文关单 @`46f3040` · SL-V3 `e7da310` · FE `675a300`/`f0fe24f` **作废**——CSS 假框被主人骂）。L-P0/R1/R2 路由·锁句骨架仍勾。Soft 仍冻；INVITE 勿动。
 
 ## 派工
 
 | 角色 | 首刀 |
 | --- | --- |
-| **产品体验** | 本裁定（气质+锁文案+眉题钉+图文重开）；L-P0 / L-P1 |
-| **React 前端** | L-R1、L-R2（已勾保留）；**L-R3†** 按专册 @`bc215de` 图文页 |
-| **UI视觉·审图** | 按专册 §4.1 落 V-Board/V-Seat/V-Multi/V-Flow；SL-V1/V2 双帧；自审后交总监 |
-| **视觉总监** | 专册 @`bc215de`；SL-V3 放行/打回；未图文加厚不放行 |
-| **QA** | L-Q1 复测（图文重交后；箱截；禁甩主人） |
-| **Go / INVITE / SEAT / Soft** | **不动** |
+| **产品体验** | 本裁定（气质+锁文案+眉题钉+**真图硬门**重开）；L-P0 / L-P1 |
+| **视觉总监** | **L-V-SPEC** 五位真图规格；专册真图硬门；SL-V3 放行/打回；CSS 假框不放行 |
+| **React 前端** | L-R1、L-R2（已勾保留）；**L-R3‡** 落真图整页（`Landing/assets/` 或 `frontend/public` PNG/WebP，或 GenerateImage 交件入库） |
+| **UI视觉·审图** | 按 L-V-SPEC + 专册落真图；SL-V1/V2 双帧；**审图自审**后交总监 |
+| **QA** | L-Q1 复测（真图重交后；箱截；禁甩主人） |
+| **Go / INVITE / SEAT / Soft** | **不动**（Soft 仍冻；INVITE 勿动） |
 | **总指挥** | 废稿停手；勿再自写营销 HTML |
 
 ## 非目标
@@ -165,6 +185,8 @@
 - 2026-10-25 · **关单 L-P1** · Wiki `docs/wiki-dogfood/LANDING_CLOSE.md`（图文重开包）；锚 专册 `bc215de` · FE `f0fe24f`/`675a300`/`90cc85c` · SL-V3 `e7da310` · L-Q1 PASS†；前次 `e4bd63c`/`e027f5a` 作废已由重开替代；Inter CDN 软另票。状态：**已关**。
 - 2026-10-25 · **QA retest2 纪要补档** `docs/qa-shots/LANDING-L-Q1-retest2-qa-20261025.txt` · PASS† @`675a300` / join `90cc85c` / SL-V3 `e7da310`；锁句 exact；清单 PASS† retest2；**不改写** Wiki（产品已关 L-P1 @`46f3040`）。
 
+- 2026-10-25 20:55 · **主人打回「要生成真图+整页设计」→ 重开 · 真图**。产品硬锁图文位：Hero / V-Board / V-Seat / V-Multi / V-Flow **每段必须真插图**（GenerateImage 或 `Landing/assets/` / `frontend/public` PNG/WebP）；**禁**纯字墙、**禁** CSS 假框/空卡片冒充。前次图文关单 @`46f3040` / SL-V3 `e7da310` / FE `675a300`（及 `f0fe24f`）**作废**。回退勾选：L-V-SPEC / L-R3‡ / SL-V1/V2/V3 / 审图自审 / L-Q1 / L-P1。锁句勿漂（多机标题「多机分工，不是换机续聊」；正文「…干完统一调度指挥。」；主名育蒙协作看板）。Soft 仍冻；INVITE 勿动。状态：**重开 · 真图**。
+
 ## 关单进度
 
-**已关** · L-P0/R1/R2/R3†/SL-V1/V2/V3/L-Q1/L-P1 齐 · 图文重开包 Wiki [`LANDING_CLOSE.md`](./wiki-dogfood/LANDING_CLOSE.md) · 专册 @`bc215de` · FE `f0fe24f`/`675a300`/`90cc85c` · SL-V3 @`e7da310` · L-Q1 PASS† 证据 `LANDING-L-Q1-lock-retest-20261025.png` · 前次 `e4bd63c`/`e027f5a` 作废已由重开替代。软非挡：Inter CDN 另票。
+**重开 · 真图** · 前次图文关单 @`46f3040` / SL-V3 `e7da310` / FE `675a300` **作废**（CSS 假框被主人骂）。待：L-V-SPEC → L-R3‡ → 审图自审 → SL-V1/V2 → SL-V3 → L-Q1 → L-P1。Wiki [`LANDING_CLOSE.md`](./wiki-dogfood/LANDING_CLOSE.md) 图文包关单 **作废待真图重写**。软非挡：Inter CDN 另票。Soft 仍冻；INVITE 勿动。
