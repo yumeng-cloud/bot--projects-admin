@@ -1,0 +1,69 @@
+INVITE_ON_DEMAND · I-Q1 FE retest IQ1-3 / IQ1-5（computerUse @1257830）
+时间：2026-10-25 11:19 Asia/Shanghai
+判定：**Soft†**（IQ1-3/5 本轮 PASS†；IQ1-4 仍 PARTIAL；I-G1 API 仍 PASS†；不交 I-P1）
+================================================================
+基线
+  FE sha：1257830
+         fix(fe): INVITE IQ1-3/5 人话席名 + 在席禁 mint
+  前次 FE Soft†：b0a4d3d（见 INVITE_ON_DEMAND-I-Q1-FE-qa-20261025.txt）
+  Go / I-G1：仍 PASS† @a034a15（纪要提交 c535099 · INVITE_ON_DEMAND-I-Q1-IG1-api-qa-20261025.txt）
+  债：docs/NEXT_WAVE_DEBT_INVITE_ON_DEMAND.md
+  清单：docs/qa-shots/INVITE_ON_DEMAND-I-Q1-checklist-20261025.txt（本轮已改 IQ1-3/5）
+  证据源：FE computerUse 复测（本目录 retest png）
+  禁主人：本跑未用主人账号作 tester
+
+Shot 索引
+  INVITE_ON_DEMAND-I-Q1-retest-IQ1-3-20261025.png
+  INVITE_ON_DEMAND-I-Q1-retest-IQ1-5-20261025.png
+
+----------------------------------------------------------------
+逐行（本轮复测）
+----------------------------------------------------------------
+| 行 | 判定 | 摘要 |
+| --- | --- | --- |
+| IQ1-3 | PASS† | tooltip/toast 人话「前端」；列表分组 前端/知识库；无 team:uuid:slug；POST seat_slug=frontend · label=前端 |
+| IQ1-4 | PARTIAL | 产品钉：FE 尚未接 GET …/entry（Go Lookup OK @a034a15）——挡状态机 UI 全绿 |
+| IQ1-5 | PASS† | active「后端」席隐藏入场链接/提示词；无 mint POST；drawer 无 mint |
+| I-G1 API | PASS† | 不变 @c535099 / a034a15 |
+
+----------------------------------------------------------------
+IQ1-3 PASS† 证据
+----------------------------------------------------------------
+  · tooltip / toast 人话席名「前端」（非脏 team:uuid:slug）
+  · IssuedInvitesPanel（或等价）列表分组：前端 / 知识库
+  · 无裸 team:uuid:slug 渲染
+  · POST …/invites seat_slug=frontend → label=前端
+  Caveat（记 note，非 FAIL）：toast 码尾 ·481b ≠ 列表码尾 ·bccd
+  箱截：INVITE_ON_DEMAND-I-Q1-retest-IQ1-3-20261025.png
+
+----------------------------------------------------------------
+IQ1-5 PASS† 证据
+----------------------------------------------------------------
+  · 席「后端」occupancy/status=active 时：UI 隐藏「入场链接」与相关提示词
+  · 网络：无 mint POST …/invites
+  · drawer：无 mint 入口
+  箱截：INVITE_ON_DEMAND-I-Q1-retest-IQ1-5-20261025.png
+
+----------------------------------------------------------------
+IQ1-4 PARTIAL（产品钉，不变）
+----------------------------------------------------------------
+  · Go GET …/teams/{id}/entry Lookup 已 PASS†（I-G1）
+  · FE 尚未接线 entry Lookup UI → 状态机「有 K 复用」UI 仍 PARTIAL
+  · 不挡 IQ1-3/5 本轮 PASS†；挡 I-Q1 全绿 / I-P1
+
+----------------------------------------------------------------
+相对前次 Soft† @b0a4d3d
+----------------------------------------------------------------
+  已消：D1（IQ1-3 脏串/未命名席）· D2（IQ1-5 active 脏 slug 绕过守卫仍 mint）
+  仍开：D4（IQ1-4 entry UI 未接）
+  toast 尾 vs 列表尾不一致：caveat only（·481b ≠ ·bccd）
+
+----------------------------------------------------------------
+Verdict
+----------------------------------------------------------------
+**Soft†** @ FE 1257830 · Go a034a15 / docs c535099
+  本轮 PASS†：IQ1-3 · IQ1-5（复测）
+  仍 PARTIAL：IQ1-4（FE 未接 GET …/entry）
+  仍 PASS†：IQ1-1 · IQ1-2 · IQ1-6 · IQ1-7 · I-G1 API
+  非全绿（缺 entry UI）→ **不交 I-P1**（本文件不改债 I-P1 / I-Q1 勾选）
+One-line → React+产品+总指挥：I-Q1 FE retest Soft† @1257830；IQ1-3/5 PASS†（人话前端/知识库；在席后端隐入场链接无 mint）；IQ1-4 仍 PARTIAL（FE 未接 entry）；I-G1 API 仍 PASS†；不交 I-P1。
