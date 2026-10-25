@@ -131,7 +131,7 @@
 - [x] **L-R1** 路由（仍有效：未登录 `/`=Landing；`/login`=Login；authed 后台不动；`/join` 不破）
 - [x] **L-R2** Landing 锁文案落地（路由/锁句骨架仍有效；**正文须按真图硬门重做**）
 - [x] **L-R3†** ~~FE `f0fe24f` CSS/mock 图文加厚~~ · **整包作废**（主人骂 CSS 假框；勿当关单依据）
-- [ ] **L-V-SPEC** 视觉总监配图规格（Hero / V-Board / V-Seat / V-Multi / V-Flow 真图规格）
+- [x] **L-V-SPEC** 视觉总监配图规格 · 总监规格锁专册 §4.1 @`4d6073e`（Hero / V-Board / V-Seat / V-Multi / V-Flow）
 - [ ] **L-R3‡** React 落**真图**整页（五位真插图 + 左右交替≥2 + Hero 真图大框；禁 CSS 假框）；前次 L-R3† / 关单 @`46f3040` / SL-V3 `e7da310` / FE `675a300` **作废**
 - [ ] **SL-V1** 桌面首屏箱截（Hero **真图**大框）；前次图文包 @`e7da310` **作废**
 - [ ] **SL-V2** 全页截（≥4 **真**示意 + ≥2 图文交替）；前次 **作废**
@@ -140,7 +140,7 @@
 - [ ] **L-Q1** 真图重开后复测（未登录=/官网；登录进后台；`/join`；箱截；禁甩主人）
 - [ ] **L-P1** 产品关（真图放行 + L-Q1 后再关）；前次图文关单 @`46f3040` **作废**
 
-**状态：重开 · 真图**（回退 L-R3‡ / SL-V1/V2/V3 / L-Q1 / L-P1；前次图文关单 @`46f3040` · SL-V3 `e7da310` · FE `675a300`/`f0fe24f` **作废**——CSS 假框被主人骂）。L-P0/R1/R2 路由·锁句骨架仍勾。Soft 仍冻；INVITE 勿动。
+**状态：重开 · 真图** · **L-V-SPEC 已勾**（总监规格锁专册 §4.1 @`4d6073e`）。等 **L-R3‡ 落真图 → 审图 → SL-V3**。L-R3‡ / SL-V* / L-Q1 / L-P1 仍空。前次图文关单 @`46f3040` · SL-V3 `e7da310` · FE `675a300`/`f0fe24f` **作废**。L-P0/R1/R2 路由·锁句骨架仍勾。Soft 仍冻；INVITE 勿动。
 
 ## 派工
 
@@ -185,8 +185,10 @@
 - 2026-10-25 · **关单 L-P1** · Wiki `docs/wiki-dogfood/LANDING_CLOSE.md`（图文重开包）；锚 专册 `bc215de` · FE `f0fe24f`/`675a300`/`90cc85c` · SL-V3 `e7da310` · L-Q1 PASS†；前次 `e4bd63c`/`e027f5a` 作废已由重开替代；Inter CDN 软另票。状态：**已关**。
 - 2026-10-25 · **QA retest2 纪要补档** `docs/qa-shots/LANDING-L-Q1-retest2-qa-20261025.txt` · PASS† @`675a300` / join `90cc85c` / SL-V3 `e7da310`；锁句 exact；清单 PASS† retest2；**不改写** Wiki（产品已关 L-P1 @`46f3040`）。
 
+- 2026-10-25 21:01 · **勾 L-V-SPEC** 总监规格锁专册 §4.1 @`4d6073e`（Hero / V-Board / V-Seat / V-Multi / V-Flow 真图规格）。状态等 **L-R3‡ 落真图 → 审图 → SL-V3**；勿勾 L-R3‡ / SL-V* / L-Q1 / L-P1。
+
 - 2026-10-25 20:55 · **主人打回「要生成真图+整页设计」→ 重开 · 真图**。产品硬锁图文位：Hero / V-Board / V-Seat / V-Multi / V-Flow **每段必须真插图**（GenerateImage 或 `Landing/assets/` / `frontend/public` PNG/WebP）；**禁**纯字墙、**禁** CSS 假框/空卡片冒充。前次图文关单 @`46f3040` / SL-V3 `e7da310` / FE `675a300`（及 `f0fe24f`）**作废**。回退勾选：L-V-SPEC / L-R3‡ / SL-V1/V2/V3 / 审图自审 / L-Q1 / L-P1。锁句勿漂（多机标题「多机分工，不是换机续聊」；正文「…干完统一调度指挥。」；主名育蒙协作看板）。Soft 仍冻；INVITE 勿动。状态：**重开 · 真图**。
 
 ## 关单进度
 
-**重开 · 真图** · 前次图文关单 @`46f3040` / SL-V3 `e7da310` / FE `675a300` **作废**（CSS 假框被主人骂）。待：L-V-SPEC → L-R3‡ → 审图自审 → SL-V1/V2 → SL-V3 → L-Q1 → L-P1。Wiki [`LANDING_CLOSE.md`](./wiki-dogfood/LANDING_CLOSE.md) 图文包关单 **作废待真图重写**。软非挡：Inter CDN 另票。Soft 仍冻；INVITE 勿动。
+**重开 · 真图** · **L-V-SPEC 已勾**（总监规格锁专册 §4.1 @`4d6073e`）。前次图文关单 @`46f3040` / SL-V3 `e7da310` / FE `675a300` **作废**。待：**L-R3‡ 落真图 → 审图 → SL-V3** → L-Q1 → L-P1（L-R3‡ / SL-V* / L-Q1 / L-P1 勿勾）。Wiki [`LANDING_CLOSE.md`](./wiki-dogfood/LANDING_CLOSE.md) 图文包关单 **作废待真图重写**。软非挡：Inter CDN 另票。Soft 仍冻；INVITE 勿动。
