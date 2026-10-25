@@ -10,7 +10,7 @@
 | --- | --- |
 | 主人 UI | 切仓/切「07」仍见他仓记忆·交接·YM-* |
 | 双仓 API `@f169699` | 错仓 memories/todos → **200 空**；handoff → **404**。明文跨仓泄漏 **未复现** |
-| 根因合议 | ① memories/todos 缺 `member∈ws` 硬门（软吞空数组）② 写路径可污染 ③ **FE 切仓不清 Bot 态**（最贴 UI）④ 同仓跨项目 Issue 进 handoff/列表（另验收行） |
+| 根因合议 | ① memories/todos 缺 `member∈ws` 硬门（读 200 空）② **写 IDOR 已实锤** `@0c39d38`：错仓 POST memories/todos → **201** 脏行 ③ **FE 切仓不清 BotDetail/席态**（最贴 UI）④ 同仓跨项目 Issue（另验收行） |
 
 ## 气质一句
 
@@ -33,8 +33,9 @@
 | A1 | JWT 双仓成员：切 WS1→WS2，开 Bots/记忆/handoff | 屏上 **零** WS1 残留（空态或本仓数据） |
 | A2 | `GET …/{WS2}/bots/{MID_ws1}/memories\|todos` | **404**（非 200 空） |
 | A3 | 同上 handoff | **404**（回归） |
-| A4 | 错配 mid 写入 memories/todos | **404** |
+| A4 | 错配 mid **POST/PATCH** memories/todos | **404**（禁 201；回归 `@0c39d38`） |
 | A5 | 非成员打业务读 | **403** |
+| A6 | 写后同路径 GET | 不得因脏行变 200 有内容 |
 
 ### B · 跨项目可见性（同仓）
 
@@ -51,7 +52,7 @@
 | **X-G2** | 单测：错仓 mid 读/写 → 404；同仓 200 | Go |
 | **X-G3** | （核对）MountBots/Teams 与 chi 一致包 `RequireWorkspaceMember`；`resolveMember` 上下文 mid 必核 `workspace_id`（通道已报洞，Go 核后修） | Go |
 | **X-M1** | 通道旁路：文档/人话不挡；若 CLI/MCP 有错仓软吞一并跟 X-G1 | Bot 记忆 |
-| **X-R1** | 切 `wsId`：**先清空** bots/roles/keys/seats/handoff Drawer 再 fetch；失败不清残留禁 | React |
+| **X-R1** | 切仓零残留：**首选** `AppLayout`/主内容树（含 `CurrentTeamProvider`）`key={wsId}` remount；并行 effect 发请求前 `setX([])/null`；点名清 `BotDetail`/`SeatHandoffDrawer`；顺手 `projectId` → `acb.project.<wsId>` | React |
 | **X-R2** | `BotDetailPage`：切仓丢旧 `memberId` 或重导航；queryKey 含 `wsId` | React |
 | **X-R3** | 项目上下文 listIssues/handoff 带 `project_id`（B1） | React |
 | **X-I1** | 跨仓 Issue Get/List 契约单测 + 双仓 curl 自证（维持 404） | Issue 域 |
@@ -89,4 +90,5 @@
 
 ## 进度注记
 
+- 2026-10-25 10:19 · **补锤**：写路径 IDOR `@0c39d38`（POST 201）；FE 拍死 `key={wsId}` remount 为首选（React 合议）。
 - 2026-10-25 10:18 · **拍板开刀**。探针 `f169699`；码表 403/404 齐 Go 建议。明文泄漏未复现；UI 主修 FE + memories/todos 硬门。
