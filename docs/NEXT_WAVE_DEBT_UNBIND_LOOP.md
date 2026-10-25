@@ -70,8 +70,8 @@ left/stopped/open ◄── 补位仅显式补位码/合法 force（**不**自�
 - [ ] **U-G3** 占用中人话
 - [ ] **U-G4** 幂等回归
 - [ ] **U-M1** CLI 本地收尾
-- [ ] **U-R1** FE 移除后席态
-- [ ] **U-R2** FE 文案
+- [x] **U-R1** FE 移除后席态
+- [x] **U-R2** FE 文案
 - [ ] **U-Q1** QA 自测
 - [ ] **U-P1** 关单
 
@@ -99,3 +99,4 @@ left/stopped/open ◄── 补位仅显式补位码/合法 force（**不**自�
 ## 进度注记
 
 - 2026-10-25 08:30 · 产品拍板开刀。根因：移除成员不级联 → 脏绑 → 403「只能解绑自己绑定的席位」。LOGIN_REFRESH 并行。Soft 三件仍冻。
+- 2026-10-25 08:35 · FE U-R1/U-R2：Settings 移除后 `emitMemberRemoved` → 班底页乐观清绑+reload；stop/unbind skipToast + U6/U5/U4 人话。等 Go U-G1～U-G3 入后行为自然对齐。

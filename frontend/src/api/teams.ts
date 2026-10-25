@@ -271,11 +271,15 @@ export function unbindSeat(
   body?: { member_id?: string },
   idempotencyKey?: string,
 ) {
-  return api<{ seat: TeamSeat }>(`${ws(workspaceId)}/teams/${teamId}/seats/${seatId}/unbind`, {
-    method: 'POST',
-    body: JSON.stringify(body || {}),
-    idempotencyKey,
-  })
+  return api<{ seat: TeamSeat; message?: string }>(
+    `${ws(workspaceId)}/teams/${teamId}/seats/${seatId}/unbind`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body || {}),
+      idempotencyKey,
+      skipToast: true,
+    },
+  )
 }
 
 /** Admin 停工：清绑 + status=stopped（可补位）；与 unbind→left 对仗 */
@@ -285,11 +289,15 @@ export function stopSeat(
   seatId: string,
   idempotencyKey?: string,
 ) {
-  return api<{ seat: TeamSeat }>(`${ws(workspaceId)}/teams/${teamId}/seats/${seatId}/stop`, {
-    method: 'POST',
-    body: '{}',
-    idempotencyKey,
-  })
+  return api<{ seat: TeamSeat; message?: string }>(
+    `${ws(workspaceId)}/teams/${teamId}/seats/${seatId}/stop`,
+    {
+      method: 'POST',
+      body: '{}',
+      idempotencyKey,
+      skipToast: true,
+    },
+  )
 }
 
 /** 签发入场码（Go G3）；404 → 人话由调用方处理 */
@@ -395,6 +403,71 @@ export function isSeatConflict(err: unknown): boolean {
   if (!(err instanceof ApiError) || err.status !== 409) return false
   return /占用|顶替|已绑定|conflict/i.test(err.message) || err.code === 'conflict'
 }
+
+/** UNBIND_LOOP U5：脏绑已清理人话 */
+export const SEAT_STALE_BIND_CLEARED = '席位绑定已失效，已清理'
+
+/** UNBIND_LOOP U6：他人存活占用人话 */
+export function seatOccupiedByHuman(displayName: string): string {
+  const name = (displayName || '').trim() || '其他成员'
+  return `席位由「${name}」占用；请对方离席，或让管理员停工/离职解绑`
+}
+
+export function isSeatStaleBindClearedMessage(msg?: string | null): boolean {
+  if (!msg) return false
+  return /席位绑定已失效|已失效.*清理|绑定已失效/.test(msg)
+}
+
+/** U5/U4：错误体实为「已解除」→ 按成功处理并刷新 */
+export function isSeatLeaveEffectiveSuccess(err: unknown): boolean {
+  if (!(err instanceof ApiError)) return false
+  const m = err.message || ''
+  if (isSeatStaleBindClearedMessage(m)) return true
+  // 无 bound 幂等：偶发 4xx 仍带「已解绑/无绑定」
+  if (/无\s*bound|无绑定|已解绑|already\s*unbound|not\s*bound/i.test(m)) return true
+  return false
+}
+
+/**
+ * UNBIND_LOOP U-R2：stop/unbind/leave 错误人话。
+ * API 已回新人话则透传；否则对 403/冲突改写为 U6。
+ */
+export function humanizeSeatLeaveError(
+  err: unknown,
+  opts?: { occupantDisplayName?: string | null },
+): string {
+  if (!(err instanceof ApiError)) {
+    return err instanceof Error ? err.message : '操作失败'
+  }
+  const m = (err.message || '').trim()
+  if (isSeatStaleBindClearedMessage(m)) return SEAT_STALE_BIND_CLEARED
+  // 已是 U6 句式 → 透传
+  if (/席位由「.+」占用/.test(m)) return m
+  if (err.status === 403 || err.status === 409 || err.code === 'forbidden' || err.code === 'conflict') {
+    if (/只能解绑|自己绑定|无权解绑|不能解绑|占用中|已被.*占用|seat.*bound|forbidden/i.test(m) || !m) {
+      const name = (opts?.occupantDisplayName || '').trim()
+      if (name) return seatOccupiedByHuman(name)
+      // 无显示名时仍给可操作指引，勿甩技术腔
+      return '席位由其他成员占用；请对方离席，或让管理员停工/离职解绑'
+    }
+  }
+  return m || '操作失败'
+}
+
+/** 设置·移除成员后：班底页乐观清绑 / 立刻 reload（U-R1） */
+export const MEMBER_REMOVED_EVENT = 'acb:member-removed'
+
+export type MemberRemovedDetail = { workspaceId: string; memberId: string }
+
+export function emitMemberRemoved(workspaceId: string, memberId: string) {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(
+    new CustomEvent<MemberRemovedDetail>(MEMBER_REMOVED_EVENT, {
+      detail: { workspaceId, memberId },
+    }),
+  )
+}
+
 
 /** Soft† V2G：通码踩停工席 → 人话引导（禁静默补） */
 export const SEAT_REFILL_GUIDE_TITLE = '普通入场码不能自动顶停工席'

@@ -43,15 +43,20 @@ import {
   bindSeat,
   createTeamInvite,
   getRoster,
+  humanizeSeatLeaveError,
   inviteStatusCn,
   inviteTail,
   isInviteServiceMissing,
   isSeatConflict,
+  isSeatLeaveEffectiveSuccess,
   listTeamInvites,
+  MEMBER_REMOVED_EVENT,
   revokeTeamInvite,
   seatOccupancy,
+  SEAT_STALE_BIND_CLEARED,
   stopSeat,
   unbindSeat,
+  type MemberRemovedDetail,
   type Team,
   type TeamInvite,
   type TeamSeat,
@@ -187,6 +192,49 @@ export default function BotsRosterPage() {
   useEffect(() => {
     void load()
   }, [wsId])
+
+  /** U-R1：设置·移除成员后乐观清绑并立刻 reload seats/roster */
+  useEffect(() => {
+    const onRemoved = (ev: Event) => {
+      const detail = (ev as CustomEvent<MemberRemovedDetail>).detail
+      if (!detail || detail.workspaceId !== wsId) return
+      const mid = detail.memberId
+      setTeamSeats((prev) =>
+        prev.map((s) => {
+          const bound =
+            s.bound_member_id === mid ||
+            s.member_id === mid ||
+            s.claim?.member_id === mid
+          if (!bound) return s
+          return {
+            ...s,
+            status: 'left',
+            bound_member_id: null,
+            member_id: null,
+            bound_display_name: null,
+            bound_at: null,
+            claim: null,
+          }
+        }),
+      )
+      setRoles((prev) =>
+        prev.map((r) => (r.claim?.member_id === mid ? { ...r, claim: null } : r)),
+      )
+      setBots((prev) => prev.filter((b) => b.member_id !== mid))
+      void load()
+      void (async () => {
+        if (!wsId || !teamId) return
+        try {
+          const rost = await getRoster(wsId, teamId)
+          setTeamSeats(rost.roster || [])
+        } catch {
+          /* 保留乐观清绑 */
+        }
+      })()
+    }
+    window.addEventListener(MEMBER_REMOVED_EVENT, onRemoved)
+    return () => window.removeEventListener(MEMBER_REMOVED_EVENT, onRemoved)
+  }, [wsId, teamId])
 
   /** 顶栏 CurrentTeam 换队：邀请缓存清空并 refetch；保留同队已 seed 的 roster（建队 onCreated）防闪空 */
   useEffect(() => {
@@ -541,6 +589,44 @@ export default function BotsRosterPage() {
     })
   }
 
+  /** U-R2：stop/unbind 共用收尾（U4/U5 当成功；U6 人话） */
+  const finishSeatLeave = async (
+    role: BotRole,
+    status: 'stopped' | 'left',
+    seatResult?: TeamSeat | null,
+    successToast?: string,
+  ) => {
+    applyOptimisticLeave(role, status, seatResult)
+    if (!role.id.startsWith('seat:')) {
+      try {
+        await releaseBotRole(wsId, role.id, crypto.randomUUID())
+      } catch {
+        /* leave 已释 claim；release 幂等失败可忽略 */
+      }
+    }
+    message.success(
+      successToast ||
+        (status === 'stopped'
+          ? `已将「${roleDisplay(role)}」标为停工 · 可补位`
+          : `已将「${roleDisplay(role)}」离职解绑 · 可补位`),
+    )
+    void load()
+    void refreshTeamRoster()
+  }
+
+  const handleSeatLeaveError = async (role: BotRole, status: 'stopped' | 'left', e: unknown) => {
+    const occ = seatOccForRole(role)
+    if (isSeatLeaveEffectiveSuccess(e)) {
+      await finishSeatLeave(role, status, null, SEAT_STALE_BIND_CLEARED)
+      return
+    }
+    message.error(
+      humanizeSeatLeaveError(e, {
+        occupantDisplayName: occ.occupantLabel || occ.occupantId,
+      }),
+    )
+  }
+
   /** L3/L4：停工 → stopped；Toast + roster「停工席 · 可补位」；勿混 ymt_/Bot 入场文案 */
   const onStop = async (role: BotRole) => {
     const seat = seatOccForRole(role).seat
@@ -549,24 +635,18 @@ export default function BotsRosterPage() {
       return
     }
     try {
-      const { seat: stopped } = await stopSeat(wsId, teamId, seat.id, crypto.randomUUID())
-      applyOptimisticLeave(role, 'stopped', stopped)
-      if (!role.id.startsWith('seat:')) {
-        try {
-          await releaseBotRole(wsId, role.id, crypto.randomUUID())
-        } catch {
-          /* stop 已释 claim；release 幂等失败可忽略 */
-        }
-      }
-      message.success(`已将「${roleDisplay(role)}」标为停工 · 可补位`)
-      void load()
-      void refreshTeamRoster()
+      const res = await stopSeat(wsId, teamId, seat.id, crypto.randomUUID())
+      const toast =
+        res.message && /席位绑定已失效|绑定已失效/.test(res.message)
+          ? SEAT_STALE_BIND_CLEARED
+          : undefined
+      await finishSeatLeave(role, 'stopped', res.seat, toast)
     } catch (e: unknown) {
-      message.error(e instanceof ApiError ? e.message : '停工失败')
+      await handleSeatLeaveError(role, 'stopped', e)
     }
   }
 
-  /** L3/L4：离职解绑 → left；与 stop 对仗 */
+  /** L3/L4：离职解绑 → left；与 stop 对仗 · UNBIND_LOOP U-R2 */
   const onLeaveUnbind = async (role: BotRole) => {
     const seat = seatOccForRole(role).seat
     if (!teamId || !seat?.id) {
@@ -574,20 +654,14 @@ export default function BotsRosterPage() {
       return
     }
     try {
-      const { seat: unbound } = await unbindSeat(wsId, teamId, seat.id, undefined, crypto.randomUUID())
-      applyOptimisticLeave(role, 'left', unbound)
-      if (!role.id.startsWith('seat:')) {
-        try {
-          await releaseBotRole(wsId, role.id, crypto.randomUUID())
-        } catch {
-          /* unbind 已释 claim */
-        }
-      }
-      message.success(`已将「${roleDisplay(role)}」离职解绑 · 可补位`)
-      void load()
-      void refreshTeamRoster()
+      const res = await unbindSeat(wsId, teamId, seat.id, undefined, crypto.randomUUID())
+      const toast =
+        res.message && /席位绑定已失效|绑定已失效/.test(res.message)
+          ? SEAT_STALE_BIND_CLEARED
+          : undefined
+      await finishSeatLeave(role, 'left', res.seat, toast)
     } catch (e: unknown) {
-      message.error(e instanceof ApiError ? e.message : '离职解绑失败')
+      await handleSeatLeaveError(role, 'left', e)
     }
   }
 

@@ -32,6 +32,7 @@ import {
   removeMember,
   type WorkspaceMember,
 } from '../../api/members'
+import { emitMemberRemoved } from '../../api/teams'
 import {
   createWorkspaceInvite,
   listWorkspaceInvites,
@@ -390,7 +391,14 @@ export default function SettingsPage() {
     }
     try {
       await removeMember(wsId, row.id)
-      message.success('已移除成员')
+      // U-R1：通知班底页乐观清绑 + 立刻 reload seats/roster
+      emitMemberRemoved(wsId, row.id)
+      const label = (row.display_name || '').trim() || '该成员'
+      message.success(
+        isBotMember(row)
+          ? `已移除机器人「${label}」；相关席位绑定已清理`
+          : `已移除成员「${label}」；相关席位绑定已清理`,
+      )
       await reloadMembers()
     } catch (e) {
       message.error(e instanceof ApiError || e instanceof Error ? e.message : '移除失败')
