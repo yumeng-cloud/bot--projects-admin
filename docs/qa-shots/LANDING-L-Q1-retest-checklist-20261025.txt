@@ -1,35 +1,37 @@
-LANDING / SITE_LANDING · L-Q1 复测清单 2026-10-25（图文重开后 · 对齐债 docs/NEXT_WAVE_DEBT_LANDING.md @bc215de · SL-V3 e7da310）
+LANDING / SITE_LANDING · L-Q1 复测清单 2026-10-25（图文重开后 · retest2 PASS† · 对齐债 docs/NEXT_WAVE_DEBT_LANDING.md @bc215de · SL-V3 e7da310）
 气质：安静、好用、像真在干活的班——未登录见官网，登录进后台。
-判定：**FAIL** · Join 绿 · 视觉绿 · §多机锁句红 · computerUse @90cc85c · 2026-10-25 15:06 Asia/Shanghai
-FE sha：90cc85c3238a001f92fe6fde06e2dc113c3eb7fc · 视觉放行：SL-V3 @e7da310386717bdcd77b888a36dd2d54a1fdff2f · 全纪要：LANDING-L-Q1-retest-qa-20261025.txt
-前次：LANDING-L-Q1-checklist-20261025.txt PASS† @b7b20ea / e027f5a **作废**（随图文重开）
+判定：**PASS† retest2** · 全行绿 · computerUse @675a300（join fix 90cc85c）· 2026-10-25 15:14 Asia/Shanghai
+FE sha：675a300c1cff6ec23d70d2d006342c9d5015aa43 · join：90cc85c3238a001f92fe6fde06e2dc113c3eb7fc · 视觉放行：SL-V3 @e7da310386717bdcd77b888a36dd2d54a1fdff2f
+全纪要：LANDING-L-Q1-retest2-qa-20261025.txt
+前次 retest1：FAIL @90cc85c · LANDING-L-Q1-retest-qa-20261025.txt（唯 LQ1-4 红；已由 675a300 消）
+前次作废：LANDING-L-Q1-checklist-20261025.txt PASS† @b7b20ea / e027f5a（随图文重开）
 ================================================================
 前置：
-- **Wait FE + visual**：L-R3† 图文 + SL-V3 总监放行 @e7da310 后再全表自点。✓
+- **Wait FE + visual**：L-R3† 图文 + SL-V3 总监放行 @e7da310 + 锁句 fix 675a300 后再全表自点。✓
 - **Forbidden: owner as tester**——禁甩主人作测试账号；用狗粮/箱测账号。✓
-- 自跑必出**箱截**（png 落本目录，命名 LANDING-L-Q1-retest-*-20261025.png）。✓
+- 自跑必出**箱截**（png 落本目录；含 LANDING-L-Q1-lock-retest-20261025.png + retest-*）。✓
 - 不改 INVITE_ON_DEMAND / SEAT_* / Soft；本刀只验未登录官网 + 路由 + 锁文案 + Join。
-- **不勾 L-P1**；本包 FAIL 不交产品关。
+- **不自关 L-P1**；PASS† 交产品。本跑不改写 Wiki；产品已关 @46f3040（CLOSE 模式）。
 
-债勾选对照（本清单覆盖 L-Q1 复测；不代勾 L-P1 / 不改债勾）
+债勾选对照（本清单覆盖 L-Q1 retest2；不代勾 L-P1）
 | 债 ID | 标准摘要 | 本清单行 |
 | L-P0 | 本债拍板（锁文案 + 眉题禁 pill） | 前置（债侧已勾） |
 | L-R1 | 未登录 /=Landing；/login=Login；authed 后台不动；/join 不破 | LQ1-1 · LQ1-2 · LQ1-3 |
 | L-R2 | Landing 锁文案落地；眉题纯文 13–14 secondary，禁 pill | LQ1-4 · LQ1-5 |
 | L-R3† | 图文页（示意≥4 + 交替≥2 + Hero 大框） | 视觉旁证 / LQ1-6 |
 | SL-V1/V2/V3 | 箱截 + 总监放行图文 @e7da310 | 前置门 · PASS† 旁证 |
-| L-Q1 | 未登录=/官网；登录后后台；/join 仍可用；箱截；禁主人；复测 | **本文件（FAIL）** |
-| L-P1 | 产品关 | **不勾**（包未全绿） |
+| L-Q1 | 未登录=/官网；登录后后台；/join 仍可用；箱截；禁主人；复测 | **本文件（PASS† retest2）** |
+| L-P1 | 产品关 | **不由 QA 勾**（产品已关 @46f3040；本清单不代关） |
 
 A · 未登录首页 = 官网（非登录墙当 sole home）
 [x] LQ1-1 PASS† 未认证打开 `/` → **营销/官方 Landing**（育蒙协作看板官网），**不是** LoginPage 作为唯一首页/sole home
-    证据：LANDING-L-Q1-retest-hero-20261025.png · LANDING-L-Q1-retest-full-20261025.png
+    证据：LANDING-L-Q1-retest-hero-20261025.png · LANDING-L-Q1-lock-retest-20261025.png
 
 B · 已登录进后台
 [x] LQ1-2 PASS† 已登录访问 `/` → **Home / 后台**（既有 App 行为）；勿卡在官网
     证据：LANDING-L-Q1-retest-home-authed-20261025.png
 
-C · /join 深链不破（含 bare · 相对 FULL_SMOKE A5 复测绿）
+C · /join 深链不破（含 bare · FULL_SMOKE A5 CLEARED @90cc85c）
 [x] LQ1-3 PASS† 未登录与已登录路径下 **`/join` 仍可用**（bare + `?code=`）；**无**死转「正在打开入场向导」Spin
     证据：
       LANDING-L-Q1-retest-join-bare-unauth-20261025.png
@@ -37,23 +39,23 @@ C · /join 深链不破（含 bare · 相对 FULL_SMOKE A5 复测绿）
       LANDING-L-Q1-retest-join-code-unauth-20261025.png
       LANDING-L-Q1-retest-join-code-authed-20261025.png
 
-D · 多机文案（债锁句 · 禁续聊话术）——本轮红
-[ ] LQ1-4 **FAIL** §多机锁句未齐落地
+D · 多机文案（债锁句 · exact · 禁续聊话术）——retest2 消红
+[x] LQ1-4 PASS† §多机锁句 **exact match** 债表落地
     对照债表（勿改意思 · 逐字）：
     · §多机标题：「多机分工，不是换机续聊」
     · §多机正文：「不同电脑认领不同角色干活，干完统一调度指挥。」
-    实得（computerUse）：**缺**「不是换机续聊」；**缺**「指挥」
-    证据：LANDING-L-Q1-retest-full-20261025.png
-    → 本行挡 L-Q1 全绿；**不交 L-P1**
+    实得 @675a300：title+body exact；漂移句（缺半句/缺「指挥」）已消
+    证据：LANDING-L-Q1-lock-retest-20261025.png
+    修复锚：675a300（相对 retest1 FAIL @90cc85c）
 
-E · 锁文案其余位（L-R2 旁证）
-[x] LQ1-5 PASS† 主标「育蒙协作看板」；眉题「人与 Agent，一支团队」= **纯文一行**（禁 pill）；主 CTA「登录」
-    证据：LANDING-L-Q1-retest-hero-20261025.png
+E · 锁文案其余位（L-R2 旁证 · smoke 主标/眉题/副标）
+[x] LQ1-5 PASS† 主标「育蒙协作看板」；眉题「人与 Agent，一支团队」= **纯文一行**（禁 pill）；主 CTA「登录」；副标 SL-V3 放行句
+    证据：LANDING-L-Q1-retest-hero-20261025.png · LANDING-L-Q1-lock-retest-20261025.png
 
 F · 纪律 / 证据门
-[x] LQ1-6 PASS† 箱截齐套（7 帧 retest）+ 纪要写清 FE sha · SL-V3 · 债 sha · 逐行 PASS†/FAIL
-    证据：LANDING-L-Q1-retest-*-20261025.png + LANDING-L-Q1-retest-qa-20261025.txt
+[x] LQ1-6 PASS† 箱截齐套（lock + 7 帧 retest）+ 纪要写清 FE sha · join sha · SL-V3 · 债 sha · 逐行 PASS†
+    证据：LANDING-L-Q1-lock-retest-20261025.png + LANDING-L-Q1-retest-*-20261025.png + LANDING-L-Q1-retest2-qa-20261025.txt
 [x] LQ1-7 PASS† **Forbidden**：全程禁用主人账号作 tester
 
-关：LQ1-4 FAIL → **不交**产品 L-P1。（本清单不改 L-P1；债侧 L-Q1/L-P1 保持未勾）
-状态：**FAIL** @ FE 90cc85c · SL-V3 e7da310 · 债 bc215de · Join PASS† · 视觉 PASS† · **§多机锁句 FAIL** · **不勾 L-P1**
+关：全绿 PASS† retest2 → **交产品 L-P1**。（本清单不代关；Wiki 本跑未改写；产品已关 @46f3040）
+状态：**PASS† retest2** @ FE 675a300 · join 90cc85c · SL-V3 e7da310 · 债 bc215de · 全行 [x] · PASS† 交产品（QA 不自关；产品 L-P1 @46f3040）

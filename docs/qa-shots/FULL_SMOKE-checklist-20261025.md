@@ -8,7 +8,7 @@
 > - Vite `http://127.0.0.1:5175` → **200**  
 > - API `http://127.0.0.1:8080/healthz` → **200** `{"status":"ok","service":"ai-collab-board",…}`  
 > - Seed（狗粮，**禁主人账号**）: `admin@yumeng.tech` / `Admin123!`  
-> **本文件状态:** Wave A 部分 + Wave B（项目 C1–C7）已跑 · **Overall 仍 PENDING** · **未宣称 FULL_SMOKE PASS** · A5 bare `/join` **FAIL** · LANDING 未关  
+> **本文件状态:** Wave A 部分 + Wave B（项目 C1–C7）已跑 · **Overall PARTIAL/PENDING** · **未宣称 FULL_SMOKE PASS** · A5 bare `/join` **PASS†** after `90cc85c` · Landing lock **PASS†** @`675a300` / L-Q1 retest2 · 产品 L-P1 @`46f3040`  
 
 ## 红线（违反即 FAIL / 禁写 PASS†）
 

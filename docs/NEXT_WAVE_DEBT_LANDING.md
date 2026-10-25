@@ -117,7 +117,7 @@
 - [x] **SL-V1** 桌面首屏箱截（Hero 大示意框）总监放行图文 @`e7da310`；前次 @`e027f5a`/`e4bd63c` **作废**
 - [x] **SL-V2** 全页截（≥4 示意 + ≥2 图文交替）总监放行图文 @`e7da310`；前次 **作废**
 - [x] **SL-V3** 视觉总监放行图文 @`e7da310`（专册 @`bc215de`；FE `f0fe24f`）；前次放行 **作废**
-- [x] **L-Q1** PASS† · 图文复测（锁句 `675a300` + join `90cc85c` + FE `f0fe24f` / SL-V3 `e7da310` / 专册 `bc215de`）；证据 `LANDING-L-Q1-lock-retest-20261025.png`；前次 @`b7b20ea`/`e027f5a` **作废**
+- [x] **L-Q1** PASS† retest2 · 图文复测（锁句 `675a300` + join `90cc85c` + FE `f0fe24f` / SL-V3 `e7da310` / 专册 `bc215de`）；纪要 `LANDING-L-Q1-retest2-qa-20261025.txt`；证据 `LANDING-L-Q1-lock-retest-20261025.png`；前次 @`b7b20ea`/`e027f5a` **作废**；retest1 FAIL @`010fc18` 已消
 - [x] **L-P1** 产品关 · 图文重开包 · Wiki `docs/wiki-dogfood/LANDING_CLOSE.md`（前次 `e4bd63c`/`e027f5a` 作废已由重开替代）
 
 **状态：已关**（L-P0/R1/R2/R3†/SL-V1/V2/V3/L-Q1/L-P1 齐；图文重开包 · 专册 @`bc215de` · FE `f0fe24f`/`675a300`/`90cc85c` · SL-V3 @`e7da310` · L-Q1 PASS† 证据 `LANDING-L-Q1-lock-retest-20261025.png`）。软非挡：Inter CDN 另票。
@@ -163,6 +163,7 @@
 - 2026-10-25 · **勾 SL-V1/V2/V3** 总监放行图文 @`e7da310` 双帧；FE `f0fe24f`；专册 `bc215de`；Inter CDN 软另票。状态：等 QA L-Q1 → L-P1。
 - 2026-10-25 · **勾 L-Q1 PASS†** 图文复测（FE `f0fe24f` · 锁句 `675a300` · join `90cc85c` / SL-V3 `e7da310` / 专册 `bc215de`）；证据 `docs/qa-shots/LANDING-L-Q1-lock-retest-20261025.png`（旁证 retest 齐套 @`ba10660`）；前次 FAIL 纪要 @`010fc18`（测于锁句前 `90cc85c`）已由锁句复测替代。
 - 2026-10-25 · **关单 L-P1** · Wiki `docs/wiki-dogfood/LANDING_CLOSE.md`（图文重开包）；锚 专册 `bc215de` · FE `f0fe24f`/`675a300`/`90cc85c` · SL-V3 `e7da310` · L-Q1 PASS†；前次 `e4bd63c`/`e027f5a` 作废已由重开替代；Inter CDN 软另票。状态：**已关**。
+- 2026-10-25 · **QA retest2 纪要补档** `docs/qa-shots/LANDING-L-Q1-retest2-qa-20261025.txt` · PASS† @`675a300` / join `90cc85c` / SL-V3 `e7da310`；锁句 exact；清单 PASS† retest2；**不改写** Wiki（产品已关 L-P1 @`46f3040`）。
 
 ## 关单进度
 
