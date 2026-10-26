@@ -1,8 +1,6 @@
 # LANDING GenerateImage 真图 · 还原包
 
-> 供其他 AI / 同事按文件名还原插画。气质与禁项以 [`../LANDING_TRUE_ART_PROMPTS.md`](../LANDING_TRUE_ART_PROMPTS.md) 为准。  
-> 落盘目录：`frontend/src/pages/Landing/assets/`（覆盖同名 PNG）。  
-> **真图必须是 GenerateImage（或同等插画引擎）**；禁止 HTML/CSS→PNG、色块拼版冒充。
+> **2026-10-26 开刀更正**：接线六图已改为覆盖主人 refs（`Landing/assets/refs/ref-01`…`ref-06`），**禁止再盲重生 / HTML→PNG**。映射见 `frontend/src/pages/Landing/assets/README.md`。下列提示词仅作备选还原文案。
 
 ## 文件 ↔ 提示词
 
