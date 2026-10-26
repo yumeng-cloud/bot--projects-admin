@@ -36,13 +36,15 @@ Issue 详情里描述与评论须 **默认预览渲染** Markdown；禁生 `##` 
 - [x] **MD-R1** 描述默认预览
 - [x] **MD-R2** 评论渲染
 - [x] **MD-R3** 编辑↔预览
-- [ ] **MD-Q1** QA 短测 · **已开**（基 `9d1feba`）
-- [ ] **MD-P1** 关
+- [x] **MD-Q1** PASS† · 基 `9d1feba` · 证 `e70dbc4`（箱截 `ISSUE_MD_RENDER-20261026-*` + 纪要）
+- [x] **MD-P1** 产品关 · Wiki `docs/wiki-dogfood/ISSUE_MD_RENDER_CLOSE.md`
 
-**状态：已开 MD-Q1** · 基 `9d1feba` → 待 PASS† → MD-P1。
+**状态：已关** · FE `9d1feba` · MD-Q1 PASS† `e70dbc4` · Wiki CLOSE。
 
 ## 进度注记
 
 - 2026-10-26 · 总指挥 P0：生 `##`/`-`；已钉 React 对齐 Wiki Viewer。产品锁上表验收。
+- 2026-10-26 · **勾 MD-Q1 PASS†** QA @`e70dbc4`（YM-27 描述预览+评论渲染+编辑回预览）。
+- 2026-10-26 · **关单 MD-P1** · Wiki `docs/wiki-dogfood/ISSUE_MD_RENDER_CLOSE.md`。状态：**已关**。
 - 2026-10-26 · **开 MD-Q1** 基 FE `9d1feba`（R1–R3 齐）。
 - 2026-10-26 · React：描述默认 `WikiBodyViewer` 预览、点编辑进 ByteMD、blur 回预览；评论列表同 Viewer。待产品开 MD-Q1。
