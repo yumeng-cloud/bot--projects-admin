@@ -1,0 +1,41 @@
+LANDING / SITE_LANDING · L-Q1 PASS† 纪要（气质真图包 · 2026-10-26）
+时间：2026-10-26 Asia/Shanghai
+判定：**PASS†**（全行绿；锁句 exact；五位真 PNG；交产品关 L-P1；本文件不自关 L-P1）
+来源：QA 测试 computerUse 箱测回报（产品代档入仓；截图齐套）
+================================================================
+基线
+  资产：b1fb8f7（主人 refs 接线 landing-*.png）
+  Hero 加厚：0f1da81 / d3dcb96
+  债开刀 / 开 L-Q1：69f7f57（勾 SL-V*）
+  视觉：SL-V3 放行（双帧 site-landing-desktop/scroll @b1fb8f7）
+  L-V-SPEC†：8e5ca0b
+  狗粮：admin@yumeng.tech only（禁主人作 tester）
+  Soft / INVITE / MOBILE_V2：本跑未动
+
+Shot 索引（docs/qa-shots/）
+  LANDING-L-Q1-20261026-01-home-unauth-hero.png   · 未登录 / 首屏 Hero 真图
+  LANDING-L-Q1-20261026-02-home-unauth-scroll.png · 未登录 / 全页滚
+  LANDING-L-Q1-20261026-03-lock-multi.png         · §多机锁句 exact
+  LANDING-L-Q1-20261026-04-home-authed.png        · 登录后后台 Home
+  LANDING-L-Q1-20261026-05-join-bare-authed.png   · /join bare 已登录
+  LANDING-L-Q1-20261026-06-join-code-authed.png   · /join?code= 已登录
+  LANDING-L-Q1-20261026-07-join-bare-unauth.png   · /join bare 未登录
+  LANDING-L-Q1-20261026-08-join-code-unauth.png   · /join?code= 未登录
+
+----------------------------------------------------------------
+逐行
+----------------------------------------------------------------
+| 行 | 判定 | 摘要 |
+| --- | --- | --- |
+| LQ1-1 | PASS† | 未登录 `/` = 真图官网（非 sole Login 墙）；Hero 真插图 |
+| LQ1-2 | PASS† | 登录后进后台 Home（未卡官网） |
+| LQ1-3 | PASS† | `/join` 无码/坏码 · 未登+已登：均有人话空态/错误；**无**死 Spin |
+| LQ1-4 | PASS† | 锁句（含§多机 exact）无漂 |
+| LQ1-5 | PASS† | 眉题纯文非 pill；主标育蒙协作看板；五位真 PNG |
+| LQ1-6 | PASS† | 箱截 8 帧 + 本纪要 |
+| LQ1-7 | PASS† | 狗粮 admin@yumeng.tech only |
+
+视觉旁证
+  SL-V3 PASS · 资产 b1fb8f7 · 五位真图硬门
+
+交产品：请勾 L-Q1、关 L-P1 + Wiki。不代勾 L-P1。

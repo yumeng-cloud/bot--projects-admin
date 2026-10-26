@@ -142,10 +142,10 @@
 - [x] **SL-V2** 全页 · `docs/qa-shots/site-landing-scroll.png` @`b1fb8f7`
 - [x] **审图自审** 双帧已交 · 总监 SL-V3 PASS（`b1fb8f7`）
 - [x] **SL-V3** 视觉总监 PASS · 资产 `b1fb8f7` + 双帧 site-landing-desktop/scroll（前次 `e7da310`/`301f49c`/`b200881`/`96e104f` 勿当依据）
-- [ ] **L-Q1** 气质真图复测（未登录=/官网；登录进后台；`/join`；箱截；禁甩主人）——**已开**（基 `b1fb8f7` + SL-V3 PASS）
-- [ ] **L-P1** 产品关（气质真图放行 + L-Q1 后再关）；前次图文关单 @`46f3040` **作废**
+- [x] **L-Q1** PASS† · 2026-10-26 · 基 `b1fb8f7` / Hero `0f1da81`/`d3dcb96` / 债 `69f7f57` / SL-V3 放行；箱截 `LANDING-L-Q1-20261026-*.png` · 纪要 `LANDING-L-Q1-qa-20261026.txt`
+- [x] **L-P1** 产品关 · 气质真图包（本关单）；前次图文关单 @`46f3040` **作废**（已由本真图重开替代）
 
-**状态：SL-V3 放行 · 开 L-Q1** · L-V-SPEC† @`8e5ca0b` · L-R3‡/`b1fb8f7` · SL-V1/V2/V3 PASS（双帧）。**已开 QA L-Q1**；L-P1 等 L-Q1 PASS†。禁盲重生。前次作废包勿用。Soft 仍冻；INVITE 勿动。
+**状态：已关** · L-V-SPEC† @`8e5ca0b` · L-R3‡/`b1fb8f7` · SL-V1/V2/V3 PASS · L-Q1 PASS† · L-P1。Wiki `docs/wiki-dogfood/LANDING_CLOSE.md`。软非挡 Inter CDN 另票。Soft 仍冻；INVITE 勿动；MOBILE_V2 另轨。
 
 ## 派工
 
@@ -198,9 +198,12 @@
 
 - 2026-10-25 21:43 · **打回 HTML→PNG 伪图** → 资产 @`96e104f` + 双帧旁证 `1f5b0b6` **作废**（主人认 GenerateImage 样张、打回现实现）。规补禁令 @`9bf8eb2`：**禁 HTML→PNG**；须箱内 GenerateImage 真插画。已喊审图重生、React 停接伪图（可另加厚 Hero 布局等新图接线）。**勿开 QA / 勿勾 SL-V3**。Soft 仍冻；INVITE 勿动。
 
+- 2026-10-26 · **勾 L-Q1 PASS†** QA 箱测 · 资产 `b1fb8f7` · Hero `0f1da81`/`d3dcb96` · 债 `69f7f57` · SL-V3 放行；证据 `docs/qa-shots/LANDING-L-Q1-20261026-*.png` + `LANDING-L-Q1-qa-20261026.txt`。
+- 2026-10-26 · **关单 L-P1** · Wiki `docs/wiki-dogfood/LANDING_CLOSE.md`（气质真图包）；前次图文关单 `46f3040`/`e7da310` 作废已由真图重开替代。状态：**已关**。
+
 - 2026-10-26 · **勾 L-R3‡ / SL-V1/V2/V3** 视觉总监 PASS：资产 `b1fb8f7`（主人 refs 接线）+ 双帧 `site-landing-desktop/scroll`；Hero 加厚 `0f1da81`/`d3dcb96`。**开 L-Q1**。禁盲重生。
 - 2026-10-25 22:20 · **主人参考图包入库（未开工做官网）**。16 张交图，3 对字节相同各留 1 张，13 张落 `frontend/src/pages/Landing/assets/refs/`。需求：后面做官网时按这套图参照（Hero 流水线、痛点对照、同一工作区、统一调度、席位产品界面、四步、上下文圆桌）。**本笔记不改** `Landing/index.tsx`、不替换在线 `landing-*.png`、不勾 L-R3‡ / SL-V* / L-Q1 / L-P1。清单：[`frontend/src/pages/Landing/assets/refs/README.md`](../frontend/src/pages/Landing/assets/refs/README.md)。
 
 ## 关单进度
 
-**SL-V3 放行 · 开 L-Q1** · 资产/`b1fb8f7` · 双帧 site-landing-desktop/scroll · L-V-SPEC† `8e5ca0b`。待：**L-Q1 PASS† → L-P1**。禁盲重生。Wiki 关单等 L-P1 重写。软非挡 Inter CDN。Soft 仍冻；INVITE 勿动。
+**已关** · 气质真图包 · 资产/`b1fb8f7` · Hero `0f1da81`/`d3dcb96` · 债开刀 `69f7f57` · L-V-SPEC† `8e5ca0b` · SL-V3 PASS · L-Q1 PASS† · L-P1 · Wiki `LANDING_CLOSE.md`。软非挡 Inter CDN 另票。Soft 仍冻；INVITE 勿动；MOBILE_V2 另轨。
