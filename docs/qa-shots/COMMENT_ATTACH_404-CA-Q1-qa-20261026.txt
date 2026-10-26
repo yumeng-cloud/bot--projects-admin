@@ -1,0 +1,34 @@
+COMMENT_ATTACH_404 · CA-Q1 QA 纪要
+日期：2026-10-26 Asia/Shanghai
+Overall：PASS†
+
+基线
+- FE 1a303c4（CA-R1 skipToast on listCommentAttachments / listIssueAttachments）
+- Go 47822fe（CA-G1 ListByComment 缺评 → 200 []；写路径仍 404）
+- 债注 a54dd1e（开 CA-Q1）
+- 箱 API：/tmp/ai-board-server-caq1 @ HEAD；Vite PC :5175
+
+门禁（产品）
+打开有评论的 Issue 详情 → 零「评论不存在」Toast（含双弹）
+
+API（CA-G1 箱复测）
+- GET …/comments/nonexistent-comment-id/attachments → HTTP 200 {"attachments":[]}
+- POST Upload 缺评 → HTTP 404 code=not_found message=评论不存在
+- go test handlers TestListByCommentMissing|TestListByCommentRealEmpty → ok
+
+UI（CA-Q1）
+- 账号 admin@yumeng.tech · 仓 育蒙科技 · Issue YM-27「QA-IA-active-210111」(190feaa3…)
+- 入口：列表点行（无可靠 /issues/:id 深链）
+- 评论 (3) 可见：mv2q1-qa；含 MD 评论
+- 「评论不存在」Toast 次数：0（列表重开 / 再点 / F5 后再开 / 打开后等 ~5s；轮询 .ant-message-notice / .ant-notification-notice）
+- 双弹：无
+
+截图
+- docs/qa-shots/COMMENT_ATTACH_404-20261026-detail.png
+- docs/qa-shots/COMMENT_ATTACH_404-20261026-toast-check.png
+
+Soft†（不挡关）
+- 中间一条评论正文可见字面 \n（未渲染 MD）；第三条评论 MD 正常。与本刀「禁 Toast」无关。
+- Soft / INVITE / LANDING / MOBILE / ISSUE_MD 未动。
+
+勿勾 CA-P1（产品关）。
