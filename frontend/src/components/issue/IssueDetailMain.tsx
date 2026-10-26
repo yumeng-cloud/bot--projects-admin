@@ -68,6 +68,7 @@ export function IssueDetailMain({
 
         <div className="acb-issue-desc-wrap">
           <IssueDescriptionEditor
+            key={issueId || 'new'}
             value={description}
             onChange={onDescriptionChange}
             onBlur={onDescriptionBlur}

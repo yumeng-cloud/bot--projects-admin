@@ -9,6 +9,7 @@ import {
 } from '../../api/attachments'
 import { IssueAttachmentList } from './IssueAttachmentList'
 import { IssueAttachmentUpload } from './IssueAttachmentUpload'
+import { WikiBodyViewer } from '../wiki/WikiBodyViewer'
 
 type Props = {
   loading: boolean
@@ -149,16 +150,9 @@ export function IssueCommentList({
                           {formatShanghai(c.created_at)}
                         </Typography.Text>
                       </Space>
-                      <Typography.Paragraph
-                        style={{
-                          marginBottom: 0,
-                          whiteSpace: 'pre-wrap',
-                          fontSize: 12.5,
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {c.body}
-                      </Typography.Paragraph>
+                      <div className="acb-issue-comment-md">
+                        <WikiBodyViewer value={c.body || ''} emptyText="" />
+                      </div>
                       {workspaceId && issueId ? (
                         <CommentAttachBlock
                           workspaceId={workspaceId}

@@ -6,21 +6,29 @@ import 'bytemd/dist/index.css'
 
 type Props = {
   value: string
+  /** 空正文占位；Issue 等场景可覆写 */
+  emptyText?: string
+  className?: string
 }
 
-/** Wiki 正文阅读 — ByteMD Viewer；挂 acb-wiki-md */
-export function WikiBodyViewer({ value }: Props) {
+/** Wiki / Issue 共用 Markdown 阅读 — ByteMD Viewer */
+export function WikiBodyViewer({
+  value,
+  emptyText = '还没有正文…',
+  className,
+}: Props) {
   const plugins = useMemo(() => [gfm({ locale: gfmZhHans })], [])
   const empty = !value?.trim()
+  const rootClass = ['acb-wiki-body', 'acb-wiki-md', className].filter(Boolean).join(' ')
 
   if (empty) {
     return (
-      <div className="acb-wiki-body is-empty acb-wiki-md is-empty">还没有正文…</div>
+      <div className={`${rootClass} is-empty`.trim()}>{emptyText}</div>
     )
   }
 
   return (
-    <div className="acb-wiki-body acb-wiki-md">
+    <div className={rootClass}>
       <Viewer value={value} plugins={plugins} />
     </div>
   )
