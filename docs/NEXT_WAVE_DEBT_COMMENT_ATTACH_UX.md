@@ -61,3 +61,5 @@
 - 2026-10-26 · 主人 t903u：评论附件「添加附件」像老系统；要好用能办事、禁 Form 味。
 - 2026-10-26 · 主持席拍死上表；执刀 React；关刀前 CAX-Q1 PASS†。
 - 2026-10-26 · React：CAX-R1–R4 勾上（Composer 仅回形针+pending 芯片；粘贴/拖拽；已发 hover 补挂；Issue 区同气质）。tsc+vite 绿。
+- 2026-10-26 · **勾 CAX-V1** UI视觉·审图 PASS† @`00fc54d`（软非挡：pending gap、触控 hover）。
+- 2026-10-26 · **开 CAX-Q1** 基 FE `00fc54d`（R1–R4+V1 齐）。
