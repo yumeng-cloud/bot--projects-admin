@@ -1,32 +1,77 @@
-MOBILE_V2 · MV2-Q1 FAIL† 纪要（2026-10-26）
-判定：**FAIL†** · 硬闸 B2；**不关 P1**
-来源：QA 测试箱测回报（产品代档；截图齐套）
-================================================================
-基线
-  V0/V1：fd2d788（壳 11df4bc）
-  债开 Q1：243ecfe
-  箱：:8080 已换 HEAD（session-context GET 200，非旧进程 404）
-  移动 Vite：http://127.0.0.1:5188/
-  LANDING/INVITE/Soft：未动
+MOBILE_V2 MV2-Q1 QA · PC↔移动续现场 + 窄视口 · 2026-10-26 09:46 Asia/Shanghai (CST)
+Overall: FAIL†（硬挡 B2）
+Soft†: A4 队席副行 seat slug only（非挡）
+Base: V0/V1 fd2d788340bba94e6769578a0cca5060e891b194 · shell 11df4bcb59a44540ce366af9b4bb7ca80d3f647a · debt 243ecfe5c84197a2fc1102e27c8c719a67210d3e
+Tested HEAD (pre-evidence): 243ecfe5c84197a2fc1102e27c8c719a67210d3e
+Mobile: http://127.0.0.1:5188
+Backend: replaced for session-context（非旧 404）
+Debt: docs/NEXT_WAVE_DEBT_MOBILE_V2.md
+Report: docs/qa-shots/MOBILE_V2-MV2-Q1-qa-20261026.txt
+Checklist: docs/qa-shots/MOBILE_V2-MV2-Q1-checklist-20261026.txt
+Scope: MV2-Q1 only. Do NOT check MV2-P1. LANDING / INVITE / Soft untouched.
 
-Shot 索引（docs/qa-shots/）
+Product accept (narrow)
+1) 窄视口登录 → 队席 → Issue 列表/详情能办事
+2) PUT session-context 后，换端/重进 hydrate 续现场（非踢下线）
+3) 登录后 hydrate 应落到深链/续现场目标，不得空落到 /crew
+4) 二次 PUT overwrite last-write-wins
+5) PC 同账号可见/可对齐现场
+6) 禁甩主人；禁花活
+
+Method
+- computerUse @ http://127.0.0.1:5188（frontend-mobile 窄视口）
+- Backend 已换新：session-context 可用（非旧进程 404）
+- 未认证 GET /api/v1/me/session-context → 401（expected；不是 Soft「旧进程」）
+- 狗粮账号；禁主人
+- 箱截 01–08 落 docs/qa-shots/
+
+Shot 索引（齐套）
   MOBILE_V2-MV2-Q1-20261026-01-login.png
   MOBILE_V2-MV2-Q1-20261026-02-crew-seats.png
   MOBILE_V2-MV2-Q1-20261026-03-issue-list.png
   MOBILE_V2-MV2-Q1-20261026-04-issue-detail.png
   MOBILE_V2-MV2-Q1-20261026-05-resume-put.png
-  MOBILE_V2-MV2-Q1-20261026-06-hydrate-after-login.png  · B2 主证
+  MOBILE_V2-MV2-Q1-20261026-06-hydrate-after-login.png
   MOBILE_V2-MV2-Q1-20261026-07-resume-overwrite.png
   MOBILE_V2-MV2-Q1-20261026-08-pc-same-account.png
 
+----------------------------------------------------------------
 逐行
+----------------------------------------------------------------
 | 行 | 判定 | 摘要 |
 | --- | --- | --- |
-| A 闭环 | PASS† | 登录→队席→Issue 改状态/评论 |
-| A4 | Soft† | 席副行 slug（不挡） |
-| B1 PUT | PASS† | session-context PUT |
-| B2 hydrate | FAIL† | 登录后续现场不站住：曾闪 Issue 深链→落 `/crew` |
-| B3 覆盖 | PASS† | 后写覆盖 |
-| B4 PC | PASS† | 同账号 PC |
+| A1 | PASS† | 窄视口登录可达 / 可用 |
+| A2 | PASS† | 队席页可达、能办事 |
+| A3 | PASS† | Issue 列表可达 |
+| A4 | Soft† | 队席副行 seat slug 次要展示（非挡；同 V1 Soft） |
+| A5 | PASS† | Issue 详情可达 |
+| A6 | PASS† | PUT session-context / resume 路径可用 |
+| A7 | PASS† | 窄视口闭环「能办事」主路径（登录→队席→列表→详情） |
+| B1 | PASS† | session-context API 侧可用；unauth GET → 401 expected（非旧进程 Soft） |
+| B2 | FAIL† | 登录续现场失败：trail `/login` → issue deep link → settles `/crew`（复现两次） |
+| B3 | PASS† | 二次 PUT overwrite / last-write-wins |
+| B4 | PASS† | PC 同账号对齐现场 |
 
-已派 React 修 B2。复测绿后再交产品关 P1。
+----------------------------------------------------------------
+B2 FAIL† 证据（硬挡）
+----------------------------------------------------------------
+  · 期望：登录 hydrate 后落到 session-context / 深链目标（issue），续现场
+  · 实得：`/login` → issue deep link → 最终 settles `/crew`（空落到队席，未粘住深链）
+  · 复现：两次
+  · 箱截：MOBILE_V2-MV2-Q1-20261026-06-hydrate-after-login.png（及 trail 旁证 01/04/05）
+  · Defect：React frontend-mobile resumeNav race / doesn't stick after login hydrate
+  · Note：unauth GET session-context 401 is expected；not Soft「旧进程」；backend 已换新
+
+----------------------------------------------------------------
+Notes
+----------------------------------------------------------------
+- Soft† A4 only（seat slug secondary）· non-blocking
+- Do NOT check MV2-P1
+- LANDING / INVITE / Soft untouched
+- unauth GET session-context 401 expected（auth gate）；不是旧二进制 404 Soft
+
+Defects
+- B2 hard：frontend-mobile resumeNav race — post-login hydrate 不粘深链，settles /crew
+
+Verdict: FAIL† @ debt 243ecfe / shell 11df4bc / V0-V1 fd2d788 · hard B2（resume hydrate → /crew）· Soft† A4 only
+One-line → Go/产品/总指挥: MV2-Q1 FAIL†；硬挡 B2 login trail /login→issue deep link→settles /crew（×2）；defect frontend-mobile resumeNav race / hydrate 后不粘；A1–A3/A5–A7/B1/B3/B4 PASS†；A4 Soft† slug 非挡；401 unauth expected 非旧进程；不勾 MV2-P1；LANDING/INVITE/Soft 未触；8 帧箱截齐套。
