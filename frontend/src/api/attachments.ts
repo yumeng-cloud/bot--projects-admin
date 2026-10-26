@@ -140,6 +140,7 @@ export async function uploadCommentAttachment(
 export async function listIssueAttachments(workspaceId: string, issueId: string) {
   const res = await api<ListAttachmentsResult>(
     `/workspaces/${workspaceId}/issues/${issueId}/attachments`,
+    { skipToast: true },
   )
   return normalizeList(res)
 }
@@ -152,6 +153,7 @@ export async function listCommentAttachments(
 ) {
   const res = await api<ListAttachmentsResult>(
     `/workspaces/${workspaceId}/issues/${issueId}/comments/${commentId}/attachments`,
+    { skipToast: true },
   )
   return normalizeList(res)
 }
