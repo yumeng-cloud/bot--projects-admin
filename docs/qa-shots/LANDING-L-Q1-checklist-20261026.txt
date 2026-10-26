@@ -1,0 +1,61 @@
+LANDING / SITE_LANDING · L-Q1 清单 2026-10-26（true-art PASS† · 对齐债 docs/NEXT_WAVE_DEBT_LANDING.md @69f7f57 · assets b1fb8f7 · SL-V3 PASS）
+气质：安静、好用、像真在干活的班——未登录见官网，登录进后台。
+判定：**PASS†** · 全行绿 · computerUse @ http://127.0.0.1:5175/ · seed admin@yumeng.tech only · 2026-10-26 09:27 Asia/Shanghai
+基线：assets b1fb8f7c5157affeed558764ba7adc11a726554e · Hero 0f1da81 / d3dcb96 · 债开 L-Q1 @69f7f57489894310a42e1c110a519743dc4ab7cb · HEAD（落盘）f1fa750a85df132943f0046389f92230a58ab983 · SL-V3 PASS
+全纪要：LANDING-L-Q1-qa-20261026.txt
+前次作废：LANDING-L-Q1-retest2-qa-20261025.txt PASS† @675a300（随 true-art 重开）；旧 L-P1 关 @46f3040 **VOID**（勿复活）
+================================================================
+前置：
+- **Wait FE + visual**：true-art assets @b1fb8f7 + Hero 0f1da81/d3dcb96 + 债开 L-Q1 @69f7f57 + SL-V3 PASS 后再全表自点。✓
+- **Forbidden: owner as tester**——禁甩主人；本跑仅狗粮 seed admin@yumeng.tech。✓
+- 自跑必出**箱截**（png 落本目录；01–08）。✓
+- 不改 INVITE_ON_DEMAND / SEAT_* / Soft；本刀只验未登录官网 + 路由 + 锁文案 + Join + 真图。
+- **不自关 L-P1**；PASS† 交产品。本跑不改写 Wiki CLOSE；不改 NEXT_WAVE_DEBT_LANDING.md 勾选。
+- 旧产品关 @46f3040：**VOID**——本清单不把它当作当前关。
+
+债勾选对照（本清单覆盖 L-Q1；不代勾 L-P1）
+| 债 ID | 标准摘要 | 本清单行 |
+| L-P0 | 本债拍板（锁文案 + 眉题禁 pill） | 前置（债侧已勾） |
+| L-R1 | 未登录 /=Landing；/login=Login；authed 后台不动；/join 不破 | LQ1-1 · LQ1-2 · LQ1-3 |
+| L-R2 | Landing 锁文案落地；眉题纯文 13–14 secondary，禁 pill | LQ1-4 · LQ1-5 |
+| L-R3† / true-art | 真图 PNG（hero/team-board/seats-keys/multi-machines/flow-steps） | 视觉旁证 / LQ1-6 |
+| SL-V1/V2/V3 | 箱截 + 总监放行图文 @b1fb8f7 / 债勾 @69f7f57 | 前置门 · PASS† 旁证 |
+| L-Q1 | 未登录=/官网；登录后后台；/join 仍可用；箱截；禁主人；复测 | **本文件（PASS†）** |
+| L-P1 | 产品关 | **不由 QA 勾**（旧 @46f3040 VOID；交产品新关） |
+
+A · 未登录首页 = 官网（非登录墙当 sole home）
+[x] LQ1-1 PASS† 未认证打开 `/` → **营销/官方 Landing**（育蒙协作看板官网），**不是** LoginPage 作为唯一首页/sole home
+    证据：LANDING-L-Q1-20261026-01-home-unauth-hero.png · LANDING-L-Q1-20261026-02-home-unauth-scroll.png
+
+B · 已登录进后台
+[x] LQ1-2 PASS† 已登录访问 `/` → **Home / 后台**（既有 App 行为）；勿卡在官网
+    证据：LANDING-L-Q1-20261026-04-home-authed.png
+
+C · /join 深链不破（含 bare）
+[x] LQ1-3 PASS† 未登录与已登录路径下 **`/join` 仍可用**（bare + `?code=`）；**无**死转「正在打开入场向导」Spin / 无限 spinner
+    证据：
+      LANDING-L-Q1-20261026-05-join-bare-authed.png
+      LANDING-L-Q1-20261026-06-join-code-authed.png
+      LANDING-L-Q1-20261026-07-join-bare-unauth.png
+      LANDING-L-Q1-20261026-08-join-code-unauth.png
+
+D · 多机文案（债锁句 · exact · 禁续聊话术）
+[x] LQ1-4 PASS† §多机锁句 **exact match** 债表落地
+    对照债表（勿改意思 · 逐字）：
+    · §多机标题：「多机分工，不是换机续聊」
+    · §多机正文：「不同电脑认领不同角色干活，干完统一调度指挥。」
+    实得 @b1fb8f7 线：title+body exact
+    证据：LANDING-L-Q1-20261026-03-lock-multi.png
+
+E · 锁文案其余位（L-R2 旁证 · smoke 主标/眉题/副标）
+[x] LQ1-5 PASS† 主标「育蒙协作看板」；眉题「人与 Agent，一支团队」= **纯文一行**（禁 pill）；主 CTA「登录」；副标 SL-V3 放行句
+    Note：Ant Design 按钮 DOM 可显「登 录」空格 → **非**文案漂移
+    证据：LANDING-L-Q1-20261026-01-home-unauth-hero.png · LANDING-L-Q1-20261026-03-lock-multi.png
+
+F · 纪律 / 证据门
+[x] LQ1-6 PASS† 箱截齐套（8 帧 01–08）+ 纪要写清 HEAD · b1fb8f7 · Hero · 69f7f57 · SL-V3 · 逐行 PASS†；真图 PNG 可见
+    证据：LANDING-L-Q1-20261026-0[1-8]-*.png + LANDING-L-Q1-qa-20261026.txt
+[x] LQ1-7 PASS† **Forbidden**：全程禁用主人账号作 tester（仅狗粮 admin@yumeng.tech）
+
+关：全绿 PASS† → **交产品 L-P1**。（本清单不代关；Wiki 本跑未改写；旧 L-P1 @46f3040 VOID）
+状态：**PASS†** @ assets b1fb8f7 · Hero 0f1da81/d3dcb96 · 债 69f7f57 · SL-V3 · 全行 [x] · PASS† 交产品（QA 不自关）
