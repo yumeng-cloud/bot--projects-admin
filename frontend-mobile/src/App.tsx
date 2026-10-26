@@ -1,22 +1,30 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
   getToken,
   me,
   getSessionContext,
   emptySessionContext,
-  hasSessionScene,
+  putSessionContext,
   type User,
   type SessionContext,
+  type SessionContextPut,
 } from '@acb/api-client'
+import { SessionProvider } from './context/SessionCtx'
+import { pathFromSession } from './lib/sessionNav'
+import AppShell from './components/AppShell'
 import LoginPage from './pages/LoginPage'
 import MePage from './pages/MePage'
 import ResumePage from './pages/ResumePage'
+import CrewWorkspacePage from './pages/CrewWorkspacePage'
+import CrewTeamsPage from './pages/CrewTeamsPage'
+import CrewSeatsPage from './pages/CrewSeatsPage'
+import IssueListPage from './pages/IssueListPage'
+import IssueDetailPage from './pages/IssueDetailPage'
+import WikiPage from './pages/WikiPage'
 
 /**
- * MV2-R0：脚手架 + 登录 + /auth/me。
- * MV2-R1：进壳 hydrate session-context → 有值续现场 / 空安静默认；禁踢下线。
- * R2 底栏 Tab · 列表详情 — 本刀不做（空壳注释位）。
+ * MV2-R0/R1/R2：登录 · hydrate · 底栏 Tab（队席/Issue/Wiki/我的）+ 列表→详情栈
  */
 export default function App() {
   const navigate = useNavigate()
@@ -32,7 +40,6 @@ export default function App() {
       setHydrateNote(null)
       return ctx
     } catch {
-      // 禁踢下线：session-context 失败只安静默认，不清 token
       const empty = emptySessionContext()
       setSession(empty)
       setHydrateNote('现场同步暂不可用，已用安静默认')
@@ -53,14 +60,9 @@ export default function App() {
         setUser(u)
         const ctx = await hydrateSession()
         if (opts?.resumeNav) {
-          if (hasSessionScene(ctx)) {
-            navigate('/resume', { replace: true })
-          } else {
-            navigate('/', { replace: true })
-          }
+          navigate(pathFromSession(ctx), { replace: true })
         }
       } catch {
-        // /auth/me 失败：登出态（token 可能已被 client 清）；不因 session 失败踢人
         setUser(null)
         setSession(emptySessionContext())
       } finally {
@@ -72,7 +74,6 @@ export default function App() {
 
   useEffect(() => {
     void refreshMe({ resumeNav: true })
-    // 仅首屏
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -87,10 +88,45 @@ export default function App() {
     setHydrateNote(null)
   }, [])
 
-  const onSessionSaved = useCallback((ctx: SessionContext) => {
+  const onSessionChange = useCallback((ctx: SessionContext) => {
     setSession(ctx)
     setHydrateNote(null)
   }, [])
+
+  const saveSession = useCallback(
+    async (patch: SessionContextPut) => {
+      try {
+        const next = await putSessionContext({
+          wsId: patch.wsId ?? session.wsId,
+          teamId: patch.teamId ?? session.teamId,
+          projectId: patch.projectId ?? session.projectId,
+          issueId: patch.issueId ?? session.issueId,
+          view: patch.view ?? session.view,
+        })
+        onSessionChange(next)
+        return next
+      } catch {
+        return null
+      }
+    },
+    [session, onSessionChange],
+  )
+
+  const sessionValue = useMemo(
+    () =>
+      user
+        ? {
+            user,
+            session,
+            hydrateNote,
+            setSession: onSessionChange,
+            saveSession,
+            onLogout,
+            onRehydrate: hydrateSession,
+          }
+        : null,
+    [user, session, hydrateNote, onSessionChange, saveSession, onLogout, hydrateSession],
+  )
 
   if (!ready) {
     return (
@@ -100,45 +136,34 @@ export default function App() {
     )
   }
 
+  if (!user || !sessionValue) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage onAuthed={onAuthed} />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    )
+  }
+
   return (
-    <Routes>
-      <Route
-        path="/login"
-        element={user ? <Navigate to="/" replace /> : <LoginPage onAuthed={onAuthed} />}
-      />
-      <Route
-        path="/"
-        element={
-          user ? (
-            <MePage
-              user={user}
-              session={session}
-              hydrateNote={hydrateNote}
-              onLogout={onLogout}
-              onSessionChange={onSessionSaved}
-            />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/resume"
-        element={
-          user ? (
-            <ResumePage
-              session={session}
-              hydrateNote={hydrateNote}
-              onSessionChange={onSessionSaved}
-              onRehydrate={hydrateSession}
-            />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      {/* R2：底栏 Tab / 列表→详情 路由位 — 本刀留空 */}
-      <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
-    </Routes>
+    <SessionProvider value={sessionValue}>
+      <Routes>
+        <Route path="/login" element={<Navigate to="/crew" replace />} />
+        <Route element={<AppShell />}>
+          <Route path="/" element={<Navigate to="/crew" replace />} />
+          <Route path="/crew" element={<CrewWorkspacePage />} />
+          <Route path="/crew/:wsId" element={<CrewTeamsPage />} />
+          <Route path="/crew/:wsId/teams/:teamId" element={<CrewSeatsPage />} />
+          <Route path="/issues" element={<IssueListPage />} />
+          <Route path="/w/:wsId/issues" element={<IssueListPage />} />
+          <Route path="/w/:wsId/issues/:issueId" element={<IssueDetailPage />} />
+          <Route path="/wiki" element={<WikiPage />} />
+          <Route path="/w/:wsId/wiki" element={<WikiPage />} />
+          <Route path="/resume" element={<ResumePage />} />
+          <Route path="/me" element={<MePage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/crew" replace />} />
+      </Routes>
+    </SessionProvider>
   )
 }

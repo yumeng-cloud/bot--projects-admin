@@ -1,25 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  putSessionContext,
-  hasSessionScene,
-  type SessionContext,
-} from '@acb/api-client'
+import { hasSessionScene, type SessionContext } from '@acb/api-client'
+import { useSession } from '../context/SessionCtx'
+import { pathFromSession } from '../lib/sessionNav'
 
-type Props = {
-  session: SessionContext
-  hydrateNote: string | null
-  onSessionChange: (ctx: SessionContext) => void
-  onRehydrate: () => Promise<SessionContext>
-}
-
-/** R1：有值续现场页；可再 GET / PUT；失败不踢下线 */
-export default function ResumePage({
-  session,
-  hydrateNote,
-  onSessionChange,
-  onRehydrate,
-}: Props) {
+export default function ResumePage() {
+  const { session, hydrateNote, saveSession, onRehydrate } = useSession()
   const [wsId, setWsId] = useState(session.wsId)
   const [teamId, setTeamId] = useState(session.teamId)
   const [projectId, setProjectId] = useState(session.projectId)
@@ -34,7 +20,6 @@ export default function ResumePage({
     setProjectId(ctx.projectId)
     setIssueId(ctx.issueId)
     setView(ctx.view || 'home')
-    onSessionChange(ctx)
   }
 
   const reload = async () => {
@@ -55,51 +40,49 @@ export default function ResumePage({
     e.preventDefault()
     setBusy(true)
     setMsg(null)
-    try {
-      const ctx = await putSessionContext({
-        wsId: wsId.trim(),
-        teamId: teamId.trim(),
-        projectId: projectId.trim(),
-        issueId: issueId.trim(),
-        view: view.trim(),
-      })
+    const ctx = await saveSession({
+      wsId: wsId.trim(),
+      teamId: teamId.trim(),
+      projectId: projectId.trim(),
+      issueId: issueId.trim(),
+      view: view.trim(),
+    })
+    if (ctx) {
       syncFrom(ctx)
       setMsg('已保存（后写覆盖）')
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : '保存失败（未踢下线）')
-    } finally {
-      setBusy(false)
+    } else {
+      setMsg('保存失败（未踢下线）')
     }
+    setBusy(false)
   }
 
   const clearScene = async () => {
     setBusy(true)
     setMsg(null)
-    try {
-      const ctx = await putSessionContext({
-        wsId: '',
-        teamId: '',
-        projectId: '',
-        issueId: '',
-        view: '',
-      })
+    const ctx = await saveSession({
+      wsId: '',
+      teamId: '',
+      projectId: '',
+      issueId: '',
+      view: '',
+    })
+    if (ctx) {
       syncFrom(ctx)
       setMsg('已清空现场')
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : '清空失败')
-    } finally {
-      setBusy(false)
+    } else {
+      setMsg('清空失败')
     }
+    setBusy(false)
   }
 
-  // keep form in sync if parent session changes externally
-  const updatedAt = session.updatedAt
-
   return (
-    <div className="m-shell m-resume">
-      <header className="m-me__head">
-        <h1 className="m-me__title">续现场</h1>
-        <p className="m-muted">MV2-R1 · session-context hydrate（非踢下线）</p>
+    <div className="m-page">
+      <header className="m-page__head">
+        <Link className="m-back" to="/me">
+          ← 我的
+        </Link>
+        <h1 className="m-page__title">续现场</h1>
+        <p className="m-muted">session-context · 非踢下线</p>
       </header>
 
       {hydrateNote ? <p className="m-warn">{hydrateNote}</p> : null}
@@ -113,9 +96,15 @@ export default function ResumePage({
         </div>
         <div className="m-me__row">
           <span className="m-muted">updatedAt</span>
-          <code className="m-code">{updatedAt || '—'}</code>
+          <code className="m-code">{session.updatedAt || '—'}</code>
         </div>
       </section>
+
+      {hasSessionScene(session) ? (
+        <Link className="m-btn m-btn--primary m-btn--link" to={pathFromSession(session)}>
+          按现场打开
+        </Link>
+      ) : null}
 
       <form className="m-card m-login__form" onSubmit={onSave}>
         <label className="m-field">
@@ -142,9 +131,7 @@ export default function ResumePage({
           <span className="m-field__label">view</span>
           <input className="m-input" value={view} onChange={(e) => setView(e.target.value)} />
         </label>
-
         {msg ? <p className="m-ok">{msg}</p> : null}
-
         <button className="m-btn m-btn--primary" type="submit" disabled={busy}>
           {busy ? '处理中…' : 'PUT 更新现场'}
         </button>
@@ -157,13 +144,7 @@ export default function ResumePage({
         <button className="m-btn m-btn--ghost" type="button" onClick={clearScene} disabled={busy}>
           清空现场
         </button>
-        <Link className="m-btn m-btn--ghost m-btn--link" to="/">
-          回我的
-        </Link>
       </div>
-
-      {/* R2：按 view/ws/issue 进列表·详情 — 本刀不做 */}
-      <p className="m-muted m-resume__hint">列表 / 详情导航见 MV2-R2。</p>
     </div>
   )
 }
