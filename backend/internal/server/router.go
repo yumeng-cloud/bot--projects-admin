@@ -65,6 +65,10 @@ func NewRouter(sqlDB *sql.DB, cfg config.Config) http.Handler {
 		api.Post("/auth/logout", authH.Logout)
 		api.With(jwtOnly).Get("/auth/me", authH.Me)
 
+		sessH := &handlers.SessionContextHandler{DB: sqlDB}
+		api.With(jwtOnly).Get("/me/session-context", sessH.GetSessionContext)
+		api.With(jwtOnly).Put("/me/session-context", sessH.PutSessionContext)
+
 		api.With(jwtOnly).Get("/workspaces", wsH.ListMine)
 		api.With(jwtOnly).Post("/workspaces", wsH.Create)
 		api.With(jwtOnly).Get("/workspaces/current", wsH.Current)
