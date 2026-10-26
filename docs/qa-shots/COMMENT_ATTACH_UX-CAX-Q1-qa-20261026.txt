@@ -1,0 +1,31 @@
+COMMENT_ATTACH_UX · CAX-Q1 QA 纪要
+日期：2026-10-26 Asia/Shanghai
+Overall：PASS†
+
+基线
+- FE 00fc54d（CAX-R1–R4）
+- 债注 ba9397a（R1–R4+V1 齐 · 开 Q1）
+- 箱：Vite PC :5175 · API /tmp/ai-board-server-caq1 :8080
+- 仓 育蒙科技 · Issue YM-27「QA-IA-active-210111」
+
+门禁（总指挥/产品）
+composer 回形针挂图发送 + 粘贴/拖拽 pending + 已发无常驻「挂附件」可 hover 补挂 + Issue 区同气质
+
+分项
+- CAX-R1 PASS†：工具条仅回形针图标（aria/title「添加附件（≤10MB）」）；无文案钮「添加附件/挂附件」。选图 → pending 芯片（缩略+名+X）可删。
+- CAX-R2 PASS†：拖文件进评论区 → pending → 发送后该评论见 `cax-q1-chip.png`。Ctrl+V 箱内剪贴板空（xclip 未就绪）未验；拖拽覆盖 R2。
+- CAX-R3 PASS†：静态无常驻「挂附件」/回形针；hover 出轻量回形针；补挂 `cax-q1-note.txt` 成功。
+- CAX-R4 PASS†：Issue 附件空态为回形针+弱提示「点击添加（≤10MB）」，非大字「添加附件…」链接；上传后「附件 (n)」+列表+回形针。
+
+截图
+- docs/qa-shots/COMMENT_ATTACH_UX-20261026-composer.png
+- docs/qa-shots/COMMENT_ATTACH_UX-20261026-sent.png
+- docs/qa-shots/COMMENT_ATTACH_UX-20261026-hover-attach.png
+- docs/qa-shots/COMMENT_ATTACH_UX-20261026-issue-section.png
+
+Soft†（不挡关）
+- 粘贴未箱验（拖拽已盖 R2）。
+- Issue 附件列表同时出现评论级文件（chip+note）与 Issue 级上传——若产品要「仅 Issue 级」另开刀。
+- Soft/INVITE/LANDING/MOBILE/ISSUE_MD/COMMENT_ATTACH_404 未动。
+
+勿勾 CAX-P1（产品关）。
