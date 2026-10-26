@@ -36,12 +36,13 @@ Issue 详情里描述与评论须 **默认预览渲染** Markdown；禁生 `##` 
 - [x] **MD-R1** 描述默认预览
 - [x] **MD-R2** 评论渲染
 - [x] **MD-R3** 编辑↔预览
-- [ ] **MD-Q1** QA 短测 PASS†
+- [ ] **MD-Q1** QA 短测 · **已开**（基 `9d1feba`）
 - [ ] **MD-P1** 关
 
-**状态：FE 已推 · 待 MD-Q1** → 短 QA → P1。
+**状态：已开 MD-Q1** · 基 `9d1feba` → 待 PASS† → MD-P1。
 
 ## 进度注记
 
 - 2026-10-26 · 总指挥 P0：生 `##`/`-`；已钉 React 对齐 Wiki Viewer。产品锁上表验收。
+- 2026-10-26 · **开 MD-Q1** 基 FE `9d1feba`（R1–R3 齐）。
 - 2026-10-26 · React：描述默认 `WikiBodyViewer` 预览、点编辑进 ByteMD、blur 回预览；评论列表同 Viewer。待产品开 MD-Q1。
