@@ -1,0 +1,10 @@
+{
+  "name": "ai-collab-board",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.34.6",
+  "scripts": {
+    "dev:mobile": "pnpm --filter ai-collab-board-frontend-mobile dev",
+    "build:mobile": "pnpm --filter ai-collab-board-frontend-mobile build"
+  }
+}

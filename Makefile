@@ -1,4 +1,4 @@
-.PHONY: dev backend frontend seed test build tidy install
+.PHONY: dev backend frontend frontend-mobile seed test build tidy install
 
 # Start API + Vite together (requires both deps installed)
 dev:
@@ -14,6 +14,8 @@ run-frontend:
 install:
 	cd backend && go mod tidy
 	cd frontend && pnpm install
+	pnpm install
+	# frontend-mobile via root workspace
 
 seed:
 	cd backend && SEED_SAMPLE_DATA=1 go run ./cmd/seed
@@ -21,10 +23,17 @@ seed:
 test:
 	cd backend && go test ./... -count=1
 	cd frontend && pnpm build
+	pnpm --filter ai-collab-board-frontend-mobile build
 
 build:
 	cd backend && go build -o bin/server ./cmd/server
 	cd frontend && pnpm build
+	pnpm --filter ai-collab-board-frontend-mobile build
 
 tidy:
 	cd backend && go mod tidy
+
+run-frontend-mobile:
+	cd frontend-mobile && pnpm dev
+
+frontend-mobile: run-frontend-mobile

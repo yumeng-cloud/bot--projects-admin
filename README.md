@@ -79,6 +79,16 @@ make dev                 # API :8080 + Vite UI :5173
 
 打开 http://127.0.0.1:5173 → **注册**账号 → **创建工作空间** → 进入看板。
 
+### 移动端壳（`frontend-mobile` · 端口 5174）
+
+与 PC 同账号 / 同 API；开发端口 **5174**（不与 PC 5173 冲突）。详见 [`frontend-mobile/README.md`](./frontend-mobile/README.md)。
+
+```bash
+pnpm install                                          # 根 workspace（含 @acb/api-client）
+# 另开终端起 API :8080（或 make run-backend）
+pnpm --filter ai-collab-board-frontend-mobile dev     # http://127.0.0.1:5174
+```
+
 | | |
 | --- | --- |
 | UI | http://127.0.0.1:5173 |
