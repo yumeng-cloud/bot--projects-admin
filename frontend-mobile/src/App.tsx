@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
   getToken,
@@ -25,6 +25,9 @@ import WikiPage from './pages/WikiPage'
 
 /**
  * MV2-R0/R1/R2：登录 · hydrate · 底栏 Tab（队席/Issue/Wiki/我的）+ 列表→详情栈
+ *
+ * 续现场落点：hydrate 后按 session-context 进深链。已登录时 /login 必须落到
+ * pathFromSession(session)，禁止写死 /crew——否则与 resumeNav 竞态时会闪深链再被顶回队席。
  */
 export default function App() {
   const navigate = useNavigate()
@@ -32,6 +35,8 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<SessionContext>(emptySessionContext())
   const [hydrateNote, setHydrateNote] = useState<string | null>(null)
+  /** 丢弃过期的 refreshMe（登录/登出叠呼时避免后到的结果把深链顶掉） */
+  const navGenRef = useRef(0)
 
   const hydrateSession = useCallback(async (): Promise<SessionContext> => {
     try {
@@ -49,7 +54,9 @@ export default function App() {
 
   const refreshMe = useCallback(
     async (opts?: { resumeNav?: boolean }) => {
+      const gen = ++navGenRef.current
       if (!getToken()) {
+        if (gen !== navGenRef.current) return
         setUser(null)
         setSession(emptySessionContext())
         setReady(true)
@@ -57,19 +64,36 @@ export default function App() {
       }
       try {
         const { user: u } = await me()
+        if (gen !== navGenRef.current) return
+
+        let ctx: SessionContext
+        let note: string | null = null
+        try {
+          ctx = await getSessionContext()
+        } catch {
+          ctx = emptySessionContext()
+          note = '现场同步暂不可用，已用安静默认'
+        }
+        if (gen !== navGenRef.current) return
+
+        // 同步写入再揭开路由树，保证已登录 /login 重定向读到有现场的 session
         setUser(u)
-        const ctx = await hydrateSession()
+        setSession(ctx)
+        setHydrateNote(note)
         if (opts?.resumeNav) {
           navigate(pathFromSession(ctx), { replace: true })
         }
       } catch {
+        if (gen !== navGenRef.current) return
         setUser(null)
         setSession(emptySessionContext())
       } finally {
-        setReady(true)
+        if (gen === navGenRef.current) {
+          setReady(true)
+        }
       }
     },
-    [hydrateSession, navigate],
+    [navigate],
   )
 
   useEffect(() => {
@@ -78,11 +102,13 @@ export default function App() {
   }, [])
 
   const onAuthed = useCallback(async () => {
+    // 收起路由树，避免仍停在 /login 时挂上错误的已登录重定向
     setReady(false)
     await refreshMe({ resumeNav: true })
   }, [refreshMe])
 
   const onLogout = useCallback(() => {
+    navGenRef.current += 1
     setUser(null)
     setSession(emptySessionContext())
     setHydrateNote(null)
@@ -145,10 +171,13 @@ export default function App() {
     )
   }
 
+  const resumeTo = pathFromSession(session)
+
   return (
     <SessionProvider value={sessionValue}>
       <Routes>
-        <Route path="/login" element={<Navigate to="/crew" replace />} />
+        {/* 禁写死 /crew：与 resumeNav 竞态会闪深链再被顶回队席（MV2-Q1 B2） */}
+        <Route path="/login" element={<Navigate to={resumeTo} replace />} />
         <Route element={<AppShell />}>
           <Route path="/" element={<Navigate to="/crew" replace />} />
           <Route path="/crew" element={<CrewWorkspacePage />} />
