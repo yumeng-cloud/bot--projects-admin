@@ -32,13 +32,15 @@
 ## 产品勾选
 
 - [x] **CA-R1** FE `1a303c4`（skipToast）
-- [ ] **CA-G1** ListByComment 软空
+- [x] **CA-G1** Go `47822fe`（ListByComment 软空）
 - [ ] **CA-Q1** PASS†
 - [ ] **CA-P1** 产品关
 
-**状态：开刀中** · FE 基 `1a303c4` · 等 Go 推 CA-G1 → 开 CA-Q1。
+**状态：开刀中** · FE `1a303c4` + Go `47822fe` · **已开 CA-Q1**。
 
 ## 进度注记
 
+- 2026-10-26 · **开 CA-Q1** 基 FE `1a303c4` + Go `47822fe`（CA-R1/CA-G1 齐）。
+- 2026-10-26 · **勾 CA-G1** Go @`47822fe` ListByComment 缺评→200[]。
 - 2026-10-26 · 总指挥 P0：双 Toast；已钉 React skipToast + Go ListByComment 缺评 200[]。产品锁上表。
 - 2026-10-26 · FE 已 main：`1a303c4` · 勾 CA-R1；Go 工作区有软空+测，待测绿推 main。
