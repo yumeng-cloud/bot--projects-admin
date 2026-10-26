@@ -137,15 +137,15 @@
 - [x] **L-R2** Landing 锁文案落地（路由/锁句骨架仍有效；**正文须按真图硬门重做**）
 - [x] **L-R3†** ~~FE `f0fe24f` CSS/mock 图文加厚~~ · **整包作废**（主人骂 CSS 假框；勿当关单依据）
 - [x] **L-V-SPEC†** 视觉总监配图规格（首屏气质重开）· 锁专册 + 提示词 @`8e5ca0b`（前次 L-V-SPEC @`4d6073e`/`e553a59` 被气质重开替代）
-- [ ] **L-R3‡** React 落**气质重生**真图整页（五位真插图 + 左右交替≥2 + Hero=产品英雄图；禁 CSS 假框）；前次 L-R3† / 关单 @`46f3040` / SL-V3 `e7da310` / FE `675a300` **及** FE @`301f49c` / 资产 @`b200881`/`96e104f`（HTML→PNG · 禁令 @`9bf8eb2`）**作废**——**勿交 QA / 勿勾 SL-V3**；须 GenerateImage 真插画
-- [ ] **SL-V1** 桌面首屏箱截（Hero **产品英雄图**大框；禁弱看板演示感）；前次图文包 @`e7da310` / 真图包 @`b200881` **作废**
-- [ ] **SL-V2** 全页截（≥4 **真**示意 + ≥2 图文交替）；前次 **作废**
-- [ ] **审图自审** playbook + 专册真图硬门 + **首屏气质硬门**（半截/纯字/CSS 假框/教学作业皮/课堂三列卡直接打回）
-- [ ] **SL-V3** 视觉总监放行气质真图整页；前次放行 @`e7da310` **作废**；`301f49c`/`b200881`/`96e104f` **勿勾**
-- [ ] **L-Q1** 气质重生后复测（未登录=/官网；登录进后台；`/join`；箱截；禁甩主人）——**SL-V3 放行前勿开 QA**
+- [x] **L-R3‡** 真图接线 · 资产 `b1fb8f7`（主人 refs 覆盖 landing-*.png）+ Hero 页框/留白 `0f1da81`/`d3dcb96`；前次 `301f49c`/`b200881`/`96e104f` **作废**
+- [x] **SL-V1** 桌面首屏 · `docs/qa-shots/site-landing-desktop.png` @`b1fb8f7`（前次作废包勿用）
+- [x] **SL-V2** 全页 · `docs/qa-shots/site-landing-scroll.png` @`b1fb8f7`
+- [x] **审图自审** 双帧已交 · 总监 SL-V3 PASS（`b1fb8f7`）
+- [x] **SL-V3** 视觉总监 PASS · 资产 `b1fb8f7` + 双帧 site-landing-desktop/scroll（前次 `e7da310`/`301f49c`/`b200881`/`96e104f` 勿当依据）
+- [ ] **L-Q1** 气质真图复测（未登录=/官网；登录进后台；`/join`；箱截；禁甩主人）——**已开**（基 `b1fb8f7` + SL-V3 PASS）
 - [ ] **L-P1** 产品关（气质真图放行 + L-Q1 后再关）；前次图文关单 @`46f3040` **作废**
 
-**状态：重开 · 首屏气质** · **L-V-SPEC† 已勾** @`8e5ca0b` · 禁 HTML→PNG @`9bf8eb2`。等 **GenerateImage 真插画落盘 → 接线（L-R3‡；React 可先加厚 Hero 布局）→ 审图 → SL-V3**（**勿开 QA** / 勿勾 SL-V3）。L-R3‡ / 审图 / SL-V* / L-Q1 / L-P1 仍空。前次真图包 FE @`301f49c` · 资产 @`b200881`/`96e104f`（HTML伪图）**作废**；前次图文关单 @`46f3040` · SL-V3 `e7da310` · FE `675a300`/`f0fe24f` **作废**。L-P0/R1/R2 路由·锁句骨架仍勾。Soft 仍冻；INVITE 勿动。
+**状态：SL-V3 放行 · 开 L-Q1** · L-V-SPEC† @`8e5ca0b` · L-R3‡/`b1fb8f7` · SL-V1/V2/V3 PASS（双帧）。**已开 QA L-Q1**；L-P1 等 L-Q1 PASS†。禁盲重生。前次作废包勿用。Soft 仍冻；INVITE 勿动。
 
 ## 派工
 
@@ -198,8 +198,9 @@
 
 - 2026-10-25 21:43 · **打回 HTML→PNG 伪图** → 资产 @`96e104f` + 双帧旁证 `1f5b0b6` **作废**（主人认 GenerateImage 样张、打回现实现）。规补禁令 @`9bf8eb2`：**禁 HTML→PNG**；须箱内 GenerateImage 真插画。已喊审图重生、React 停接伪图（可另加厚 Hero 布局等新图接线）。**勿开 QA / 勿勾 SL-V3**。Soft 仍冻；INVITE 勿动。
 
+- 2026-10-26 · **勾 L-R3‡ / SL-V1/V2/V3** 视觉总监 PASS：资产 `b1fb8f7`（主人 refs 接线）+ 双帧 `site-landing-desktop/scroll`；Hero 加厚 `0f1da81`/`d3dcb96`。**开 L-Q1**。禁盲重生。
 - 2026-10-25 22:20 · **主人参考图包入库（未开工做官网）**。16 张交图，3 对字节相同各留 1 张，13 张落 `frontend/src/pages/Landing/assets/refs/`。需求：后面做官网时按这套图参照（Hero 流水线、痛点对照、同一工作区、统一调度、席位产品界面、四步、上下文圆桌）。**本笔记不改** `Landing/index.tsx`、不替换在线 `landing-*.png`、不勾 L-R3‡ / SL-V* / L-Q1 / L-P1。清单：[`frontend/src/pages/Landing/assets/refs/README.md`](../frontend/src/pages/Landing/assets/refs/README.md)。
 
 ## 关单进度
 
-**重开 · 首屏气质** · **L-V-SPEC† 已勾** @`8e5ca0b` · 禁 HTML→PNG @`9bf8eb2`。前次真图包 FE @`301f49c` / 资产 @`b200881`/`96e104f`（HTML伪图）**作废**；前次图文关单 @`46f3040` / SL-V3 `e7da310` / FE `675a300` **作废**。待：**GenerateImage 真插画落盘 → 接线（L-R3‡；可先加厚 Hero）→ 审图 → SL-V3** → L-Q1 → L-P1（L-R3‡ / 审图 / SL-V* / L-Q1 / L-P1 勿勾；**勿开 QA**）。Wiki [`LANDING_CLOSE.md`](./wiki-dogfood/LANDING_CLOSE.md) 图文/真图包关单 **作废待气质重生重写**。软非挡：Inter CDN 另票。Soft 仍冻；INVITE 勿动。
+**SL-V3 放行 · 开 L-Q1** · 资产/`b1fb8f7` · 双帧 site-landing-desktop/scroll · L-V-SPEC† `8e5ca0b`。待：**L-Q1 PASS† → L-P1**。禁盲重生。Wiki 关单等 L-P1 重写。软非挡 Inter CDN。Soft 仍冻；INVITE 勿动。
