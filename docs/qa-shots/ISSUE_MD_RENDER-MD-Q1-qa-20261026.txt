@@ -1,0 +1,18 @@
+ISSUE_MD_RENDER MD-Q1 QA — 2026-10-26 (Asia/Shanghai)
+
+Overall: PASS†
+Base FE: 9d1feba
+Debt: ISSUE_MD_RENDER
+Cases: MD1 / MD2 / MD3 — all PASS†
+Related: YM-27
+Timezone: Asia/Shanghai
+
+Scope note:
+- Soft / LANDING / MOBILE / INVITE untouched
+- do NOT checkbox MD-P1
+
+Shots:
+- ISSUE_MD_RENDER-20261026-01-desc-preview.png
+- ISSUE_MD_RENDER-20261026-02-comment-render.png
+- ISSUE_MD_RENDER-20261026-03-desc-edit.png
+- ISSUE_MD_RENDER-20261026-04-desc-back-preview.png
