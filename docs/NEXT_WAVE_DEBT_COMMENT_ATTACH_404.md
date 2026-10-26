@@ -33,13 +33,15 @@
 
 - [x] **CA-R1** FE `1a303c4`（skipToast）
 - [x] **CA-G1** Go `47822fe`（ListByComment 软空）
-- [ ] **CA-Q1** PASS†
-- [ ] **CA-P1** 产品关
+- [x] **CA-Q1** PASS† · 基 `1a303c4`+`47822fe` · 证 `49bb1b8`
+- [x] **CA-P1** 产品关 · Wiki `docs/wiki-dogfood/COMMENT_ATTACH_404_CLOSE.md`
 
-**状态：开刀中** · FE `1a303c4` + Go `47822fe` · **已开 CA-Q1**。
+**状态：已关** · FE `1a303c4` + Go `47822fe` · CA-Q1 PASS† `49bb1b8` · Wiki CLOSE。
 
 ## 进度注记
 
+- 2026-10-26 · **勾 CA-Q1 PASS†** QA @`49bb1b8`（YM-27 零「评论不存在」Toast；API 缺评 200[]）。
+- 2026-10-26 · **关单 CA-P1** · Wiki `docs/wiki-dogfood/COMMENT_ATTACH_404_CLOSE.md`。状态：**已关**。
 - 2026-10-26 · **开 CA-Q1** 基 FE `1a303c4` + Go `47822fe`（CA-R1/CA-G1 齐）。
 - 2026-10-26 · **勾 CA-G1** Go @`47822fe` ListByComment 缺评→200[]。
 - 2026-10-26 · 总指挥 P0：双 Toast；已钉 React skipToast + Go ListByComment 缺评 200[]。产品锁上表。
