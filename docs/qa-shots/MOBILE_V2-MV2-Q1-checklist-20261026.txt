@@ -1,0 +1,23 @@
+MOBILE_V2 · MV2-Q1 checklist 2026-10-26 09:46 Asia/Shanghai
+Overall: FAIL†（硬挡 B2）· Soft† A4 only（非挡）
+Base: V0/V1 fd2d788 · shell 11df4bc · debt 243ecfe · Mobile :5188
+纪要：docs/qa-shots/MOBILE_V2-MV2-Q1-qa-20261026.txt
+不勾 MV2-P1 · LANDING/INVITE/Soft 未触
+================================================================
+A · 窄视口能办事
+[x] A1 PASS† 登录
+[x] A2 PASS† 队席
+[x] A3 PASS† Issue 列表
+[~] A4 Soft† 队席副行 seat slug（次要·非挡）
+[x] A5 PASS† Issue 详情
+[x] A6 PASS† resume PUT / session-context 路径
+[x] A7 PASS† 主路径闭环
+
+B · 续现场 PC↔移动
+[x] B1 PASS† session-context 可用；unauth GET 401 expected（非旧进程）
+[ ] B2 FAIL† login trail /login → issue deep link → settles /crew（×2）· resumeNav race
+[x] B3 PASS† overwrite / LWW
+[x] B4 PASS† PC 同账号
+
+箱截：MOBILE_V2-MV2-Q1-20261026-01…08-*.png
+关：FAIL† → 不交 / 不勾 MV2-P1；交 FE 修 resume hydrate
