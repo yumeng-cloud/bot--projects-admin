@@ -111,8 +111,8 @@
 - [x] **MV2-R2** 标准导航 + 列表/详情主路径
 - [x] **MV2-V0** 箱截 375×812 · login/home/issue · `fd2d788`
 - [x] **MV2-V1** 视觉总监放行 · `fd2d788`（壳 `11df4bc`+三帧）；软非挡：登录上留白、队席副行 slug（不挡 Q1）
-- [ ] **MV2-Q1** QA · **FAIL†** 硬闸 B2（登录后续现场不站住：曾闪 Issue 深链→落 `/crew`）· 基 `fd2d788`/`11df4bc`；A/B1/B3/B4 PASS† · A4 Soft† 席副行 slug；已派 React；**不关 P1**
-- [ ] **MV2-P1** 关
+- [x] **MV2-Q1** Overall PASS† · 初测 A/B1/B3/B4 @`0817676` + B2 复测 PASS† @修 `497f7a3`（纪要 retest）；A4 Soft† 席副行 slug 非挡
+- [x] **MV2-P1** 产品关 · Wiki `docs/wiki-dogfood/MOBILE_V2_CLOSE.md`
 
 ## 派工
 
@@ -136,6 +136,9 @@
 
 ## 进度注记
 
+- 2026-10-26 · **勾 MV2-Q1 PASS†** Overall：初测 A/B1/B3/B4 @`0817676` + B2 复测 PASS† @`497f7a3`（两次 hydrate 稳定 Issue 深链）；复测截 `MOBILE_V2-MV2-Q1-retest-*` · 纪要 `MOBILE_V2-MV2-Q1-retest-qa-20261026.txt`。A4 Soft† 非挡。
+- 2026-10-26 · **关单 MV2-P1** · Wiki `docs/wiki-dogfood/MOBILE_V2_CLOSE.md`。状态：**已关**。
+
 - 2026-10-26 · **MV2-Q1 FAIL†** QA：硬闸 B2 登录后续现场不站住（闪 Issue 深链→`/crew`）。A 闭环 / B1 PUT / B3 覆盖 / B4 同账号 PC PASS†；A4 Soft† slug。基 `fd2d788`/`11df4bc`；箱截 `d5bc922`；全文纪要 `0817676` · 清单 `38a9969`。已派 React；**不关 P1**。
 - 2026-10-26 · **勾 MV2-V1** 视觉总监放行 @`fd2d788`（壳 `11df4bc`+三帧）。软非挡：登录上留白、队席副行 slug。**开 MV2-Q1**。
 - 2026-10-26 · **勾 MV2-V0** React 箱截 `fd2d788`：`mobile-v2-login/home/issue.png`（375×812）。已交审图→总监 V1。软记：箱测时 :8080 曾 404 session-context（疑旧进程）——Q1 前核新后端。
@@ -148,5 +151,5 @@
 
 ## 关单进度
 
-**开刀** · V1 放行；**MV2-Q1 FAIL†** 硬闸 B2（续现场）——React 修中 → 复测 Q1 → P1。A/B1/B3/B4 已绿。软非挡：登录留白 / 队席 slug。
+**已关** · MV2-P0/G1/R0–R2/V0/V1/Q1/P1 齐。壳 `11df4bc` · V0/V1 `fd2d788` · B2 修 `497f7a3` · Wiki `MOBILE_V2_CLOSE.md`。软非挡：登录上留白、队席副行 slug。Capacitor / 未读另票。Soft/INVITE/LANDING 未动。
 
