@@ -1,0 +1,75 @@
+MOBILE_V2 MV2-G1 QA · GET|PUT /api/v1/me/session-context · 2026-10-26 09:19 Asia/Shanghai (CST)
+Overall: PASS†
+Feature SHA: c9a6ac7140b43d3d31f36f73d1390828cf189992 (feat(api): MV2-G1 human GET|PUT /me/session-context)
+Tested HEAD: 33478a69c60976b27458faff948b9fc9a5564a65 (docs(ux) checkbox; ancestor includes c9a6ac7)
+Debt: docs/NEXT_WAVE_DEBT_MOBILE_V2.md
+Report: docs/qa-shots/MOBILE_V2-MV2-G1-qa-20261026.txt
+Scope: MV2-G1 only. Soft/LANDING/INVITE frozen — not touched.
+
+Product accept
+1) Human JWT PUT → another client/same user GET hydrates same fields
+2) Second PUT overwrites (last-write-wins); updatedAt bumps
+3) No token → 401 on GET and PUT
+4) Bot API Key (ymk_) → 401 on GET and PUT
+5) Fields: wsId, teamId, projectId, issueId, view, updatedAt
+6) No device table / presence / unread in this API
+
+Method
+- Unit: cd backend && go test ./internal/handlers/ -run SessionContext -count=1 -v
+- Unit: cd backend && go test ./internal/db/ -run SessionContext -count=1 -v
+- Live: stale ai-board-server :8080 (binary Oct 25 /tmp/ai-board-server-xq1) → GET/PUT /me/session-context = 404 (pre-G1).
+  Built HEAD binary /tmp/ai-board-server-mv2g1; ran PORT=18080 DB_DRIVER=postgres AUTO_MIGRATE=1 against same postgres; left :8080 alone.
+- Login POST /api/v1/auth/login admin@yumeng.tech / Admin123! → JWT OK
+- Mint bot key POST …/workspaces/{ws}/api-keys → ymk_… HTTP 201
+- Live curl matrix on :18080; temp server stopped after QA
+
+Unit tests (handlers)
+=== RUN   TestSessionContextGetDefaultEmpty          --- PASS
+=== RUN   TestSessionContextPutGetRoundtripAndOverwrite --- PASS
+=== RUN   TestSessionContextUnauthenticated401       --- PASS
+=== RUN   TestSessionContextBotAPIKeyRejected        --- PASS
+PASS  ok  github.com/yumeng-tech/ai-collab-board/backend/internal/handlers
+
+Unit tests (db/schema)
+=== RUN   TestSQLiteUserSessionContextsExist         --- PASS
+PASS  ok  github.com/yumeng-tech/ai-collab-board/backend/internal/db
+
+Live curl (:18080 HEAD binary + AUTO_MIGRATE)
+- POST api-keys → 201 token=ymk_b13fd61e…
+- GET  /me/session-context no Auth → 401 {"code":"unauthorized","message":"请先登录"}
+- PUT  /me/session-context no Auth → 401
+- GET  /me/session-context Bearer ymk_… → 401
+- PUT  /me/session-context Bearer ymk_… → 401
+- PUT JWT #1 body {wsId:ws_qa_g1,teamId:team_a,projectId:proj_1,issueId:iss_9,view:board}
+  → 200 + updatedAt=2026-10-26T01:19:21.024780528Z
+- GET JWT (new login token, same user) → 200 identical fields (hydrate)
+- PUT JWT #2 {wsId:ws_qa_g1b,teamId:team_b,projectId:proj_2,issueId:iss_10,view:list}
+  → 200 + updatedAt=2026-10-26T01:19:22.235970887Z (bumped)
+- GET JWT → 200 last-write-wins fields
+- Response keys only: issueId, projectId, teamId, updatedAt, view, wsId — no device/presence/unread
+
+Accept checklist
+1. Human JWT PUT → other-client GET hydrates …… PASS†
+   (unit TestSessionContextPutGetRoundtripAndOverwrite + live C/D)
+2. Second PUT overwrite + updatedAt bump …… PASS†
+   (unit + live E/F; ua2 > ua1)
+3. No token → 401 GET+PUT …… PASS†
+   (unit TestSessionContextUnauthenticated401 + live A/A2)
+4. Bot ymk_ → 401 GET+PUT …… PASS†
+   (unit TestSessionContextBotAPIKeyRejected + live B/B2)
+5. Fields wsId/teamId/projectId/issueId/view/updatedAt …… PASS†
+   (DTO + live keys exact set)
+6. No device/presence/unread in API …… PASS†
+   (response keys forbid_hit=[]; handler/table user_session_contexts only)
+
+FAIL redlines hit? NONE
+
+Notes
+- :8080 production-ish process was pre-G1 (404). Live G1 verified on :18080 with migrated user_session_contexts.
+- Debt checkbox already toggled by UX commit 33478a6; QA did not edit debt markdown.
+- Soft/LANDING/INVITE untouched.
+
+Defects: (none)
+
+Verdict: PASS† @c9a6ac7 (HEAD 33478a6) · unit + live :18080
+One-line → Go/产品/总指挥: MV2-G1 PASS†；human JWT GET|PUT /me/session-context hydrate+LWW+updatedAt；no-token/ymk_ →401；fields 六键无 device/presence/unread；handlers+db unit PASS；live :18080 HEAD binary（:8080 旧二进制 404，已注明）.
