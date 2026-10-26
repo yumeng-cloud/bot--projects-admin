@@ -136,7 +136,7 @@
 
 ## 进度注记
 
-- 2026-10-26 · **MV2-Q1 FAIL†** QA：硬闸 B2 登录后续现场不站住（闪 Issue 深链→`/crew`）。A 闭环 / B1 PUT / B3 覆盖 / B4 同账号 PC PASS†；A4 Soft† slug。基 `fd2d788`/`11df4bc`；箱 :8080 已换新进程。已派 React；**不关 P1**。
+- 2026-10-26 · **MV2-Q1 FAIL†** QA：硬闸 B2 登录后续现场不站住（闪 Issue 深链→`/crew`）。A 闭环 / B1 PUT / B3 覆盖 / B4 同账号 PC PASS†；A4 Soft† slug。基 `fd2d788`/`11df4bc`；箱截 `d5bc922`；全文纪要 `0817676` · 清单 `38a9969`。已派 React；**不关 P1**。
 - 2026-10-26 · **勾 MV2-V1** 视觉总监放行 @`fd2d788`（壳 `11df4bc`+三帧）。软非挡：登录上留白、队席副行 slug。**开 MV2-Q1**。
 - 2026-10-26 · **勾 MV2-V0** React 箱截 `fd2d788`：`mobile-v2-login/home/issue.png`（375×812）。已交审图→总监 V1。软记：箱测时 :8080 曾 404 session-context（疑旧进程）——Q1 前核新后端。
 - 2026-10-26 · **勾 MV2-R2** React：底栏 Tab 队席/Issue/Wiki/我的；工作区→团队→席位；Issue 列表→详情（改状态/评论）；打开 Issue PUT session-context；Wiki 空间占位。
