@@ -51,10 +51,10 @@
 - [x] **CAX-R3** 已发评论无常驻文案钮
 - [x] **CAX-R4** Issue 级同气质
 - [x] **CAX-V1** 审图 PASS† @`00fc54d`（软非挡 pending gap/触控发现性）
-- [ ] **CAX-Q1** PASS†
-- [ ] **CAX-P1** 产品关
+- [x] **CAX-Q1** PASS† · 基 `00fc54d` · 证 `5566797`
+- [x] **CAX-P1** 产品关 · Wiki `docs/wiki-dogfood/COMMENT_ATTACH_UX_CLOSE.md`
 
-**状态：开刀中** · FE `00fc54d` · R1–R4/V1 齐 · **已开 CAX-Q1**。
+**状态：已关** · FE `00fc54d` · CAX-Q1 PASS† `5566797` · Wiki CLOSE。
 
 ## 进度注记
 
@@ -63,3 +63,5 @@
 - 2026-10-26 · React：CAX-R1–R4 勾上（Composer 仅回形针+pending 芯片；粘贴/拖拽；已发 hover 补挂；Issue 区同气质）。tsc+vite 绿。
 - 2026-10-26 · **勾 CAX-V1** UI视觉·审图 PASS† @`00fc54d`（软非挡：pending gap、触控 hover）。
 - 2026-10-26 · **开 CAX-Q1** 基 FE `00fc54d`（R1–R4+V1 齐）。
+- 2026-10-26 · **勾 CAX-Q1 PASS†** QA @`5566797`（回形针发送/拖拽/hover补挂/Issue区）。
+- 2026-10-26 · **关单 CAX-P1** · Wiki `docs/wiki-dogfood/COMMENT_ATTACH_UX_CLOSE.md`。状态：**已关**。
