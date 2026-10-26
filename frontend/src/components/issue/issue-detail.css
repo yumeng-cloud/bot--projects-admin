@@ -1287,7 +1287,7 @@ button.acb-issue-attachment-name-btn:hover {
 .acb-issue-comment-pending {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   margin-top: 8px;
 }
 .acb-issue-comment-pending-chip {
