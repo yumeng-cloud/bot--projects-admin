@@ -1,0 +1,32 @@
+MOBILE_V2 · MV2-Q1 FAIL† 纪要（2026-10-26）
+判定：**FAIL†** · 硬闸 B2；**不关 P1**
+来源：QA 测试箱测回报（产品代档；截图齐套）
+================================================================
+基线
+  V0/V1：fd2d788（壳 11df4bc）
+  债开 Q1：243ecfe
+  箱：:8080 已换 HEAD（session-context GET 200，非旧进程 404）
+  移动 Vite：http://127.0.0.1:5188/
+  LANDING/INVITE/Soft：未动
+
+Shot 索引（docs/qa-shots/）
+  MOBILE_V2-MV2-Q1-20261026-01-login.png
+  MOBILE_V2-MV2-Q1-20261026-02-crew-seats.png
+  MOBILE_V2-MV2-Q1-20261026-03-issue-list.png
+  MOBILE_V2-MV2-Q1-20261026-04-issue-detail.png
+  MOBILE_V2-MV2-Q1-20261026-05-resume-put.png
+  MOBILE_V2-MV2-Q1-20261026-06-hydrate-after-login.png  · B2 主证
+  MOBILE_V2-MV2-Q1-20261026-07-resume-overwrite.png
+  MOBILE_V2-MV2-Q1-20261026-08-pc-same-account.png
+
+逐行
+| 行 | 判定 | 摘要 |
+| --- | --- | --- |
+| A 闭环 | PASS† | 登录→队席→Issue 改状态/评论 |
+| A4 | Soft† | 席副行 slug（不挡） |
+| B1 PUT | PASS† | session-context PUT |
+| B2 hydrate | FAIL† | 登录后续现场不站住：曾闪 Issue 深链→落 `/crew` |
+| B3 覆盖 | PASS† | 后写覆盖 |
+| B4 PC | PASS† | 同账号 PC |
+
+已派 React 修 B2。复测绿后再交产品关 P1。
