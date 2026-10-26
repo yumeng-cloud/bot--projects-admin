@@ -109,8 +109,8 @@
 - [x] **MV2-R0** 脚手架可登录 /auth/me · FE `814245f`
 - [x] **MV2-R1** hydrate 续现场 · FE `814245f`
 - [x] **MV2-R2** 标准导航 + 列表/详情主路径
-- [ ] **MV2-V0** 箱截
-- [ ] **MV2-V1** 视觉放行
+- [x] **MV2-V0** 箱截 375×812 · login/home/issue · `fd2d788`（已交审图→总监 V1）
+- [ ] **MV2-V1** 视觉放行（审图自审 → 总监）
 - [ ] **MV2-Q1** QA
 - [ ] **MV2-P1** 关
 
@@ -136,6 +136,7 @@
 
 ## 进度注记
 
+- 2026-10-26 · **勾 MV2-V0** React 箱截 `fd2d788`：`mobile-v2-login/home/issue.png`（375×812）。已交审图→总监 V1。软记：箱测时 :8080 曾 404 session-context（疑旧进程）——Q1 前核新后端。
 - 2026-10-26 · **勾 MV2-R2** React：底栏 Tab 队席/Issue/Wiki/我的；工作区→团队→席位；Issue 列表→详情（改状态/评论）；打开 Issue PUT session-context；Wiki 空间占位。
 - 2026-10-26 · **勾 MV2-R0/R1** React `814245f`：`frontend-mobile/` + `@acb/api-client`；登录+/auth/me；hydrate session-context（有值→`/resume`、空默认、可 PUT；失败不踢）。R2 进行中。**软非挡**：箱内 registry 晃致 lock 未生成、构建 symlink 复用 frontend/node_modules——网络好后根 `pnpm install`。
 - 2026-10-26 · **勾 MV2-G1** Go `c9a6ac7`：`GET|PUT /api/v1/me/session-context`（空默认非404；后写覆盖；人 JWT；Bot ymk_→401）。
@@ -145,5 +146,5 @@
 
 ## 关单进度
 
-**开刀** · MV2-P0/G1/R0/R1/R2 勾（G1 `c9a6ac7` · R0/R1 `814245f` · R2 `11df4bc`）；待 V0 箱截 → V1 → Q1 → P1。
+**开刀** · MV2-P0/G1/R0/R1/R2/V0 勾（V0 `fd2d788`）；待 **V1** → Q1 → P1。软：session-context 箱 404 疑旧进程，Q1 前核。
 
