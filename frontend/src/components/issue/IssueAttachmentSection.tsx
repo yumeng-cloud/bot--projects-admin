@@ -11,7 +11,8 @@ type Props = {
 }
 
 /**
- * 描述区旁「附件」区块（R3）：空态仅「添加附件…」；有文件再出列表+轻量添加。
+ * Issue 级附件区：与评论同气质 —— 空态轻图标+弱提示；有文件列表+回形针。
+ * 禁老式「添加附件…」文案链接钮。
  */
 export function IssueAttachmentSection({ workspaceId, issueId }: Props) {
   const [attachments, setAttachments] = useState<IssueAttachment[]>([])
@@ -60,9 +61,10 @@ export function IssueAttachmentSection({ workspaceId, issueId }: Props) {
       {empty ? (
         <div className="acb-issue-attachments-empty">
           <IssueAttachmentUpload
+            compact
             workspaceId={workspaceId}
             issueId={issueId}
-            label="添加附件…"
+            hint="点击添加（≤10MB）"
             onUploaded={reload}
           />
         </div>
@@ -73,9 +75,9 @@ export function IssueAttachmentSection({ workspaceId, issueId }: Props) {
               附件 ({attachments.length})
             </div>
             <IssueAttachmentUpload
+              compact
               workspaceId={workspaceId}
               issueId={issueId}
-              label="添加附件"
               onUploaded={reload}
             />
           </div>

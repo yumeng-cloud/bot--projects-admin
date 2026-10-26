@@ -46,17 +46,18 @@
 
 ## 产品勾选
 
-- [ ] **CAX-R1** Composer 图标+芯片
-- [ ] **CAX-R2** 粘贴/拖拽
-- [ ] **CAX-R3** 已发评论无常驻文案钮
-- [ ] **CAX-R4** Issue 级同气质
+- [x] **CAX-R1** Composer 图标+芯片
+- [x] **CAX-R2** 粘贴/拖拽
+- [x] **CAX-R3** 已发评论无常驻文案钮
+- [x] **CAX-R4** Issue 级同气质
 - [ ] **CAX-V1** 视觉自审/审图
 - [ ] **CAX-Q1** PASS†
 - [ ] **CAX-P1** 产品关
 
-**状态：开刀中** · 等 React 交 R1–R4。
+**状态：R1–R4 已交** · 等 CAX-V1/Q1/P1。
 
 ## 进度注记
 
 - 2026-10-26 · 主人 t903u：评论附件「添加附件」像老系统；要好用能办事、禁 Form 味。
 - 2026-10-26 · 主持席拍死上表；执刀 React；关刀前 CAX-Q1 PASS†。
+- 2026-10-26 · React：CAX-R1–R4 勾上（Composer 仅回形针+pending 芯片；粘贴/拖拽；已发 hover 补挂；Issue 区同气质）。tsc+vite 绿。
