@@ -1,0 +1,60 @@
+MOBILE_V2 MV2-Q1 B2 retest QA · PC↔移动续现场 hydrate · 2026-10-26 09:55 Asia/Shanghai (CST)
+Overall: PASS†（prior FAIL B2 cleared）
+Soft†: A4 队席副行 seat slug only（非挡；仍记自 first run）
+Fix SHA: 497f7a3db159940385ff8c8ffbc171c319c2d1bd · fix(mobile): stick session-context resume after login
+Prior FAIL note: 081767669fb825a4666dfab42067821990644b96 · docs(qa): MV2-Q1 FAIL† full row table + resumeNav defect
+Base: V0/V1 fd2d788340bba94e6769578a0cca5060e891b194 · shell 11df4bcb59a44540ce366af9b4bb7ca80d3f647a
+Mobile: http://127.0.0.1:5188
+Debt: docs/NEXT_WAVE_DEBT_MOBILE_V2.md
+Prior FAIL report: docs/qa-shots/MOBILE_V2-MV2-Q1-qa-20261026.txt
+This report: docs/qa-shots/MOBILE_V2-MV2-Q1-retest-qa-20261026.txt
+Scope: MV2-Q1 B2 retest only. Do NOT checkbox MV2-P1. Soft† A4 still noted from first run. LANDING / INVITE untouched.
+
+Product accept (narrow · B2 retest)
+1) PUT session-context 后，登录 hydrate 应落到深链/续现场目标
+2) 最终 URL 稳定在 issue 深链，不得空落到 /crew
+3) 复测 ×2 均粘住
+
+Method
+- computerUse @ http://127.0.0.1:5188（frontend-mobile 窄视口）
+- Fix @497f7a3 已上；相对 prior FAIL @0817676 / debt 路径
+- 狗粮账号；禁主人
+- 箱截 retest 01–03 落 docs/qa-shots/
+
+Shot 索引（retest 齐套）
+  MOBILE_V2-MV2-Q1-retest-20261026-01-put.png
+  MOBILE_V2-MV2-Q1-retest-20261026-02-hydrate-final.png
+  MOBILE_V2-MV2-Q1-retest-20261026-03-hydrate-final-2.png
+
+----------------------------------------------------------------
+逐行（B2 retest focus）
+----------------------------------------------------------------
+| 行 | 判定 | 摘要 |
+| --- | --- | --- |
+| B2 | PASS† ×2 | final URL /w/ba1481c49148aba9553ba3811406b69f/issues/190feaa3c6bd9aa52e9c37811f684d36 stable ~5s，no /crew |
+
+----------------------------------------------------------------
+B2 PASS† 证据（prior FAIL cleared）
+----------------------------------------------------------------
+  · 期望：登录 hydrate 后落到 session-context / 深链目标（issue），续现场，不落到 /crew
+  · 实得（×2）：final URL
+      /w/ba1481c49148aba9553ba3811406b69f/issues/190feaa3c6bd9aa52e9c37811f684d36
+    stable ~5s；未见 settles /crew
+  · 复现：PASS† ×2
+  · 箱截：
+      MOBILE_V2-MV2-Q1-retest-20261026-01-put.png
+      MOBILE_V2-MV2-Q1-retest-20261026-02-hydrate-final.png
+      MOBILE_V2-MV2-Q1-retest-20261026-03-hydrate-final-2.png
+  · Fix：497f7a3 stick session-context resume after login
+  · Prior FAIL：0817676 · resumeNav race → settles /crew（已清）
+
+----------------------------------------------------------------
+Notes
+----------------------------------------------------------------
+- Soft† A4 still noted from first run（seat slug secondary）· non-blocking
+- Do NOT checkbox MV2-P1
+- LANDING / INVITE / Soft untouched
+- Prior FAIL B2 cleared @497f7a3
+
+Verdict: PASS† @ fix 497f7a3 · prior FAIL 0817676 cleared · base fd2d788 / shell 11df4bc · B2 PASS† ×2（issue deep link stable ~5s，no /crew）· Soft† A4 still noted · do NOT checkbox MV2-P1
+One-line → Go/产品/总指挥: MV2-Q1 B2 retest PASS† @497f7a3；prior FAIL B2（hydrate→/crew）cleared；final URL /w/ba1481c49148aba9553ba3811406b69f/issues/190feaa3c6bd9aa52e9c37811f684d36 stable ~5s ×2；Soft† A4 仍记；不勾 MV2-P1；3 帧 retest 箱截齐套。
