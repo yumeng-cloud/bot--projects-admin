@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -181,5 +182,76 @@ func TestCanDeleteNil(t *testing.T) {
 	}
 	if attachments.CanDelete("", "admin", &attachments.Attachment{UploaderID: "u"}) {
 		t.Fatal("empty actor")
+	}
+}
+
+func TestListByCommentMissingReturnsEmpty(t *testing.T) {
+	svc, ws, issueID, _, _, _ := setupAttach(t)
+	list, err := svc.ListByComment(context.Background(), ws, issueID, idgen.New())
+	if err != nil {
+		t.Fatalf("missing comment must not error: %v", err)
+	}
+	if list == nil || len(list) != 0 {
+		t.Fatalf("want empty slice, got %#v", list)
+	}
+}
+
+func TestListByCommentWrongIssueReturnsEmpty(t *testing.T) {
+	svc, ws, issueID, uploader, _, _ := setupAttach(t)
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	commentID := idgen.New()
+	if _, err := svc.DB.Exec(`INSERT INTO comments (id, issue_id, author_id, body, created_at, updated_at)
+		VALUES (?,?,?,?,?,?)`, commentID, issueID, uploader, "c", now, now); err != nil {
+		t.Fatal(err)
+	}
+	_ = insertAttachment(t, svc, ws, issueID, uploader, commentID, "b.txt")
+
+	otherIssue := idgen.New()
+	list, err := svc.ListByComment(context.Background(), ws, otherIssue, commentID)
+	if err != nil {
+		t.Fatalf("wrong issue must not error: %v", err)
+	}
+	if len(list) != 0 {
+		t.Fatalf("want empty, got %#v", list)
+	}
+}
+
+func TestListByCommentEmptyAndWithAttachments(t *testing.T) {
+	svc, ws, issueID, uploader, _, _ := setupAttach(t)
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	emptyID := idgen.New()
+	withID := idgen.New()
+	for _, id := range []string{emptyID, withID} {
+		if _, err := svc.DB.Exec(`INSERT INTO comments (id, issue_id, author_id, body, created_at, updated_at)
+			VALUES (?,?,?,?,?,?)`, id, issueID, uploader, "c", now, now); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	empty, err := svc.ListByComment(context.Background(), ws, issueID, emptyID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(empty) != 0 {
+		t.Fatalf("want 0 attachments, got %d", len(empty))
+	}
+
+	att := insertAttachment(t, svc, ws, issueID, uploader, withID, "c.txt")
+	got, err := svc.ListByComment(context.Background(), ws, issueID, withID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].ID != att.ID {
+		t.Fatalf("want [%s], got %#v", att.ID, got)
+	}
+}
+
+func TestUploadCommentMissingStillNotFound(t *testing.T) {
+	svc, ws, issueID, uploader, _, _ := setupAttach(t)
+	_, err := svc.UploadComment(context.Background(), ws, issueID, idgen.New(), uploader,
+		"x.txt", "text/plain", strings.NewReader("hi"), 2)
+	ae, ok := err.(*apperr.AppError)
+	if !ok || ae.StatusCode != 404 || ae.Message != "评论不存在" {
+		t.Fatalf("want 404 评论不存在, got %v", err)
 	}
 }

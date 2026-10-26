@@ -304,3 +304,85 @@ func TestAttachmentCommentUpload(t *testing.T) {
 		t.Fatalf("upload comment att %d %s", rr2.Code, rr2.Body.String())
 	}
 }
+
+func TestListByCommentMissingHTTP200Empty(t *testing.T) {
+	h, _, _ := attachmentRouter(t)
+	token, wsID, projectID := loginAndWS(t, h)
+	issueID := createIssue(t, h, token, wsID, projectID)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet,
+		"/api/v1/workspaces/"+wsID+"/issues/"+issueID+"/comments/nonexistent-comment-id/attachments", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("want 200 empty, got %d %s", rr.Code, rr.Body.String())
+	}
+	var res map[string]any
+	if err := json.Unmarshal(rr.Body.Bytes(), &res); err != nil {
+		t.Fatal(err)
+	}
+	atts, _ := res["attachments"].([]any)
+	if atts == nil || len(atts) != 0 {
+		t.Fatalf("want attachments:[], got %s", rr.Body.String())
+	}
+}
+
+func TestUploadCommentMissingHTTP404(t *testing.T) {
+	h, _, _ := attachmentRouter(t)
+	token, wsID, projectID := loginAndWS(t, h)
+	issueID := createIssue(t, h, token, wsID, projectID)
+
+	txt := []byte("hello")
+	body, ctype := multipartPNG(t, "n.txt", txt)
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost,
+		"/api/v1/workspaces/"+wsID+"/issues/"+issueID+"/comments/nonexistent-comment-id/attachments", body)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", ctype)
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("want 404, got %d %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), "评论不存在") {
+		t.Fatalf("want 评论不存在 toast message, got %s", rr.Body.String())
+	}
+}
+
+func TestListByCommentRealEmptyHTTP200(t *testing.T) {
+	h, _, _ := attachmentRouter(t)
+	token, wsID, projectID := loginAndWS(t, h)
+	issueID := createIssue(t, h, token, wsID, projectID)
+
+	cbody, _ := json.Marshal(map[string]string{"body": "无附件"})
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/"+wsID+"/issues/"+issueID+"/comments", bytes.NewReader(cbody))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusCreated && rr.Code != http.StatusOK {
+		t.Fatalf("comment %d %s", rr.Code, rr.Body.String())
+	}
+	var cres map[string]any
+	_ = json.Unmarshal(rr.Body.Bytes(), &cres)
+	cmt, _ := cres["comment"].(map[string]any)
+	commentID, _ := cmt["id"].(string)
+	if commentID == "" {
+		t.Fatalf("no comment id: %s", rr.Body.String())
+	}
+
+	rr2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest(http.MethodGet,
+		"/api/v1/workspaces/"+wsID+"/issues/"+issueID+"/comments/"+commentID+"/attachments", nil)
+	req2.Header.Set("Authorization", "Bearer "+token)
+	h.ServeHTTP(rr2, req2)
+	if rr2.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d %s", rr2.Code, rr2.Body.String())
+	}
+	var res map[string]any
+	_ = json.Unmarshal(rr2.Body.Bytes(), &res)
+	atts, _ := res["attachments"].([]any)
+	if atts == nil || len(atts) != 0 {
+		t.Fatalf("want empty attachments, got %s", rr2.Body.String())
+	}
+}

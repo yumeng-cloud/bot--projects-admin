@@ -177,9 +177,14 @@ func (s *Service) ListByIssue(ctx context.Context, wsID, issueID string) ([]Atta
 }
 
 // ListByComment 列出某评论下的附件。
+// 只读 enrichment：评论缺失/不属于该 issue（竞态删除、孤儿 ID）返回空列表，不 404，
+// 避免 Issue 详情页对每条评论拉附件时弹出「评论不存在」Toast。写路径仍走 ensureComment。
 func (s *Service) ListByComment(ctx context.Context, wsID, issueID, commentID string) ([]Attachment, error) {
 	_ = ctx
 	if err := s.ensureComment(wsID, issueID, commentID); err != nil {
+		if ae, ok := err.(*apperr.AppError); ok && ae.Code == "not_found" {
+			return []Attachment{}, nil
+		}
 		return nil, err
 	}
 	rows, err := s.DB.Query(`
